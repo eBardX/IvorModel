@@ -1,13 +1,27 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 public import IvorTiming
 public import IvorTuning
 
 extension Work {
+    /// The musical content of a work, parameterized by pitch notation and time basis.
     public enum Content {
+        /// Beat-time parts using absolute (frequency) pitch notation, with an associated tempo map.
         case absoluteBeat([Part<BeatTime, Frequency>], TempoMap)
+
+        /// Wall-time parts using absolute (frequency) pitch notation.
         case absoluteWall([Part<WallTime, Frequency>])
+
+        /// Beat-time parts using keyboard (MIDI note number) pitch notation, with an associated tempo map.
         case keyboardBeat([Part<BeatTime, NoteNumber>], TempoMap)
+
+        /// Wall-time parts using keyboard (MIDI note number) pitch notation.
         case keyboardWall([Part<WallTime, NoteNumber>])
+
+        /// Beat-time parts using standard (staff) pitch notation, with an associated tempo map.
         case standardBeat([Part<BeatTime, Pitch>], TempoMap)
+
+        /// Wall-time parts using standard (staff) pitch notation.
         case standardWall([Part<WallTime, Pitch>])
     }
 }
@@ -18,22 +32,24 @@ extension Work.Content {
 
     // MARK: Public Instance Properties
 
+    /// The beat-time range spanned by all beat-time parts, or `nil` for wall-time content.
     public var beatTimeRange: ClosedRange<BeatTime>? {
         switch self {
         case let .absoluteBeat(parts, _):
-            Self._determineTimeRange(of: parts)
+            Self._timeRange(of: parts)
 
         case let .keyboardBeat(parts, _):
-            Self._determineTimeRange(of: parts)
+            Self._timeRange(of: parts)
 
         case let .standardBeat(parts, _):
-            Self._determineTimeRange(of: parts)
+            Self._timeRange(of: parts)
 
         default:
             nil
         }
     }
 
+    /// The number of parts in this content.
     public var partCount: Int {
         switch self {
         case let .absoluteBeat(parts, _):
@@ -56,6 +72,7 @@ extension Work.Content {
         }
     }
 
+    /// The pitch notation used by this content.
     public var pitchNotation: PitchNotation {
         switch self {
         case .absoluteBeat,
@@ -72,6 +89,7 @@ extension Work.Content {
         }
     }
 
+    /// The tempo map associated with beat-time content, or `nil` for wall-time content.
     public var tempoMap: TempoMap? {
         switch self {
         case let .absoluteBeat(_, tmap),
@@ -84,6 +102,7 @@ extension Work.Content {
         }
     }
 
+    /// The time basis used by this content.
     public var timeBasis: TimeBasis {
         switch self {
         case .absoluteBeat,
@@ -98,16 +117,17 @@ extension Work.Content {
         }
     }
 
+    /// The wall-time range spanned by all wall-time parts, or `nil` for beat-time content.
     public var wallTimeRange: ClosedRange<WallTime>? {
         switch self {
         case let .absoluteWall(parts):
-            Self._determineTimeRange(of: parts)
+            Self._timeRange(of: parts)
 
         case let .keyboardWall(parts):
-            Self._determineTimeRange(of: parts)
+            Self._timeRange(of: parts)
 
         case let .standardWall(parts):
-            Self._determineTimeRange(of: parts)
+            Self._timeRange(of: parts)
 
         default:
             nil
@@ -116,6 +136,11 @@ extension Work.Content {
 
     // MARK: Public Instance Methods
 
+    /// Returns the name of the part at the given index.
+    ///
+    /// - Parameter index:  The zero-based index of the part.
+    ///
+    /// - Returns:  The name of the part at `index`.
     public func partName(at index: Int) -> String {
         switch self {
         case let .absoluteBeat(parts, _):
@@ -140,23 +165,16 @@ extension Work.Content {
 
     // MARK: Private Type Methods
 
-    private static func _determineTimeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>]) -> ClosedRange<TimeType> {
-        guard !parts.isEmpty
-        else { return TimeType.zero...TimeType.zero }
+    private static func _timeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>]) -> ClosedRange<TimeType>? {
+        parts.reduce(nil) { acc, part in
+            guard let partRange = part.timeRange
+            else { return acc }
 
-        var timeRange = parts[0].timeRange
+            guard let acc
+            else { return partRange }
 
-        for part in parts {
-            let trange = part.timeRange
-            let hiTime = max(timeRange.upperBound,
-                             trange.upperBound)
-            let loTime = min(timeRange.lowerBound,
-                             trange.lowerBound)
-
-            timeRange = loTime...hiTime
+            return min(acc.lowerBound, partRange.lowerBound)...max(acc.upperBound, partRange.upperBound)
         }
-
-        return timeRange
     }
 }
 
@@ -166,6 +184,11 @@ extension Work.Content: Codable {
 
     // MARK: Public Initializers
 
+    /// Creates a work content value by decoding from the provided decoder.
+    ///
+    /// - Parameter decoder:    The decoder to read from.
+    ///
+    /// - Throws:   `DecodingError` if the encoded data is invalid or corrupted.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
@@ -210,6 +233,11 @@ extension Work.Content: Codable {
 
     // MARK: Public Instance Methods
 
+    /// Encodes this work content into the provided encoder.
+    ///
+    /// - Parameter encoder:    The encoder to write to.
+    ///
+    /// - Throws:   `EncodingError` if the value cannot be encoded.
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
 

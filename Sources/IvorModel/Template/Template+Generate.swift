@@ -1,3 +1,5 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 private import IvorTiming
 private import XestiMarkov
 private import XestiTools
@@ -6,6 +8,17 @@ extension Template {
 
     // MARK: Public Instance Methods
 
+    /// Returns a new work generated from this template.
+    ///
+    /// - Parameter name:   The name to assign to the generated work.
+    /// - Parameter order:  The pattern depth to use for generation.
+    /// - Parameter limit:  The maximum number of note events to generate.
+    ///
+    /// - Returns:  A new ``Work`` containing the generated note content.
+    ///
+    /// - Throws:   ``Template/Error/invalidLimit`` if `limit` is not positive;
+    ///             otherwise, ``Template/Error/invalidOrder(_:)`` if `order` exceeds
+    ///             the template’s maximum supported depth.
     public func generateWork(name: String,
                              order: Int,
                              limit: Int) throws -> Work {
@@ -36,8 +49,8 @@ extension Template {
                                  pitch: tiedPitch.pitch)
             }
 
-            nextAttack = nextAttack.moved(by: noteEvent.duration,
-                                          direction: .forward).require()
+            nextAttack = nextAttack.moved(by: DirectedDuration(duration: noteEvent.duration,
+                                                               direction: .forward)).require()
         }
 
         return noteTable

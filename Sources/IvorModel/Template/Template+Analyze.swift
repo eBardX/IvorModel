@@ -1,9 +1,21 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 private import XestiMarkov
 
 extension Template {
 
     // MARK: Public Type Methods
 
+    /// Creates a template by analyzing the note events of a specific part in a work.
+    ///
+    /// - Parameter work:           The ``Work`` containing the part to analyze.
+    /// - Parameter index:          The zero-based index of the part to analyze.
+    /// - Parameter maximumOrder:   The maximum pattern depth for the analysis.
+    ///
+    /// - Returns:  A new ``Template`` capturing the musical character of the specified part.
+    ///
+    /// - Throws:   ``Template/Error/invalidMaximumOrder`` if `maximumOrder` is not positive;
+    ///             otherwise, ``Template/Error/partNotFound(_:)`` if no part exists at `index`.
     public static func analyzeNoteEvents(in work: Work,
                                          at index: Int,
                                          maximumOrder: Int) throws -> Self {

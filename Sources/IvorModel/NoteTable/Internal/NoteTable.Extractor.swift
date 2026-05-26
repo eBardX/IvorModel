@@ -1,3 +1,5 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 internal import IvorTiming
 internal import XestiTools
 
@@ -43,7 +45,7 @@ extension NoteTable.Extractor {
         var slices: [NoteSlice] = []
 
         while _readNotePairs() {
-            guard let duration = _determineNoteSliceDuration()
+            guard let duration = _durationOfNoteSlice()
             else { break }
 
             let slice = _removeNoteSlice(duration: duration)
@@ -59,14 +61,14 @@ extension NoteTable.Extractor {
     // MARK: Private Instance Methods
 
     private mutating func _advance(by duration: Duration) {
-        guard let newTime = currentTime.moved(by: duration,
-                                              direction: .forward)
+        guard let newTime = currentTime.moved(by: DirectedDuration(duration: duration,
+                                                                   direction: .forward))
         else { fatalError("Bad logic!") }
 
         currentTime = newTime
     }
 
-    private func _determineNoteSliceDuration() -> Duration? {
+    private func _durationOfNoteSlice() -> Duration? {
         let dur1 = currentPairs.map { $0.duration }.min()
         let dur2 = _durationToNextAttack()
 
@@ -79,11 +81,11 @@ extension NoteTable.Extractor {
 
     private func _durationToNextAttack() -> Duration? {
         guard let nextNote = noteReader.peek(),
-              let (duration, direction) = currentTime.duration(to: nextNote.attack),
-              direction == .forward
+              let directedDuration = currentTime.duration(to: nextNote.attack),
+              directedDuration.direction == .forward
         else { return nil }
 
-        return duration
+        return directedDuration.duration
     }
 
     private mutating func _readNotePairs() -> Bool {
@@ -113,24 +115,24 @@ extension NoteTable.Extractor {
         var updatedPairs: [NotePair] = []
 
         for pair in currentPairs {
-            guard let remdur = pair.duration.subtracting(duration)
+            guard let remainingDuration = pair.duration.subtracting(duration)
             else { fatalError("Bad logic!") }
 
-            let tpit = pair.tiedPitch
-            let isTied = !remdur.isZero
+            let current = pair.tiedPitch
+            let isTied = !remainingDuration.isZero
 
-            let stp = TiedPitch(pitch: tpit.pitch,
-                                beginsTie: isTied,
-                                endsTie: tpit.endsTie)
+            let slicePitch = TiedPitch(pitch: current.pitch,
+                                       beginsTie: isTied,
+                                       endsTie: current.endsTie)
 
-            tiedPitches.append(stp)
+            tiedPitches.append(slicePitch)
 
             if isTied {
-                let utp = TiedPitch(pitch: tpit.pitch,
-                                    endsTie: true)
-                let up = (utp, remdur)
+                let carryoverPitch = TiedPitch(pitch: current.pitch,
+                                               endsTie: true)
+                let carryoverPair = (carryoverPitch, remainingDuration)
 
-                updatedPairs.append(up)
+                updatedPairs.append(carryoverPair)
             }
         }
 

@@ -1,3 +1,5 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 internal import XestiTools
 
 private import IvorTiming
@@ -7,8 +9,8 @@ extension NoteTable {
     // MARK: Internal Nested Types
 
     internal enum Note {
-        case custom(TimeType, DurationType, PitchType, PitchType, Extras)
-        case portamento(TimeType, DurationType, PitchType, PitchType)          // need better name
+        case extended(TimeType, DurationType, PitchType, PitchType, Extras)
+        case glide(TimeType, DurationType, PitchType, PitchType)
         case simple(TimeType, DurationType, PitchType)
     }
 }
@@ -25,9 +27,9 @@ extension NoteTable.Note {
                   endPitch: PitchType,
                   extras: Extras?) {
         if let extras, !extras.isEmpty {
-            self = .custom(attack, duration, startPitch, endPitch, extras)
+            self = .extended(attack, duration, startPitch, endPitch, extras)
         } else if startPitch != endPitch {
-            self = .portamento(attack, duration, startPitch, endPitch)
+            self = .glide(attack, duration, startPitch, endPitch)
         } else {
             self = .simple(attack, duration, startPitch)
         }
@@ -37,26 +39,37 @@ extension NoteTable.Note {
 
     internal var attack: TimeType {
         switch self {
-        case let .custom(att, _, _, _, _),
-            let .portamento(att, _, _, _),
-            let .simple(att, _, _):
-            att
+        case let .extended(attack, _, _, _, _),
+            let .glide(attack, _, _, _),
+            let .simple(attack, _, _):
+            attack
         }
     }
 
     internal var duration: NoteTable.DurationType {
         switch self {
-        case let .custom(_, dur, _, _, _),
-            let .portamento(_, dur, _, _),
-            let .simple(_, dur, _):
-            dur
+        case let .extended(_, duration, _, _, _),
+            let .glide(_, duration, _, _),
+            let .simple(_, duration, _):
+            duration
+        }
+    }
+
+    internal var endPitch: PitchType {
+        switch self {
+        case let .extended(_, _, _, endPitch, _),
+            let .glide(_, _, _, endPitch):
+            endPitch
+
+        case let .simple(_, _, pitch):
+            pitch
         }
     }
 
     internal var extras: Extras? {
         switch self {
-        case let .custom(_, _, _, _, ext):
-            ext
+        case let .extended(_, _, _, _, extras):
+            extras
 
         default:
             nil
@@ -71,35 +84,24 @@ extension NoteTable.Note {
         min(startPitch, endPitch)
     }
 
-    internal var endPitch: PitchType {
-        switch self {
-        case let .custom(_, _, _, epit, _),
-            let .portamento(_, _, _, epit):
-            epit
-
-        case let .simple(_, _, pit):
-            pit
-        }
-    }
-
     internal var release: TimeType {
         switch self {
-        case let .custom(att, dur, _, _, _),
-            let .portamento(att, dur, _, _),
-            let .simple(att, dur, _):
-            att.moved(by: dur,
-                      direction: .forward).require()
+        case let .extended(attack, duration, _, _, _),
+            let .glide(attack, duration, _, _),
+            let .simple(attack, duration, _):
+            attack.moved(by: DirectedDuration(duration: duration,
+                                              direction: .forward)).require()
         }
     }
 
     internal var startPitch: PitchType {
         switch self {
-        case let .custom(_, _, spit, _, _),
-            let .portamento(_, _, spit, _):
-            spit
+        case let .extended(_, _, startPitch, _, _),
+            let .glide(_, _, startPitch, _):
+            startPitch
 
-        case let .simple(_, _, pit):
-            pit
+        case let .simple(_, _, pitch):
+            pitch
         }
     }
 }
@@ -120,9 +122,9 @@ extension NoteTable.Note: Codable {
         let extras = try container.decodeIfPresent(Extras.self)
 
         if let extras {
-            self = .custom(attack, duration, startPitch, endPitch ?? startPitch, extras)
+            self = .extended(attack, duration, startPitch, endPitch ?? startPitch, extras)
         } else if let endPitch {
-            self = .portamento(attack, duration, startPitch, endPitch)
+            self = .glide(attack, duration, startPitch, endPitch)
         } else {
             self = .simple(attack, duration, startPitch)
         }

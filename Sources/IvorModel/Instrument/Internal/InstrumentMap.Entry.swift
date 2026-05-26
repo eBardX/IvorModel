@@ -1,3 +1,5 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 import XestiTools
 
 extension InstrumentMap {
@@ -5,7 +7,7 @@ extension InstrumentMap {
     // MARK: Internal Nested Types
 
     internal enum Entry {
-        case custom(TimeType, Instrument, Extras)
+        case extended(TimeType, Instrument, Extras)
         case simple(TimeType, Instrument)
     }
 }
@@ -20,7 +22,7 @@ extension InstrumentMap.Entry {
                   instrument: Instrument,
                   extras: Extras?) {
         if let extras, !extras.isEmpty {
-            self = .custom(time, instrument, extras)
+            self = .extended(time, instrument, extras)
         } else {
             self = .simple(time, instrument)
         }
@@ -30,7 +32,7 @@ extension InstrumentMap.Entry {
 
     internal var extras: Extras? {
         switch self {
-        case let .custom(_, _, extras):
+        case let .extended(_, _, extras):
             extras
 
         default:
@@ -40,7 +42,7 @@ extension InstrumentMap.Entry {
 
     internal var instrument: Instrument {
         switch self {
-        case let .custom(_, instrument, _),
+        case let .extended(_, instrument, _),
             let .simple(_, instrument):
             instrument
         }
@@ -48,7 +50,7 @@ extension InstrumentMap.Entry {
 
     internal var time: TimeType {
         switch self {
-        case let .custom(time, _, _),
+        case let .extended(time, _, _),
             let .simple(time, _):
             time
         }

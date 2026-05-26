@@ -1,16 +1,36 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 public import XestiNumbers
 public import XestiTools
 
 extension NoteTable {
+    /// An error thrown by ``NoteTable`` operations.
     public enum Error {
+        /// A failure that occurred while augmenting a note.
         case augmentFailure(TimeType, DurationType, PitchType, PitchType)
+
+        /// A failure that occurred while diminishing a note.
         case diminishFailure(TimeType, DurationType, PitchType, PitchType)
+
+        /// An augmentation factor that is not a positive rational number ≥ 1.
         case invalidAugmentationFactor(Number)
+
+        /// A diminution factor that is not a positive rational number ≥ 1.
         case invalidDiminutionFactor(Number)
+
+        /// A quantization factor that is not a positive integer.
         case invalidQuantizationFactor(Int)
+
+        /// A failure that occurred while inverting a note.
         case invertFailure(TimeType, DurationType, PitchType, PitchType)
+
+        /// A failure that occurred while moving a note.
         case moveFailure(TimeType, DurationType, PitchType, PitchType)
+
+        /// A failure that occurred while reversing a note.
         case reverseFailure(TimeType, DurationType, PitchType, PitchType)
+
+        /// A failure that occurred while transposing a note.
         case transposeFailure(TimeType, DurationType, PitchType, PitchType)
     }
 }
@@ -18,17 +38,19 @@ extension NoteTable {
 // MARK: - EnhancedError
 
 extension NoteTable.Error: EnhancedError {
+    /// The error category for this error.
     public var category: Category? {
         Category("IvorModel")
     }
 
+    /// The human-readable message for this error.
     public var message: String {
         switch self {
-        case let .augmentFailure(att, dur, spit, epit):
-            "Unable to augment note table note, \(_formatNote(att, dur, spit, epit))"
+        case let .augmentFailure(attack, duration, startPitch, endPitch):
+            "Unable to augment note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
 
-        case let .diminishFailure(att, dur, spit, epit):
-            "Unable to diminish note table note, \(_formatNote(att, dur, spit, epit))"
+        case let .diminishFailure(attack, duration, startPitch, endPitch):
+            "Unable to diminish note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
 
         case let .invalidAugmentationFactor(factor):
             "Invalid augmentation factor: \(factor)"
@@ -39,17 +61,17 @@ extension NoteTable.Error: EnhancedError {
         case let .invalidQuantizationFactor(factor):
             "Invalid quantization factor: \(factor)"
 
-        case let .invertFailure(att, dur, spit, epit):
-            "Unable to invert note table note, \(_formatNote(att, dur, spit, epit))"
+        case let .invertFailure(attack, duration, startPitch, endPitch):
+            "Unable to invert note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
 
-        case let .moveFailure(att, dur, spit, epit):
-            "Unable to move note table note, \(_formatNote(att, dur, spit, epit))"
+        case let .moveFailure(attack, duration, startPitch, endPitch):
+            "Unable to move note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
 
-        case let .reverseFailure(att, dur, spit, epit):
-            "Unable to reverse note table note, \(_formatNote(att, dur, spit, epit))"
+        case let .reverseFailure(attack, duration, startPitch, endPitch):
+            "Unable to reverse note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
 
-        case let .transposeFailure(att, dur, spit, epit):
-            "Unable to transpose note table note, \(_formatNote(att, dur, spit, epit))"
+        case let .transposeFailure(attack, duration, startPitch, endPitch):
+            "Unable to transpose note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
         }
     }
 

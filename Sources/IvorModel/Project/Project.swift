@@ -1,12 +1,16 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 public import Foundation
 
 private import XestiSexp
 private import XestiTools
 
+/// An Ivor project containing a collection of works and templates.
 public struct Project {
 
     // MARK: Public Initializers
 
+    /// Creates a new, empty project.
     public init() {
         self.name = ""
         self.templateMap = [:]
@@ -15,6 +19,7 @@ public struct Project {
 
     // MARK: Public Instance Properties
 
+    /// The display name of this project.
     public private(set) var name: String
 
     // MARK: Internal Instance Properties
@@ -29,6 +34,13 @@ extension Project {
 
     // MARK: Public Type Methods
 
+    /// Creates a project by loading from a file wrapper.
+    ///
+    /// - Parameter file:   The `FileWrapper` containing the serialized project data.
+    ///
+    /// - Returns:  A ``Project`` loaded from the file.
+    ///
+    /// - Throws:   ``Project/Error/loadFailure(_:)`` if the project cannot be loaded.
     public static func load(from file: FileWrapper) throws -> Project {
         do {
             return try Project(from: file.unzip())
@@ -39,24 +51,41 @@ extension Project {
 
     // MARK: Public Instance Properties
 
+    /// All templates in this project.
     public var templates: [Template] {
         Array(templateMap.values)
     }
 
+    /// All works in this project.
     public var works: [Work] {
         Array(workMap.values)
     }
 
     // MARK: Public Instance Methods
 
+    /// Returns the template with the given ID, or `nil` if not found.
+    ///
+    /// - Parameter templateID:     The ID of the template to fetch.
+    ///
+    /// - Returns:  The matching ``Template``, or `nil` if no template with that ID exists.
     public func fetchTemplate(_ templateID: TemplateID) -> Template? {
         templateMap[templateID]
     }
 
+    /// Returns the work with the given ID, or `nil` if not found.
+    ///
+    /// - Parameter workID:     The ID of the work to fetch.
+    ///
+    /// - Returns:  The matching ``Work``, or `nil` if no work with that ID exists.
     public func fetchWork(_ workID: WorkID) -> Work? {
         workMap[workID]
     }
 
+    /// Removes the template with the given ID from this project.
+    ///
+    /// - Parameter templateID:     The ID of the template to remove.
+    ///
+    /// - Returns:  The removed ``Template``, or `nil` if no template with that ID exists.
     @discardableResult
     public mutating func removeTemplate(_ templateID: TemplateID) -> Template? {
         guard let template = templateMap.removeValue(forKey: templateID)
@@ -65,6 +94,11 @@ extension Project {
         return template
     }
 
+    /// Removes the work with the given ID from this project.
+    ///
+    /// - Parameter workID:     The ID of the work to remove.
+    ///
+    /// - Returns:  The removed ``Work``, or `nil` if no work with that ID exists.
     @discardableResult
     public mutating func removeWork(_ workID: WorkID) -> Work? {
         guard let work = workMap.removeValue(forKey: workID)
@@ -73,6 +107,11 @@ extension Project {
         return work
     }
 
+    /// Serializes this project to a file wrapper.
+    ///
+    /// - Returns:  A `FileWrapper` containing the serialized project data.
+    ///
+    /// - Throws:   ``Project/Error/saveFailure(_:)`` if this project cannot be saved.
     public func save() throws -> FileWrapper {
         do {
             return try _prepare().zip()
@@ -81,12 +120,24 @@ extension Project {
         }
     }
 
+    /// Inserts or replaces a template in this project.
+    ///
+    /// - Parameter template:   The ``Template`` to insert or replace.
+    ///
+    /// - Returns:  `true` if a template with the same ID already existed and was replaced;
+    ///             otherwise, `false`.
     @discardableResult
     public mutating func updateTemplate(_ template: Template) -> Bool {
         templateMap.updateValue(template,
                                 forKey: template.templateID) != nil
     }
 
+    /// Inserts or replaces a work in this project.
+    ///
+    /// - Parameter work:   The ``Work`` to insert or replace.
+    ///
+    /// - Returns:  `true` if a work with the same ID already existed and was replaced;
+    ///             otherwise, `false`.
     @discardableResult
     public mutating func updateWork(_ work: Work) -> Bool {
         workMap.updateValue(work,

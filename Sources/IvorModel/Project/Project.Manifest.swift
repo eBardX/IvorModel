@@ -1,3 +1,5 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 extension Project {
 
     // MARK: Internal Nested Types

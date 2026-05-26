@@ -1,3 +1,5 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
@@ -38,7 +40,7 @@ extension NoteTableTests {
     }
 
     @Test
-    func hasPortamento_afterInsert() {
+    func hasGlide_afterInsert() {
         var table = NoteTableSB()
 
         table.insert(attack: 0, duration: 1, startPitch: .c4, endPitch: .e4)
@@ -47,7 +49,7 @@ extension NoteTableTests {
     }
 
     @Test
-    func hasPortamento_initial() {
+    func hasGlide_initial() {
         let table = NoteTableSB()
 
         #expect(!table.hasPortamento)
@@ -113,8 +115,8 @@ extension NoteTableTests {
         table1.merge(with: table2)
 
         #expect(!table1.isEmpty)
-        #expect(table1.pitchRange.lowerBound == .c4)
-        #expect(table1.pitchRange.upperBound == .g4)
+        #expect(table1.pitchRange?.lowerBound == .c4)
+        #expect(table1.pitchRange?.upperBound == .g4)
     }
 
     @Test
@@ -134,8 +136,8 @@ extension NoteTableTests {
         table.insert(attack: 1, duration: 1, pitch: .g5)
         table.insert(attack: 2, duration: 1, pitch: .e4)
 
-        #expect(table.pitchRange.lowerBound == .c4)
-        #expect(table.pitchRange.upperBound == .g5)
+        #expect(table.pitchRange?.lowerBound == .c4)
+        #expect(table.pitchRange?.upperBound == .g5)
     }
 
     @Test
@@ -164,7 +166,7 @@ extension NoteTableTests {
         table.insert(attack: 0, duration: 2, pitch: .c4)
         table.insert(attack: 3, duration: 1, pitch: .e4)
 
-        #expect(table.timeRange.lowerBound == 0)
-        #expect(table.timeRange.upperBound == 4)
+        #expect(table.timeRange?.lowerBound == 0)
+        #expect(table.timeRange?.upperBound == 4)
     }
 }

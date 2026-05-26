@@ -1,11 +1,21 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 extension NoteEvent {
 
     // MARK: Public Nested Types
 
+    /// A pitch annotated with its tie relationship to adjacent notes.
     public enum TiedPitch {
+        /// A pitch that is not tied to any adjacent note.
         case neither(PitchType)
+
+        /// A pitch that begins a tie to the following note.
         case start(PitchType)
+
+        /// A pitch that ends a tie from the preceding note.
         case stop(PitchType)
+
+        /// A pitch that ends a tie from the preceding note and begins a tie to the following note.
         case stopStart(PitchType)
     }
 }
@@ -16,6 +26,11 @@ extension NoteEvent.TiedPitch {
 
     // MARK: Public Initializers
 
+    /// Creates a tied pitch from a pitch and tie flags.
+    ///
+    /// - Parameter pitch:      The pitch.
+    /// - Parameter beginsTie:  A Boolean value indicating whether this pitch begins a tie to the following note. Defaults to `false`.
+    /// - Parameter endsTie:    A Boolean value indicating whether this pitch ends a tie from the preceding note. Defaults to `false`.
     public init(pitch: PitchType,
                 beginsTie: Bool = false,
                 endsTie: Bool = false) {
@@ -36,6 +51,7 @@ extension NoteEvent.TiedPitch {
 
     // MARK: Public Instance Properties
 
+    /// A Boolean value indicating whether this pitch begins a tie to the following note.
     public var beginsTie: Bool {
         switch self {
         case .start,
@@ -47,6 +63,7 @@ extension NoteEvent.TiedPitch {
         }
     }
 
+    /// A Boolean value indicating whether this pitch ends a tie from the preceding note.
     public var endsTie: Bool {
         switch self {
         case .stop,
@@ -58,6 +75,7 @@ extension NoteEvent.TiedPitch {
         }
     }
 
+    /// The pitch, regardless of tie state.
     public var pitch: PitchType {
         switch self {
         case let .neither(pit),
@@ -93,6 +111,11 @@ extension NoteEvent.TiedPitch: Codable {
 
     // MARK: Public Initializers
 
+    /// Creates a tied pitch by decoding from the provided decoder.
+    ///
+    /// - Parameter decoder:    The decoder to read from.
+    ///
+    /// - Throws:   `DecodingError.dataCorruptedError` if the encoded tag value is unrecognized.
     public init(from decoder: any Decoder) throws {
         var container = try decoder.unkeyedContainer()
 
@@ -104,13 +127,13 @@ extension NoteEvent.TiedPitch: Codable {
             self = .neither(pitch)
 
         case "start":
-            self = .neither(pitch)
+            self = .start(pitch)
 
         case "stop":
-            self = .neither(pitch)
+            self = .stop(pitch)
 
         case "stopStart":
-            self = .neither(pitch)
+            self = .stopStart(pitch)
 
         default:
             throw DecodingError.dataCorruptedError(in: container,
@@ -120,6 +143,11 @@ extension NoteEvent.TiedPitch: Codable {
 
     // MARK: Public Instance Methods
 
+    /// Encodes this tied pitch into the provided encoder.
+    ///
+    /// - Parameter encoder:    The encoder to write to.
+    ///
+    /// - Throws:   `EncodingError` if the value cannot be encoded.
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.unkeyedContainer()
 
@@ -144,6 +172,12 @@ extension NoteEvent.TiedPitch: Codable {
 // MARK: - Comparable
 
 extension NoteEvent.TiedPitch: Comparable {
+    /// Returns a Boolean value indicating whether the left tied pitch compares less than the right.
+    ///
+    /// - Parameter lhs:    The left-hand tied pitch.
+    /// - Parameter rhs:    The right-hand tied pitch.
+    ///
+    /// - Returns:  `true` if `lhs` precedes `rhs` when ordered by pitch then tie state.
     public static func < (lhs: Self,
                           rhs: Self) -> Bool {
         (lhs.pitch, rhs.tieCompareValue) < (rhs.pitch, lhs.tieCompareValue)

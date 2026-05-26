@@ -1,3 +1,5 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 internal import XestiTools
 
 private import IvorTiming
@@ -7,15 +9,15 @@ extension NoteTable {
 
     // MARK: Internal Type Methods
 
-    internal static func determineHasExtras(_ notes: [Note]) -> Bool {
+    internal static func hasExtras(in notes: [Note]) -> Bool {
         notes.contains { $0.extras != nil }
     }
 
-    internal static func determineHasPortamento(_ notes: [Note]) -> Bool {
+    internal static func hasPortamento(in notes: [Note]) -> Bool {
         notes.contains { $0.startPitch != $0.endPitch }
     }
 
-    internal static func determineIsMonophonic(_ notes: [Note]) -> Bool {
+    internal static func isMonophonic(in notes: [Note]) -> Bool {
         guard !notes.isEmpty
         else { return true }
 
@@ -32,9 +34,9 @@ extension NoteTable {
         return true
     }
 
-    internal static func determinePitchRange(_ notes: [Note]) -> ClosedRange<PitchType> {
+    internal static func pitchRange(in notes: [Note]) -> ClosedRange<PitchType>? {
         guard !notes.isEmpty
-        else { return PitchType.default...PitchType.default }
+        else { return nil }
 
         var maxPitch = notes[0].maximumPitch
         var minPitch = notes[0].minimumPitch
@@ -52,9 +54,9 @@ extension NoteTable {
         return minPitch...maxPitch
     }
 
-    internal static func determineTimeRange(_ notes: [Note]) -> ClosedRange<TimeType> {
+    internal static func timeRange(in notes: [Note]) -> ClosedRange<TimeType>? {
         guard !notes.isEmpty
-        else { return TimeType.zero...TimeType.zero }
+        else { return nil }
 
         var maxTime = notes[0].release
         var minTime = notes[0].attack
@@ -84,22 +86,22 @@ extension NoteTable {
 
     // MARK: Internal Instance Methods
 
-    internal func indexForInserting(attack: TimeType,
-                                    duration: DurationType,
-                                    startPitch: PitchType,
-                                    endPitch: PitchType) -> Int {
-        notes.firstIndex {
-            (attack, duration, $0.startPitch, $0.endPitch) < ($0.attack, $0.duration, startPitch, endPitch)
-        } ?? notes.endIndex
-    }
-
-    internal func indexMatching(attack: TimeType,
-                                duration: DurationType,
-                                startPitch: PitchType,
-                                endPitch: PitchType,
-                                extras: Extras?) -> Int? {
+    internal func firstIndex(attack: TimeType,
+                             duration: DurationType,
+                             startPitch: PitchType,
+                             endPitch: PitchType,
+                             extras: Extras?) -> Int? {
         notes.firstIndex {
             (attack, duration, startPitch, endPitch, extras) == ($0.attack, $0.duration, $0.startPitch, $0.endPitch, $0.extras)
         }
+    }
+
+    internal func insertionIndex(for attack: TimeType,
+                                 duration: DurationType,
+                                 startPitch: PitchType,
+                                 endPitch: PitchType) -> Int {
+        notes.firstIndex {
+            (attack, duration, $0.startPitch, $0.endPitch) < ($0.attack, $0.duration, startPitch, endPitch)
+        } ?? notes.endIndex
     }
 }

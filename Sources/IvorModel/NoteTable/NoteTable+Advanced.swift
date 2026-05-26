@@ -1,26 +1,23 @@
+// © 2025–2026 John Gary Pusey (see LICENSE.md)
+
 public import IvorTiming
 
 private import XestiNumbers
 
 extension NoteTable {
 
-    // MARK: Public Nested Types
-
-    public typealias NoteTableBT = NoteTable<BeatTime, PitchType>
-    public typealias NoteTableWT = NoteTable<WallTime, PitchType>
-
     // MARK: Public Instance Methods
 
+    /// Returns the notes in the table as an array of note events.
+    ///
+    /// - Returns:  An array of ``NoteEvent`` values extracted from the table.
+    ///
+    /// - Throws:   An error if note events cannot be extracted.
     public func extractNoteEvents() throws -> [NoteEvent<TimeType, PitchType>] {
         var extractor = Extractor(self)
 
         return extractor.extractNoteEvents()
     }
-
-    // MARK: Internal Nested Types
-
-    internal typealias NoteBT = NoteTableBT.Note
-    internal typealias NoteWT = NoteTableWT.Note
 }
 
 // MARK: -
@@ -29,20 +26,27 @@ extension NoteTable where TimeType == BeatTime {
 
     // MARK: Public Instance Methods
 
+    /// Quantizes all note attack and release times to the nearest subdivision
+    /// given by the provided factors.
+    ///
+    /// - Parameter factors:    An array of positive integer subdivision
+    ///                         factors.
+    ///
+    /// - Throws:   ``BeatQuantizer/Error/emptyFactors`` if `factors` is empty,
+    ///             or ``BeatQuantizer/Error/invalidFactor(_:)`` if any factor
+    ///             is not positive.
     public mutating func quantize(to factors: [Int]) throws {
-        try Self._checkQuantizationFactors(factors)
+        let bq = try BeatQuantizer(factors: factors)
 
         guard !notes.isEmpty
         else { return }
 
         for (idx, note) in notes.enumerated() {
-            let qatt = Self._quantize(beatTime: note.attack,
-                                      to: factors)
-            let qrel = Self._quantize(beatTime: note.release,
-                                      to: factors)
+            let quantizedAttack = bq.quantize(note.attack)
+            let quantizedRelease = bq.quantize(note.release)
 
-            notes[idx] = Note(attack: qatt,
-                              duration: qrel - qatt,
+            notes[idx] = Note(attack: quantizedAttack,
+                              duration: quantizedRelease - quantizedAttack,
                               startPitch: note.startPitch,
                               endPitch: note.endPitch,
                               extras: note.extras)
@@ -51,42 +55,23 @@ extension NoteTable where TimeType == BeatTime {
         notes.sort()
     }
 
+    /// Returns a copy of the table with all note times quantized to the nearest
+    /// subdivision.
+    ///
+    /// - Parameter factors:    An array of positive integer subdivision
+    ///                         factors.
+    ///
+    /// - Returns:  A new ``NoteTable`` with quantized note times.
+    ///
+    /// - Throws:   ``BeatQuantizer/Error/emptyFactors`` if `factors` is empty,
+    ///             or ``BeatQuantizer/Error/invalidFactor(_:)`` if any factor
+    ///             is not positive.
     public func quantized(to factors: [Int]) throws -> Self {
         var new = self
 
         try new.quantize(to: factors)
 
         return new
-    }
-
-    // MARK: Private Type Methods
-
-    private static func _checkQuantizationFactors(_ factors: [Int]) throws {
-        for factor in factors {
-            guard factor > 0
-            else { throw Error.invalidQuantizationFactor(factor) }
-        }
-    }
-
-    private static func _quantize(beatTime: BeatTime,
-                                  to factors: [Int]) -> BeatTime {  // NEEDS WORK!!!
-//        var rvalue = round(value)
-//        var epsilon = abs(value - rvalue)
-//
-//        for factor in factors {
-//            let rfactor = Number(factor)
-//            let newRvalue = round(value * rfactor) / rfactor
-//            let newEpsilon = abs(value - newRvalue)
-//
-//            if newEpsilon < epsilon {
-//                rvalue = newRvalue
-//                epsilon = newEpsilon
-//            }
-//        }
-//
-//        return rvalue
-
-        beatTime
     }
 }
 
@@ -96,23 +81,34 @@ extension NoteTable where TimeType == WallTime {
 
     // MARK: Public Instance Methods
 
-    public func unwarped(using tempoMap: TempoMap) throws -> NoteTableBT {
-        var btNotes: [NoteBT] = []
+    /// Returns a new beat-time note table by converting wall-time note attack
+    /// and release times using a tempo map.
+    ///
+    /// - Parameter tempoMap:   The tempo map used to convert wall times to beat
+    ///                         times.
+    ///
+    /// - Returns:  A new ``NoteTable`` keyed by ``BeatTime``.
+    ///
+    /// - Throws:   An error if wall times cannot be converted.
+    public func unwarped(using tempoMap: TempoMap) throws -> NoteTable<BeatTime, PitchType> {
+        var btNotes: [NoteTable<BeatTime, PitchType>.Note] = []
 
         if !notes.isEmpty {
-            for note in notes {
-                let batt = tempoMap.beatTime(at: note.attack)
-                let brel = tempoMap.beatTime(at: note.release)
+            let tc = TimeConverter(tempoMap)
 
-                btNotes.append(NoteBT(attack: batt,
-                                      duration: brel - batt,
-                                      startPitch: note.startPitch,
-                                      endPitch: note.endPitch,
-                                      extras: note.extras))
+            for note in notes {
+                let beatAttack = tc.beatTime(at: note.attack)
+                let beatRelease = tc.beatTime(at: note.release)
+
+                btNotes.append(.init(attack: beatAttack,
+                                     duration: beatRelease - beatAttack,
+                                     startPitch: note.startPitch,
+                                     endPitch: note.endPitch,
+                                     extras: note.extras))
             }
         }
 
-        return NoteTableBT(notes: btNotes)
+        return NoteTable<BeatTime, PitchType>(notes: btNotes)
     }
 }
 
@@ -120,51 +116,76 @@ extension NoteTable where TimeType == BeatTime {
 
     // MARK: Public Instance Methods
 
+    /// Returns a new wall-time note table by converting beat-time note timings
+    /// and applying varispeed pitch shifting.
+    ///
+    /// - Parameter tempoMap:       The tempo map used to convert beat times to
+    ///                             wall times.
+    /// - Parameter normalTempo:    The reference tempo used for pitch shifting.
+    ///                             Defaults to `.default`.
+    ///
+    /// - Returns:  A new ``NoteTable`` keyed by ``WallTime`` with
+    ///             varispeed-adjusted pitches.
+    ///
+    /// - Throws:   An error if beat times cannot be converted.
     public func varispeeded(using tempoMap: TempoMap,
-                            normalTempo: Tempo = .default) throws -> NoteTableWT {
-        var wtNotes: [NoteWT] = []
+                            normalTempo: Tempo = .default) throws -> NoteTable<WallTime, PitchType> {
+        var wtNotes: [NoteTable<WallTime, PitchType>.Note] = []
 
         if !notes.isEmpty {
-            for note in notes {
-                let watt = tempoMap.wallTime(at: note.attack)
-                let wrel = tempoMap.wallTime(at: note.release)
-                let vspit = Self._varispeed(of: note.startPitch,
-                                            at: note.attack,
-                                            using: tempoMap,
-                                            normalTempo: normalTempo)
-                let vepit = Self._varispeed(of: note.endPitch,
-                                            at: note.release,
-                                            using: tempoMap,
-                                            normalTempo: normalTempo)
+            let tc = TimeConverter(tempoMap)
 
-                wtNotes.append(NoteWT(attack: watt,
-                                      duration: wrel - watt,
-                                      startPitch: vspit,
-                                      endPitch: vepit,
-                                      extras: note.extras))
+            for note in notes {
+                let wallAttack = tc.wallTime(at: note.attack)
+                let wallRelease = tc.wallTime(at: note.release)
+                let varispeedStartPitch = Self._varispeed(of: note.startPitch,
+                                                          at: note.attack,
+                                                          using: tempoMap,
+                                                          normalTempo: normalTempo)
+                let varispeedEndPitch = Self._varispeed(of: note.endPitch,
+                                                        at: note.release,
+                                                        using: tempoMap,
+                                                        normalTempo: normalTempo)
+
+                wtNotes.append(.init(attack: wallAttack,
+                                     duration: wallRelease - wallAttack,
+                                     startPitch: varispeedStartPitch,
+                                     endPitch: varispeedEndPitch,
+                                     extras: note.extras))
             }
         }
 
-        return NoteTableWT(notes: wtNotes)
+        return NoteTable<WallTime, PitchType>(notes: wtNotes)
     }
 
-    public func warped(using tempoMap: TempoMap) throws -> NoteTableWT {
-        var wtNotes: [NoteWT] = []
+    /// Returns a new wall-time note table by converting beat-time note attack
+    /// and release times using a tempo map.
+    ///
+    /// - Parameter tempoMap:   The tempo map used to convert beat times to wall
+    ///                         times.
+    ///
+    /// - Returns:  A new ``NoteTable`` keyed by ``WallTime``.
+    ///
+    /// - Throws:   An error if beat times cannot be converted.
+    public func warped(using tempoMap: TempoMap) throws -> NoteTable<WallTime, PitchType> {
+        var wtNotes: [NoteTable<WallTime, PitchType>.Note] = []
 
         if !notes.isEmpty {
-            for note in notes {
-                let watt = tempoMap.wallTime(at: note.attack)
-                let wrel = tempoMap.wallTime(at: note.release)
+            let tc = TimeConverter(tempoMap)
 
-                wtNotes.append(NoteWT(attack: watt,
-                                      duration: wrel - watt,
-                                      startPitch: note.startPitch,
-                                      endPitch: note.endPitch,
-                                      extras: note.extras))
+            for note in notes {
+                let wallAttack = tc.wallTime(at: note.attack)
+                let wallRelease = tc.wallTime(at: note.release)
+
+                wtNotes.append(.init(attack: wallAttack,
+                                     duration: wallRelease - wallAttack,
+                                     startPitch: note.startPitch,
+                                     endPitch: note.endPitch,
+                                     extras: note.extras))
             }
         }
 
-        return NoteTableWT(notes: wtNotes)
+        return NoteTable<WallTime, PitchType>(notes: wtNotes)
     }
 
     // MARK: Private Type Methods
