@@ -1,7 +1,9 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+public import IvorTiming
+public import IvorTuning
+
 private import Foundation
-private import IvorTiming
 
 /// A musical work containing parts and associated data.
 public struct Work {
@@ -40,6 +42,136 @@ public struct Work {
 
     /// The display name of the work.
     public var name: String
+}
+
+// MARK: -
+
+extension Work {
+
+    // MARK: Public Instance Properties
+
+    /// The beat-time range spanned by all beat-time parts, or `nil` for wall-time content.
+    public var beatTimeRange: ClosedRange<BeatTime>? {
+        switch content {
+        case let .absoluteBeat(parts, _):
+            Self._timeRange(of: parts)
+
+        case let .keyboardBeat(parts, _):
+            Self._timeRange(of: parts)
+
+        case let .standardBeat(parts, _):
+            Self._timeRange(of: parts)
+
+        default:
+            nil
+        }
+    }
+
+    /// The number of parts in this work.
+    public var partCount: Int {
+        switch content {
+        case let .absoluteBeat(parts, _):
+            parts.count
+
+        case let .absoluteWall(parts):
+            parts.count
+
+        case let .keyboardBeat(parts, _):
+            parts.count
+
+        case let .keyboardWall(parts):
+            parts.count
+
+        case let .standardBeat(parts, _):
+            parts.count
+
+        case let .standardWall(parts):
+            parts.count
+        }
+    }
+
+    /// The pitch notation used by this work.
+    public var pitchNotation: PitchNotation {
+        content.pitchNotation
+    }
+
+    /// The tempo map associated with beat-time content, or `nil` for wall-time content.
+    public var tempoMap: TempoMap? {
+        switch content {
+        case let .absoluteBeat(_, tmap),
+            let .keyboardBeat(_, tmap),
+            let .standardBeat(_, tmap):
+            tmap
+
+        default:
+            nil
+        }
+    }
+
+    /// The time basis used by this work.
+    public var timeBasis: TimeBasis {
+        content.timeBasis
+    }
+
+    /// The wall-time range spanned by all wall-time parts, or `nil` for beat-time content.
+    public var wallTimeRange: ClosedRange<WallTime>? {
+        switch content {
+        case let .absoluteWall(parts):
+            Self._timeRange(of: parts)
+
+        case let .keyboardWall(parts):
+            Self._timeRange(of: parts)
+
+        case let .standardWall(parts):
+            Self._timeRange(of: parts)
+
+        default:
+            nil
+        }
+    }
+
+    // MARK: Private Type Methods
+
+    private static func _timeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>]) -> ClosedRange<TimeType>? {
+        parts.reduce(nil) { acc, part in
+            guard let partRange = part.timeRange
+            else { return acc }
+
+            guard let acc
+            else { return partRange }
+
+            return min(acc.lowerBound, partRange.lowerBound)...max(acc.upperBound, partRange.upperBound)
+        }
+    }
+
+    // MARK: Public Instance Methods
+
+    /// Returns the name of the part at the given index.
+    ///
+    /// - Parameter index:  The zero-based index of the part.
+    ///
+    /// - Returns:  The name of the part at `index`.
+    public func partName(at index: Int) -> String {
+        switch content {
+        case let .absoluteBeat(parts, _):
+            parts[index].name
+
+        case let .absoluteWall(parts):
+            parts[index].name
+
+        case let .keyboardBeat(parts, _):
+            parts[index].name
+
+        case let .keyboardWall(parts):
+            parts[index].name
+
+        case let .standardBeat(parts, _):
+            parts[index].name
+
+        case let .standardWall(parts):
+            parts[index].name
+        }
+    }
 }
 
 // MARK: - Codable

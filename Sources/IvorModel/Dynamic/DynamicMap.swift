@@ -15,9 +15,8 @@ public struct DynamicMap<TimeType: TimeProtocol> {
     /// - Parameter defaultDynamic: The dynamic level returned when the dynamic
     ///                             map is empty. Defaults to `.mp`.
     public init(defaultDynamic: Dynamic = .mp) {
-        self.defaultDynamic = defaultDynamic
-        self.entries = []
-        self.hasExtras = false
+        self.init(defaultDynamic: defaultDynamic,
+                  entries: [])
     }
 
     // MARK: Public Instance Properties
@@ -28,6 +27,15 @@ public struct DynamicMap<TimeType: TimeProtocol> {
     /// A Boolean value indicating whether any entry in this dynamic map
     /// carries extra data.
     public private(set) var hasExtras: Bool
+
+    // MARK: Internal Initializers
+
+    internal init(defaultDynamic: Dynamic,
+                  entries: [Entry]) {
+        self.defaultDynamic = defaultDynamic
+        self.entries = entries
+        self.hasExtras = Self.hasExtras(in: entries)
+    }
 
     // MARK: Internal Instance Properties
 

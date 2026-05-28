@@ -30,50 +30,9 @@ extension Work {
 
 extension Work.Content {
 
-    // MARK: Public Instance Properties
+    // MARK: Internal Instance Properties
 
-    /// The beat-time range spanned by all beat-time parts, or `nil` for wall-time content.
-    public var beatTimeRange: ClosedRange<BeatTime>? {
-        switch self {
-        case let .absoluteBeat(parts, _):
-            Self._timeRange(of: parts)
-
-        case let .keyboardBeat(parts, _):
-            Self._timeRange(of: parts)
-
-        case let .standardBeat(parts, _):
-            Self._timeRange(of: parts)
-
-        default:
-            nil
-        }
-    }
-
-    /// The number of parts in this content.
-    public var partCount: Int {
-        switch self {
-        case let .absoluteBeat(parts, _):
-            parts.count
-
-        case let .absoluteWall(parts):
-            parts.count
-
-        case let .keyboardBeat(parts, _):
-            parts.count
-
-        case let .keyboardWall(parts):
-            parts.count
-
-        case let .standardBeat(parts, _):
-            parts.count
-
-        case let .standardWall(parts):
-            parts.count
-        }
-    }
-
-    /// The pitch notation used by this content.
-    public var pitchNotation: PitchNotation {
+    internal var pitchNotation: PitchNotation {
         switch self {
         case .absoluteBeat,
              .absoluteWall:
@@ -89,21 +48,7 @@ extension Work.Content {
         }
     }
 
-    /// The tempo map associated with beat-time content, or `nil` for wall-time content.
-    public var tempoMap: TempoMap? {
-        switch self {
-        case let .absoluteBeat(_, tmap),
-            let .keyboardBeat(_, tmap),
-            let .standardBeat(_, tmap):
-            tmap
-
-        default:
-            nil
-        }
-    }
-
-    /// The time basis used by this content.
-    public var timeBasis: TimeBasis {
+    internal var timeBasis: TimeBasis {
         switch self {
         case .absoluteBeat,
              .keyboardBeat,
@@ -114,66 +59,6 @@ extension Work.Content {
              .keyboardWall,
              .standardWall:
             .wall
-        }
-    }
-
-    /// The wall-time range spanned by all wall-time parts, or `nil` for beat-time content.
-    public var wallTimeRange: ClosedRange<WallTime>? {
-        switch self {
-        case let .absoluteWall(parts):
-            Self._timeRange(of: parts)
-
-        case let .keyboardWall(parts):
-            Self._timeRange(of: parts)
-
-        case let .standardWall(parts):
-            Self._timeRange(of: parts)
-
-        default:
-            nil
-        }
-    }
-
-    // MARK: Public Instance Methods
-
-    /// Returns the name of the part at the given index.
-    ///
-    /// - Parameter index:  The zero-based index of the part.
-    ///
-    /// - Returns:  The name of the part at `index`.
-    public func partName(at index: Int) -> String {
-        switch self {
-        case let .absoluteBeat(parts, _):
-            parts[index].name
-
-        case let .absoluteWall(parts):
-            parts[index].name
-
-        case let .keyboardBeat(parts, _):
-            parts[index].name
-
-        case let .keyboardWall(parts):
-            parts[index].name
-
-        case let .standardBeat(parts, _):
-            parts[index].name
-
-        case let .standardWall(parts):
-            parts[index].name
-        }
-    }
-
-    // MARK: Private Type Methods
-
-    private static func _timeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>]) -> ClosedRange<TimeType>? {
-        parts.reduce(nil) { acc, part in
-            guard let partRange = part.timeRange
-            else { return acc }
-
-            guard let acc
-            else { return partRange }
-
-            return min(acc.lowerBound, partRange.lowerBound)...max(acc.upperBound, partRange.upperBound)
         }
     }
 }

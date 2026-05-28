@@ -14,9 +14,8 @@ public struct InstrumentMap<TimeType: TimeProtocol> {
     ///                                 instrument map is empty. Defaults to
     ///                                 `.vanilla`.
     public init(defaultInstrument: Instrument = .vanilla) {
-        self.defaultInstrument = defaultInstrument
-        self.entries = []
-        self.hasExtras = false
+        self.init(defaultInstrument: defaultInstrument,
+                  entries: [])
     }
 
     // MARK: Public Instance Properties
@@ -27,6 +26,15 @@ public struct InstrumentMap<TimeType: TimeProtocol> {
     /// A Boolean value indicating whether any entry in this instrument map
     /// carries extra data.
     public private(set) var hasExtras: Bool
+
+    // MARK: Internal Initializers
+
+    internal init(defaultInstrument: Instrument,
+                  entries: [Entry]) {
+        self.defaultInstrument = defaultInstrument
+        self.entries = entries
+        self.hasExtras = Self.hasExtras(in: entries)
+    }
 
     // MARK: Internal Instance Properties
 

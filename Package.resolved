@@ -1,5 +1,5 @@
 {
-  "originHash" : "7cf25932bfeff5f1f21caddc0f3e92462c037541fd640c6e786df4822785c0be",
+  "originHash" : "d93911763f3a23eb7512b292777f5782f44644a676a9b5f27c2481bbfca2e125",
   "pins" : [
     {
       "identity" : "bigint",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTiming.git",
       "state" : {
-        "revision" : "a9456724a1f1469268a26480b9f5b08200b42126",
-        "version" : "0.1.2"
+        "revision" : "7b26fc42a60e5008f5e01f11c11831c01f2002ef",
+        "version" : "0.2.0"
       }
     },
     {
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTuning.git",
       "state" : {
-        "revision" : "3098b1c2f6e8f8f913cdbc51d864c635303b8f2c",
-        "version" : "0.3.0"
+        "revision" : "0783fe72675b7cc911984cc5c5e8d4bf924d5684",
+        "version" : "0.5.0"
       }
     },
     {
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser.git",
       "state" : {
-        "revision" : "5e0406d68a4937f21ae5f670b8f89dad1d156a1c",
-        "version" : "1.8.0"
+        "revision" : "ca37474853a4b5f59a22c74bfdd449b1f6bc4cc2",
+        "version" : "1.8.1"
       }
     },
     {

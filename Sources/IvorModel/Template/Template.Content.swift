@@ -31,61 +31,35 @@ extension Template {
 
 extension Template.Content {
 
-    // MARK: Public Instance Properties
+    // MARK: Internal Instance Properties
 
-    /// The maximum pattern depth supported by this content.
-    public var maximumOrder: Int {
-        switch self {
-        case let .absoluteBeat(markovChain):
-            markovChain.maximumOrder
-
-        case let .absoluteWall(markovChain):
-            markovChain.maximumOrder
-
-        case let .keyboardBeat(markovChain):
-            markovChain.maximumOrder
-//
-
-        case let .keyboardWall(markovChain):
-            markovChain.maximumOrder
-
-        case let .standardBeat(markovChain):
-            markovChain.maximumOrder
-
-        case let .standardWall(markovChain):
-            markovChain.maximumOrder
-        }
-    }
-
-    /// The pitch notation used by this content.
-    public var pitchNotation: PitchNotation {
+    internal var pitchNotation: PitchNotation {
         switch self {
         case .absoluteBeat,
              .absoluteWall:
-                .absolute
+            .absolute
 
         case .keyboardBeat,
              .keyboardWall:
-                .keyboard
+            .keyboard
 
         case .standardBeat,
              .standardWall:
-                .standard
+            .standard
         }
     }
 
-    /// The time basis used by this content.
-    public var timeBasis: TimeBasis {
+    internal var timeBasis: TimeBasis {
         switch self {
         case .absoluteBeat,
              .keyboardBeat,
              .standardBeat:
-                .beat
+            .beat
 
         case .absoluteWall,
              .keyboardWall,
              .standardWall:
-                .wall
+            .wall
         }
     }
 }

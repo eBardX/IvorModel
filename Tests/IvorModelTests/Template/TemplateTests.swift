@@ -52,4 +52,52 @@ extension TemplateTests {
         #expect(tmpl.name == "Fugue")
         #expect(tmpl.version == Template.currentVersion)
     }
+
+    @Test
+    func maximumOrder() throws {
+        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        let tmpl = Template(name: "Test", content: .standardBeat(mc))
+
+        #expect(tmpl.maximumOrder >= 0)
+    }
+
+    @Test
+    func pitchNotation_absolute() throws {
+        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Frequency>>())
+        let tmpl = Template(name: "Test", content: .absoluteBeat(mc))
+
+        #expect(tmpl.pitchNotation == .absolute)
+    }
+
+    @Test
+    func pitchNotation_keyboard() throws {
+        let mc = try #require(MarkovChain<NoteEvent<BeatTime, NoteNumber>>())
+        let tmpl = Template(name: "Test", content: .keyboardBeat(mc))
+
+        #expect(tmpl.pitchNotation == .keyboard)
+    }
+
+    @Test
+    func pitchNotation_standard() throws {
+        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        let tmpl = Template(name: "Test", content: .standardBeat(mc))
+
+        #expect(tmpl.pitchNotation == .standard)
+    }
+
+    @Test
+    func timeBasis_beat() throws {
+        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        let tmpl = Template(name: "Test", content: .standardBeat(mc))
+
+        #expect(tmpl.timeBasis == .beat)
+    }
+
+    @Test
+    func timeBasis_wall() throws {
+        let mc = try #require(MarkovChain<NoteEvent<WallTime, Pitch>>())
+        let tmpl = Template(name: "Test", content: .standardWall(mc))
+
+        #expect(tmpl.timeBasis == .wall)
+    }
 }

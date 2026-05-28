@@ -1,6 +1,10 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+public import IvorTiming
+public import IvorTuning
+
 private import Foundation
+private import XestiMarkov
 
 /// An analysis of a ``Work`` that captures its musical essence and can generate new, derived works.
 public struct Template {
@@ -37,6 +41,46 @@ public struct Template {
 
     /// The file format version of this template.
     public let version: Int
+}
+
+// MARK: -
+
+extension Template {
+
+    // MARK: Public Instance Properties
+
+    /// The maximum pattern depth supported by this template.
+    public var maximumOrder: Int {
+        switch content {
+        case let .absoluteBeat(markovChain):
+            markovChain.maximumOrder
+
+        case let .absoluteWall(markovChain):
+            markovChain.maximumOrder
+
+        case let .keyboardBeat(markovChain):
+            markovChain.maximumOrder
+
+        case let .keyboardWall(markovChain):
+            markovChain.maximumOrder
+
+        case let .standardBeat(markovChain):
+            markovChain.maximumOrder
+
+        case let .standardWall(markovChain):
+            markovChain.maximumOrder
+        }
+    }
+
+    /// The pitch notation used by this template.
+    public var pitchNotation: PitchNotation {
+        content.pitchNotation
+    }
+
+    /// The time basis used by this template.
+    public var timeBasis: TimeBasis {
+        content.timeBasis
+    }
 }
 
 // MARK: - Codable

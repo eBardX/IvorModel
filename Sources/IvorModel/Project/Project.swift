@@ -22,10 +22,10 @@ public struct Project {
     /// The display name of this project.
     public private(set) var name: String
 
-    // MARK: Internal Instance Properties
+    // MARK: Private Instance Properties
 
-    internal var templateMap: [TemplateID: Template]
-    internal var workMap: [WorkID: Work]
+    private var templateMap: [TemplateID: Template]
+    private var workMap: [WorkID: Work]
 }
 
 // MARK: -

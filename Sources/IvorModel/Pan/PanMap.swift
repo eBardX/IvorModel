@@ -15,9 +15,8 @@ public struct PanMap<TimeType: TimeProtocol> {
     /// - Parameter defaultPan: The pan position returned when the pan map is empty.
     ///                         Defaults to `.center`.
     public init(defaultPan: Pan = .center) {
-        self.defaultPan = defaultPan
-        self.entries = []
-        self.hasExtras = false
+        self.init(defaultPan: defaultPan,
+                  entries: [])
     }
 
     // MARK: Public Instance Properties
@@ -28,6 +27,15 @@ public struct PanMap<TimeType: TimeProtocol> {
     /// A Boolean value indicating whether any entry in this pan map carries
     /// extra data.
     public private(set) var hasExtras: Bool
+
+    // MARK: Internal Initializers
+
+    internal init(defaultPan: Pan,
+                  entries: [Entry]) {
+        self.defaultPan = defaultPan
+        self.entries = entries
+        self.hasExtras = Self.hasExtras(in: entries)
+    }
 
     // MARK: Internal Instance Properties
 
