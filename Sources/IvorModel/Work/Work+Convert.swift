@@ -45,27 +45,31 @@ extension Work {
 
     private static func _convertBeatTimes(in dynamicMap: DynamicMap<BeatTime>,
                                           using timeConverter: TimeConverter) -> DynamicMap<WallTime> {
-        DynamicMap<WallTime>(defaultDynamic: dynamicMap.defaultDynamic,
-                             entries: dynamicMap.entries.map { entry in
+        let entries = dynamicMap.entries.map { entry in
             DynamicMap<WallTime>.Entry(time: timeConverter.wallTime(at: entry.time),
                                        dynamic: entry.dynamic,
                                        extras: entry.extras)
-        })
+        }
+
+        return DynamicMap<WallTime>(defaultDynamic: dynamicMap.defaultDynamic,
+                                    entries: entries)
     }
 
     private static func _convertBeatTimes(in instrumentMap: InstrumentMap<BeatTime>,
                                           using timeConverter: TimeConverter) -> InstrumentMap<WallTime> {
-        InstrumentMap<WallTime>(defaultInstrument: instrumentMap.defaultInstrument,
-                                entries: instrumentMap.entries.map { entry in
+        let entries = instrumentMap.entries.map { entry in
             InstrumentMap<WallTime>.Entry(time: timeConverter.wallTime(at: entry.time),
                                           instrument: entry.instrument,
                                           extras: entry.extras)
-        })
+        }
+
+        return InstrumentMap<WallTime>(defaultInstrument: instrumentMap.defaultInstrument,
+                                       entries: entries)
     }
 
     private static func _convertBeatTimes<PitchType: PitchProtocol>(in noteTable: NoteTable<BeatTime, PitchType>,
                                                                     using timeConverter: TimeConverter) -> NoteTable<WallTime, PitchType> {
-        NoteTable(notes: noteTable.notes.map { note in
+        let notes = noteTable.notes.map { note in
             let wallAttack = timeConverter.wallTime(at: note.attack)
             let wallDuration = timeConverter.wallTime(at: note.release) - wallAttack
 
@@ -74,17 +78,21 @@ extension Work {
                                                        startPitch: note.startPitch,
                                                        endPitch: note.endPitch,
                                                        extras: note.extras)
-        })
+        }
+
+        return NoteTable(notes: notes)
     }
 
     private static func _convertBeatTimes(in panMap: PanMap<BeatTime>,
                                           using timeConverter: TimeConverter) -> PanMap<WallTime> {
-        PanMap<WallTime>(defaultPan: panMap.defaultPan,
-                         entries: panMap.entries.map { entry in
+        let entries = panMap.entries.map { entry in
             PanMap<WallTime>.Entry(time: timeConverter.wallTime(at: entry.time),
                                    pan: entry.pan,
                                    extras: entry.extras)
-        })
+        }
+
+        return PanMap<WallTime>(defaultPan: panMap.defaultPan,
+                                entries: entries)
     }
 
     private static func _convertBeatTimes<PitchType: PitchProtocol>(in part: Part<BeatTime, PitchType>,
@@ -105,13 +113,15 @@ extension Work {
                                         ToPitchType: PitchProtocol>(in noteTable: NoteTable<TimeType, FromPitchType>,
                                                                     using convert: (FromPitchType) -> ToPitchType) -> NoteTable<TimeType,
                                                                                                                                 ToPitchType> {
-        NoteTable(notes: noteTable.notes.map { note in
+        let notes = noteTable.notes.map { note in
             NoteTable<TimeType, ToPitchType>.Note(attack: note.attack,
                                                   duration: note.duration,
                                                   startPitch: convert(note.startPitch),
                                                   endPitch: convert(note.endPitch),
                                                   extras: note.extras)
-        })
+        }
+
+        return NoteTable(notes: notes)
     }
 
     private static func _convertPitches<TimeType: TimeProtocol,
@@ -350,22 +360,26 @@ extension Work {
 
     private static func _convertWallTimes(in dynamicMap: DynamicMap<WallTime>,
                                           using timeConverter: TimeConverter) -> DynamicMap<BeatTime> {
-        DynamicMap<BeatTime>(defaultDynamic: dynamicMap.defaultDynamic,
-                             entries: dynamicMap.entries.map { entry in
+        let entries = dynamicMap.entries.map { entry in
             DynamicMap<BeatTime>.Entry(time: timeConverter.beatTime(at: entry.time),
                                        dynamic: entry.dynamic,
                                        extras: entry.extras)
-        })
+        }
+
+        return DynamicMap<BeatTime>(defaultDynamic: dynamicMap.defaultDynamic,
+                                    entries: entries)
     }
 
     private static func _convertWallTimes(in instrumentMap: InstrumentMap<WallTime>,
                                           using timeConverter: TimeConverter) -> InstrumentMap<BeatTime> {
-        InstrumentMap<BeatTime>(defaultInstrument: instrumentMap.defaultInstrument,
-                                entries: instrumentMap.entries.map { entry in
+        let entries = instrumentMap.entries.map { entry in
             InstrumentMap<BeatTime>.Entry(time: timeConverter.beatTime(at: entry.time),
                                           instrument: entry.instrument,
                                           extras: entry.extras)
-        })
+        }
+
+        return InstrumentMap<BeatTime>(defaultInstrument: instrumentMap.defaultInstrument,
+                                       entries: entries)
     }
 
     private static func _convertWallTimes<PitchType: PitchProtocol>(in noteTable: NoteTable<WallTime, PitchType>,
@@ -384,12 +398,14 @@ extension Work {
 
     private static func _convertWallTimes(in panMap: PanMap<WallTime>,
                                           using timeConverter: TimeConverter) -> PanMap<BeatTime> {
-        PanMap<BeatTime>(defaultPan: panMap.defaultPan,
-                         entries: panMap.entries.map { entry in
+        let entries = panMap.entries.map { entry in
             PanMap<BeatTime>.Entry(time: timeConverter.beatTime(at: entry.time),
                                    pan: entry.pan,
                                    extras: entry.extras)
-        })
+        }
+
+        return PanMap<BeatTime>(defaultPan: panMap.defaultPan,
+                                entries: entries)
     }
 
     private static func _convertWallTimes<PitchType: PitchProtocol>(in part: Part<WallTime, PitchType>,

@@ -2,6 +2,7 @@
 
 public import Foundation
 
+private import XestiArchive
 private import XestiSexp
 private import XestiTools
 
