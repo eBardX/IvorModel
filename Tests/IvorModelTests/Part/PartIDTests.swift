@@ -10,46 +10,36 @@ struct PartIDTests {
 
 extension PartIDTests {
     @Test
-    func comparable() throws {
-        let id1 = try #require(PartID(intValue: 1))
-        let id2 = try #require(PartID(intValue: 2))
+    func init_generated() {
+        let id1 = PartID()
+        let id2 = PartID()
 
-        #expect(id1 < id2)
-        #expect(id1 == id1) // swiftlint:disable:this identical_operands
-    }
-
-    @Test
-    func index() throws {
-        let id = try #require(PartID(intValue: 3))
-
-        #expect(id.index == 2)
-    }
-
-    @Test
-    func init_byIndex() throws {
-        let id = try #require(PartID(index: 0))
-
-        #expect(id.intValue == 1)
-        #expect(id.index == 0)
+        #expect(id1 != id2)
+        #expect(id1.stringValue.hasPrefix("P$"))
+        #expect(id1.stringValue.count == 24)
     }
 
     @Test
     func init_invalid() {
-        #expect(PartID(intValue: 0) == nil)
-        #expect(PartID(intValue: -1) == nil)
-        #expect(PartID(index: -1) == nil)
+        #expect(PartID(stringValue: "") == nil)
+        #expect(PartID(stringValue: "invalid") == nil)
+        #expect(PartID(stringValue: "W$" + String(repeating: "A", count: 22)) == nil)
+        #expect(PartID(stringValue: "P$" + String(repeating: "A", count: 21)) == nil)
     }
 
     @Test
     func init_valid() {
-        #expect(PartID(intValue: 1) != nil)
-        #expect(PartID(intValue: 100) != nil)
+        let validString = "P$" + String(repeating: "A", count: 22)
+
+        #expect(PartID(stringValue: validString) != nil)
     }
 
     @Test
     func isValid() {
-        #expect(PartID.isValid(1))
-        #expect(!PartID.isValid(0))
-        #expect(!PartID.isValid(-1))
+        let validString = "P$" + String(repeating: "A", count: 22)
+
+        #expect(PartID.isValid(validString))
+        #expect(!PartID.isValid("invalid"))
+        #expect(!PartID.isValid("P$short"))
     }
 }

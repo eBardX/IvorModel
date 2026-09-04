@@ -29,6 +29,7 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
         self.name = name
         self.noteTable = noteTable ?? NoteTable()
         self.panMap = panMap ?? PanMap()
+        self.partID = PartID()
     }
 
     // MARK: Public Instance Properties
@@ -47,6 +48,11 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     /// The pan map for this part.
     public var panMap: PanMap<TimeType>
+
+    /// The stable identity of this part.
+    ///
+    /// Not persisted — see ``PartID``.
+    public let partID: PartID
 }
 
 // MARK: -
@@ -68,6 +74,18 @@ extension Part {
     /// The time range spanned by the notes in this part, or `nil` if the part is empty.
     public var timeRange: ClosedRange<TimeType>? {
         noteTable.timeRange
+    }
+
+    // MARK: Public Instance Methods
+
+    /// Returns a copy of this part with the same content but a distinct, freshly
+    /// minted ``PartID``.
+    public func duplicated() -> Self {
+        Self(name: name,
+             noteTable: noteTable,
+             dynamicMap: dynamicMap,
+             instrumentMap: instrumentMap,
+             panMap: panMap)
     }
 }
 
