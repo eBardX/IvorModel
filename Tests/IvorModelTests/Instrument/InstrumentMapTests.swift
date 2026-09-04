@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import Testing
@@ -18,6 +19,25 @@ struct InstrumentMapTests {
 // MARK: -
 
 extension InstrumentMapTests {
+    @Test
+    func codable_decodeDeduplicatesLegacyDuplicates() throws {
+        var map = InstrumentMap<BeatTime>()
+
+        // Simulates a document saved before `insert`'s dedup rule existed: nothing
+        // about `Codable` itself enforces uniqueness, so two exact-duplicate entries
+        // can land in `entries` directly, bypassing `insert`'s own guard.
+        map.entries = [InstrumentMap<BeatTime>.Entry(time: 1, instrument: guitar, extras: nil),
+                       InstrumentMap<BeatTime>.Entry(time: 1, instrument: guitar, extras: nil)]
+
+        let data = try JSONEncoder().encode(map)
+        let decoded = try JSONDecoder().decode(InstrumentMap<BeatTime>.self, from: data)
+        var count = 0
+
+        decoded.forEach { _, _, _, _ in count += 1 }
+
+        #expect(count == 1)
+    }
+
     @Test
     func defaultInstrument() {
         let map = InstrumentMap<BeatTime>()
@@ -43,7 +63,7 @@ extension InstrumentMapTests {
 
         var visited: [(BeatTime, Instrument)] = []
 
-        map.forEach { time, instrument, _ in
+        map.forEach { _, time, instrument, _ in
             visited.append((time, instrument))
         }
 
@@ -53,19 +73,121 @@ extension InstrumentMapTests {
     }
 
     @Test
+    func forEach_yieldsDistinctIdentities() {
+        var map = InstrumentMap<BeatTime>()
+        var ids: [InstrumentMap<BeatTime>.EntryID] = []
+
+        map.insert(time: 1, instrument: guitar)
+        map.insert(time: 2, instrument: piano)
+
+        map.forEach { entryID, _, _, _ in ids.append(entryID) }
+
+        #expect(Set(ids).count == 2)
+    }
+
+    @Test
+    func insert_duplicate() {
+        var map = InstrumentMap<BeatTime>()
+
+        let first = map.insert(time: 1, instrument: guitar)
+        let second = map.insert(time: 1, instrument: guitar)
+
+        #expect(first.inserted)
+        #expect(!second.inserted)
+        #expect(second.entryID == first.entryID)
+    }
+
+    @Test
+    func insert_new() {
+        var map = InstrumentMap<BeatTime>()
+
+        let first = map.insert(time: 1, instrument: guitar)
+        let second = map.insert(time: 2, instrument: piano)
+
+        #expect(first.inserted)
+        #expect(second.inserted)
+        #expect(second.entryID != first.entryID)
+    }
+
+    @Test
+    func move_found() throws {
+        var map = InstrumentMap<BeatTime>()
+        var movedID: InstrumentMap<BeatTime>.EntryID?
+
+        map.insert(time: 1, instrument: guitar)
+
+        map.forEach { entryID, _, _, _ in movedID = entryID }
+
+        let entryID = try #require(movedID)
+        let newID = map.move(entryID: entryID, to: 5)
+
+        #expect(newID == entryID)
+        #expect(map[BeatTime(5)] == guitar)
+    }
+
+    @Test
+    func move_notFound() {
+        var map = InstrumentMap<BeatTime>()
+
+        #expect(map.move(entryID: InstrumentMap<BeatTime>.EntryID(), to: 1) == nil)
+    }
+
+    @Test
+    func update_found() throws {
+        var map = InstrumentMap<BeatTime>()
+        var foundEntryID: InstrumentMap<BeatTime>.EntryID?
+
+        map.insert(time: 1, instrument: guitar)
+
+        map.forEach { entryID, _, _, _ in foundEntryID = entryID }
+
+        let result = try map.update(entryID: #require(foundEntryID), instrument: piano)
+
+        #expect(result.updated)
+        #expect(result.removedEntryID == nil)
+        #expect(map[BeatTime(1)] == piano)
+    }
+
+    @Test
+    func update_notFound() {
+        var map = InstrumentMap<BeatTime>()
+
+        let result = map.update(entryID: InstrumentMap<BeatTime>.EntryID(), instrument: piano)
+
+        #expect(!result.updated)
+        #expect(result.removedEntryID == nil)
+        #expect(map.isEmpty)
+    }
+
+    @Test
+    func update_collapsesIntoDuplicate() throws {
+        var map = InstrumentMap<BeatTime>()
+        var ids: [InstrumentMap<BeatTime>.EntryID] = []
+
+        map.insert(time: 1, instrument: guitar)
+        map.insert(time: 1, instrument: piano)
+
+        map.forEach { entryID, _, _, _ in ids.append(entryID) }
+
+        // Editing the second entry back to `guitar` makes it an exact duplicate
+        // of the first, so it should be dropped rather than left in place.
+        let result = try map.update(entryID: #require(ids.last), instrument: guitar)
+
+        #expect(result.updated)
+        #expect(result.removedEntryID == ids.first)
+
+        var remaining: [InstrumentMap<BeatTime>.EntryID] = []
+
+        map.forEach { entryID, _, _, _ in remaining.append(entryID) }
+
+        #expect(remaining == [ids.last])
+    }
+
+    @Test
     func hasExtras_initial() {
         let map = InstrumentMap<BeatTime>()
 
         #expect(!map.hasExtras)
-    }
-
-    @Test
-    func inserting() {
-        let map = InstrumentMap<BeatTime>().inserting(time: 2,
-                                                      instrument: guitar)
-
-        #expect(!map.isEmpty)
-        #expect(map[2] == guitar)
     }
 
     @Test
@@ -101,38 +223,56 @@ extension InstrumentMapTests {
     }
 
     @Test
-    func merging() {
-        let map1 = InstrumentMap<BeatTime>().inserting(time: 1,
-                                                       instrument: guitar)
-        let map2 = InstrumentMap<BeatTime>().inserting(time: 3,
-                                                       instrument: piano)
-        let merged = map1.merging(with: map2)
-
-        #expect(merged[1] == guitar)
-        #expect(merged[3] == piano)
-    }
-
-    @Test
-    func remove() {
+    func remove_found() {
         var map = InstrumentMap<BeatTime>()
 
-        map.insert(time: 1,
-                   instrument: guitar)
-        map.remove(time: 1,
-                   instrument: guitar)
+        let inserted = map.insert(time: 1,
+                                  instrument: guitar)
+        let removedID = map.remove(time: 1,
+                                   instrument: guitar)
 
+        #expect(removedID == inserted.entryID)
         #expect(map.isEmpty)
     }
 
     @Test
-    func removing() {
-        let map = InstrumentMap<BeatTime>()
-            .inserting(time: 1,
-                       instrument: guitar)
-            .removing(time: 1,
-                      instrument: guitar)
+    func remove_notFound() {
+        var map = InstrumentMap<BeatTime>()
 
+        map.insert(time: 1, instrument: guitar)
+
+        let removedID = map.remove(time: 1, instrument: piano)
+
+        #expect(removedID == nil)
+        #expect(!map.isEmpty)
+    }
+
+    @Test
+    func remove_entryID_found() throws {
+        var map = InstrumentMap<BeatTime>()
+        var removedID: InstrumentMap<BeatTime>.EntryID?
+
+        map.insert(time: 1, instrument: guitar)
+
+        map.forEach { entryID, _, _, _ in removedID = entryID }
+
+        let entryID = try #require(removedID)
+        let removed = map.remove(entryID: entryID)
+
+        #expect(removed)
         #expect(map.isEmpty)
+    }
+
+    @Test
+    func remove_entryID_notFound() {
+        var map = InstrumentMap<BeatTime>()
+
+        map.insert(time: 1, instrument: guitar)
+
+        let removed = map.remove(entryID: InstrumentMap<BeatTime>.EntryID())
+
+        #expect(!removed)
+        #expect(!map.isEmpty)
     }
 
     @Test

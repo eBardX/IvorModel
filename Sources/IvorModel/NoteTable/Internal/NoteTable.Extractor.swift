@@ -11,14 +11,14 @@ extension NoteTable {
 
         // MARK: Internal Initializers
 
-        internal init(_ noteTable: NoteTable) {
+        internal init(noteTable: NoteTable) {
             self.currentPairs = []
             self.currentTime = .zero
             self.noteReader = SequenceReader(noteTable.notes)
             self.noteSlices = []
         }
 
-        // MARK: Private Nested Types
+        // MARK: Private Type Aliases
 
         private typealias Duration  = NoteTable.DurationType
         private typealias Note      = NoteTable.Note

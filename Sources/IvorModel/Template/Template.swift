@@ -9,11 +9,6 @@ private import XestiMarkov
 /// An analysis of a ``Work`` that captures its musical essence and can generate new, derived works.
 public struct Template {
 
-    // MARK: Public Type Properties
-
-    /// The current template file format version.
-    public static let currentVersion = 1
-
     // MARK: Public Initializers
 
     /// Creates a new template with the given name and content.
@@ -33,19 +28,24 @@ public struct Template {
     /// The analysis data stored in this template.
     public let content: Content
 
-    /// The display name of this template.
-    public let name: String
-
     /// The unique ID of this template.
     public let templateID: TemplateID
 
     /// The file format version of this template.
     public let version: Int
+
+    /// The display name of this template.
+    public var name: String
 }
 
 // MARK: -
 
 extension Template {
+
+    // MARK: Public Type Properties
+
+    /// The current template file format version.
+    public static let currentVersion = 1
 
     // MARK: Public Instance Properties
 

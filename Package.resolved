@@ -1,5 +1,5 @@
 {
-  "originHash" : "0d23fecf0a0b25659d0f5fd60ef3e6c63ea3d110e88d96be00fd8c3e04439e29",
+  "originHash" : "2322035123de7690357761f0e8ac5b409ed3e953001c3437a7dcbaff14f51358",
   "pins" : [
     {
       "identity" : "bigint",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTiming.git",
       "state" : {
-        "revision" : "60f82f538dda2b7dd7f3cac4694cd48dbc32e0e8",
-        "version" : "0.2.2"
+        "revision" : "5d2d26e8023fc88ffa4a5616dc2da9327e170f92",
+        "version" : "0.4.0"
       }
     },
     {
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTuning.git",
       "state" : {
-        "revision" : "36e26aa2eab43a72610a1713a040fcf62b4a7742",
-        "version" : "0.5.2"
+        "revision" : "4b10326bacac6d1e5f7870e221ba2688bfe314b4",
+        "version" : "0.6.0"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/XestiArchive.git",
       "state" : {
-        "revision" : "137d377e2c17814ff5cb345f546f0dac8db7df56",
-        "version" : "1.0.0"
+        "revision" : "77a427524083b50d1664b053ad5b7bc070356330",
+        "version" : "1.1.0"
       }
     },
     {
@@ -60,17 +60,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/XestiNumbers.git",
       "state" : {
-        "revision" : "a469c8ec4f2c853f81ea82b1c5c0ba4375165fc4",
-        "version" : "1.1.1"
+        "revision" : "96eeaff8b89f5d9ff094d1a8555f3303918d8022",
+        "version" : "1.1.2"
       }
     },
     {
       "identity" : "xestisexp",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/eBardX/XestiSexp.git",
+      "location" : "https://github.com/eBardX/XestiSexp",
       "state" : {
-        "revision" : "28da59173de8be8f0c0718c2e97dd0883b962a1c",
-        "version" : "4.1.5"
+        "revision" : "c42d317d38206f2e34d7b3f5d313a31db9909ca3",
+        "version" : "5.0.1"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/XestiTokens.git",
       "state" : {
-        "revision" : "8666051c1c67f05dcb02f3801f160f24399eb9fb",
-        "version" : "1.1.2"
+        "revision" : "d6f12aeaa4547f416de3dfaae5e14f37e3e5b169",
+        "version" : "2.0.0"
       }
     },
     {
@@ -87,8 +87,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/XestiTools.git",
       "state" : {
-        "revision" : "862a2b5d4b5c24147822bbd535dd2f1691fdbfa2",
-        "version" : "9.0.0"
+        "revision" : "05991497b8c7cb5ccfd4c9440c5b8548f6989ab3",
+        "version" : "9.1.0"
       }
     },
     {

@@ -18,14 +18,14 @@ extension InstrumentTests {
     }
 
     @Test
-    func init_valid() {
-        #expect(Instrument(stringValue: "Guitar") != nil)
-        #expect(Instrument(stringValue: "Electric Piano") != nil)
+    func init_invalid() {
+        #expect(Instrument(stringValue: "") == nil)
     }
 
     @Test
-    func init_invalid() {
-        #expect(Instrument(stringValue: "") == nil)
+    func init_valid() {
+        #expect(Instrument(stringValue: "Guitar") != nil)
+        #expect(Instrument(stringValue: "Electric Piano") != nil)
     }
 
     @Test

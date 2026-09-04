@@ -18,7 +18,7 @@ extension Template {
     ///             otherwise, ``Template/Error/partNotFound(_:)`` if no part exists at `index`.
     public static func analyzeNoteEvents(in work: Work,
                                          at index: Int,
-                                         maximumOrder: Int) throws -> Self {
+                                         maximumOrder: Int) throws(Error) -> Self {
         let name = if work.name.isEmpty {
             "Analysis of \(work.workID)"
         } else {
@@ -35,7 +35,7 @@ extension Template {
 
     private static func _analyzeNoteEvents(in content: Work.Content,
                                            at index: Int,
-                                           maximumOrder: Int) throws -> Self.Content {
+                                           maximumOrder: Int) throws(Error) -> Self.Content {
         switch content {
         case let .absoluteBeat(parts, _):
             try .absoluteBeat(_analyzeNoteEvents(in: parts,
@@ -71,7 +71,7 @@ extension Template {
 
     private static func _analyzeNoteEvents<T, P>(in parts: [Part<T, P>],
                                                  at index: Int,
-                                                 maximumOrder: Int) throws -> MarkovChain<NoteEvent<T, P>> {
+                                                 maximumOrder: Int) throws(Error) -> MarkovChain<NoteEvent<T, P>> {
         guard let markovChain = MarkovChain<NoteEvent<T, P>>(maximumOrder: maximumOrder)
         else { throw Error.invalidMaximumOrder }
 
@@ -84,9 +84,9 @@ extension Template {
     }
 
     private static func _extractNoteEvents<T, P>(from parts: [Part<T, P>],
-                                                 at index: Int) throws -> [NoteEvent<T, P>] {
+                                                 at index: Int) throws(Error) -> [NoteEvent<T, P>] {
         for (idx, part) in parts.enumerated() where index == idx {
-            return try part.noteTable.extractNoteEvents()
+            return part.noteTable.extractNoteEvents()
         }
 
         throw Error.partNotFound(index)

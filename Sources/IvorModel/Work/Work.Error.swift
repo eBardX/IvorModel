@@ -51,6 +51,11 @@ extension Work.Error: EnhancedError {
     }
 }
 
+// MARK: - Equatable
+
+extension Work.Error: Equatable {
+}
+
 // MARK: - Sendable
 
 extension Work.Error: Sendable {

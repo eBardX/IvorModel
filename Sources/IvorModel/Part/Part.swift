@@ -47,6 +47,23 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     /// The pan map for this part.
     public var panMap: PanMap<TimeType>
+}
+
+// MARK: -
+
+extension Part {
+
+    // MARK: Public Instance Properties
+
+    /// The number of notes in this part.
+    public var noteCount: Int {
+        noteTable.count
+    }
+
+    /// The pitch range spanned by the notes in this part, or `nil` if the part is empty.
+    public var pitchRange: ClosedRange<PitchType>? {
+        noteTable.pitchRange
+    }
 
     /// The time range spanned by the notes in this part, or `nil` if the part is empty.
     public var timeRange: ClosedRange<TimeType>? {

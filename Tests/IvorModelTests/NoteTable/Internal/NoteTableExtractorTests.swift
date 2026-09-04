@@ -17,7 +17,7 @@ extension NoteTableExtractorTests {
     typealias TiedPitchSB = NoteEventSB.TiedPitch
 
     @Test
-    func extract_monophonic() throws {
+    func extract_monophonic() {
         let ntab = makeNoteTableSB([(0, 1, .a4),
                                     (1, 1, .cSharp5),
                                     (2, 1, .e5),
@@ -31,13 +31,13 @@ extension NoteTableExtractorTests {
                                              NoteEventSB(tiedPitches: [TiedPitchSB(pitch: .g5)],
                                                          duration: 1)]
 
-        let actualEvents = try ntab.extractNoteEvents()
+        let actualEvents = ntab.extractNoteEvents()
 
         #expect(actualEvents == expectedEvents)
     }
 
     @Test
-    func extract_polyphonic() throws {
+    func extract_polyphonic() {
         let ntab = makeNoteTableSB([(0, 1, .a4),
                                     (0.5, 1, .cSharp5),
                                     (1, 1, .e5),
@@ -64,7 +64,7 @@ extension NoteTableExtractorTests {
                                                                                    endsTie: true)],
                                                          duration: 0.5)]
 
-        let actualEvents = try ntab.extractNoteEvents()
+        let actualEvents = ntab.extractNoteEvents()
 
         #expect(actualEvents == expectedEvents)
     }

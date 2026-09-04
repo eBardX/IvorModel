@@ -6,7 +6,7 @@ public import IvorTuning
 /// A musical note event consisting of a set of tied pitches and a duration.
 public struct NoteEvent<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
-    // MARK: Public Nested Types
+    // MARK: Public Type Aliases
 
     /// The duration type associated with the time type.
     public typealias DurationType = TimeType.DurationType
@@ -40,6 +40,11 @@ public struct NoteEvent<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     /// The tie-annotated pitches sounding during this note event.
     public let tiedPitches: [TiedPitch]
+}
+
+// MARK: -
+
+extension NoteEvent {
 
     // MARK: Private Type Methods
 

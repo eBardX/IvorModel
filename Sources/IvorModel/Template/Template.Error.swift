@@ -51,6 +51,11 @@ extension Template.Error: EnhancedError {
     }
 }
 
+// MARK: - Equatable
+
+extension Template.Error: Equatable {
+}
+
 // MARK: - Sendable
 
 extension Template.Error: Sendable {

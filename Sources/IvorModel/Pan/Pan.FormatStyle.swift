@@ -46,7 +46,7 @@ extension Pan.FormatStyle: FormatStyle {
     ///
     /// - Parameter value:  The ``Pan`` value to format.
     ///
-    /// - Returns:  An `AttributedString` representation of the pan position's numeric value.
+    /// - Returns:  An `AttributedString` representation of the pan position’s numeric value.
     public func format(_ value: Pan) -> AttributedString {
         baseStyle.format(value.numberValue)
     }

@@ -34,6 +34,16 @@ extension NoteTable {
         return true
     }
 
+    internal static func mergePitchRanges(_ range1: ClosedRange<PitchType>,
+                                          _ range2: ClosedRange<PitchType>) -> ClosedRange<PitchType> {
+        min(range1.lowerBound, range2.lowerBound)...max(range1.upperBound, range2.upperBound)
+    }
+
+    internal static func mergeTimeRanges(_ range1: ClosedRange<TimeType>,
+                                         _ range2: ClosedRange<TimeType>) -> ClosedRange<TimeType> {
+        min(range1.lowerBound, range2.lowerBound)...max(range1.upperBound, range2.upperBound)
+    }
+
     internal static func pitchRange(in notes: [Note]) -> ClosedRange<PitchType>? {
         guard !notes.isEmpty
         else { return nil }
@@ -74,16 +84,6 @@ extension NoteTable {
         return minTime...maxTime
     }
 
-    internal static func mergePitchRanges(_ range1: ClosedRange<PitchType>,
-                                          _ range2: ClosedRange<PitchType>) -> ClosedRange<PitchType> {
-        min(range1.lowerBound, range2.lowerBound)...max(range1.upperBound, range2.upperBound)
-    }
-
-    internal static func mergeTimeRanges(_ range1: ClosedRange<TimeType>,
-                                         _ range2: ClosedRange<TimeType>) -> ClosedRange<TimeType> {
-        min(range1.lowerBound, range2.lowerBound)...max(range1.upperBound, range2.upperBound)
-    }
-
     // MARK: Internal Instance Methods
 
     internal func firstIndex(attack: TimeType,
@@ -94,6 +94,10 @@ extension NoteTable {
         notes.firstIndex {
             (attack, duration, startPitch, endPitch, extras) == ($0.attack, $0.duration, $0.startPitch, $0.endPitch, $0.extras)
         }
+    }
+
+    internal func firstIndex(noteID: NoteID) -> Int? {
+        notes.firstIndex { $0.noteID == noteID }
     }
 
     internal func insertionIndex(for attack: TimeType,

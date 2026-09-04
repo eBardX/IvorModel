@@ -23,6 +23,20 @@ public struct Project {
     /// The display name of this project.
     public private(set) var name: String
 
+    // MARK: Private Initializers
+
+    private init(from file: FileWrapper) throws {
+        let manifest = try Self._fetchManifest(from: file)
+        let templates = try Self._fetchTemplates(from: file,
+                                                 in: manifest)
+        let works = try Self._fetchWorks(from: file,
+                                         in: manifest)
+
+        self.name = manifest.name
+        self.templateMap = Dictionary(uniqueKeysWithValues: templates.map { ($0.templateID, $0) })
+        self.workMap = Dictionary(uniqueKeysWithValues: works.map { ($0.workID, $0) })
+    }
+
     // MARK: Private Instance Properties
 
     private var templateMap: [TemplateID: Template]
@@ -42,11 +56,13 @@ extension Project {
     /// - Returns:  A ``Project`` loaded from the file.
     ///
     /// - Throws:   ``Project/Error/loadFailure(_:)`` if the project cannot be loaded.
-    public static func load(from file: FileWrapper) throws -> Project {
+    public static func load(from file: FileWrapper) throws(Error) -> Project {
         do {
             return try Project(from: file.unzip())
         } catch let error as any EnhancedError {
             throw Error.loadFailure(error)
+        } catch {
+            throw Error.loadFailure(nil)
         }
     }
 
@@ -113,11 +129,13 @@ extension Project {
     /// - Returns:  A `FileWrapper` containing the serialized project data.
     ///
     /// - Throws:   ``Project/Error/saveFailure(_:)`` if this project cannot be saved.
-    public func save() throws -> FileWrapper {
+    public func save() throws(Error) -> FileWrapper {
         do {
             return try _prepare().zip()
         } catch let error as any EnhancedError {
             throw Error.saveFailure(error)
+        } catch {
+            throw Error.saveFailure(nil)
         }
     }
 
@@ -202,20 +220,6 @@ extension Project {
 
     private static func _makeWorkFileName(for workID: WorkID) -> String {
         workID.stringValue + "." + sexpFileExtension
-    }
-
-    // MARK: Private Initializers
-
-    private init(from file: FileWrapper) throws {
-        let manifest = try Self._fetchManifest(from: file)
-        let templates = try Self._fetchTemplates(from: file,
-                                                 in: manifest)
-        let works = try Self._fetchWorks(from: file,
-                                         in: manifest)
-
-        self.name = manifest.name
-        self.templateMap = Dictionary(uniqueKeysWithValues: templates.map { ($0.templateID, $0) })
-        self.workMap = Dictionary(uniqueKeysWithValues: works.map { ($0.workID, $0) })
     }
 
     // MARK: Private Instance Methods

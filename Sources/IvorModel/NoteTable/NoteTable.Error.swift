@@ -89,6 +89,11 @@ extension NoteTable.Error: EnhancedError {
     }
 }
 
+// MARK: - Equatable
+
+extension NoteTable.Error: Equatable {
+}
+
 // MARK: - Sendable
 
 extension NoteTable.Error: Sendable {

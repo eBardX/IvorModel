@@ -6,10 +6,6 @@ extension Project {
 
     internal struct Manifest {
 
-        // MARK: Internal Type Properties
-
-        internal static let currentVersion = 1
-
         // MARK: Internal Initializers
 
         internal init(name: String,
@@ -28,6 +24,15 @@ extension Project {
         internal let version: Int
         internal let workIDs: [WorkID]
     }
+}
+
+// MARK: -
+
+extension Project.Manifest {
+
+    // MARK: Internal Type Properties
+
+    internal static let currentVersion = 1
 }
 
 // MARK: - Codable

@@ -3,8 +3,6 @@
 public import IvorTiming
 public import IvorTuning
 
-// MARK: - Public API
-
 extension Work {
 
     // MARK: Public Instance Methods
@@ -16,7 +14,7 @@ extension Work {
     /// - Parameter context:        The conversion dependencies. Defaults to `.default`
     ///                             (12-EDO, A4 = 440 Hz, Meredith pitch speller).
     ///
-    /// - Throws:   `TuningError.unsupportedStandardConversion` if the context's tuning system
+    /// - Throws:   `TuningError.unsupportedStandardConversion` if the context’s tuning system
     ///             does not support standard pitch notation and the conversion requires it.
     public func convert(timeBasis: TimeBasis,
                         pitchNotation: PitchNotation,
@@ -25,7 +23,7 @@ extension Work {
               || self.pitchNotation != pitchNotation
         else { return self }
 
-        var result = Work(name: name)
+        var result = self
 
         if result.content.timeBasis != timeBasis {
             result.content = Self._convertTimeBasis(of: result.content,
@@ -288,7 +286,7 @@ extension Work {
                                           to targetBasis: TimeBasis) -> Content {
         switch (content, targetBasis) {
         case let (.absoluteBeat(parts, tempoMap), .wall):
-            let timeConverter = TimeConverter(tempoMap)
+            let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             let convertedParts = parts.map {
                 _convertBeatTimes(in: $0,
@@ -299,7 +297,7 @@ extension Work {
 
         case let (.absoluteWall(parts), .beat):
             let tempoMap = TempoMap()
-            let timeConverter = TimeConverter(tempoMap)
+            let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             let convertedParts = parts.map {
                 _convertWallTimes(in: $0,
@@ -310,7 +308,7 @@ extension Work {
                                  tempoMap)
 
         case let (.keyboardBeat(parts, tempoMap), .wall):
-            let timeConverter = TimeConverter(tempoMap)
+            let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             let convertedParts = parts.map {
                 _convertBeatTimes(in: $0,
@@ -321,7 +319,7 @@ extension Work {
 
         case let (.keyboardWall(parts), .beat):
             let tempoMap = TempoMap()
-            let timeConverter = TimeConverter(tempoMap)
+            let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             let convertedParts = parts.map {
                 _convertWallTimes(in: $0,
@@ -332,7 +330,7 @@ extension Work {
                                  tempoMap)
 
         case let (.standardBeat(parts, tempoMap), .wall):
-            let timeConverter = TimeConverter(tempoMap)
+            let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             let convertedParts = parts.map {
                 _convertBeatTimes(in: $0,
@@ -343,7 +341,7 @@ extension Work {
 
         case let (.standardWall(parts), .beat):
             let tempoMap = TempoMap()
-            let timeConverter = TimeConverter(tempoMap)
+            let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             let convertedParts = parts.map {
                 _convertWallTimes(in: $0,

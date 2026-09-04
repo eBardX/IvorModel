@@ -45,7 +45,7 @@ extension Dynamic.FormatStyle: FormatStyle {
     ///
     /// - Parameter value:  The ``Dynamic`` value to format.
     ///
-    /// - Returns:  An `AttributedString` representation of the dynamic level's numeric value.
+    /// - Returns:  An `AttributedString` representation of the dynamic level’s numeric value.
     public func format(_ value: Dynamic) -> AttributedString {
         baseStyle.format(value.numberValue)
     }

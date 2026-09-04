@@ -6,7 +6,7 @@ public import IvorTuning
 /// A note table keyed by time and pitch.
 public struct NoteTable<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
-    // MARK: Public Nested Types
+    // MARK: Public Type Aliases
 
     /// The duration type associated with the time type.
     public typealias DurationType = TimeType.DurationType

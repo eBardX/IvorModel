@@ -8,11 +8,6 @@ private import Foundation
 /// A musical work containing parts and associated data.
 public struct Work {
 
-    // MARK: Public Type Properties
-
-    /// The current work file format version.
-    public static let currentVersion = 1
-
     // MARK: Public Initializers
 
     /// Creates a new work with the given name and content.
@@ -48,6 +43,11 @@ public struct Work {
 
 extension Work {
 
+    // MARK: Public Type Properties
+
+    /// The current work file format version.
+    public static let currentVersion = 1
+
     // MARK: Public Instance Properties
 
     /// The beat-time range spanned by all beat-time parts, or `nil` for wall-time content.
@@ -64,6 +64,29 @@ extension Work {
 
         default:
             nil
+        }
+    }
+
+    /// The total number of notes across all parts in this work.
+    public var noteCount: Int {
+        switch content {
+        case let .absoluteBeat(parts, _):
+            parts.reduce(0) { $0 + $1.noteCount }
+
+        case let .absoluteWall(parts):
+            parts.reduce(0) { $0 + $1.noteCount }
+
+        case let .keyboardBeat(parts, _):
+            parts.reduce(0) { $0 + $1.noteCount }
+
+        case let .keyboardWall(parts):
+            parts.reduce(0) { $0 + $1.noteCount }
+
+        case let .standardBeat(parts, _):
+            parts.reduce(0) { $0 + $1.noteCount }
+
+        case let .standardWall(parts):
+            parts.reduce(0) { $0 + $1.noteCount }
         }
     }
 
@@ -93,6 +116,32 @@ extension Work {
     /// The pitch notation used by this work.
     public var pitchNotation: PitchNotation {
         content.pitchNotation
+    }
+
+    /// The pitch range spanned by all parts, or `nil` if the work contains no notes.
+    ///
+    /// Both bounds always share the same underlying pitch type — ``Frequency``,
+    /// ``NoteNumber``, or ``Pitch`` — as determined by ``pitchNotation``.
+    public var pitchRange: (lowerBound: any PitchProtocol, upperBound: any PitchProtocol)? {
+        switch content {
+        case let .absoluteBeat(parts, _):
+            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+
+        case let .absoluteWall(parts):
+            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+
+        case let .keyboardBeat(parts, _):
+            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+
+        case let .keyboardWall(parts):
+            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+
+        case let .standardBeat(parts, _):
+            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+
+        case let .standardWall(parts):
+            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+        }
     }
 
     /// The tempo map associated with beat-time content, or `nil` for wall-time content.
@@ -130,20 +179,6 @@ extension Work {
         }
     }
 
-    // MARK: Private Type Methods
-
-    private static func _timeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>]) -> ClosedRange<TimeType>? {
-        parts.reduce(nil) { acc, part in
-            guard let partRange = part.timeRange
-            else { return acc }
-
-            guard let acc
-            else { return partRange }
-
-            return min(acc.lowerBound, partRange.lowerBound)...max(acc.upperBound, partRange.upperBound)
-        }
-    }
-
     // MARK: Public Instance Methods
 
     /// Returns the name of the part at the given index.
@@ -170,6 +205,32 @@ extension Work {
 
         case let .standardWall(parts):
             parts[index].name
+        }
+    }
+
+    // MARK: Private Type Methods
+
+    private static func _pitchRange<PitchType: PitchProtocol>(of parts: [Part<some TimeProtocol, PitchType>]) -> ClosedRange<PitchType>? {
+        parts.reduce(nil) { acc, part in
+            guard let partRange = part.pitchRange
+            else { return acc }
+
+            guard let acc
+            else { return partRange }
+
+            return min(acc.lowerBound, partRange.lowerBound)...max(acc.upperBound, partRange.upperBound)
+        }
+    }
+
+    private static func _timeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>]) -> ClosedRange<TimeType>? {
+        parts.reduce(nil) { acc, part in
+            guard let partRange = part.timeRange
+            else { return acc }
+
+            guard let acc
+            else { return partRange }
+
+            return min(acc.lowerBound, partRange.lowerBound)...max(acc.upperBound, partRange.upperBound)
         }
     }
 }
