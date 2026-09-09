@@ -116,7 +116,7 @@ extension DynamicMap {
     /// - Returns:  A pair of the identity that now addresses this entry —
     ///             a freshly generated identity, unless the insertion
     ///             collapsed into a pre-existing exact duplicate (see
-    ///             above), in which case the survivor's identity — and
+    ///             above), in which case the survivor’s identity — and
     ///             `inserted`, `true` if a new entry was added and `false`
     ///             if the insertion collapsed into that pre-existing
     ///             duplicate instead.
@@ -164,15 +164,15 @@ extension DynamicMap {
     /// exact-duplicate case ``insert(time:dynamic:extras:)`` silently
     /// collapses. There, the moved entry merges into that pre-existing one
     /// instead of being kept separately, so `entryID` no longer names anything in
-    /// the map; the returned identity is the survivor's instead, which a
+    /// the map; the returned identity is the survivor’s instead, which a
     /// caller must switch to addressing from then on.
     ///
     /// - Parameter entryID: The identity of the entry to move.
     /// - Parameter time:    The new time for the entry.
     ///
-    /// - Returns:  The identity that now addresses this entry's content — `entryID`
+    /// - Returns:  The identity that now addresses this entry’s content — `entryID`
     ///             itself, unless the move merged it into a pre-existing exact
-    ///             duplicate, in which case the survivor's identity. `nil` if
+    ///             duplicate, in which case the survivor’s identity. `nil` if
     ///             `entryID` did not identify any entry and nothing moved.
     @discardableResult
     public mutating func move(entryID: EntryID,
@@ -251,7 +251,7 @@ extension DynamicMap {
     /// remove-then-insert edit of one entry among ties silently changes the
     /// order of entries that were never touched. Updating in place at a
     /// known identity avoids both problems, and — unlike a position — that
-    /// identity keeps addressing this same entry across any other entry's
+    /// identity keeps addressing this same entry across any other entry’s
     /// edit, so a caller never needs to re-resolve it first.
     ///
     /// The edit can turn this entry into an exact duplicate of another one
@@ -261,9 +261,9 @@ extension DynamicMap {
     /// entry that was just updated; the *other*, pre-existing entry is the
     /// one silently removed instead. That is the only choice consistent
     /// with the guarantee above: a caller invoking this method already
-    /// holds `entryID` and goes on using it afterward, so honoring "this
-    /// identity keeps addressing this same entry" means the entry it
-    /// wasn't referencing has to be the one that gives way, never the one
+    /// holds `entryID` and goes on using it afterward, so honoring “this
+    /// identity keeps addressing this same entry” means the entry it
+    /// wasn’t referencing has to be the one that gives way, never the one
     /// it was.
     ///
     /// - Parameter entryID:  The identity of the entry to replace. An

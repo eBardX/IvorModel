@@ -9,18 +9,18 @@ extension PanMap {
     /// A stable identity for a single entry in a ``PanMap``, represented as a
     /// validated string.
     ///
-    /// An entry's time, pan position, and extras can all change — via
+    /// An entry’s time, pan position, and extras can all change — via
     /// ``PanMap/update(entryID:pan:extras:)`` or ``PanMap/move(entryID:to:)`` — without
     /// affecting its identity, so a caller can keep addressing the same entry across
     /// an edit that reorders it, rather than recomputing which ordinal position it
     /// landed on.
     ///
-    /// Not persisted: `PanMap.Entry`'s `Codable` conformance never encodes an
-    /// entry's identity, and assigns every decoded entry a fresh one, the same as a
-    /// newly inserted entry. An entry's identity is therefore stable only within one
-    /// in-memory pan map's lifetime — never across an encode/decode round trip, and
+    /// Not persisted: `PanMap.Entry`’s `Codable` conformance never encodes an
+    /// entry’s identity, and assigns every decoded entry a fresh one, the same as a
+    /// newly inserted entry. An entry’s identity is therefore stable only within one
+    /// in-memory pan map’s lifetime — never across an encode/decode round trip, and
     /// so never across a save and reopen.
-    public struct EntryID: StringRepresentable {
+    public struct EntryID {
 
         // MARK: Public Initializers
 
@@ -77,4 +77,9 @@ extension PanMap.EntryID {
     private static var validPrefix: String {
         "E$"
     }
+}
+
+// MARK: - StringRepresentable
+
+extension PanMap.EntryID: StringRepresentable {
 }

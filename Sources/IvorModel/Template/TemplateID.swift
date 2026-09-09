@@ -5,7 +5,7 @@ public import XestiTools
 private import Foundation
 
 /// A unique ID for a ``Template``, represented as a validated string.
-public struct TemplateID: StringRepresentable {
+public struct TemplateID {
 
     // MARK: Public Initializers
 
@@ -50,4 +50,9 @@ extension TemplateID {
     private nonisolated(unsafe) static let validPattern = /T\$[0-9A-Za-z]{22}/
 
     private static let validPrefix = "T$"
+}
+
+// MARK: - StringRepresentable
+
+extension TemplateID: StringRepresentable {
 }

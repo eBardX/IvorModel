@@ -28,16 +28,16 @@ extension DynamicMap {
 
     // MARK: Internal Instance Methods
 
+    internal func firstIndex(entryID: EntryID) -> Int? {
+        entries.firstIndex { $0.entryID == entryID }
+    }
+
     internal func firstIndex(time: TimeType,
                              dynamic: Dynamic,
                              extras: Extras?) -> Int? {
         entries.firstIndex {
             (time, dynamic, extras) == ($0.time, $0.dynamic, $0.extras)
         }
-    }
-
-    internal func firstIndex(entryID: EntryID) -> Int? {
-        entries.firstIndex { $0.entryID == entryID }
     }
 
     internal func insertionIndex(for time: TimeType) -> Int {

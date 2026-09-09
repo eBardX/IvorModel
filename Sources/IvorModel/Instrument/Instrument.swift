@@ -3,9 +3,18 @@
 public import XestiTools
 
 /// An instrument designation represented as a validated string.
-public struct Instrument: StringRepresentable {
+public struct Instrument {
 
     // MARK: Public Initializers
+
+    /// Creates an instrument by parsing its plain string representation, returning `nil` if the
+    /// string is invalid.
+    ///
+    /// - Parameter plain:  The plain string representation of the instrument (as produced by
+    ///                     `plain`).
+    public init?(plain: String) {
+        self.init(stringValue: plain)
+    }
 
     /// Creates an instrument from a string value, returning `nil` if the string is invalid.
     ///
@@ -21,6 +30,11 @@ public struct Instrument: StringRepresentable {
 
     /// The string value designating this instrument.
     public let stringValue: String
+
+    /// The plain string representation of this instrument.
+    public var plain: String {
+        description
+    }
 }
 
 // MARK: -
@@ -31,4 +45,9 @@ extension Instrument {
 
     /// The default instrument.
     public static let vanilla = Self("Vanilla")
+}
+
+// MARK: - StringRepresentable
+
+extension Instrument: StringRepresentable {
 }

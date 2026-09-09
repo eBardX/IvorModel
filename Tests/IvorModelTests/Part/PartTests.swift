@@ -26,6 +26,18 @@ extension PartTests {
     }
 
     @Test
+    func duplicated() {
+        let original = Part<BeatTime, Pitch>(name: "Piano")
+        let duplicate = original.duplicated()
+
+        #expect(duplicate.partID != original.partID)
+        #expect(duplicate.name == original.name)
+        #expect(duplicate.dynamicMap.isEmpty == original.dynamicMap.isEmpty)
+        #expect(duplicate.instrumentMap.isEmpty == original.instrumentMap.isEmpty)
+        #expect(duplicate.panMap.isEmpty == original.panMap.isEmpty)
+    }
+
+    @Test
     func init_defaults() {
         let part = Part<BeatTime, Pitch>(name: "Piano")
 
@@ -34,6 +46,14 @@ extension PartTests {
         #expect(part.dynamicMap.isEmpty)
         #expect(part.instrumentMap.isEmpty)
         #expect(part.panMap.isEmpty)
+    }
+
+    @Test
+    func init_generatesUniquePartID() {
+        let part1 = Part<BeatTime, Pitch>(name: "Piano")
+        let part2 = Part<BeatTime, Pitch>(name: "Piano")
+
+        #expect(part1.partID != part2.partID)
     }
 
     @Test

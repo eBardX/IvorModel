@@ -14,14 +14,19 @@ extension Work {
     /// - Parameter context:        The conversion dependencies. Defaults to `.default`
     ///                             (12-EDO, A4 = 440 Hz, Meredith pitch speller).
     ///
-    /// - Throws:   `TuningError.unsupportedStandardConversion` if the context’s tuning system
-    ///             does not support standard pitch notation and the conversion requires it.
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked — converting would modify
+    ///             its content; ``Work/Error/unsupportedStandardConversion`` if the context’s
+    ///             tuning system does not support standard pitch notation and the conversion
+    ///             requires it; other ``Work/Error`` cases for other missing context dependencies.
     public func convert(timeBasis: TimeBasis,
                         pitchNotation: PitchNotation,
-                        context: ConvertContext = .default) throws -> Work {
+                        context: ConvertContext = .default) throws(Error) -> Work {
         guard self.timeBasis != timeBasis
               || self.pitchNotation != pitchNotation
         else { return self }
+
+        guard !isLocked
+        else { throw Error.workIsLocked }
 
         var result = self
 
@@ -31,9 +36,19 @@ extension Work {
         }
 
         if result.content.pitchNotation != pitchNotation {
-            result.content = try Self._convertPitchNotation(of: result.content,
-                                                            to: pitchNotation,
-                                                            with: context)
+            do {
+                result.content = try Self._convertPitchNotation(of: result.content,
+                                                                to: pitchNotation,
+                                                                with: context)
+            } catch let error as Error {
+                throw error
+            } catch is TuningError {
+                throw Error.unsupportedStandardConversion
+            } catch {
+                // Unreachable: `_convertPitchNotation` only ever throws `Work.Error` or
+                // `TuningError`, both handled above.
+                throw Error.unsupportedStandardConversion
+            }
         }
 
         return result

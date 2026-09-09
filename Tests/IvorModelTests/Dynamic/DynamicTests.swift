@@ -25,6 +25,12 @@ extension DynamicTests {
     }
 
     @Test
+    func description() {
+        #expect(Dynamic.mf.description == "3/5")
+        #expect(Dynamic.ffff.description == "1/1")
+    }
+
+    @Test
     func formatted() {
         let result = Dynamic.mf.formatted()
 
@@ -49,6 +55,25 @@ extension DynamicTests {
         #expect(Dynamic.isValid(1))
         #expect(!Dynamic.isValid(-1))
         #expect(!Dynamic.isValid(2))
+    }
+
+    @Test
+    func plain() {
+        #expect(Dynamic.mf.plain == "3/5")
+        #expect(Dynamic.ffff.plain == "1")
+    }
+
+    @Test
+    func plain_roundTrip() {
+        #expect(Dynamic(plain: "1/2") == Dynamic(numberValue: Number(numerator: 1, denominator: 2)))
+        #expect(Dynamic(plain: "0.5") == Dynamic(numberValue: Number(numerator: 1, denominator: 2)))
+        #expect(Dynamic(plain: "0") == Dynamic(numberValue: 0))
+        #expect(Dynamic(plain: "1") == Dynamic.ffff)
+        #expect(Dynamic(plain: "-1") == nil)
+        #expect(Dynamic(plain: "2") == nil)
+        #expect(Dynamic(plain: "") == nil)
+        #expect(Dynamic(plain: "not a number") == nil)
+        #expect(Dynamic(plain: "#b101") == nil)
     }
 
     @Test

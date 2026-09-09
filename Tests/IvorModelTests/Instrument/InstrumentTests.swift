@@ -3,6 +3,7 @@
 import Foundation
 @testable import IvorModel
 import Testing
+import XestiTools
 
 struct InstrumentTests {
 }
@@ -10,6 +11,13 @@ struct InstrumentTests {
 // MARK: -
 
 extension InstrumentTests {
+    @Test
+    func description() throws {
+        let inst = try #require(Instrument(stringValue: "Flute"))
+
+        #expect(inst.description == "Flute")
+    }
+
     @Test
     func formatted() {
         let result = Instrument.vanilla.formatted()
@@ -26,6 +34,19 @@ extension InstrumentTests {
     func init_valid() {
         #expect(Instrument(stringValue: "Guitar") != nil)
         #expect(Instrument(stringValue: "Electric Piano") != nil)
+    }
+
+    @Test
+    func plain() throws {
+        let inst = try #require(Instrument(stringValue: "Flute"))
+
+        #expect(inst.plain == "Flute")
+    }
+
+    @Test
+    func plain_roundTrip() {
+        #expect(Instrument(plain: "Flute") == Instrument(stringValue: "Flute"))
+        #expect(Instrument(plain: "") == nil)
     }
 
     @Test

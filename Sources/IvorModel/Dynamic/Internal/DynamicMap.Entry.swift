@@ -45,6 +45,14 @@ extension DynamicMap.Entry {
         }
     }
 
+    internal var entryID: DynamicMap.EntryID {
+        switch self {
+        case let .extended(entryID, _, _, _),
+            let .simple(entryID, _, _):
+            entryID
+        }
+    }
+
     internal var extras: Extras? {
         switch self {
         case let .extended(_, _, _, extras):
@@ -52,14 +60,6 @@ extension DynamicMap.Entry {
 
         default:
             nil
-        }
-    }
-
-    internal var entryID: DynamicMap.EntryID {
-        switch self {
-        case let .extended(entryID, _, _, _),
-            let .simple(entryID, _, _):
-            entryID
         }
     }
 

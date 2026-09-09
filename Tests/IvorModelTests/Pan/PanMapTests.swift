@@ -32,6 +32,20 @@ extension PanMapTests {
     }
 
     @Test
+    func defaultPan() {
+        let map = PanMap<BeatTime>()
+
+        #expect(map.defaultPan == .center)
+    }
+
+    @Test
+    func defaultPan_override() {
+        let map = PanMap<BeatTime>(defaultPan: .right)
+
+        #expect(map.defaultPan == .right)
+    }
+
+    @Test
     func forEach_yieldsDistinctIdentities() {
         var map = PanMap<BeatTime>()
         var ids: [PanMap<BeatTime>.EntryID] = []
@@ -69,95 +83,6 @@ extension PanMapTests {
     }
 
     @Test
-    func move_found() throws {
-        var map = PanMap<BeatTime>()
-        var movedID: PanMap<BeatTime>.EntryID?
-
-        map.insert(time: 1, pan: .left)
-
-        map.forEach { entryID, _, _, _ in movedID = entryID }
-
-        let entryID = try #require(movedID, "expected an entry ID")
-
-        let newID = map.move(entryID: entryID, to: 5)
-
-        #expect(newID == entryID)
-        #expect(map[BeatTime(5)] == .left)
-    }
-
-    @Test
-    func move_notFound() {
-        var map = PanMap<BeatTime>()
-
-        #expect(map.move(entryID: PanMap<BeatTime>.EntryID(), to: 1) == nil)
-    }
-
-    @Test
-    func update_found() throws {
-        var map = PanMap<BeatTime>()
-        var foundEntryID: PanMap<BeatTime>.EntryID?
-
-        map.insert(time: 1, pan: .left)
-
-        map.forEach { entryID, _, _, _ in foundEntryID = entryID }
-
-        let result = try map.update(entryID: #require(foundEntryID), pan: .right)
-
-        #expect(result.updated)
-        #expect(result.removedEntryID == nil)
-        #expect(map[BeatTime(1)] == .right)
-    }
-
-    @Test
-    func update_notFound() {
-        var map = PanMap<BeatTime>()
-
-        let result = map.update(entryID: PanMap<BeatTime>.EntryID(), pan: .right)
-
-        #expect(!result.updated)
-        #expect(result.removedEntryID == nil)
-        #expect(map.isEmpty)
-    }
-
-    @Test
-    func update_collapsesIntoDuplicate() throws {
-        var map = PanMap<BeatTime>()
-        var ids: [PanMap<BeatTime>.EntryID] = []
-
-        map.insert(time: 1, pan: .left)
-        map.insert(time: 1, pan: .right)
-
-        map.forEach { entryID, _, _, _ in ids.append(entryID) }
-
-        // Editing the second entry back to `.left` makes it an exact duplicate
-        // of the first, so it should be dropped rather than left in place.
-        let result = try map.update(entryID: #require(ids.last), pan: .left)
-
-        #expect(result.updated)
-        #expect(result.removedEntryID == ids.first)
-
-        var remaining: [PanMap<BeatTime>.EntryID] = []
-
-        map.forEach { entryID, _, _, _ in remaining.append(entryID) }
-
-        #expect(remaining == [ids.last])
-    }
-
-    @Test
-    func defaultPan() {
-        let map = PanMap<BeatTime>()
-
-        #expect(map.defaultPan == .center)
-    }
-
-    @Test
-    func defaultPan_override() {
-        let map = PanMap<BeatTime>(defaultPan: .right)
-
-        #expect(map.defaultPan == .right)
-    }
-
-    @Test
     func isEmpty_afterInsert() {
         var map = PanMap<BeatTime>()
 
@@ -189,28 +114,27 @@ extension PanMapTests {
     }
 
     @Test
-    func remove_found() {
+    func move_found() throws {
         var map = PanMap<BeatTime>()
-
-        let inserted = map.insert(time: 1,
-                                  pan: .left)
-        let removedID = map.remove(time: 1,
-                                   pan: .left)
-
-        #expect(removedID == inserted.entryID)
-        #expect(map.isEmpty)
-    }
-
-    @Test
-    func remove_notFound() {
-        var map = PanMap<BeatTime>()
+        var movedID: PanMap<BeatTime>.EntryID?
 
         map.insert(time: 1, pan: .left)
 
-        let removedID = map.remove(time: 1, pan: .right)
+        map.forEach { entryID, _, _, _ in movedID = entryID }
 
-        #expect(removedID == nil)
-        #expect(!map.isEmpty)
+        let entryID = try #require(movedID, "expected an entry ID")
+
+        let newID = map.move(entryID: entryID, to: 5)
+
+        #expect(newID == entryID)
+        #expect(map[BeatTime(5)] == .left)
+    }
+
+    @Test
+    func move_notFound() {
+        var map = PanMap<BeatTime>()
+
+        #expect(map.move(entryID: PanMap<BeatTime>.EntryID(), to: 1) == nil)
     }
 
     @Test
@@ -242,9 +166,85 @@ extension PanMapTests {
     }
 
     @Test
+    func remove_found() {
+        var map = PanMap<BeatTime>()
+
+        let inserted = map.insert(time: 1,
+                                  pan: .left)
+        let removedID = map.remove(time: 1,
+                                   pan: .left)
+
+        #expect(removedID == inserted.entryID)
+        #expect(map.isEmpty)
+    }
+
+    @Test
+    func remove_notFound() {
+        var map = PanMap<BeatTime>()
+
+        map.insert(time: 1, pan: .left)
+
+        let removedID = map.remove(time: 1, pan: .right)
+
+        #expect(removedID == nil)
+        #expect(!map.isEmpty)
+    }
+
+    @Test
     func subscript_empty() {
         let map = PanMap<BeatTime>()
 
         #expect(map[BeatTime(1)] == .center)
+    }
+
+    @Test
+    func update_collapsesIntoDuplicate() throws {
+        var map = PanMap<BeatTime>()
+        var ids: [PanMap<BeatTime>.EntryID] = []
+
+        map.insert(time: 1, pan: .left)
+        map.insert(time: 1, pan: .right)
+
+        map.forEach { entryID, _, _, _ in ids.append(entryID) }
+
+        // Editing the second entry back to `.left` makes it an exact duplicate
+        // of the first, so it should be dropped rather than left in place.
+        let result = try map.update(entryID: #require(ids.last), pan: .left)
+
+        #expect(result.updated)
+        #expect(result.removedEntryID == ids.first)
+
+        var remaining: [PanMap<BeatTime>.EntryID] = []
+
+        map.forEach { entryID, _, _, _ in remaining.append(entryID) }
+
+        #expect(remaining == [ids.last])
+    }
+
+    @Test
+    func update_found() throws {
+        var map = PanMap<BeatTime>()
+        var foundEntryID: PanMap<BeatTime>.EntryID?
+
+        map.insert(time: 1, pan: .left)
+
+        map.forEach { entryID, _, _, _ in foundEntryID = entryID }
+
+        let result = try map.update(entryID: #require(foundEntryID), pan: .right)
+
+        #expect(result.updated)
+        #expect(result.removedEntryID == nil)
+        #expect(map[BeatTime(1)] == .right)
+    }
+
+    @Test
+    func update_notFound() {
+        var map = PanMap<BeatTime>()
+
+        let result = map.update(entryID: PanMap<BeatTime>.EntryID(), pan: .right)
+
+        #expect(!result.updated)
+        #expect(result.removedEntryID == nil)
+        #expect(map.isEmpty)
     }
 }

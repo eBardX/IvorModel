@@ -20,6 +20,11 @@ struct InstrumentMapInternalTests {
 
 extension InstrumentMapInternalTests {
     @Test
+    func deduplicated_empty() {
+        #expect(InstrumentMap<BeatTime>.deduplicated([]).isEmpty)
+    }
+
+    @Test
     func deduplicated_keepsFirstOccurrence() {
         let first = InstrumentMap<BeatTime>.Entry(time: 1, instrument: guitar, extras: nil)
         let duplicate = InstrumentMap<BeatTime>.Entry(time: 1, instrument: guitar, extras: nil)
@@ -29,21 +34,6 @@ extension InstrumentMapInternalTests {
         #expect(result.count == 2)
         #expect(result[0].entryID == first.entryID)
         #expect(result[1].entryID == distinct.entryID)
-    }
-
-    @Test
-    func deduplicated_empty() {
-        #expect(InstrumentMap<BeatTime>.deduplicated([]).isEmpty)
-    }
-
-    @Test
-    func firstIndex_found() {
-        var map = InstrumentMap<BeatTime>()
-
-        map.insert(time: 1, instrument: guitar)
-        map.insert(time: 2, instrument: piano)
-
-        #expect(map.firstIndex(time: 2, instrument: piano, extras: nil) == 1)
     }
 
     @Test
@@ -64,6 +54,16 @@ extension InstrumentMapInternalTests {
         let position = map.firstIndex(entryID: InstrumentMap<BeatTime>.EntryID())
 
         #expect(position == nil)
+    }
+
+    @Test
+    func firstIndex_found() {
+        var map = InstrumentMap<BeatTime>()
+
+        map.insert(time: 1, instrument: guitar)
+        map.insert(time: 2, instrument: piano)
+
+        #expect(map.firstIndex(time: 2, instrument: piano, extras: nil) == 1)
     }
 
     @Test

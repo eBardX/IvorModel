@@ -9,18 +9,18 @@ extension DynamicMap {
     /// A stable identity for a single entry in a ``DynamicMap``, represented as a
     /// validated string.
     ///
-    /// An entry's time, dynamic level, and extras can all change — via
+    /// An entry’s time, dynamic level, and extras can all change — via
     /// ``DynamicMap/update(entryID:dynamic:extras:)`` or ``DynamicMap/move(entryID:to:)`` —
     /// without affecting its identity, so a caller can keep addressing the same
     /// entry across an edit that reorders it, rather than recomputing which ordinal
     /// position it landed on.
     ///
-    /// Not persisted: `DynamicMap.Entry`'s `Codable` conformance never encodes an
-    /// entry's identity, and assigns every decoded entry a fresh one, the same as a
-    /// newly inserted entry. An entry's identity is therefore stable only within one
-    /// in-memory dynamic map's lifetime — never across an encode/decode round trip,
+    /// Not persisted: `DynamicMap.Entry`’s `Codable` conformance never encodes an
+    /// entry’s identity, and assigns every decoded entry a fresh one, the same as a
+    /// newly inserted entry. An entry’s identity is therefore stable only within one
+    /// in-memory dynamic map’s lifetime — never across an encode/decode round trip,
     /// and so never across a save and reopen.
-    public struct EntryID: StringRepresentable {
+    public struct EntryID {
 
         // MARK: Public Initializers
 
@@ -78,4 +78,9 @@ extension DynamicMap.EntryID {
     private static var validPrefix: String {
         "E$"
     }
+}
+
+// MARK: - StringRepresentable
+
+extension DynamicMap.EntryID: StringRepresentable {
 }

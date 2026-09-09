@@ -58,6 +58,22 @@ extension InstrumentMapEntryTests {
     }
 
     @Test
+    func entryID_defaultsToFreshIdentity() {
+        let e1 = Entry(time: 1, instrument: guitar, extras: nil)
+        let e2 = Entry(time: 1, instrument: guitar, extras: nil)
+
+        #expect(e1.entryID != e2.entryID)
+    }
+
+    @Test
+    func entryID_explicit() {
+        let entryID = InstrumentMap<BeatTime>.EntryID()
+        let entry = Entry(entryID: entryID, time: 1, instrument: guitar, extras: nil)
+
+        #expect(entry.entryID == entryID)
+    }
+
+    @Test
     func equality_ignoresIdentity() {
         let e1 = Entry(time: 1, instrument: guitar, extras: nil)
         let e2 = Entry(time: 1, instrument: guitar, extras: nil)
@@ -79,22 +95,6 @@ extension InstrumentMapEntryTests {
         let entry = Entry(time: 1, instrument: guitar, extras: nil)
 
         #expect(entry.extras == nil)
-    }
-
-    @Test
-    func entryID_defaultsToFreshIdentity() {
-        let e1 = Entry(time: 1, instrument: guitar, extras: nil)
-        let e2 = Entry(time: 1, instrument: guitar, extras: nil)
-
-        #expect(e1.entryID != e2.entryID)
-    }
-
-    @Test
-    func entryID_explicit() {
-        let entryID = InstrumentMap<BeatTime>.EntryID()
-        let entry = Entry(entryID: entryID, time: 1, instrument: guitar, extras: nil)
-
-        #expect(entry.entryID == entryID)
     }
 
     @Test

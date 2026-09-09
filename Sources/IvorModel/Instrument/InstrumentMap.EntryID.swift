@@ -9,18 +9,18 @@ extension InstrumentMap {
     /// A stable identity for a single entry in an ``InstrumentMap``, represented as
     /// a validated string.
     ///
-    /// An entry's time, instrument, and extras can all change — via
+    /// An entry’s time, instrument, and extras can all change — via
     /// ``InstrumentMap/update(entryID:instrument:extras:)`` or
     /// ``InstrumentMap/move(entryID:to:)`` — without affecting its identity, so a caller
     /// can keep addressing the same entry across an edit that reorders it, rather
     /// than recomputing which ordinal position it landed on.
     ///
-    /// Not persisted: `InstrumentMap.Entry`'s `Codable` conformance never encodes
-    /// an entry's identity, and assigns every decoded entry a fresh one, the same
-    /// as a newly inserted entry. An entry's identity is therefore stable only
-    /// within one in-memory instrument map's lifetime — never across an
+    /// Not persisted: `InstrumentMap.Entry`’s `Codable` conformance never encodes
+    /// an entry’s identity, and assigns every decoded entry a fresh one, the same
+    /// as a newly inserted entry. An entry’s identity is therefore stable only
+    /// within one in-memory instrument map’s lifetime — never across an
     /// encode/decode round trip, and so never across a save and reopen.
-    public struct EntryID: StringRepresentable {
+    public struct EntryID {
 
         // MARK: Public Initializers
 
@@ -78,4 +78,9 @@ extension InstrumentMap.EntryID {
     private static var validPrefix: String {
         "E$"
     }
+}
+
+// MARK: - StringRepresentable
+
+extension InstrumentMap.EntryID: StringRepresentable {
 }

@@ -76,6 +76,30 @@ extension WorkConvertTests {
     }
 
     @Test
+    func convert_lockedWork_throws() {
+        var work = Work(content: .standardBeat([], TempoMap()))
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.convert(timeBasis: .wall,
+                             pitchNotation: .standard)
+        }
+    }
+
+    @Test
+    func convert_lockedWork_alreadyMatching_doesNotThrow() throws {
+        var work = Work(content: .standardBeat([], TempoMap()))
+
+        work.isLocked = true
+
+        let result = try work.convert(timeBasis: work.timeBasis,
+                                      pitchNotation: work.pitchNotation)
+
+        #expect(result == work)
+    }
+
+    @Test
     func convert_noOp() throws {
         var table = NoteTable<BeatTime, Pitch>()
 

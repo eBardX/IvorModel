@@ -5,7 +5,7 @@ public import XestiTools
 private import Foundation
 
 /// A unique ID for a ``Work``, represented as a validated string.
-public struct WorkID: StringRepresentable {
+public struct WorkID {
 
     // MARK: Public Initializers
 
@@ -50,4 +50,9 @@ extension WorkID {
     private nonisolated(unsafe) static let validPattern = /W\$[0-9A-Za-z]{22}/
 
     private static let validPrefix = "W$"
+}
+
+// MARK: - StringRepresentable
+
+extension WorkID: StringRepresentable {
 }

@@ -245,18 +245,6 @@ extension NoteTableBasicTests {
     }
 
     @Test
-    func remove_notFound() {
-        var table = NoteTableSB()
-
-        table.insert(attack: 0, duration: 1, pitch: .c4)
-
-        let removedID = table.remove(attack: 0, duration: 1, pitch: .g5)
-
-        #expect(removedID == nil)
-        #expect(!table.isEmpty)
-    }
-
-    @Test
     func remove_matchesEarliestDuplicate() {
         var table = NoteTableSB()
 
@@ -302,6 +290,18 @@ extension NoteTableBasicTests {
         let removed = table.remove(noteID: NoteTableSB.NoteID())
 
         #expect(!removed)
+        #expect(!table.isEmpty)
+    }
+
+    @Test
+    func remove_notFound() {
+        var table = NoteTableSB()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+
+        let removedID = table.remove(attack: 0, duration: 1, pitch: .g5)
+
+        #expect(removedID == nil)
         #expect(!table.isEmpty)
     }
 

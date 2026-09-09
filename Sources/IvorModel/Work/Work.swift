@@ -17,8 +17,9 @@ public struct Work {
     ///                       standard-beat content with an empty tempo map.
     public init(name: String = "",
                 content: Content? = nil) {
-        self.content = content ?? .standardBeat([],
-                                                TempoMap())
+        self._content = content ?? .standardBeat([],
+                                                 TempoMap())
+        self.isLocked = false
         self.name = name
         self.workID = WorkID()
         self.version = Self.currentVersion
@@ -33,10 +34,33 @@ public struct Work {
     public let workID: WorkID
 
     /// The musical content of the work.
-    public var content: Content
+    ///
+    /// - Precondition: ``isLocked`` must be `false`. Callers are expected to check ``isLocked``
+    ///                  (or otherwise keep editing UI from reaching a locked work) before
+    ///                  assigning; this is a programmer error, not a recoverable condition, so it
+    ///                  traps rather than silently discarding the assignment.
+    public var content: Content {
+        get { _content }
+        set {
+            precondition(!isLocked, "Cannot assign content to a locked work.")
+
+            _content = newValue
+        }
+    }
+
+    /// A Boolean value indicating whether this work is locked.
+    ///
+    /// A locked work's ``content`` cannot be modified — assigning to it traps — until it is
+    /// unlocked. A locked work can still be renamed; setting `isLocked` itself is always
+    /// permitted, so a locked work can always be unlocked.
+    public var isLocked: Bool
 
     /// The display name of the work.
     public var name: String
+
+    // MARK: Private Instance Properties
+
+    private var _content: Content
 }
 
 // MARK: -
@@ -181,6 +205,13 @@ extension Work {
 
     // MARK: Public Instance Methods
 
+    /// Returns a copy of this work with the same content but a distinct, freshly
+    /// minted ``WorkID``.
+    public func duplicated() -> Self {
+        Self(name: name,
+             content: content)
+    }
+
     /// Returns the name of the part at the given index.
     ///
     /// - Parameter index:  The zero-based index of the part.
@@ -250,8 +281,18 @@ extension Work: Codable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        self.content = try container.decode(Content.self,
-                                            forKey: .content)
+        //
+        // Decoded directly into the backing storage, bypassing `content`'s locked-check setter —
+        // decoding must always succeed, regardless of the decoded `isLocked` value.
+        //
+        self._content = try container.decode(Content.self,
+                                             forKey: .content)
+
+        //
+        // Absent from files written before this property existed; such works were never locked.
+        //
+        self.isLocked = try container.decodeIfPresent(Bool.self,
+                                                      forKey: .isLocked) ?? false
 
         self.name = try container.decode(String.self,
                                          forKey: .name)
@@ -285,6 +326,9 @@ extension Work: Codable {
         try container.encode(version,
                              forKey: .version)
 
+        try container.encode(isLocked,
+                             forKey: .isLocked)
+
         try container.encode(name,
                              forKey: .name)
 
@@ -296,6 +340,7 @@ extension Work: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case content
+        case isLocked
         case name
         case version
         case workID

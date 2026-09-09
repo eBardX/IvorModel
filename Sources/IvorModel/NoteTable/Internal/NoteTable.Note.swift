@@ -89,6 +89,14 @@ extension NoteTable.Note {
         }
     }
 
+    internal var maximumPitch: PitchType {
+        max(startPitch, endPitch)
+    }
+
+    internal var minimumPitch: PitchType {
+        min(startPitch, endPitch)
+    }
+
     internal var noteID: NoteTable.NoteID {
         switch self {
         case let .extended(noteID, _, _, _, _),
@@ -96,14 +104,6 @@ extension NoteTable.Note {
             let .simple(noteID, _, _, _):
             noteID
         }
-    }
-
-    internal var maximumPitch: PitchType {
-        max(startPitch, endPitch)
-    }
-
-    internal var minimumPitch: PitchType {
-        min(startPitch, endPitch)
     }
 
     internal var release: TimeType {

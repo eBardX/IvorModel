@@ -13,6 +13,11 @@ struct DynamicMapInternalTests {
 
 extension DynamicMapInternalTests {
     @Test
+    func deduplicated_empty() {
+        #expect(DynamicMap<BeatTime>.deduplicated([]).isEmpty)
+    }
+
+    @Test
     func deduplicated_keepsFirstOccurrence() {
         let first = DynamicMap<BeatTime>.Entry(time: 1, dynamic: .f, extras: nil)
         let duplicate = DynamicMap<BeatTime>.Entry(time: 1, dynamic: .f, extras: nil)
@@ -22,21 +27,6 @@ extension DynamicMapInternalTests {
         #expect(result.count == 2)
         #expect(result[0].entryID == first.entryID)
         #expect(result[1].entryID == distinct.entryID)
-    }
-
-    @Test
-    func deduplicated_empty() {
-        #expect(DynamicMap<BeatTime>.deduplicated([]).isEmpty)
-    }
-
-    @Test
-    func firstIndex_found() {
-        var map = DynamicMap<BeatTime>()
-
-        map.insert(time: 1, dynamic: .f)
-        map.insert(time: 2, dynamic: .p)
-
-        #expect(map.firstIndex(time: 2, dynamic: .p, extras: nil) == 1)
     }
 
     @Test
@@ -57,6 +47,16 @@ extension DynamicMapInternalTests {
         let position = map.firstIndex(entryID: DynamicMap<BeatTime>.EntryID())
 
         #expect(position == nil)
+    }
+
+    @Test
+    func firstIndex_found() {
+        var map = DynamicMap<BeatTime>()
+
+        map.insert(time: 1, dynamic: .f)
+        map.insert(time: 2, dynamic: .p)
+
+        #expect(map.firstIndex(time: 2, dynamic: .p, extras: nil) == 1)
     }
 
     @Test

@@ -2,8 +2,10 @@
 
 public import XestiNumbers
 
+private import Foundation
+
 /// A stereo pan position represented as a rational number in the range `[-1, 1]`.
-public struct Pan: NumberRepresentable {
+public struct Pan {
 
     // MARK: Public Initializers
 
@@ -18,10 +20,27 @@ public struct Pan: NumberRepresentable {
         self.numberValue = numberValue
     }
 
+    /// Creates a pan position by parsing its plain string representation, returning `nil` if the
+    /// string cannot be parsed or is out of range.
+    ///
+    /// - Parameter plain:  The plain string representation of the pan position (as produced by
+    ///                     `plain`).
+    public init?(plain: String) {
+        guard let numberValue = try? Self.plainParseStrategy.parse(plain)
+        else { return nil }
+
+        self.init(numberValue: numberValue)
+    }
+
     // MARK: Public Instance Properties
 
     /// The numeric value of this pan position, in the range `[-1, 1]`.
     public let numberValue: Number
+
+    /// The plain string representation of this pan position.
+    public var plain: String {
+        Self.plainFormatStyle.format(numberValue)
+    }
 }
 
 // MARK: -
@@ -51,4 +70,20 @@ extension Pan {
     public static func isValid(_ numberValue: Number) -> Bool {
         numberValue.isRational && (-1...1) ~= numberValue
     }
+
+    // MARK: Private Type Properties
+
+    private static let plainFormatStyle = Number.FormatStyle(locale: plainLocale)
+        .decimalPrecision(0...6)
+        .fractionDisplay(strategy: .simple(alwaysShowDenominator: false))
+        .grouping(false)
+
+    private static let plainLocale = Locale(identifier: "en_US_POSIX")
+
+    private static let plainParseStrategy = plainFormatStyle.parseStrategy
+}
+
+// MARK: - NumberRepresentable
+
+extension Pan: NumberRepresentable {
 }

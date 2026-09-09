@@ -2,8 +2,10 @@
 
 public import XestiNumbers
 
+private import Foundation
+
 /// A dynamic level represented as a rational number in the range `[0, 1]`.
-public struct Dynamic: NumberRepresentable {
+public struct Dynamic {
 
     // MARK: Public Initializers
 
@@ -17,10 +19,27 @@ public struct Dynamic: NumberRepresentable {
         self.numberValue = numberValue
     }
 
+    /// Creates a dynamic level by parsing its plain string representation, returning `nil` if the
+    /// string cannot be parsed or is out of range.
+    ///
+    /// - Parameter plain:  The plain string representation of the dynamic level (as produced by
+    ///                     `plain`).
+    public init?(plain: String) {
+        guard let numberValue = try? Self.plainParseStrategy.parse(plain)
+        else { return nil }
+
+        self.init(numberValue: numberValue)
+    }
+
     // MARK: Public Instance Properties
 
     /// The numeric value of this dynamic level, in the range `[0, 1]`.
     public let numberValue: Number
+
+    /// The plain string representation of this dynamic level.
+    public var plain: String {
+        Self.plainFormatStyle.format(numberValue)
+    }
 }
 
 // MARK: -
@@ -69,4 +88,20 @@ extension Dynamic {
     public static func isValid(_ numberValue: Number) -> Bool {
         numberValue.isRational && (0...1) ~= numberValue
     }
+
+    // MARK: Private Type Properties
+
+    private static let plainFormatStyle = Number.FormatStyle(locale: plainLocale)
+        .decimalPrecision(0...6)
+        .fractionDisplay(strategy: .simple(alwaysShowDenominator: false))
+        .grouping(false)
+
+    private static let plainLocale = Locale(identifier: "en_US_POSIX")
+
+    private static let plainParseStrategy = plainFormatStyle.parseStrategy
+}
+
+// MARK: - NumberRepresentable
+
+extension Dynamic: NumberRepresentable {
 }

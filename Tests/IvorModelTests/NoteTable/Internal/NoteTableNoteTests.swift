@@ -112,22 +112,6 @@ extension NoteTableNoteTests {
     }
 
     @Test
-    func noteID_defaultsToFreshIdentity() {
-        let n1 = Note(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil)
-        let n2 = Note(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil)
-
-        #expect(n1.noteID != n2.noteID)
-    }
-
-    @Test
-    func noteID_explicit() {
-        let noteID = NoteTable<BeatTime, Pitch>.NoteID()
-        let note = Note(noteID: noteID, attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil)
-
-        #expect(note.noteID == noteID)
-    }
-
-    @Test
     func init_extended() {
         let note = Note(attack: 0,
                         duration: 1,
@@ -165,6 +149,22 @@ extension NoteTableNoteTests {
         let note = Note(attack: 0, duration: 1, startPitch: .e4, endPitch: .c4, extras: nil)
 
         #expect(note.minimumPitch == .c4)
+    }
+
+    @Test
+    func noteID_defaultsToFreshIdentity() {
+        let n1 = Note(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil)
+        let n2 = Note(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil)
+
+        #expect(n1.noteID != n2.noteID)
+    }
+
+    @Test
+    func noteID_explicit() {
+        let noteID = NoteTable<BeatTime, Pitch>.NoteID()
+        let note = Note(noteID: noteID, attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil)
+
+        #expect(note.noteID == noteID)
     }
 
     @Test

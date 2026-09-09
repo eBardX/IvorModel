@@ -27,16 +27,16 @@ extension PanMap {
 
     // MARK: Internal Instance Methods
 
+    internal func firstIndex(entryID: EntryID) -> Int? {
+        entries.firstIndex { $0.entryID == entryID }
+    }
+
     internal func firstIndex(time: TimeType,
                              pan: Pan,
                              extras: Extras?) -> Int? {
         entries.firstIndex {
             (time, pan, extras) == ($0.time, $0.pan, $0.extras)
         }
-    }
-
-    internal func firstIndex(entryID: EntryID) -> Int? {
-        entries.firstIndex { $0.entryID == entryID }
     }
 
     internal func insertionIndex(for time: TimeType) -> Int {

@@ -111,13 +111,13 @@ extension NoteTable {
     /// Moves the note with the given identity to a new attack time, keeping its duration,
     /// pitches, and extras, and re-sorts it into place.
     ///
-    /// A note's position depends on all four of its attack, duration, and pitches (see
+    /// A note’s position depends on all four of its attack, duration, and pitches (see
     /// ``insertionIndex(for:duration:startPitch:endPitch:)``), so changing any one of them can
     /// reorder the table — that is the point of editing any of these fields, not a side effect to
     /// avoid.
     ///
-    /// Unlike the time-keyed maps' `move(noteID:to:)`, there is no "merges into a pre-existing
-    /// duplicate" case to account for here — a note table allows exact duplicates (see
+    /// Unlike the time-keyed maps’ `move(noteID:to:)`, there is no “merges into a pre-existing
+    /// duplicate” case to account for here — a note table allows exact duplicates (see
     /// ``insert(attack:duration:startPitch:endPitch:extras:)``), so `noteID` always keeps naming this
     /// same note after the move, regardless of whether another, unrelated note happens to already
     /// share every field with it.
@@ -232,35 +232,6 @@ extension NoteTable {
         return true
     }
 
-    /// Removes the note with the given identity, if present.
-    ///
-    /// - Parameter noteID:  The identity of the note to remove. An identity
-    ///                       naming no note is ignored.
-    ///
-    /// - Returns:  `true` if `noteID` identified a note and it was removed,
-    ///             `false` if `noteID` named no note and nothing happened.
-    @discardableResult
-    public mutating func remove(noteID: NoteID) -> Bool {
-        guard let position = firstIndex(noteID: noteID)
-        else { return false }
-
-        let note = notes.remove(at: position)
-
-        if note.extras != nil {
-            hasExtras = Self.hasExtras(in: notes)
-        }
-
-        if note.startPitch != note.endPitch {
-            hasPortamento = Self.hasPortamento(in: notes)
-        }
-
-        isMonophonic = Self.isMonophonic(in: notes)
-        pitchRange = Self.pitchRange(in: notes)
-        timeRange = Self.timeRange(in: notes)
-
-        return true
-    }
-
     /// Removes a note with a single pitch from the table, if present.
     ///
     /// - Parameter attack:     The attack time of the note to remove.
@@ -328,6 +299,35 @@ extension NoteTable {
         timeRange = Self.timeRange(in: notes)
 
         return noteID
+    }
+
+    /// Removes the note with the given identity, if present.
+    ///
+    /// - Parameter noteID:  The identity of the note to remove. An identity
+    ///                       naming no note is ignored.
+    ///
+    /// - Returns:  `true` if `noteID` identified a note and it was removed,
+    ///             `false` if `noteID` named no note and nothing happened.
+    @discardableResult
+    public mutating func remove(noteID: NoteID) -> Bool {
+        guard let position = firstIndex(noteID: noteID)
+        else { return false }
+
+        let note = notes.remove(at: position)
+
+        if note.extras != nil {
+            hasExtras = Self.hasExtras(in: notes)
+        }
+
+        if note.startPitch != note.endPitch {
+            hasPortamento = Self.hasPortamento(in: notes)
+        }
+
+        isMonophonic = Self.isMonophonic(in: notes)
+        pitchRange = Self.pitchRange(in: notes)
+        timeRange = Self.timeRange(in: notes)
+
+        return true
     }
 
     // MARK: Private Instance Methods

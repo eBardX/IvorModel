@@ -17,8 +17,14 @@ extension Work {
         /// The conversion context is missing a tuning system.
         case missingTuningSystem
 
+        /// The context’s tuning system does not support standard pitch notation.
+        case unsupportedStandardConversion
+
         /// The work was encoded with an unsupported version number.
         case unsupportedVersion(Int)
+
+        /// The work is locked, so its content cannot be modified.
+        case workIsLocked
     }
 }
 
@@ -45,8 +51,14 @@ extension Work.Error: EnhancedError {
         case .missingTuningSystem:
             "A tuning system is required for this conversion."
 
+        case .unsupportedStandardConversion:
+            "The tuning system does not support standard pitch notation."
+
         case let .unsupportedVersion(version):
             "Unsupported Ivor work version: \(version)"
+
+        case .workIsLocked:
+            "The work is locked and cannot be modified."
         }
     }
 }

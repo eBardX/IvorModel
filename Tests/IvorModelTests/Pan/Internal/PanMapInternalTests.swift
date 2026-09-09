@@ -13,6 +13,11 @@ struct PanMapInternalTests {
 
 extension PanMapInternalTests {
     @Test
+    func deduplicated_empty() {
+        #expect(PanMap<BeatTime>.deduplicated([]).isEmpty)
+    }
+
+    @Test
     func deduplicated_keepsFirstOccurrence() {
         let first = PanMap<BeatTime>.Entry(time: 1, pan: .left, extras: nil)
         let duplicate = PanMap<BeatTime>.Entry(time: 1, pan: .left, extras: nil)
@@ -22,21 +27,6 @@ extension PanMapInternalTests {
         #expect(result.count == 2)
         #expect(result[0].entryID == first.entryID)
         #expect(result[1].entryID == distinct.entryID)
-    }
-
-    @Test
-    func deduplicated_empty() {
-        #expect(PanMap<BeatTime>.deduplicated([]).isEmpty)
-    }
-
-    @Test
-    func firstIndex_found() {
-        var map = PanMap<BeatTime>()
-
-        map.insert(time: 1, pan: .left)
-        map.insert(time: 2, pan: .right)
-
-        #expect(map.firstIndex(time: 2, pan: .right, extras: nil) == 1)
     }
 
     @Test
@@ -57,6 +47,16 @@ extension PanMapInternalTests {
         let position = map.firstIndex(entryID: PanMap<BeatTime>.EntryID())
 
         #expect(position == nil)
+    }
+
+    @Test
+    func firstIndex_found() {
+        var map = PanMap<BeatTime>()
+
+        map.insert(time: 1, pan: .left)
+        map.insert(time: 2, pan: .right)
+
+        #expect(map.firstIndex(time: 2, pan: .right, extras: nil) == 1)
     }
 
     @Test
