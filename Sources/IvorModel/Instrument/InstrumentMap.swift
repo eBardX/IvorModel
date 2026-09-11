@@ -341,7 +341,7 @@ extension InstrumentMap: Codable {
     /// Entries that exactly duplicate one another — same time, instrument,
     /// and extras — are collapsed, keeping the first occurrence, the same
     /// rule ``insert(time:instrument:extras:)`` applies to a live instrument
-    /// map. This is needed here, not just belt-and-braces: a document saved
+    /// map. This is needed here, not just belt and suspenders: a document saved
     /// before that dedup rule existed can have duplicates already baked into
     /// its encoded form, and decoding is the only place left to catch those.
     ///

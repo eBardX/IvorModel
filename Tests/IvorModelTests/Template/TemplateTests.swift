@@ -54,6 +54,31 @@ extension TemplateTests {
     }
 
     @Test
+    func isLocked_default() throws {
+        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        let tmpl = Template(name: "Fugue", content: .standardBeat(markovChain))
+
+        #expect(!tmpl.isLocked)
+    }
+
+    //
+    // This type's `name` setter has no locked-check of its own — see `isLocked`'s doc comment —
+    // so renaming a locked template here succeeds; it's `ProjectDocument` that's expected to
+    // refuse to rename (or delete) a locked template before ever reaching this setter.
+    //
+
+    @Test
+    func isLocked_nameSetterHasNoGuard() throws {
+        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        var tmpl = Template(name: "Original", content: .standardBeat(markovChain))
+
+        tmpl.isLocked = true
+        tmpl.name = "Renamed"
+
+        #expect(tmpl.name == "Renamed")
+    }
+
+    @Test
     func maximumOrder() throws {
         let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
         let tmpl = Template(name: "Test", content: .standardBeat(mc))

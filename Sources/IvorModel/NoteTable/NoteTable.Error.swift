@@ -12,6 +12,9 @@ extension NoteTable {
         /// A failure that occurred while diminishing a note.
         case diminishFailure(TimeType, DurationType, PitchType, PitchType)
 
+        /// An anchor that does not contain the range of the notes it is being applied to.
+        case invalidAnchor
+
         /// An augmentation factor that is not a positive rational number ≥ 1.
         case invalidAugmentationFactor(Number)
 
@@ -51,6 +54,9 @@ extension NoteTable.Error: EnhancedError {
 
         case let .diminishFailure(attack, duration, startPitch, endPitch):
             "Unable to diminish note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
+
+        case .invalidAnchor:
+            "Invalid anchor: does not contain the range of notes it is being applied to"
 
         case let .invalidAugmentationFactor(factor):
             "Invalid augmentation factor: \(factor)"

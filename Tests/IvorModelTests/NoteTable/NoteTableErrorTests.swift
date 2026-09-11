@@ -43,6 +43,13 @@ extension NoteTableErrorTests {
     }
 
     @Test
+    func message_invalidAnchor() {
+        let msg = ErrorSB.invalidAnchor.message
+
+        #expect(msg.contains("anchor"))
+    }
+
+    @Test
     func message_invalidAugmentationFactor() {
         let msg = ErrorSB.invalidAugmentationFactor(Number(0)).message
 

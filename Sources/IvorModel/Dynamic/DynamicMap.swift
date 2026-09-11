@@ -349,7 +349,7 @@ extension DynamicMap: Codable {
     /// Entries that exactly duplicate one another — same time, dynamic level,
     /// and extras — are collapsed, keeping the first occurrence, the same rule
     /// ``insert(time:dynamic:extras:)`` applies to a live dynamic map. This is
-    /// needed here, not just belt-and-braces: a document saved before that
+    /// needed here, not just belt and suspenders: a document saved before that
     /// dedup rule existed can have duplicates already baked into its encoded
     /// form, and decoding is the only place left to catch those.
     ///

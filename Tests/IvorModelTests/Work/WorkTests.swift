@@ -103,8 +103,14 @@ extension WorkTests {
         #expect(work.partCount == 1)
     }
 
+    //
+    // This type's `name` setter has no locked-check of its own — see `isLocked`'s doc comment —
+    // so renaming a locked work here succeeds; it's `ProjectDocument` that's expected to refuse
+    // to rename (or delete) a locked work before ever reaching this setter.
+    //
+
     @Test
-    func isLocked_doesNotBlockRenaming() {
+    func isLocked_nameSetterHasNoGuard() {
         var work = Work(name: "Original")
 
         work.isLocked = true

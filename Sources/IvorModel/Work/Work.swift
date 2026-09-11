@@ -17,8 +17,8 @@ public struct Work {
     ///                       standard-beat content with an empty tempo map.
     public init(name: String = "",
                 content: Content? = nil) {
-        self._content = content ?? .standardBeat([],
-                                                 TempoMap())
+        self.unsafeContent = content ?? .standardBeat([],
+                                                      TempoMap())
         self.isLocked = false
         self.name = name
         self.workID = WorkID()
@@ -33,6 +33,19 @@ public struct Work {
     /// The unique ID of the work.
     public let workID: WorkID
 
+    /// A Boolean value indicating whether this work is locked.
+    ///
+    /// A locked work’s ``content`` cannot be modified — assigning to it traps — until it is
+    /// unlocked; this type enforces that invariant directly. Locking is meant to protect the
+    /// work as a whole, including against renaming and deletion, but those operations aren’t
+    /// performed through this type — it’s on callers (e.g. `ProjectDocument`) to check
+    /// `isLocked` before renaming or deleting a work. Setting `isLocked` itself is always
+    /// permitted, so a locked work can always be unlocked.
+    public var isLocked: Bool
+
+    /// The display name of the work.
+    public var name: String
+
     /// The musical content of the work.
     ///
     /// - Precondition: ``isLocked`` must be `false`. Callers are expected to check ``isLocked``
@@ -40,27 +53,22 @@ public struct Work {
     ///                  assigning; this is a programmer error, not a recoverable condition, so it
     ///                  traps rather than silently discarding the assignment.
     public var content: Content {
-        get { _content }
+        get { unsafeContent }
         set {
             precondition(!isLocked, "Cannot assign content to a locked work.")
 
-            _content = newValue
+            unsafeContent = newValue
         }
     }
 
-    /// A Boolean value indicating whether this work is locked.
-    ///
-    /// A locked work's ``content`` cannot be modified — assigning to it traps — until it is
-    /// unlocked. A locked work can still be renamed; setting `isLocked` itself is always
-    /// permitted, so a locked work can always be unlocked.
-    public var isLocked: Bool
-
-    /// The display name of the work.
-    public var name: String
-
     // MARK: Private Instance Properties
 
-    private var _content: Content
+    //
+    // Bypasses `content`'s locked-check setter — only for use by this type's own initializers and
+    // `Codable` conformance, where decoding must always succeed regardless of the decoded
+    // `isLocked` value.
+    //
+    private var unsafeContent: Content
 }
 
 // MARK: -
@@ -78,13 +86,13 @@ extension Work {
     public var beatTimeRange: ClosedRange<BeatTime>? {
         switch content {
         case let .absoluteBeat(parts, _):
-            Self._timeRange(of: parts)
+            Self.aggregateTimeRange(of: parts)
 
         case let .keyboardBeat(parts, _):
-            Self._timeRange(of: parts)
+            Self.aggregateTimeRange(of: parts)
 
         case let .standardBeat(parts, _):
-            Self._timeRange(of: parts)
+            Self.aggregateTimeRange(of: parts)
 
         default:
             nil
@@ -149,22 +157,22 @@ extension Work {
     public var pitchRange: (lowerBound: any PitchProtocol, upperBound: any PitchProtocol)? {
         switch content {
         case let .absoluteBeat(parts, _):
-            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
 
         case let .absoluteWall(parts):
-            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
 
         case let .keyboardBeat(parts, _):
-            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
 
         case let .keyboardWall(parts):
-            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
 
         case let .standardBeat(parts, _):
-            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
 
         case let .standardWall(parts):
-            Self._pitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
+            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
         }
     }
 
@@ -190,13 +198,13 @@ extension Work {
     public var wallTimeRange: ClosedRange<WallTime>? {
         switch content {
         case let .absoluteWall(parts):
-            Self._timeRange(of: parts)
+            Self.aggregateTimeRange(of: parts)
 
         case let .keyboardWall(parts):
-            Self._timeRange(of: parts)
+            Self.aggregateTimeRange(of: parts)
 
         case let .standardWall(parts):
-            Self._timeRange(of: parts)
+            Self.aggregateTimeRange(of: parts)
 
         default:
             nil
@@ -239,9 +247,14 @@ extension Work {
         }
     }
 
-    // MARK: Private Type Methods
+    // MARK: Internal Type Methods
 
-    private static func _pitchRange<PitchType: PitchProtocol>(of parts: [Part<some TimeProtocol, PitchType>]) -> ClosedRange<PitchType>? {
+    //
+    // Visibility is internal (not private) so `Work+Transform.swift` can reuse it to compute a
+    // shared anchor over a targeted subset of parts, rather than recomputing this reduction
+    // independently.
+    //
+    internal static func aggregatePitchRange<PitchType: PitchProtocol>(of parts: [Part<some TimeProtocol, PitchType>]) -> ClosedRange<PitchType>? {
         parts.reduce(nil) { acc, part in
             guard let partRange = part.pitchRange
             else { return acc }
@@ -253,7 +266,12 @@ extension Work {
         }
     }
 
-    private static func _timeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>]) -> ClosedRange<TimeType>? {
+    //
+    // Visibility is internal (not private) so `Work+Transform.swift` can reuse it to compute a
+    // shared anchor over a targeted subset of parts, rather than recomputing this reduction
+    // independently.
+    //
+    internal static func aggregateTimeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>]) -> ClosedRange<TimeType>? {
         parts.reduce(nil) { acc, part in
             guard let partRange = part.timeRange
             else { return acc }
@@ -285,8 +303,8 @@ extension Work: Codable {
         // Decoded directly into the backing storage, bypassing `content`'s locked-check setter —
         // decoding must always succeed, regardless of the decoded `isLocked` value.
         //
-        self._content = try container.decode(Content.self,
-                                             forKey: .content)
+        self.unsafeContent = try container.decode(Content.self,
+                                                  forKey: .content)
 
         //
         // Absent from files written before this property existed; such works were never locked.

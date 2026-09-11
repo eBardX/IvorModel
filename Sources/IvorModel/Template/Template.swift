@@ -18,6 +18,7 @@ public struct Template {
     public init(name: String,
                 content: Content) {
         self.content = content
+        self.isLocked = false
         self.name = name
         self.templateID = TemplateID()
         self.version = Self.currentVersion
@@ -33,6 +34,15 @@ public struct Template {
 
     /// The file format version of this template.
     public let version: Int
+
+    /// A Boolean value indicating whether this template is locked.
+    ///
+    /// A template’s ``content`` is always immutable, regardless of lock state; locking is
+    /// meant to protect the template against renaming and deletion instead. Neither operation
+    /// is performed through this type — it’s on callers (e.g. `ProjectDocument`) to check
+    /// `isLocked` before renaming or deleting a template. Setting `isLocked` itself is always
+    /// permitted, so a locked template can always be unlocked.
+    public var isLocked: Bool
 
     /// The display name of this template.
     public var name: String
@@ -102,6 +112,13 @@ extension Template: Codable {
         self.content = try container.decode(Content.self,
                                             forKey: .content)
 
+        //
+        // Absent from files written before this property existed; such templates were never
+        // locked.
+        //
+        self.isLocked = try container.decodeIfPresent(Bool.self,
+                                                      forKey: .isLocked) ?? false
+
         self.name = try container.decode(String.self,
                                          forKey: .name)
 
@@ -131,11 +148,14 @@ extension Template: Codable {
         try container.encode(templateID,
                              forKey: .templateID)
 
-        try container.encode(name,
-                             forKey: .name)
-
         try container.encode(version,
                              forKey: .version)
+
+        try container.encode(isLocked,
+                             forKey: .isLocked)
+
+        try container.encode(name,
+                             forKey: .name)
 
         try container.encode(content,
                              forKey: .content)
@@ -145,6 +165,7 @@ extension Template: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case content
+        case isLocked
         case name
         case templateID
         case version

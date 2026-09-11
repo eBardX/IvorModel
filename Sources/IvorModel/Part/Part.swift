@@ -3,12 +3,23 @@
 public import IvorTiming
 public import IvorTuning
 
-/// A named musical part containing a note table and associated performance maps.
+/// A named musical part containing a note table and its parameter maps.
 public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
+
+    // MARK: Public Type Aliases
+
+    /// The duration type associated with the time type.
+    public typealias DurationType = TimeType.DurationType
+
+    /// The interval type associated with the pitch type.
+    public typealias IntervalType = PitchType.IntervalType
+
+    /// The note identity type associated with the note table.
+    public typealias NoteID = NoteTable<TimeType, PitchType>.NoteID
 
     // MARK: Public Initializers
 
-    /// Creates a part with the given name and optional performance data.
+    /// Creates a part with the given name and optional note/map data.
     ///
     /// - Parameter name:           The display name of the part.
     /// - Parameter noteTable:      The note table for the part. Defaults to an

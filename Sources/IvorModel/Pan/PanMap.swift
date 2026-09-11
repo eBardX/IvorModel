@@ -348,7 +348,7 @@ extension PanMap: Codable {
     /// Entries that exactly duplicate one another — same time, pan position,
     /// and extras — are collapsed, keeping the first occurrence, the same rule
     /// ``insert(time:pan:extras:)`` applies to a live pan map. This is needed
-    /// here, not just belt-and-braces: a document saved before that dedup rule
+    /// here, not just belt and suspenders: a document saved before that dedup rule
     /// existed can have duplicates already baked into its encoded form, and
     /// decoding is the only place left to catch those.
     ///
