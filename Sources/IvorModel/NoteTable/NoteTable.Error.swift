@@ -12,6 +12,9 @@ extension NoteTable {
         /// A failure that occurred while diminishing a note.
         case diminishFailure(TimeType, DurationType, PitchType, PitchType)
 
+        /// The quantization factors array is empty.
+        case emptyQuantizationFactors
+
         /// An anchor that does not contain the range of the notes it is being applied to.
         case invalidAnchor
 
@@ -54,6 +57,9 @@ extension NoteTable.Error: EnhancedError {
 
         case let .diminishFailure(attack, duration, startPitch, endPitch):
             "Unable to diminish note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
+
+        case .emptyQuantizationFactors:
+            "Invalid quantization factors: empty"
 
         case .invalidAnchor:
             "Invalid anchor: does not contain the range of notes it is being applied to"

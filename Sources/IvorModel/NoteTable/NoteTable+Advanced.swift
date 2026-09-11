@@ -24,27 +24,28 @@ extension NoteTable where TimeType == BeatTime {
 
     // MARK: Public Instance Methods
 
-    /// Quantizes all note attack and release times to the nearest subdivision
-    /// given by the provided factors.
+    /// Quantizes note attack and release times to the nearest grid point defined by `quantizer`.
     ///
-    /// - Parameter factors:    An array of positive integer subdivision
-    ///                         factors.
-    ///
-    /// - Throws:   ``BeatQuantizer/Error/emptyFactors`` if `factors` is empty,
-    ///             or ``BeatQuantizer/Error/invalidFactor(_:)`` if any factor
-    ///             is not positive.
-    public mutating func quantize(to factors: [Int]) throws {
-        let bq = try BeatQuantizer(factors: factors)
-
+    /// - Parameter quantizer:   The quantizer whose grid to snap attack/release times to.
+    /// - Parameter noteIDs:     The identities of the notes to quantize, or `nil` to quantize
+    ///                          every note in the table.
+    public mutating func quantize(using quantizer: BeatQuantizer,
+                                  noteIDs: Set<NoteID>? = nil) {
         guard !notes.isEmpty
         else { return }
 
         for (idx, note) in notes.enumerated() {
-            let quantizedAttack = bq.quantize(note.attack)
-            let quantizedRelease = bq.quantize(note.release)
+            guard noteIDs?.contains(note.noteID) ?? true
+            else { continue }
 
-            notes[idx] = Note(attack: quantizedAttack,
-                              duration: quantizedRelease - quantizedAttack,
+            let quantizedAttack = quantizer.quantize(note.attack)
+            let quantizedRelease = quantizer.quantize(note.release)
+            let rawDuration = quantizedRelease - quantizedAttack
+            let newDuration = rawDuration.isZero ? quantizer.gridUnit : rawDuration
+
+            notes[idx] = Note(noteID: note.noteID,
+                              attack: quantizedAttack,
+                              duration: newDuration,
                               startPitch: note.startPitch,
                               endPitch: note.endPitch,
                               extras: note.extras)
@@ -53,6 +54,34 @@ extension NoteTable where TimeType == BeatTime {
         notes.sort()
 
         timeRange = Self.timeRange(in: notes)
+    }
+
+    /// Quantizes note attack and release times to the nearest subdivision given by `factors`.
+    ///
+    /// - Parameter factors:    An array of positive integer subdivision factors.
+    /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize
+    ///                         every note in the table.
+    ///
+    /// - Throws:   ``NoteTable/Error/emptyQuantizationFactors`` if `factors` is empty, or
+    ///             ``NoteTable/Error/invalidQuantizationFactor(_:)`` if any factor is not
+    ///             positive.
+    public mutating func quantize(to factors: [Int],
+                                  noteIDs: Set<NoteID>? = nil) throws(Error) {
+        let quantizer: BeatQuantizer
+
+        do {
+            quantizer = try BeatQuantizer(factors: factors)
+        } catch {
+            switch error {
+            case .emptyFactors:
+                throw Error.emptyQuantizationFactors
+
+            case let .invalidFactor(factor):
+                throw Error.invalidQuantizationFactor(factor)
+            }
+        }
+
+        quantize(using: quantizer, noteIDs: noteIDs)
     }
 }
 

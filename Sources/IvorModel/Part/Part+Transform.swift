@@ -327,8 +327,75 @@ extension Part {
 
         noteTable = newNoteTable
     }
+}
+
+// MARK: -
+
+extension Part where TimeType == BeatTime {
+
+    // MARK: Public Instance Methods
+
+    /// Quantizes note attack and release times to the nearest subdivision given by `factors`.
+    ///
+    /// - Parameter factors:    An array of positive integer subdivision factors.
+    /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize
+    ///                         every note in the note table.
+    ///
+    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` wrapping
+    ///             ``NoteTable/Error/emptyQuantizationFactors`` or
+    ///             ``NoteTable/Error/invalidQuantizationFactor(_:)`` if `factors` is invalid.
+    ///
+    /// - Note: No `applyTo` parameter — carrying `dynamicMap`/`instrumentMap`/`panMap` along with
+    ///         a quantize is a separate, unresolved design question (continuous automation
+    ///         doesn't obviously want to snap to the same rhythmic grid as note attacks) and is
+    ///         deliberately out of scope here. Do not add `MapTargets` to this method.
+    public mutating func quantize(to factors: [Int],
+                                  noteIDs: Set<NoteID>? = nil) throws(Error) {
+        var newNoteTable = noteTable
+
+        do {
+            try newNoteTable.quantize(to: factors,
+                                      noteIDs: noteIDs)
+        } catch {
+            throw Error.noteTableFailure(error)
+        }
+
+        noteTable = newNoteTable
+    }
+
+    /// Quantizes note attack and release times to the nearest grid point defined by `quantizer`.
+    ///
+    /// Unlike ``quantize(to:noteIDs:)-(_,_)``, this never throws — an already-built
+    /// ``BeatQuantizer`` has already had its factors validated, so there is nothing left for this
+    /// call to fail on. This is the overload ``Work``'s whole-work and targeted quantize variants
+    /// (`Work+Quantize.swift`) call, so a single `BeatQuantizer` can be validated once and reused
+    /// across every part without re-validating per part.
+    ///
+    /// - Parameter quantizer:   The quantizer whose grid to snap attack/release times to.
+    /// - Parameter noteIDs:     The identities of the notes to quantize, or `nil` to quantize
+    ///                          every note in the note table.
+    public mutating func quantize(to quantizer: BeatQuantizer,
+                                  noteIDs: Set<NoteID>? = nil) {
+        noteTable.quantize(using: quantizer,
+                           noteIDs: noteIDs)
+    }
+}
+
+// MARK: -
+
+extension Part {
 
     // MARK: Private Instance Methods
+
+    //
+    // `noteIDs` of `nil` means "every note", so the map should likewise carry no restriction —
+    // `nil` entryIDs, not the (possibly empty) derived set below. Only a concrete selection
+    // narrows the map, to entries whose time falls within that selection's own resolved range —
+    // the same range `NoteTable`'s own anchor/reverse logic (Phase 1) resolves for it, reused
+    // here rather than recomputed. A selection whose own range comes back `nil` (an empty or
+    // unmatched `noteIDs`) narrows the map to no entries at all, rather than falling back to
+    // every entry.
+    //
 
     //
     // `noteIDs` of `nil` means "every note", so the map should likewise carry no restriction —

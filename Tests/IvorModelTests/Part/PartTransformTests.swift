@@ -347,4 +347,58 @@ extension PartTransformTests {
         #expect(instrumentTimes == [0])
         #expect(part.noteTable.pitchRange?.lowerBound == .e4)
     }
+
+    @Test
+    func quantize_toFactorsSnapsNoteTable() throws {
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+
+        try part.quantize(to: [1])
+
+        #expect(part.noteTable.timeRange?.lowerBound == 0)
+    }
+
+    @Test
+    func quantize_toFactorsNoteTableFailureWraps() {
+        var part = PartSB(name: "Test")
+
+        #expect(throws: PartSB.Error.noteTableFailure(.emptyQuantizationFactors)) {
+            try part.quantize(to: [])
+        }
+        #expect(throws: PartSB.Error.noteTableFailure(.invalidQuantizationFactor(0))) {
+            try part.quantize(to: [0])
+        }
+    }
+
+    @Test
+    func quantize_toFactorsNoteIDsRestrictsAffectedNotes() throws {
+        var part = PartSB(name: "Test")
+
+        let noteID1 = part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        let noteID2 = part.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
+
+        try part.quantize(to: [1], noteIDs: [noteID1])
+
+        var attacksByID: [PartSB.NoteID: BeatTime] = [:]
+
+        part.noteTable.forEach { noteID, attack, _, _, _, _ in
+            attacksByID[noteID] = attack
+        }
+
+        #expect(attacksByID[noteID1] == 0)
+        #expect(attacksByID[noteID2] == BeatTime(4.49))
+    }
+
+    @Test
+    func quantize_toQuantizerNeverThrows() throws {
+        var part = PartSB(name: "Test")
+        let quantizer = try BeatQuantizer(factors: [1])
+
+        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+
+        part.quantize(to: quantizer)
+
+        #expect(part.noteTable.timeRange?.lowerBound == 0)
+    }
 }

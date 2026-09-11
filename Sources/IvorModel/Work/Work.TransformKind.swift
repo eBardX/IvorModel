@@ -18,6 +18,9 @@ extension Work {
         /// The `move(by:...)` transform.
         case move
 
+        /// The `quantize(to:...)` transform.
+        case quantize
+
         /// The `reverse(within:...)` transform.
         case reverse
 
@@ -44,6 +47,9 @@ extension Work.TransformKind: CustomStringConvertible {
 
         case .move:
             "move"
+
+        case .quantize:
+            "quantize"
 
         case .reverse:
             "reverse"

@@ -43,6 +43,13 @@ extension NoteTableErrorTests {
     }
 
     @Test
+    func message_emptyQuantizationFactors() {
+        let msg = ErrorSB.emptyQuantizationFactors.message
+
+        #expect(msg.contains("quantization"))
+    }
+
+    @Test
     func message_invalidAnchor() {
         let msg = ErrorSB.invalidAnchor.message
 

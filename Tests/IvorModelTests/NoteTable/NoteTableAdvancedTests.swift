@@ -28,11 +28,23 @@ extension NoteTableAdvancedTests {
     }
 
     @Test
-    func quantize_invalidFactors() {
+    func quantize_emptyFactors() {
         var table = NoteTableSB()
 
-        #expect(throws: (any Error).self) {
+        #expect(throws: NoteTableSB.Error.emptyQuantizationFactors) {
             try table.quantize(to: [])
+        }
+    }
+
+    @Test
+    func quantize_invalidFactor() {
+        var table = NoteTableSB()
+
+        #expect(throws: NoteTableSB.Error.invalidQuantizationFactor(0)) {
+            try table.quantize(to: [0])
+        }
+        #expect(throws: NoteTableSB.Error.invalidQuantizationFactor(-2)) {
+            try table.quantize(to: [-2])
         }
     }
 
@@ -45,6 +57,39 @@ extension NoteTableAdvancedTests {
         try table.quantize(to: [1])
 
         #expect(table.timeRange?.lowerBound == 0)
+    }
+
+    @Test
+    func quantize_collapsedNoteFloorsToGridUnit() throws {
+        var table = NoteTableSB()
+        let quantizer = try BeatQuantizer(factors: [4])
+
+        table.insert(attack: BeatTime(0.01), duration: BeatDuration(0.02), pitch: .c4)
+
+        table.quantize(using: quantizer)
+
+        let duration = table.notes.first?.duration
+
+        #expect(duration == quantizer.gridUnit)
+    }
+
+    @Test
+    func quantize_noteIDsRestrictsAffectedNotes() throws {
+        var table = NoteTableSB()
+
+        let noteID1 = table.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        let noteID2 = table.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
+
+        try table.quantize(to: [1], noteIDs: [noteID1])
+
+        var attacksByID: [NoteTableSB.NoteID: BeatTime] = [:]
+
+        table.forEach { noteID, attack, _, _, _, _ in
+            attacksByID[noteID] = attack
+        }
+
+        #expect(attacksByID[noteID1] == 0)
+        #expect(attacksByID[noteID2] == BeatTime(4.49))
     }
 
     @Test

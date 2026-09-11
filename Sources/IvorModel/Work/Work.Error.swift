@@ -11,9 +11,15 @@ extension Work {
         /// transform.
         case dynamicMapTransformFailure(TransformKind, partID: PartID, detail: String)
 
+        /// The quantization factors array is empty.
+        case emptyQuantizationFactors
+
         /// A failure that occurred in a part’s instrument map while carrying it along with a
         /// transform.
         case instrumentMapTransformFailure(TransformKind, partID: PartID, detail: String)
+
+        /// A quantization factor that is not a positive integer.
+        case invalidQuantizationFactor(Int)
 
         /// The conversion context is missing a keyboard map.
         case missingKeyboardMap
@@ -70,8 +76,14 @@ extension Work.Error: EnhancedError {
         case let .dynamicMapTransformFailure(kind, partID, detail):
             "Dynamic map failure during \(kind) of part \(partID.stringValue): \(detail)"
 
+        case .emptyQuantizationFactors:
+            "Invalid quantization factors: empty"
+
         case let .instrumentMapTransformFailure(kind, partID, detail):
             "Instrument map failure during \(kind) of part \(partID.stringValue): \(detail)"
+
+        case let .invalidQuantizationFactor(factor):
+            "Invalid quantization factor: \(factor)"
 
         case .missingKeyboardMap:
             "A keyboard map is required for this conversion."
