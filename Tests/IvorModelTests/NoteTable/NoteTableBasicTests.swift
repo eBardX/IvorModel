@@ -35,7 +35,7 @@ extension NoteTableBasicTests {
     @Test
     func forEach_yieldsDistinctIdentitiesEvenForDuplicates() {
         var table = NoteTableSB()
-        var ids: [NoteTableSB.NoteID] = []
+        var ids: [NoteID] = []
 
         // A note table allows exact duplicates (a doubled unison) — this confirms
         // identity still distinguishes them even when every field matches.
@@ -109,7 +109,7 @@ extension NoteTableBasicTests {
     @Test
     func moveAttack_found() throws {
         var table = NoteTableSB()
-        var foundNoteID: NoteTableSB.NoteID?
+        var foundNoteID: NoteID?
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
@@ -124,7 +124,7 @@ extension NoteTableBasicTests {
     @Test
     func moveAttack_notFound() {
         var table = NoteTableSB()
-        let moved = table.moveAttack(noteID: NoteTableSB.NoteID(), to: 5)
+        let moved = table.moveAttack(noteID: NoteID(), to: 5)
 
         #expect(!moved)
     }
@@ -132,7 +132,7 @@ extension NoteTableBasicTests {
     @Test
     func moveDuration_found() throws {
         var table = NoteTableSB()
-        var foundNoteID: NoteTableSB.NoteID?
+        var foundNoteID: NoteID?
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
@@ -147,7 +147,7 @@ extension NoteTableBasicTests {
     @Test
     func moveDuration_notFound() {
         var table = NoteTableSB()
-        let moved = table.moveDuration(noteID: NoteTableSB.NoteID(), to: 4)
+        let moved = table.moveDuration(noteID: NoteID(), to: 4)
 
         #expect(!moved)
     }
@@ -155,7 +155,7 @@ extension NoteTableBasicTests {
     @Test
     func movePitchEnd_found() throws {
         var table = NoteTableSB()
-        var foundNoteID: NoteTableSB.NoteID?
+        var foundNoteID: NoteID?
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
@@ -170,7 +170,7 @@ extension NoteTableBasicTests {
     @Test
     func movePitchEnd_notFound() {
         var table = NoteTableSB()
-        let moved = table.movePitchEnd(noteID: NoteTableSB.NoteID(), to: .e4)
+        let moved = table.movePitchEnd(noteID: NoteID(), to: .e4)
 
         #expect(!moved)
     }
@@ -178,7 +178,7 @@ extension NoteTableBasicTests {
     @Test
     func movePitchStart_found() throws {
         var table = NoteTableSB()
-        var foundNoteID: NoteTableSB.NoteID?
+        var foundNoteID: NoteID?
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
@@ -196,7 +196,7 @@ extension NoteTableBasicTests {
     @Test
     func movePitchStart_notFound() {
         var table = NoteTableSB()
-        let moved = table.movePitchStart(noteID: NoteTableSB.NoteID(), to: .e4)
+        let moved = table.movePitchStart(noteID: NoteID(), to: .e4)
 
         #expect(!moved)
     }
@@ -204,7 +204,7 @@ extension NoteTableBasicTests {
     @Test
     func moves_preserveIdentity() throws {
         var table = NoteTableSB()
-        var foundNoteID: NoteTableSB.NoteID?
+        var foundNoteID: NoteID?
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
@@ -214,7 +214,7 @@ extension NoteTableBasicTests {
 
         table.moveAttack(noteID: originalID, to: 5)
 
-        var idAfterMove: NoteTableSB.NoteID?
+        var idAfterMove: NoteID?
 
         table.forEach { noteID, _, _, _, _, _ in idAfterMove = noteID }
 
@@ -258,7 +258,7 @@ extension NoteTableBasicTests {
 
         #expect(removedID == firstID)
 
-        var remaining: [NoteTableSB.NoteID] = []
+        var remaining: [NoteID] = []
 
         table.forEach { noteID, _, _, _, _, _ in remaining.append(noteID) }
 
@@ -268,7 +268,7 @@ extension NoteTableBasicTests {
     @Test
     func remove_noteID_found() throws {
         var table = NoteTableSB()
-        var removedID: NoteTableSB.NoteID?
+        var removedID: NoteID?
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
@@ -287,7 +287,7 @@ extension NoteTableBasicTests {
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
-        let removed = table.remove(noteID: NoteTableSB.NoteID())
+        let removed = table.remove(noteID: NoteID())
 
         #expect(!removed)
         #expect(!table.isEmpty)

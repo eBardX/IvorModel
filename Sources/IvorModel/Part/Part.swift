@@ -14,9 +14,6 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
     /// The interval type associated with the pitch type.
     public typealias IntervalType = PitchType.IntervalType
 
-    /// The note identity type associated with the note table.
-    public typealias NoteID = NoteTable<TimeType, PitchType>.NoteID
-
     // MARK: Public Initializers
 
     /// Creates a part with the given name and optional note/map data.

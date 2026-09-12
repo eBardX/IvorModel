@@ -48,7 +48,7 @@ extension PanMapTests {
     @Test
     func forEach_yieldsDistinctIdentities() {
         var map = PanMap<BeatTime>()
-        var ids: [PanMap<BeatTime>.EntryID] = []
+        var ids: [EntryID] = []
 
         map.insert(time: 1, pan: .left)
         map.insert(time: 2, pan: .right)
@@ -116,7 +116,7 @@ extension PanMapTests {
     @Test
     func move_found() throws {
         var map = PanMap<BeatTime>()
-        var movedID: PanMap<BeatTime>.EntryID?
+        var movedID: EntryID?
 
         map.insert(time: 1, pan: .left)
 
@@ -134,13 +134,13 @@ extension PanMapTests {
     func move_notFound() {
         var map = PanMap<BeatTime>()
 
-        #expect(map.move(entryID: PanMap<BeatTime>.EntryID(), to: 1) == nil)
+        #expect(map.move(entryID: EntryID(), to: 1) == nil)
     }
 
     @Test
     func remove_entryID_found() throws {
         var map = PanMap<BeatTime>()
-        var removedID: PanMap<BeatTime>.EntryID?
+        var removedID: EntryID?
 
         map.insert(time: 1, pan: .left)
 
@@ -159,7 +159,7 @@ extension PanMapTests {
 
         map.insert(time: 1, pan: .left)
 
-        let removed = map.remove(entryID: PanMap<BeatTime>.EntryID())
+        let removed = map.remove(entryID: EntryID())
 
         #expect(!removed)
         #expect(!map.isEmpty)
@@ -200,7 +200,7 @@ extension PanMapTests {
     @Test
     func update_collapsesIntoDuplicate() throws {
         var map = PanMap<BeatTime>()
-        var ids: [PanMap<BeatTime>.EntryID] = []
+        var ids: [EntryID] = []
 
         map.insert(time: 1, pan: .left)
         map.insert(time: 1, pan: .right)
@@ -214,7 +214,7 @@ extension PanMapTests {
         #expect(result.updated)
         #expect(result.removedEntryID == ids.first)
 
-        var remaining: [PanMap<BeatTime>.EntryID] = []
+        var remaining: [EntryID] = []
 
         map.forEach { entryID, _, _, _ in remaining.append(entryID) }
 
@@ -224,7 +224,7 @@ extension PanMapTests {
     @Test
     func update_found() throws {
         var map = PanMap<BeatTime>()
-        var foundEntryID: PanMap<BeatTime>.EntryID?
+        var foundEntryID: EntryID?
 
         map.insert(time: 1, pan: .left)
 
@@ -241,7 +241,7 @@ extension PanMapTests {
     func update_notFound() {
         var map = PanMap<BeatTime>()
 
-        let result = map.update(entryID: PanMap<BeatTime>.EntryID(), pan: .right)
+        let result = map.update(entryID: EntryID(), pan: .right)
 
         #expect(!result.updated)
         #expect(result.removedEntryID == nil)

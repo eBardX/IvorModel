@@ -14,130 +14,6 @@ extension InstrumentMapTransformTests {
     private typealias InstrumentMapSB = InstrumentMap<BeatTime>
 
     @Test
-    func augment_invalidFactor() {
-        var map = InstrumentMapSB()
-
-        #expect(throws: InstrumentMapSB.Error.self) {
-            try map.augment(by: Number(0))
-        }
-    }
-
-    @Test
-    func augment_scalesTimes() throws {
-        var map = InstrumentMapSB()
-        let guitar = try #require(Instrument(stringValue: "Guitar"))
-        let piano = try #require(Instrument(stringValue: "Piano"))
-
-        map.insert(time: 1, instrument: guitar)
-        map.insert(time: 3, instrument: piano)
-
-        try map.augment(by: Number(2))
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times.sorted() == [1, 5])
-    }
-
-    @Test
-    func diminish_invalidFactor() {
-        var map = InstrumentMapSB()
-
-        #expect(throws: InstrumentMapSB.Error.self) {
-            try map.diminish(by: Number(0))
-        }
-    }
-
-    @Test
-    func diminish_scalesTimes() throws {
-        var map = InstrumentMapSB()
-        let guitar = try #require(Instrument(stringValue: "Guitar"))
-        let piano = try #require(Instrument(stringValue: "Piano"))
-
-        map.insert(time: 2, instrument: guitar)
-        map.insert(time: 6, instrument: piano)
-
-        try map.diminish(by: Number(2))
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times.sorted() == [2, 4])
-    }
-
-    @Test
-    func move_shiftsTimes() throws {
-        var map = InstrumentMapSB()
-
-        map.insert(time: 0, instrument: .vanilla)
-
-        let directedDuration = try #require(BeatTime(0).duration(to: 2))
-
-        try map.move(by: directedDuration)
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times == [2])
-    }
-
-    @Test
-    func reverse_mirrorsTimes() throws {
-        var map = InstrumentMapSB()
-        let guitar = try #require(Instrument(stringValue: "Guitar"))
-
-        map.insert(time: 0, instrument: .vanilla)
-        map.insert(time: 2, instrument: guitar)
-
-        try map.reverse()
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times.sorted() == [0, 2])
-    }
-
-    @Test
-    func augment_invalidAnchorThrows() {
-        var map = InstrumentMapSB()
-
-        map.insert(time: 2, instrument: .vanilla)
-
-        #expect(throws: InstrumentMapSB.Error.invalidAnchor) {
-            try map.augment(by: Number(2), anchor: 3)
-        }
-    }
-
-    @Test
-    func augment_validAnchorDoesNotThrow() throws {
-        var map = InstrumentMapSB()
-
-        map.insert(time: 2, instrument: .vanilla)
-
-        try map.augment(by: Number(2), anchor: 2)
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times == [2])
-    }
-
-    @Test
     func augment_entryIDsRestrictsAffectedEntries() throws {
         var map = InstrumentMapSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
@@ -155,6 +31,26 @@ extension InstrumentMapTransformTests {
         }
 
         #expect(times.sorted() == [0, 4])
+    }
+
+    @Test
+    func augment_invalidAnchorThrows() {
+        var map = InstrumentMapSB()
+
+        map.insert(time: 2, instrument: .vanilla)
+
+        #expect(throws: InstrumentMapSB.Error.invalidAnchor) {
+            try map.augment(by: Number(2), anchor: 3)
+        }
+    }
+
+    @Test
+    func augment_invalidFactor() {
+        var map = InstrumentMapSB()
+
+        #expect(throws: InstrumentMapSB.Error.self) {
+            try map.augment(by: Number(0))
+        }
     }
 
     @Test
@@ -193,27 +89,15 @@ extension InstrumentMapTransformTests {
     }
 
     @Test
-    func reverse_invalidAnchorThrows() throws {
+    func augment_scalesTimes() throws {
         var map = InstrumentMapSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
+        let piano = try #require(Instrument(stringValue: "Piano"))
 
-        map.insert(time: 0, instrument: .vanilla)
-        map.insert(time: 2, instrument: guitar)
+        map.insert(time: 1, instrument: guitar)
+        map.insert(time: 3, instrument: piano)
 
-        #expect(throws: InstrumentMapSB.Error.invalidAnchor) {
-            try map.reverse(within: BeatTime(1)...3)
-        }
-    }
-
-    @Test
-    func reverse_validAnchorDoesNotThrow() throws {
-        var map = InstrumentMapSB()
-        let guitar = try #require(Instrument(stringValue: "Guitar"))
-
-        map.insert(time: 0, instrument: .vanilla)
-        map.insert(time: 2, instrument: guitar)
-
-        try map.reverse(within: BeatTime(0)...2)
+        try map.augment(by: Number(2))
 
         var times: [BeatTime] = []
 
@@ -221,7 +105,94 @@ extension InstrumentMapTransformTests {
             times.append(time)
         }
 
-        #expect(times.sorted() == [0, 2])
+        #expect(times.sorted() == [1, 5])
+    }
+
+    @Test
+    func augment_validAnchorDoesNotThrow() throws {
+        var map = InstrumentMapSB()
+
+        map.insert(time: 2, instrument: .vanilla)
+
+        try map.augment(by: Number(2), anchor: 2)
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times == [2])
+    }
+
+    @Test
+    func diminish_invalidFactor() {
+        var map = InstrumentMapSB()
+
+        #expect(throws: InstrumentMapSB.Error.self) {
+            try map.diminish(by: Number(0))
+        }
+    }
+
+    @Test
+    func diminish_scalesTimes() throws {
+        var map = InstrumentMapSB()
+        let guitar = try #require(Instrument(stringValue: "Guitar"))
+        let piano = try #require(Instrument(stringValue: "Piano"))
+
+        map.insert(time: 2, instrument: guitar)
+        map.insert(time: 6, instrument: piano)
+
+        try map.diminish(by: Number(2))
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times.sorted() == [2, 4])
+    }
+
+    @Test
+    func move_entryIDsRestrictsAffectedEntries() throws {
+        var map = InstrumentMapSB()
+        let guitar = try #require(Instrument(stringValue: "Guitar"))
+
+        let entryID1 = map.insert(time: 0, instrument: .vanilla).entryID
+
+        map.insert(time: 4, instrument: guitar)
+
+        let directedDuration = try #require(BeatTime(0).duration(to: 2))
+
+        try map.move(by: directedDuration, entryIDs: [entryID1])
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times.sorted() == [2, 4])
+    }
+
+    @Test
+    func move_shiftsTimes() throws {
+        var map = InstrumentMapSB()
+
+        map.insert(time: 0, instrument: .vanilla)
+
+        let directedDuration = try #require(BeatTime(0).duration(to: 2))
+
+        try map.move(by: directedDuration)
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times == [2])
     }
 
     @Test
@@ -267,17 +238,27 @@ extension InstrumentMapTransformTests {
     }
 
     @Test
-    func move_entryIDsRestrictsAffectedEntries() throws {
+    func reverse_invalidAnchorThrows() throws {
         var map = InstrumentMapSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
 
-        let entryID1 = map.insert(time: 0, instrument: .vanilla).entryID
+        map.insert(time: 0, instrument: .vanilla)
+        map.insert(time: 2, instrument: guitar)
 
-        map.insert(time: 4, instrument: guitar)
+        #expect(throws: InstrumentMapSB.Error.invalidAnchor) {
+            try map.reverse(within: BeatTime(1)...3)
+        }
+    }
 
-        let directedDuration = try #require(BeatTime(0).duration(to: 2))
+    @Test
+    func reverse_mirrorsTimes() throws {
+        var map = InstrumentMapSB()
+        let guitar = try #require(Instrument(stringValue: "Guitar"))
 
-        try map.move(by: directedDuration, entryIDs: [entryID1])
+        map.insert(time: 0, instrument: .vanilla)
+        map.insert(time: 2, instrument: guitar)
+
+        try map.reverse()
 
         var times: [BeatTime] = []
 
@@ -285,6 +266,25 @@ extension InstrumentMapTransformTests {
             times.append(time)
         }
 
-        #expect(times.sorted() == [2, 4])
+        #expect(times.sorted() == [0, 2])
+    }
+
+    @Test
+    func reverse_validAnchorDoesNotThrow() throws {
+        var map = InstrumentMapSB()
+        let guitar = try #require(Instrument(stringValue: "Guitar"))
+
+        map.insert(time: 0, instrument: .vanilla)
+        map.insert(time: 2, instrument: guitar)
+
+        try map.reverse(within: BeatTime(0)...2)
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times.sorted() == [0, 2])
     }
 }

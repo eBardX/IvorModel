@@ -15,39 +15,6 @@ extension PartTransformTests {
     private typealias PartSB = Part<BeatTime, Pitch>
 
     @Test
-    func augment_scalesNoteTableAndAllMapsByDefault() throws {
-        var part = PartSB(name: "Test")
-
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .d4)
-        part.dynamicMap.insert(time: 0, dynamic: .mp)
-        part.dynamicMap.insert(time: 2, dynamic: .ff)
-        part.instrumentMap.insert(time: 0, instrument: .vanilla)
-        part.panMap.insert(time: 0, pan: .center)
-        part.panMap.insert(time: 2, pan: .right)
-
-        try part.augment(by: Number(2))
-
-        #expect(part.noteTable.timeRange?.upperBound == 6)
-
-        var dynamicTimes: [BeatTime] = []
-
-        part.dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
-        }
-
-        #expect(dynamicTimes.sorted() == [0, 4])
-
-        var panTimes: [BeatTime] = []
-
-        part.panMap.forEach { _, time, _, _ in
-            panTimes.append(time)
-        }
-
-        #expect(panTimes.sorted() == [0, 4])
-    }
-
-    @Test
     func augment_applyToExcludesAMap() throws {
         var part = PartSB(name: "Test")
 
@@ -85,6 +52,51 @@ extension PartTransformTests {
     }
 
     @Test
+    func augment_explicitEntryIDsBypassesPartDerivation() throws {
+        var part = PartSB(name: "Test")
+
+        let entryID1 = part.dynamicMap.insert(time: 0, dynamic: .mp).entryID
+
+        part.dynamicMap.insert(time: 4, dynamic: .ff)
+
+        //
+        // Calling the map's own Phase 2 method directly, with an explicit `entryIDs`,
+        // rather than going through `Part`'s `noteIDs`-driven derivation:
+        //
+        try part.dynamicMap.augment(by: Number(2), entryIDs: [entryID1])
+
+        var times: [BeatTime] = []
+
+        part.dynamicMap.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times.sorted() == [0, 4])
+    }
+
+    @Test
+    func augment_mapFailureWrapsAndLeavesPartUnchanged() {
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
+        part.dynamicMap.insert(time: 0, dynamic: .mp)
+
+        //
+        // Valid anchor for the note table's own range (5...6), but later than the
+        // dynamic map's own range (0...0), so the map's own containment check fails:
+        //
+        #expect(throws: PartSB.Error.dynamicMapFailure(.invalidAnchor)) {
+            try part.augment(by: Number(2), anchor: 5)
+        }
+
+        //
+        // All-or-nothing: the note table is left exactly as it was, even though its
+        // own augment would have succeeded on its own:
+        //
+        #expect(part.noteTable.timeRange == BeatTime(5)...BeatTime(6))
+    }
+
+    @Test
     func augment_noteIDsRestrictsCarriedMapEntries() throws {
         var part = PartSB(name: "Test")
 
@@ -116,6 +128,48 @@ extension PartTransformTests {
         //
         #expect(earlyTime == 0)
         #expect(lateTime == 10)
+    }
+
+    @Test
+    func augment_noteTableFailureWraps() {
+        var part = PartSB(name: "Test")
+
+        #expect(throws: PartSB.Error.noteTableFailure(.invalidAugmentationFactor(Number(0)))) {
+            try part.augment(by: Number(0))
+        }
+    }
+
+    @Test
+    func augment_scalesNoteTableAndAllMapsByDefault() throws {
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.noteTable.insert(attack: 2, duration: 1, pitch: .d4)
+        part.dynamicMap.insert(time: 0, dynamic: .mp)
+        part.dynamicMap.insert(time: 2, dynamic: .ff)
+        part.instrumentMap.insert(time: 0, instrument: .vanilla)
+        part.panMap.insert(time: 0, pan: .center)
+        part.panMap.insert(time: 2, pan: .right)
+
+        try part.augment(by: Number(2))
+
+        #expect(part.noteTable.timeRange?.upperBound == 6)
+
+        var dynamicTimes: [BeatTime] = []
+
+        part.dynamicMap.forEach { _, time, _, _ in
+            dynamicTimes.append(time)
+        }
+
+        #expect(dynamicTimes.sorted() == [0, 4])
+
+        var panTimes: [BeatTime] = []
+
+        part.panMap.forEach { _, time, _, _ in
+            panTimes.append(time)
+        }
+
+        #expect(panTimes.sorted() == [0, 4])
     }
 
     @Test
@@ -162,60 +216,6 @@ extension PartTransformTests {
     }
 
     @Test
-    func augment_explicitEntryIDsBypassesPartDerivation() throws {
-        var part = PartSB(name: "Test")
-
-        let entryID1 = part.dynamicMap.insert(time: 0, dynamic: .mp).entryID
-
-        part.dynamicMap.insert(time: 4, dynamic: .ff)
-
-        //
-        // Calling the map's own Phase 2 method directly, with an explicit `entryIDs`,
-        // rather than going through `Part`'s `noteIDs`-driven derivation:
-        //
-        try part.dynamicMap.augment(by: Number(2), entryIDs: [entryID1])
-
-        var times: [BeatTime] = []
-
-        part.dynamicMap.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times.sorted() == [0, 4])
-    }
-
-    @Test
-    func augment_noteTableFailureWraps() {
-        var part = PartSB(name: "Test")
-
-        #expect(throws: PartSB.Error.noteTableFailure(.invalidAugmentationFactor(Number(0)))) {
-            try part.augment(by: Number(0))
-        }
-    }
-
-    @Test
-    func augment_mapFailureWrapsAndLeavesPartUnchanged() {
-        var part = PartSB(name: "Test")
-
-        part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
-        part.dynamicMap.insert(time: 0, dynamic: .mp)
-
-        //
-        // Valid anchor for the note table's own range (5...6), but later than the
-        // dynamic map's own range (0...0), so the map's own containment check fails:
-        //
-        #expect(throws: PartSB.Error.dynamicMapFailure(.invalidAnchor)) {
-            try part.augment(by: Number(2), anchor: 5)
-        }
-
-        //
-        // All-or-nothing: the note table is left exactly as it was, even though its
-        // own augment would have succeeded on its own:
-        //
-        #expect(part.noteTable.timeRange == BeatTime(5)...BeatTime(6))
-    }
-
-    @Test
     func diminish_scalesNoteTableAndDefaultMaps() throws {
         var part = PartSB(name: "Test")
 
@@ -254,28 +254,6 @@ extension PartTransformTests {
     }
 
     @Test
-    func move_shiftsNoteTableAndDefaultMaps() throws {
-        var part = PartSB(name: "Test")
-
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part.dynamicMap.insert(time: 0, dynamic: .mp)
-
-        let directedDuration = try #require(BeatTime(0).duration(to: 2))
-
-        try part.move(by: directedDuration)
-
-        #expect(part.noteTable.timeRange?.lowerBound == 2)
-
-        var dynamicTimes: [BeatTime] = []
-
-        part.dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
-        }
-
-        #expect(dynamicTimes == [2])
-    }
-
-    @Test
     func move_noteIDsRestrictsCarriedMapEntries() throws {
         var part = PartSB(name: "Test")
 
@@ -305,6 +283,82 @@ extension PartTransformTests {
 
         #expect(earlyTime == 2)
         #expect(lateTime == 10)
+    }
+
+    @Test
+    func move_shiftsNoteTableAndDefaultMaps() throws {
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.dynamicMap.insert(time: 0, dynamic: .mp)
+
+        let directedDuration = try #require(BeatTime(0).duration(to: 2))
+
+        try part.move(by: directedDuration)
+
+        #expect(part.noteTable.timeRange?.lowerBound == 2)
+
+        var dynamicTimes: [BeatTime] = []
+
+        part.dynamicMap.forEach { _, time, _, _ in
+            dynamicTimes.append(time)
+        }
+
+        #expect(dynamicTimes == [2])
+    }
+
+    @Test
+    func quantize_toFactorsNoteIDsRestrictsAffectedNotes() throws {
+        var part = PartSB(name: "Test")
+
+        let noteID1 = part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        let noteID2 = part.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
+
+        try part.quantize(to: [1], noteIDs: [noteID1])
+
+        var attacksByID: [NoteID: BeatTime] = [:]
+
+        part.noteTable.forEach { noteID, attack, _, _, _, _ in
+            attacksByID[noteID] = attack
+        }
+
+        #expect(attacksByID[noteID1] == 0)
+        #expect(attacksByID[noteID2] == BeatTime(4.49))
+    }
+
+    @Test
+    func quantize_toFactorsNoteTableFailureWraps() {
+        var part = PartSB(name: "Test")
+
+        #expect(throws: PartSB.Error.noteTableFailure(.emptyQuantizationFactors)) {
+            try part.quantize(to: [])
+        }
+        #expect(throws: PartSB.Error.noteTableFailure(.invalidQuantizationFactor(0))) {
+            try part.quantize(to: [0])
+        }
+    }
+
+    @Test
+    func quantize_toFactorsSnapsNoteTable() throws {
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+
+        try part.quantize(to: [1])
+
+        #expect(part.noteTable.timeRange?.lowerBound == 0)
+    }
+
+    @Test
+    func quantize_toQuantizerNeverThrows() throws {
+        var part = PartSB(name: "Test")
+        let quantizer = try BeatQuantizer(factors: [1])
+
+        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+
+        part.quantize(to: quantizer)
+
+        #expect(part.noteTable.timeRange?.lowerBound == 0)
     }
 
     @Test
@@ -346,59 +400,5 @@ extension PartTransformTests {
 
         #expect(instrumentTimes == [0])
         #expect(part.noteTable.pitchRange?.lowerBound == .e4)
-    }
-
-    @Test
-    func quantize_toFactorsSnapsNoteTable() throws {
-        var part = PartSB(name: "Test")
-
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
-
-        try part.quantize(to: [1])
-
-        #expect(part.noteTable.timeRange?.lowerBound == 0)
-    }
-
-    @Test
-    func quantize_toFactorsNoteTableFailureWraps() {
-        var part = PartSB(name: "Test")
-
-        #expect(throws: PartSB.Error.noteTableFailure(.emptyQuantizationFactors)) {
-            try part.quantize(to: [])
-        }
-        #expect(throws: PartSB.Error.noteTableFailure(.invalidQuantizationFactor(0))) {
-            try part.quantize(to: [0])
-        }
-    }
-
-    @Test
-    func quantize_toFactorsNoteIDsRestrictsAffectedNotes() throws {
-        var part = PartSB(name: "Test")
-
-        let noteID1 = part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
-        let noteID2 = part.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
-
-        try part.quantize(to: [1], noteIDs: [noteID1])
-
-        var attacksByID: [PartSB.NoteID: BeatTime] = [:]
-
-        part.noteTable.forEach { noteID, attack, _, _, _, _ in
-            attacksByID[noteID] = attack
-        }
-
-        #expect(attacksByID[noteID1] == 0)
-        #expect(attacksByID[noteID2] == BeatTime(4.49))
-    }
-
-    @Test
-    func quantize_toQuantizerNeverThrows() throws {
-        var part = PartSB(name: "Test")
-        let quantizer = try BeatQuantizer(factors: [1])
-
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
-
-        part.quantize(to: quantizer)
-
-        #expect(part.noteTable.timeRange?.lowerBound == 0)
     }
 }

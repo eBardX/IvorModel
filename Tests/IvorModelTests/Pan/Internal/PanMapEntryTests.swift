@@ -62,7 +62,7 @@ extension PanMapEntryTests {
 
     @Test
     func entryID_explicit() {
-        let entryID = PanMap<BeatTime>.EntryID()
+        let entryID = EntryID()
         let entry = Entry(entryID: entryID, time: 1, pan: .left, extras: nil)
 
         #expect(entry.entryID == entryID)

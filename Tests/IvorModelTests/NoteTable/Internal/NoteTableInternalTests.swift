@@ -28,7 +28,7 @@ extension NoteTableInternalTests {
     @Test
     func firstIndex_noteID_found() throws {
         var table = NoteTableSB()
-        var foundNoteID: NoteTableSB.NoteID?
+        var foundNoteID: NoteID?
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
@@ -40,7 +40,7 @@ extension NoteTableInternalTests {
     @Test
     func firstIndex_noteID_notFound() {
         let table = NoteTableSB()
-        let position = table.firstIndex(noteID: NoteTableSB.NoteID())
+        let position = table.firstIndex(noteID: NoteID())
 
         #expect(position == nil)
     }

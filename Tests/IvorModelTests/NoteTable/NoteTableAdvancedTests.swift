@@ -29,6 +29,20 @@ extension NoteTableAdvancedTests {
     }
 
     @Test
+    func quantize_collapsedNoteFloorsToGridUnit() throws {
+        var table = NoteTableSB()
+        let quantizer = try BeatQuantizer(factors: [4])
+
+        table.insert(attack: BeatTime(0.01), duration: BeatDuration(0.02), pitch: .c4)
+
+        table.quantize(using: quantizer)
+
+        let duration = table.notes.first?.duration
+
+        #expect(duration == quantizer.gridUnit)
+    }
+
+    @Test
     func quantize_emptyFactors() {
         var table = NoteTableSB()
 
@@ -50,31 +64,6 @@ extension NoteTableAdvancedTests {
     }
 
     @Test
-    func quantize_snapsToGrid() throws {
-        var table = NoteTableSB()
-
-        table.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
-
-        try table.quantize(to: [1])
-
-        #expect(table.timeRange?.lowerBound == 0)
-    }
-
-    @Test
-    func quantize_collapsedNoteFloorsToGridUnit() throws {
-        var table = NoteTableSB()
-        let quantizer = try BeatQuantizer(factors: [4])
-
-        table.insert(attack: BeatTime(0.01), duration: BeatDuration(0.02), pitch: .c4)
-
-        table.quantize(using: quantizer)
-
-        let duration = table.notes.first?.duration
-
-        #expect(duration == quantizer.gridUnit)
-    }
-
-    @Test
     func quantize_noteIDsRestrictsAffectedNotes() throws {
         var table = NoteTableSB()
 
@@ -83,7 +72,7 @@ extension NoteTableAdvancedTests {
 
         try table.quantize(to: [1], noteIDs: [noteID1])
 
-        var attacksByID: [NoteTableSB.NoteID: BeatTime] = [:]
+        var attacksByID: [NoteID: BeatTime] = [:]
 
         table.forEach { noteID, attack, _, _, _, _ in
             attacksByID[noteID] = attack
@@ -91,6 +80,17 @@ extension NoteTableAdvancedTests {
 
         #expect(attacksByID[noteID1] == 0)
         #expect(attacksByID[noteID2] == BeatTime(4.49))
+    }
+
+    @Test
+    func quantize_snapsToGrid() throws {
+        var table = NoteTableSB()
+
+        table.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+
+        try table.quantize(to: [1])
+
+        #expect(table.timeRange?.lowerBound == 0)
     }
 
     @Test

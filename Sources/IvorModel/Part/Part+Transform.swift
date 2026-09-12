@@ -387,33 +387,14 @@ extension Part {
 
     // MARK: Private Instance Methods
 
-    //
-    // `noteIDs` of `nil` means "every note", so the map should likewise carry no restriction —
-    // `nil` entryIDs, not the (possibly empty) derived set below. Only a concrete selection
-    // narrows the map, to entries whose time falls within that selection's own resolved range —
-    // the same range `NoteTable`'s own anchor/reverse logic (Phase 1) resolves for it, reused
-    // here rather than recomputed. A selection whose own range comes back `nil` (an empty or
-    // unmatched `noteIDs`) narrows the map to no entries at all, rather than falling back to
-    // every entry.
-    //
-
-    //
-    // `noteIDs` of `nil` means "every note", so the map should likewise carry no restriction —
-    // `nil` entryIDs, not the (possibly empty) derived set below. Only a concrete selection
-    // narrows the map, to entries whose time falls within that selection's own resolved range —
-    // the same range `NoteTable`'s own anchor/reverse logic (Phase 1) resolves for it, reused
-    // here rather than recomputed. A selection whose own range comes back `nil` (an empty or
-    // unmatched `noteIDs`) narrows the map to no entries at all, rather than falling back to
-    // every entry.
-    //
-    private func _dynamicEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<DynamicMap<TimeType>.EntryID>? {
+    private func _dynamicEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
         guard let noteIDs
         else { return nil }
 
         guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
-        var entryIDs: Set<DynamicMap<TimeType>.EntryID> = []
+        var entryIDs: Set<EntryID> = []
 
         dynamicMap.forEach { entryID, time, _, _ in
             if range.contains(time) {
@@ -424,14 +405,14 @@ extension Part {
         return entryIDs
     }
 
-    private func _instrumentEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<InstrumentMap<TimeType>.EntryID>? {
+    private func _instrumentEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
         guard let noteIDs
         else { return nil }
 
         guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
-        var entryIDs: Set<InstrumentMap<TimeType>.EntryID> = []
+        var entryIDs: Set<EntryID> = []
 
         instrumentMap.forEach { entryID, time, _, _ in
             if range.contains(time) {
@@ -442,14 +423,14 @@ extension Part {
         return entryIDs
     }
 
-    private func _panEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<PanMap<TimeType>.EntryID>? {
+    private func _panEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
         guard let noteIDs
         else { return nil }
 
         guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
-        var entryIDs: Set<PanMap<TimeType>.EntryID> = []
+        var entryIDs: Set<EntryID> = []
 
         panMap.forEach { entryID, time, _, _ in
             if range.contains(time) {

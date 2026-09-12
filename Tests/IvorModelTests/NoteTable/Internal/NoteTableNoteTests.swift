@@ -161,7 +161,7 @@ extension NoteTableNoteTests {
 
     @Test
     func noteID_explicit() {
-        let noteID = NoteTable<BeatTime, Pitch>.NoteID()
+        let noteID = NoteID()
         let note = Note(noteID: noteID, attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil)
 
         #expect(note.noteID == noteID)

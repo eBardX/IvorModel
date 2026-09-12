@@ -39,7 +39,7 @@ extension InstrumentMapInternalTests {
     @Test
     func firstIndex_entryID_found() throws {
         var map = InstrumentMap<BeatTime>()
-        var foundEntryID: InstrumentMap<BeatTime>.EntryID?
+        var foundEntryID: EntryID?
 
         map.insert(time: 1, instrument: guitar)
 
@@ -51,7 +51,7 @@ extension InstrumentMapInternalTests {
     @Test
     func firstIndex_entryID_notFound() {
         let map = InstrumentMap<BeatTime>()
-        let position = map.firstIndex(entryID: InstrumentMap<BeatTime>.EntryID())
+        let position = map.firstIndex(entryID: EntryID())
 
         #expect(position == nil)
     }

@@ -36,7 +36,7 @@ extension PanMap.Entry {
 
     // MARK: Internal Instance Properties
 
-    internal var entryID: PanMap.EntryID {
+    internal var entryID: EntryID {
         switch self {
         case let .extended(entryID, _, _, _),
             let .simple(entryID, _, _):

@@ -68,7 +68,7 @@ extension DynamicMapTests {
     @Test
     func forEach_yieldsDistinctIdentities() {
         var map = DynamicMap<BeatTime>()
-        var ids: [DynamicMap<BeatTime>.EntryID] = []
+        var ids: [EntryID] = []
 
         map.insert(time: 1, dynamic: .f)
         map.insert(time: 2, dynamic: .p)
@@ -136,7 +136,7 @@ extension DynamicMapTests {
     @Test
     func move_found() throws {
         var map = DynamicMap<BeatTime>()
-        var movedID: DynamicMap<BeatTime>.EntryID?
+        var movedID: EntryID?
 
         map.insert(time: 1, dynamic: .f)
 
@@ -153,13 +153,13 @@ extension DynamicMapTests {
     func move_notFound() {
         var map = DynamicMap<BeatTime>()
 
-        #expect(map.move(entryID: DynamicMap<BeatTime>.EntryID(), to: 1) == nil)
+        #expect(map.move(entryID: EntryID(), to: 1) == nil)
     }
 
     @Test
     func remove_entryID_found() throws {
         var map = DynamicMap<BeatTime>()
-        var removedID: DynamicMap<BeatTime>.EntryID?
+        var removedID: EntryID?
 
         map.insert(time: 1, dynamic: .f)
 
@@ -178,7 +178,7 @@ extension DynamicMapTests {
 
         map.insert(time: 1, dynamic: .f)
 
-        let removed = map.remove(entryID: DynamicMap<BeatTime>.EntryID())
+        let removed = map.remove(entryID: EntryID())
 
         #expect(!removed)
         #expect(!map.isEmpty)
@@ -219,7 +219,7 @@ extension DynamicMapTests {
     @Test
     func update_collapsesIntoDuplicate() throws {
         var map = DynamicMap<BeatTime>()
-        var ids: [DynamicMap<BeatTime>.EntryID] = []
+        var ids: [EntryID] = []
 
         map.insert(time: 1, dynamic: .f)
         map.insert(time: 1, dynamic: .p)
@@ -233,7 +233,7 @@ extension DynamicMapTests {
         #expect(result.updated)
         #expect(result.removedEntryID == ids.first)
 
-        var remaining: [DynamicMap<BeatTime>.EntryID] = []
+        var remaining: [EntryID] = []
 
         map.forEach { entryID, _, _, _ in remaining.append(entryID) }
 
@@ -243,7 +243,7 @@ extension DynamicMapTests {
     @Test
     func update_found() throws {
         var map = DynamicMap<BeatTime>()
-        var foundEntryID: DynamicMap<BeatTime>.EntryID?
+        var foundEntryID: EntryID?
 
         map.insert(time: 1, dynamic: .f)
 
@@ -260,7 +260,7 @@ extension DynamicMapTests {
     func update_notFound() {
         var map = DynamicMap<BeatTime>()
 
-        let result = map.update(entryID: DynamicMap<BeatTime>.EntryID(), dynamic: .p)
+        let result = map.update(entryID: EntryID(), dynamic: .p)
 
         #expect(!result.updated)
         #expect(result.removedEntryID == nil)

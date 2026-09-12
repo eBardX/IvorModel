@@ -14,125 +14,6 @@ extension DynamicMapTransformTests {
     private typealias DynamicMapSB = DynamicMap<BeatTime>
 
     @Test
-    func augment_invalidFactor() {
-        var map = DynamicMapSB()
-
-        #expect(throws: DynamicMapSB.Error.self) {
-            try map.augment(by: Number(0))
-        }
-    }
-
-    @Test
-    func augment_scalesTimes() throws {
-        var map = DynamicMapSB()
-
-        map.insert(time: 1, dynamic: .mp)
-        map.insert(time: 3, dynamic: .ff)
-
-        try map.augment(by: Number(2))
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times.sorted() == [1, 5])
-    }
-
-    @Test
-    func diminish_invalidFactor() {
-        var map = DynamicMapSB()
-
-        #expect(throws: DynamicMapSB.Error.self) {
-            try map.diminish(by: Number(0))
-        }
-    }
-
-    @Test
-    func diminish_scalesTimes() throws {
-        var map = DynamicMapSB()
-
-        map.insert(time: 2, dynamic: .mp)
-        map.insert(time: 6, dynamic: .ff)
-
-        try map.diminish(by: Number(2))
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times.sorted() == [2, 4])
-    }
-
-    @Test
-    func move_shiftsTimes() throws {
-        var map = DynamicMapSB()
-
-        map.insert(time: 0, dynamic: .mp)
-
-        let directedDuration = try #require(BeatTime(0).duration(to: 2))
-
-        try map.move(by: directedDuration)
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times == [2])
-    }
-
-    @Test
-    func reverse_mirrorsTimes() throws {
-        var map = DynamicMapSB()
-
-        map.insert(time: 0, dynamic: .mp)
-        map.insert(time: 2, dynamic: .ff)
-
-        try map.reverse()
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times.sorted() == [0, 2])
-    }
-
-    @Test
-    func augment_invalidAnchorThrows() {
-        var map = DynamicMapSB()
-
-        map.insert(time: 2, dynamic: .mp)
-
-        #expect(throws: DynamicMapSB.Error.invalidAnchor) {
-            try map.augment(by: Number(2), anchor: 3)
-        }
-    }
-
-    @Test
-    func augment_validAnchorDoesNotThrow() throws {
-        var map = DynamicMapSB()
-
-        map.insert(time: 2, dynamic: .mp)
-
-        try map.augment(by: Number(2), anchor: 2)
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times == [2])
-    }
-
-    @Test
     func augment_entryIDsRestrictsAffectedEntries() throws {
         var map = DynamicMapSB()
 
@@ -149,6 +30,26 @@ extension DynamicMapTransformTests {
         }
 
         #expect(times.sorted() == [0, 4])
+    }
+
+    @Test
+    func augment_invalidAnchorThrows() {
+        var map = DynamicMapSB()
+
+        map.insert(time: 2, dynamic: .mp)
+
+        #expect(throws: DynamicMapSB.Error.invalidAnchor) {
+            try map.augment(by: Number(2), anchor: 3)
+        }
+    }
+
+    @Test
+    func augment_invalidFactor() {
+        var map = DynamicMapSB()
+
+        #expect(throws: DynamicMapSB.Error.self) {
+            try map.augment(by: Number(0))
+        }
     }
 
     @Test
@@ -185,25 +86,13 @@ extension DynamicMapTransformTests {
     }
 
     @Test
-    func reverse_invalidAnchorThrows() {
+    func augment_scalesTimes() throws {
         var map = DynamicMapSB()
 
-        map.insert(time: 0, dynamic: .mp)
-        map.insert(time: 2, dynamic: .ff)
+        map.insert(time: 1, dynamic: .mp)
+        map.insert(time: 3, dynamic: .ff)
 
-        #expect(throws: DynamicMapSB.Error.invalidAnchor) {
-            try map.reverse(within: BeatTime(1)...3)
-        }
-    }
-
-    @Test
-    func reverse_validAnchorDoesNotThrow() throws {
-        var map = DynamicMapSB()
-
-        map.insert(time: 0, dynamic: .mp)
-        map.insert(time: 2, dynamic: .ff)
-
-        try map.reverse(within: BeatTime(0)...2)
+        try map.augment(by: Number(2))
 
         var times: [BeatTime] = []
 
@@ -211,7 +100,91 @@ extension DynamicMapTransformTests {
             times.append(time)
         }
 
-        #expect(times.sorted() == [0, 2])
+        #expect(times.sorted() == [1, 5])
+    }
+
+    @Test
+    func augment_validAnchorDoesNotThrow() throws {
+        var map = DynamicMapSB()
+
+        map.insert(time: 2, dynamic: .mp)
+
+        try map.augment(by: Number(2), anchor: 2)
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times == [2])
+    }
+
+    @Test
+    func diminish_invalidFactor() {
+        var map = DynamicMapSB()
+
+        #expect(throws: DynamicMapSB.Error.self) {
+            try map.diminish(by: Number(0))
+        }
+    }
+
+    @Test
+    func diminish_scalesTimes() throws {
+        var map = DynamicMapSB()
+
+        map.insert(time: 2, dynamic: .mp)
+        map.insert(time: 6, dynamic: .ff)
+
+        try map.diminish(by: Number(2))
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times.sorted() == [2, 4])
+    }
+
+    @Test
+    func move_entryIDsRestrictsAffectedEntries() throws {
+        var map = DynamicMapSB()
+
+        let entryID1 = map.insert(time: 0, dynamic: .mp).entryID
+
+        map.insert(time: 4, dynamic: .mf)
+
+        let directedDuration = try #require(BeatTime(0).duration(to: 2))
+
+        try map.move(by: directedDuration, entryIDs: [entryID1])
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times.sorted() == [2, 4])
+    }
+
+    @Test
+    func move_shiftsTimes() throws {
+        var map = DynamicMapSB()
+
+        map.insert(time: 0, dynamic: .mp)
+
+        let directedDuration = try #require(BeatTime(0).duration(to: 2))
+
+        try map.move(by: directedDuration)
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times == [2])
     }
 
     @Test
@@ -255,16 +228,25 @@ extension DynamicMapTransformTests {
     }
 
     @Test
-    func move_entryIDsRestrictsAffectedEntries() throws {
+    func reverse_invalidAnchorThrows() {
         var map = DynamicMapSB()
 
-        let entryID1 = map.insert(time: 0, dynamic: .mp).entryID
+        map.insert(time: 0, dynamic: .mp)
+        map.insert(time: 2, dynamic: .ff)
 
-        map.insert(time: 4, dynamic: .mf)
+        #expect(throws: DynamicMapSB.Error.invalidAnchor) {
+            try map.reverse(within: BeatTime(1)...3)
+        }
+    }
 
-        let directedDuration = try #require(BeatTime(0).duration(to: 2))
+    @Test
+    func reverse_mirrorsTimes() throws {
+        var map = DynamicMapSB()
 
-        try map.move(by: directedDuration, entryIDs: [entryID1])
+        map.insert(time: 0, dynamic: .mp)
+        map.insert(time: 2, dynamic: .ff)
+
+        try map.reverse()
 
         var times: [BeatTime] = []
 
@@ -272,6 +254,24 @@ extension DynamicMapTransformTests {
             times.append(time)
         }
 
-        #expect(times.sorted() == [2, 4])
+        #expect(times.sorted() == [0, 2])
+    }
+
+    @Test
+    func reverse_validAnchorDoesNotThrow() throws {
+        var map = DynamicMapSB()
+
+        map.insert(time: 0, dynamic: .mp)
+        map.insert(time: 2, dynamic: .ff)
+
+        try map.reverse(within: BeatTime(0)...2)
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times.sorted() == [0, 2])
     }
 }

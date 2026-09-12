@@ -14,6 +14,30 @@ struct WorkConvertTests {
 
 extension WorkConvertTests {
     @Test
+    func convert_lockedWork_alreadyMatching_doesNotThrow() throws {
+        var work = Work(content: .standardBeat([], TempoMap()))
+
+        work.isLocked = true
+
+        let result = try work.convert(timeBasis: work.timeBasis,
+                                      pitchNotation: work.pitchNotation)
+
+        #expect(result == work)
+    }
+
+    @Test
+    func convert_lockedWork_throws() {
+        var work = Work(content: .standardBeat([], TempoMap()))
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.convert(timeBasis: .wall,
+                             pitchNotation: .standard)
+        }
+    }
+
+    @Test
     func convert_missingKeyboardMap() {
         let part = Part<BeatTime, Frequency>(name: "Piano")
         let work = Work(content: .absoluteBeat([part], TempoMap()))
@@ -73,30 +97,6 @@ extension WorkConvertTests {
                              pitchNotation: .absolute,
                              context: Work.ConvertContext())
         }
-    }
-
-    @Test
-    func convert_lockedWork_throws() {
-        var work = Work(content: .standardBeat([], TempoMap()))
-
-        work.isLocked = true
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.convert(timeBasis: .wall,
-                             pitchNotation: .standard)
-        }
-    }
-
-    @Test
-    func convert_lockedWork_alreadyMatching_doesNotThrow() throws {
-        var work = Work(content: .standardBeat([], TempoMap()))
-
-        work.isLocked = true
-
-        let result = try work.convert(timeBasis: work.timeBasis,
-                                      pitchNotation: work.pitchNotation)
-
-        #expect(result == work)
     }
 
     @Test

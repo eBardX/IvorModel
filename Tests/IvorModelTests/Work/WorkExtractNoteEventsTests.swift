@@ -52,6 +52,16 @@ extension WorkExtractNoteEventsTests {
     }
 
     @Test
+    func extractNoteEvents_emptyWork_returnsEmptyArrayNotNil() throws {
+        let work = Work(content: .standardBeat([], TempoMap()))
+
+        let events: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
+        let unwrapped = try #require(events)
+
+        #expect(unwrapped.isEmpty)
+    }
+
+    @Test
     func extractNoteEvents_keyboardBeat_returnsMatchingOverloadOnly() {
         var part = Part<BeatTime, NoteNumber>(name: "Violin")
 
@@ -82,33 +92,39 @@ extension WorkExtractNoteEventsTests {
     }
 
     @Test
-    func extractNoteEvents_standardBeat_returnsMatchingOverloadOnly() {
-        var part = Part<BeatTime, Pitch>(name: "Violin")
+    func extractNoteEvents_multiPart_mergesSortedByAttackTimeAcrossParts() throws {
+        var part1 = Part<BeatTime, Pitch>(name: "Violin")
+        var part2 = Part<BeatTime, Pitch>(name: "Cello")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        // Each part's own notes are contiguous (no gaps), so `extractNoteEvents()` doesn't insert
+        // any rest events for that part; only the cross-part merge/sort is under test here.
+        part1.noteTable.insert(attack: 0, duration: 2, pitch: .c4)
+        part1.noteTable.insert(attack: 2, duration: 2, pitch: .d4)
 
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        part2.noteTable.insert(attack: 0, duration: 1, pitch: .e3)
+        part2.noteTable.insert(attack: 1, duration: 1, pitch: .f3)
+        part2.noteTable.insert(attack: 2, duration: 2, pitch: .g3)
 
-        let matching: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
-        let mismatch: [Work.TaggedNoteEvent<WallTime, Pitch>]? = work.extractNoteEvents()
+        let part1ID = part1.partID
+        let part2ID = part2.partID
+        let work = Work(content: .standardBeat([part1, part2], TempoMap()))
 
-        #expect(matching != nil)
-        #expect(mismatch == nil)
+        let events: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
+        let unwrapped = try #require(events)
+
+        #expect(unwrapped.map(\.attack) == [0, 0, 1, 2, 2])
+        #expect(unwrapped.map(\.partID) == [part1ID, part2ID, part2ID, part1ID, part2ID])
     }
 
     @Test
-    func extractNoteEvents_standardWall_returnsMatchingOverloadOnly() {
-        var part = Part<WallTime, Pitch>(name: "Violin")
+    func extractNoteEvents_partWithEmptyNoteTable_returnsEmptyArrayNotNil() throws {
+        let part = Part<BeatTime, Pitch>(name: "Violin")
+        let work = Work(content: .standardBeat([part], TempoMap()))
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        let events: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
+        let unwrapped = try #require(events)
 
-        let work = Work(content: .standardWall([part]))
-
-        let matching: [Work.TaggedNoteEvent<WallTime, Pitch>]? = work.extractNoteEvents()
-        let mismatch: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
-
-        #expect(matching != nil)
-        #expect(mismatch == nil)
+        #expect(unwrapped.isEmpty)
     }
 
     @Test
@@ -138,48 +154,32 @@ extension WorkExtractNoteEventsTests {
     }
 
     @Test
-    func extractNoteEvents_emptyWork_returnsEmptyArrayNotNil() throws {
-        let work = Work(content: .standardBeat([], TempoMap()))
+    func extractNoteEvents_standardBeat_returnsMatchingOverloadOnly() {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        let events: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
-        let unwrapped = try #require(events)
+        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
-        #expect(unwrapped.isEmpty)
-    }
-
-    @Test
-    func extractNoteEvents_partWithEmptyNoteTable_returnsEmptyArrayNotNil() throws {
-        let part = Part<BeatTime, Pitch>(name: "Violin")
         let work = Work(content: .standardBeat([part], TempoMap()))
 
-        let events: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
-        let unwrapped = try #require(events)
+        let matching: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
+        let mismatch: [Work.TaggedNoteEvent<WallTime, Pitch>]? = work.extractNoteEvents()
 
-        #expect(unwrapped.isEmpty)
+        #expect(matching != nil)
+        #expect(mismatch == nil)
     }
 
     @Test
-    func extractNoteEvents_multiPart_mergesSortedByAttackTimeAcrossParts() throws {
-        var part1 = Part<BeatTime, Pitch>(name: "Violin")
-        var part2 = Part<BeatTime, Pitch>(name: "Cello")
+    func extractNoteEvents_standardWall_returnsMatchingOverloadOnly() {
+        var part = Part<WallTime, Pitch>(name: "Violin")
 
-        // Each part's own notes are contiguous (no gaps), so `extractNoteEvents()` doesn't insert
-        // any rest events for that part; only the cross-part merge/sort is under test here.
-        part1.noteTable.insert(attack: 0, duration: 2, pitch: .c4)
-        part1.noteTable.insert(attack: 2, duration: 2, pitch: .d4)
+        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
-        part2.noteTable.insert(attack: 0, duration: 1, pitch: .e3)
-        part2.noteTable.insert(attack: 1, duration: 1, pitch: .f3)
-        part2.noteTable.insert(attack: 2, duration: 2, pitch: .g3)
+        let work = Work(content: .standardWall([part]))
 
-        let part1ID = part1.partID
-        let part2ID = part2.partID
-        let work = Work(content: .standardBeat([part1, part2], TempoMap()))
+        let matching: [Work.TaggedNoteEvent<WallTime, Pitch>]? = work.extractNoteEvents()
+        let mismatch: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
 
-        let events: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
-        let unwrapped = try #require(events)
-
-        #expect(unwrapped.map(\.attack) == [0, 0, 1, 2, 2])
-        #expect(unwrapped.map(\.partID) == [part1ID, part2ID, part2ID, part1ID, part2ID])
+        #expect(matching != nil)
+        #expect(mismatch == nil)
     }
 }

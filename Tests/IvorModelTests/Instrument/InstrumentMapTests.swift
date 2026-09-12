@@ -75,7 +75,7 @@ extension InstrumentMapTests {
     @Test
     func forEach_yieldsDistinctIdentities() {
         var map = InstrumentMap<BeatTime>()
-        var ids: [InstrumentMap<BeatTime>.EntryID] = []
+        var ids: [EntryID] = []
 
         map.insert(time: 1, instrument: guitar)
         map.insert(time: 2, instrument: piano)
@@ -151,7 +151,7 @@ extension InstrumentMapTests {
     @Test
     func move_found() throws {
         var map = InstrumentMap<BeatTime>()
-        var movedID: InstrumentMap<BeatTime>.EntryID?
+        var movedID: EntryID?
 
         map.insert(time: 1, instrument: guitar)
 
@@ -168,13 +168,13 @@ extension InstrumentMapTests {
     func move_notFound() {
         var map = InstrumentMap<BeatTime>()
 
-        #expect(map.move(entryID: InstrumentMap<BeatTime>.EntryID(), to: 1) == nil)
+        #expect(map.move(entryID: EntryID(), to: 1) == nil)
     }
 
     @Test
     func remove_entryID_found() throws {
         var map = InstrumentMap<BeatTime>()
-        var removedID: InstrumentMap<BeatTime>.EntryID?
+        var removedID: EntryID?
 
         map.insert(time: 1, instrument: guitar)
 
@@ -193,7 +193,7 @@ extension InstrumentMapTests {
 
         map.insert(time: 1, instrument: guitar)
 
-        let removed = map.remove(entryID: InstrumentMap<BeatTime>.EntryID())
+        let removed = map.remove(entryID: EntryID())
 
         #expect(!removed)
         #expect(!map.isEmpty)
@@ -250,7 +250,7 @@ extension InstrumentMapTests {
     @Test
     func update_collapsesIntoDuplicate() throws {
         var map = InstrumentMap<BeatTime>()
-        var ids: [InstrumentMap<BeatTime>.EntryID] = []
+        var ids: [EntryID] = []
 
         map.insert(time: 1, instrument: guitar)
         map.insert(time: 1, instrument: piano)
@@ -264,7 +264,7 @@ extension InstrumentMapTests {
         #expect(result.updated)
         #expect(result.removedEntryID == ids.first)
 
-        var remaining: [InstrumentMap<BeatTime>.EntryID] = []
+        var remaining: [EntryID] = []
 
         map.forEach { entryID, _, _, _ in remaining.append(entryID) }
 
@@ -274,7 +274,7 @@ extension InstrumentMapTests {
     @Test
     func update_found() throws {
         var map = InstrumentMap<BeatTime>()
-        var foundEntryID: InstrumentMap<BeatTime>.EntryID?
+        var foundEntryID: EntryID?
 
         map.insert(time: 1, instrument: guitar)
 
@@ -291,7 +291,7 @@ extension InstrumentMapTests {
     func update_notFound() {
         var map = InstrumentMap<BeatTime>()
 
-        let result = map.update(entryID: InstrumentMap<BeatTime>.EntryID(), instrument: piano)
+        let result = map.update(entryID: EntryID(), instrument: piano)
 
         #expect(!result.updated)
         #expect(result.removedEntryID == nil)

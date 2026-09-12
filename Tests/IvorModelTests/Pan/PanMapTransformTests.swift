@@ -14,125 +14,6 @@ extension PanMapTransformTests {
     private typealias PanMapSB = PanMap<BeatTime>
 
     @Test
-    func augment_invalidFactor() {
-        var map = PanMapSB()
-
-        #expect(throws: PanMapSB.Error.self) {
-            try map.augment(by: Number(0))
-        }
-    }
-
-    @Test
-    func augment_scalesTimes() throws {
-        var map = PanMapSB()
-
-        map.insert(time: 1, pan: .left)
-        map.insert(time: 3, pan: .right)
-
-        try map.augment(by: Number(2))
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times.sorted() == [1, 5])
-    }
-
-    @Test
-    func diminish_invalidFactor() {
-        var map = PanMapSB()
-
-        #expect(throws: PanMapSB.Error.self) {
-            try map.diminish(by: Number(0))
-        }
-    }
-
-    @Test
-    func diminish_scalesTimes() throws {
-        var map = PanMapSB()
-
-        map.insert(time: 2, pan: .left)
-        map.insert(time: 6, pan: .right)
-
-        try map.diminish(by: Number(2))
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times.sorted() == [2, 4])
-    }
-
-    @Test
-    func move_shiftsTimes() throws {
-        var map = PanMapSB()
-
-        map.insert(time: 0, pan: .center)
-
-        let directedDuration = try #require(BeatTime(0).duration(to: 2))
-
-        try map.move(by: directedDuration)
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times == [2])
-    }
-
-    @Test
-    func reverse_mirrorsTimes() throws {
-        var map = PanMapSB()
-
-        map.insert(time: 0, pan: .left)
-        map.insert(time: 2, pan: .right)
-
-        try map.reverse()
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times.sorted() == [0, 2])
-    }
-
-    @Test
-    func augment_invalidAnchorThrows() {
-        var map = PanMapSB()
-
-        map.insert(time: 2, pan: .center)
-
-        #expect(throws: PanMapSB.Error.invalidAnchor) {
-            try map.augment(by: Number(2), anchor: 3)
-        }
-    }
-
-    @Test
-    func augment_validAnchorDoesNotThrow() throws {
-        var map = PanMapSB()
-
-        map.insert(time: 2, pan: .center)
-
-        try map.augment(by: Number(2), anchor: 2)
-
-        var times: [BeatTime] = []
-
-        map.forEach { _, time, _, _ in
-            times.append(time)
-        }
-
-        #expect(times == [2])
-    }
-
-    @Test
     func augment_entryIDsRestrictsAffectedEntries() throws {
         var map = PanMapSB()
 
@@ -149,6 +30,26 @@ extension PanMapTransformTests {
         }
 
         #expect(times.sorted() == [0, 4])
+    }
+
+    @Test
+    func augment_invalidAnchorThrows() {
+        var map = PanMapSB()
+
+        map.insert(time: 2, pan: .center)
+
+        #expect(throws: PanMapSB.Error.invalidAnchor) {
+            try map.augment(by: Number(2), anchor: 3)
+        }
+    }
+
+    @Test
+    func augment_invalidFactor() {
+        var map = PanMapSB()
+
+        #expect(throws: PanMapSB.Error.self) {
+            try map.augment(by: Number(0))
+        }
     }
 
     @Test
@@ -185,25 +86,13 @@ extension PanMapTransformTests {
     }
 
     @Test
-    func reverse_invalidAnchorThrows() {
+    func augment_scalesTimes() throws {
         var map = PanMapSB()
 
-        map.insert(time: 0, pan: .left)
-        map.insert(time: 2, pan: .right)
+        map.insert(time: 1, pan: .left)
+        map.insert(time: 3, pan: .right)
 
-        #expect(throws: PanMapSB.Error.invalidAnchor) {
-            try map.reverse(within: BeatTime(1)...3)
-        }
-    }
-
-    @Test
-    func reverse_validAnchorDoesNotThrow() throws {
-        var map = PanMapSB()
-
-        map.insert(time: 0, pan: .left)
-        map.insert(time: 2, pan: .right)
-
-        try map.reverse(within: BeatTime(0)...2)
+        try map.augment(by: Number(2))
 
         var times: [BeatTime] = []
 
@@ -211,7 +100,91 @@ extension PanMapTransformTests {
             times.append(time)
         }
 
-        #expect(times.sorted() == [0, 2])
+        #expect(times.sorted() == [1, 5])
+    }
+
+    @Test
+    func augment_validAnchorDoesNotThrow() throws {
+        var map = PanMapSB()
+
+        map.insert(time: 2, pan: .center)
+
+        try map.augment(by: Number(2), anchor: 2)
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times == [2])
+    }
+
+    @Test
+    func diminish_invalidFactor() {
+        var map = PanMapSB()
+
+        #expect(throws: PanMapSB.Error.self) {
+            try map.diminish(by: Number(0))
+        }
+    }
+
+    @Test
+    func diminish_scalesTimes() throws {
+        var map = PanMapSB()
+
+        map.insert(time: 2, pan: .left)
+        map.insert(time: 6, pan: .right)
+
+        try map.diminish(by: Number(2))
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times.sorted() == [2, 4])
+    }
+
+    @Test
+    func move_entryIDsRestrictsAffectedEntries() throws {
+        var map = PanMapSB()
+
+        let entryID1 = map.insert(time: 0, pan: .center).entryID
+
+        map.insert(time: 4, pan: .left)
+
+        let directedDuration = try #require(BeatTime(0).duration(to: 2))
+
+        try map.move(by: directedDuration, entryIDs: [entryID1])
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times.sorted() == [2, 4])
+    }
+
+    @Test
+    func move_shiftsTimes() throws {
+        var map = PanMapSB()
+
+        map.insert(time: 0, pan: .center)
+
+        let directedDuration = try #require(BeatTime(0).duration(to: 2))
+
+        try map.move(by: directedDuration)
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times == [2])
     }
 
     @Test
@@ -255,16 +228,25 @@ extension PanMapTransformTests {
     }
 
     @Test
-    func move_entryIDsRestrictsAffectedEntries() throws {
+    func reverse_invalidAnchorThrows() {
         var map = PanMapSB()
 
-        let entryID1 = map.insert(time: 0, pan: .center).entryID
+        map.insert(time: 0, pan: .left)
+        map.insert(time: 2, pan: .right)
 
-        map.insert(time: 4, pan: .left)
+        #expect(throws: PanMapSB.Error.invalidAnchor) {
+            try map.reverse(within: BeatTime(1)...3)
+        }
+    }
 
-        let directedDuration = try #require(BeatTime(0).duration(to: 2))
+    @Test
+    func reverse_mirrorsTimes() throws {
+        var map = PanMapSB()
 
-        try map.move(by: directedDuration, entryIDs: [entryID1])
+        map.insert(time: 0, pan: .left)
+        map.insert(time: 2, pan: .right)
+
+        try map.reverse()
 
         var times: [BeatTime] = []
 
@@ -272,6 +254,24 @@ extension PanMapTransformTests {
             times.append(time)
         }
 
-        #expect(times.sorted() == [2, 4])
+        #expect(times.sorted() == [0, 2])
+    }
+
+    @Test
+    func reverse_validAnchorDoesNotThrow() throws {
+        var map = PanMapSB()
+
+        map.insert(time: 0, pan: .left)
+        map.insert(time: 2, pan: .right)
+
+        try map.reverse(within: BeatTime(0)...2)
+
+        var times: [BeatTime] = []
+
+        map.forEach { _, time, _, _ in
+            times.append(time)
+        }
+
+        #expect(times.sorted() == [0, 2])
     }
 }

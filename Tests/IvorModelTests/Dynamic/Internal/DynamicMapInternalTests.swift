@@ -32,7 +32,7 @@ extension DynamicMapInternalTests {
     @Test
     func firstIndex_entryID_found() throws {
         var map = DynamicMap<BeatTime>()
-        var foundEntryID: DynamicMap<BeatTime>.EntryID?
+        var foundEntryID: EntryID?
 
         map.insert(time: 1, dynamic: .f)
 
@@ -44,7 +44,7 @@ extension DynamicMapInternalTests {
     @Test
     func firstIndex_entryID_notFound() {
         let map = DynamicMap<BeatTime>()
-        let position = map.firstIndex(entryID: DynamicMap<BeatTime>.EntryID())
+        let position = map.firstIndex(entryID: EntryID())
 
         #expect(position == nil)
     }

@@ -1,8 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
-public import XestiTools
-
-private import Foundation
+internal import XestiTools
 
 /// A stable identity for a single note in a ``NoteTable``, represented as a
 /// validated string.
@@ -31,25 +29,14 @@ private import Foundation
 /// — so a single `NoteID` (and a single `Set<NoteID>`) can be shared across
 /// differently-`PitchType`d parts, e.g. by `Work`'s whole-work transform methods,
 /// which operate across all three beat-time `Content` cases in one function body.
-/// `NoteTable.NoteID`/`Part.NoteID` remain as typealiases to this type for source
-/// compatibility.
 public struct NoteID {
 
     // MARK: Public Initializers
 
-    /// Creates a new, unique note identity.
-    public init() {
-        self.init(Self.validPrefix + UUID().base62String)
-    }
-
-    /// Creates a note identity from a string value, returning `nil` if the
-    /// string is invalid.
+    /// Creates a note identity from a string value already known to be valid.
     ///
     /// - Parameter stringValue:    The string identifying the note.
-    public init?(stringValue: String) {
-        guard Self.isValid(stringValue)
-        else { return nil }
-
+    public init(uncheckedStringValue stringValue: String) {
         self.stringValue = stringValue
     }
 
@@ -59,30 +46,13 @@ public struct NoteID {
     public let stringValue: String
 }
 
-// MARK: -
+// MARK: - UniqueID
 
-extension NoteID {
+extension NoteID: UniqueID {
 
-    // MARK: Public Type Methods
+    // MARK: Public Type Properties
 
-    /// Returns a Boolean value indicating whether the given string is a valid note
-    /// identity.
-    ///
-    /// - Parameter stringValue:    The string to validate.
-    ///
-    /// - Returns:  `true` if `stringValue` is valid; otherwise, `false`.
-    public static func isValid(_ stringValue: String) -> Bool {
-        stringValue.wholeMatch(of: validPattern) != nil
-    }
+    public nonisolated(unsafe) static let validPattern = /N\$[0-9A-Za-z]{22}/
 
-    // MARK: Private Type Properties
-
-    private nonisolated(unsafe) static let validPattern = /N\$[0-9A-Za-z]{22}/
-
-    private static let validPrefix = "N$"
-}
-
-// MARK: - StringRepresentable
-
-extension NoteID: StringRepresentable {
+    public static let validPrefix = "N$"
 }

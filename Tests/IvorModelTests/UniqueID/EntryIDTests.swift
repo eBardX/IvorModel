@@ -4,14 +4,12 @@
 import IvorTiming
 import Testing
 
-struct InstrumentMapEntryIDTests {
+struct EntryIDTests {
 }
 
 // MARK: -
 
-extension InstrumentMapEntryIDTests {
-    private typealias EntryID = InstrumentMap<BeatTime>.EntryID
-
+extension EntryIDTests {
     @Test
     func init_generated() {
         let id1 = EntryID()
