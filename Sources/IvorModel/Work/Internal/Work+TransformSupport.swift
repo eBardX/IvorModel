@@ -20,10 +20,10 @@ extension Work {
     // along (§7a's Key Concepts) — an empty `applyTo` leaves it untouched, exactly as it leaves
     // every per-part map untouched.
     //
-    internal static func carriedTempoMap(_ tempoMap: TempoMap,
-                                         applyTo: MapTargets,
-                                         kind: TransformKind,
-                                         _ transform: (inout TempoMap) throws(TempoMap.Error) -> Void) throws(Error) -> TempoMap {
+    internal static func carried(tempoMap: TempoMap,
+                                 applyTo: MapTargets,
+                                 kind: TransformKind,
+                                 transform: (inout TempoMap) throws(TempoMap.Error) -> Void) throws(Error) -> TempoMap {
         guard !applyTo.isEmpty
         else { return tempoMap }
 
@@ -32,7 +32,8 @@ extension Work {
         do {
             try transform(&newTempoMap)
         } catch {
-            throw Error.tempoMapTransformFailure(kind, detail: error.message)
+            throw Error.tempoMapTransformFailure(kind: kind,
+                                                 detail: error.message)
         }
 
         return newTempoMap
@@ -43,9 +44,9 @@ extension Work {
     // returning it once every part has succeeded — all-or-nothing, since a thrown error abandons
     // the whole array rather than returning a partially transformed one.
     //
-    internal static func transformed<T: TimeProtocol, P: PitchProtocol>(_ parts: [Part<T, P>],
+    internal static func transformed<T: TimeProtocol, P: PitchProtocol>(parts: [Part<T, P>],
                                                                         kind: TransformKind,
-                                                                        _ transform: PartTransform<T, P>) throws(Error) -> [Part<T, P>] {
+                                                                        transform: PartTransform<T, P>) throws(Error) -> [Part<T, P>] {
         var result: [Part<T, P>] = []
 
         result.reserveCapacity(parts.count)
@@ -56,7 +57,9 @@ extension Work {
             do {
                 try transform(&newPart)
             } catch {
-                throw Self.wrapped(error, kind: kind, partID: part.partID)
+                throw Self.wrapped(error: error,
+                                   kind: kind,
+                                   partID: part.partID)
             }
 
             result.append(newPart)
@@ -70,10 +73,10 @@ extension Work {
     // in place. Returns `parts` unchanged if no part with `partID` is found, matching the
     // no-op-if-not-found convention `Work+PartEditing.swift`'s methods already follow.
     //
-    internal static func transformed<T: TimeProtocol, P: PitchProtocol>(_ parts: [Part<T, P>],
+    internal static func transformed<T: TimeProtocol, P: PitchProtocol>(parts: [Part<T, P>],
                                                                         partID: PartID,
                                                                         kind: TransformKind,
-                                                                        _ transform: PartTransform<T, P>) throws(Error) -> [Part<T, P>] {
+                                                                        transform: PartTransform<T, P>) throws(Error) -> [Part<T, P>] {
         guard let index = parts.firstIndex(where: { $0.partID == partID })
         else { return parts }
 
@@ -82,7 +85,9 @@ extension Work {
         do {
             try transform(&result[index])
         } catch {
-            throw Self.wrapped(error, kind: kind, partID: partID)
+            throw Self.wrapped(error: error,
+                               kind: kind,
+                               partID: partID)
         }
 
         return result
@@ -93,17 +98,19 @@ extension Work {
     // untouched and in place. All-or-nothing across just the targeted subset: a thrown error
     // abandons the local `result` array before it is ever assigned to `content`.
     //
-    internal static func transformed<T: TimeProtocol, P: PitchProtocol>(_ parts: [Part<T, P>],
+    internal static func transformed<T: TimeProtocol, P: PitchProtocol>(parts: [Part<T, P>],
                                                                         partIDs: Set<PartID>,
                                                                         kind: TransformKind,
-                                                                        _ transform: PartTransform<T, P>) throws(Error) -> [Part<T, P>] {
+                                                                        transform: PartTransform<T, P>) throws(Error) -> [Part<T, P>] {
         var result = parts
 
         for index in result.indices where partIDs.contains(result[index].partID) {
             do {
                 try transform(&result[index])
             } catch {
-                throw Self.wrapped(error, kind: kind, partID: result[index].partID)
+                throw Self.wrapped(error: error,
+                                   kind: kind,
+                                   partID: result[index].partID)
             }
         }
 
@@ -116,21 +123,29 @@ extension Work {
     // `Work`-facing typed payload to carry forward, so the wrapped error's own `.message`
     // becomes `detail`.
     //
-    internal static func wrapped(_ error: Part<some TimeProtocol, some PitchProtocol>.Error,
+    internal static func wrapped(error: Part<some TimeProtocol, some PitchProtocol>.Error,
                                  kind: TransformKind,
                                  partID: PartID) -> Error {
         switch error {
         case let .dynamicMapFailure(underlying):
-            .dynamicMapTransformFailure(kind, partID: partID, detail: underlying.message)
+                .dynamicMapTransformFailure(kind: kind,
+                                            partID: partID,
+                                            detail: underlying.message)
 
         case let .instrumentMapFailure(underlying):
-            .instrumentMapTransformFailure(kind, partID: partID, detail: underlying.message)
+                .instrumentMapTransformFailure(kind: kind,
+                                               partID: partID,
+                                               detail: underlying.message)
 
         case let .noteTableFailure(underlying):
-            .transformFailure(kind, partID: partID, detail: underlying.message)
+                .transformFailure(kind: kind,
+                                  partID: partID,
+                                  detail: underlying.message)
 
         case let .panMapFailure(underlying):
-            .panMapTransformFailure(kind, partID: partID, detail: underlying.message)
+                .panMapTransformFailure(kind: kind,
+                                        partID: partID,
+                                        detail: underlying.message)
         }
     }
 }

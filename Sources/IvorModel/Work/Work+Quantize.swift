@@ -28,22 +28,31 @@ extension Work {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
 
-            content = try .absoluteBeat(Self.transformed(parts, partID: partID, kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
-                part.quantize(to: quantizer, noteIDs: noteIDs)
+            content = try .absoluteBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+                part.quantize(to: quantizer,
+                              noteIDs: noteIDs)
             }, tempoMap)
 
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
 
-            content = try .keyboardBeat(Self.transformed(parts, partID: partID, kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
-                part.quantize(to: quantizer, noteIDs: noteIDs)
+            content = try .keyboardBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+                part.quantize(to: quantizer,
+                              noteIDs: noteIDs)
             }, tempoMap)
 
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
 
-            content = try .standardBeat(Self.transformed(parts, partID: partID, kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
-                part.quantize(to: quantizer, noteIDs: noteIDs)
+            content = try .standardBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+                part.quantize(to: quantizer,
+                              noteIDs: noteIDs)
             }, tempoMap)
 
         default:
@@ -72,22 +81,31 @@ extension Work {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
 
-            content = try .absoluteBeat(Self.transformed(parts, partIDs: partIDs, kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
-                part.quantize(to: quantizer, noteIDs: noteIDs)
+            content = try .absoluteBeat(Self.transformed(parts: parts,
+                                                         partIDs: partIDs,
+                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+                part.quantize(to: quantizer,
+                              noteIDs: noteIDs)
             }, tempoMap)
 
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
 
-            content = try .keyboardBeat(Self.transformed(parts, partIDs: partIDs, kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
-                part.quantize(to: quantizer, noteIDs: noteIDs)
+            content = try .keyboardBeat(Self.transformed(parts: parts,
+                                                         partIDs: partIDs,
+                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+                part.quantize(to: quantizer,
+                              noteIDs: noteIDs)
             }, tempoMap)
 
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
 
-            content = try .standardBeat(Self.transformed(parts, partIDs: partIDs, kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
-                part.quantize(to: quantizer, noteIDs: noteIDs)
+            content = try .standardBeat(Self.transformed(parts: parts,
+                                                         partIDs: partIDs,
+                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+                part.quantize(to: quantizer,
+                              noteIDs: noteIDs)
             }, tempoMap)
 
         default:
@@ -110,21 +128,24 @@ extension Work {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
 
-            content = try .absoluteBeat(Self.transformed(parts, kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteBeat(Self.transformed(parts: parts,
+                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
                 part.quantize(to: quantizer)
             }, tempoMap)
 
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
 
-            content = try .keyboardBeat(Self.transformed(parts, kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardBeat(Self.transformed(parts: parts,
+                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
                 part.quantize(to: quantizer)
             }, tempoMap)
 
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
 
-            content = try .standardBeat(Self.transformed(parts, kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardBeat(Self.transformed(parts: parts,
+                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
                 part.quantize(to: quantizer)
             }, tempoMap)
 

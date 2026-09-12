@@ -9,14 +9,14 @@ extension Work {
     public enum Error {
         /// A failure that occurred in a part’s dynamic map while carrying it along with a
         /// transform.
-        case dynamicMapTransformFailure(TransformKind, partID: PartID, detail: String)
+        case dynamicMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
 
         /// The quantization factors array is empty.
         case emptyQuantizationFactors
 
         /// A failure that occurred in a part’s instrument map while carrying it along with a
         /// transform.
-        case instrumentMapTransformFailure(TransformKind, partID: PartID, detail: String)
+        case instrumentMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
 
         /// A quantization factor that is not a positive integer.
         case invalidQuantizationFactor(Int)
@@ -34,7 +34,7 @@ extension Work {
         case missingTuningSystem
 
         /// A failure that occurred in a part’s pan map while carrying it along with a transform.
-        case panMapTransformFailure(TransformKind, partID: PartID, detail: String)
+        case panMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
 
         /// The requested transform was invoked with a pitch notation that does not match the
         /// work’s own.
@@ -42,14 +42,14 @@ extension Work {
 
         /// A failure that occurred in the work’s tempo map while carrying it along with a
         /// whole-work transform.
-        case tempoMapTransformFailure(TransformKind, detail: String)
+        case tempoMapTransformFailure(kind: TransformKind, detail: String)
 
         /// The requested transform was invoked with a time basis that does not match the work’s
         /// own.
         case timeBasisMismatch(expected: TimeBasis)
 
         /// A failure that occurred in a part’s note table while applying a transform.
-        case transformFailure(TransformKind, partID: PartID, detail: String)
+        case transformFailure(kind: TransformKind, partID: PartID, detail: String)
 
         /// The context’s tuning system does not support standard pitch notation.
         case unsupportedStandardConversion

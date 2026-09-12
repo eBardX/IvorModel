@@ -24,14 +24,18 @@ extension Work {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
 
-            content = try .absoluteBeat(Self.transformed(parts, partID: partID, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: pitchRange)
             }, tempoMap)
 
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
 
-            content = try .absoluteWall(Self.transformed(parts, partID: partID, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteWall(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: pitchRange)
             })
 
@@ -56,14 +60,18 @@ extension Work {
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
 
-            content = try .keyboardBeat(Self.transformed(parts, partID: partID, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: pitchRange)
             }, tempoMap)
 
         case let .keyboardWall(parts):
             typealias PartType = Part<WallTime, NoteNumber>
 
-            content = try .keyboardWall(Self.transformed(parts, partID: partID, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardWall(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: pitchRange)
             })
 
@@ -88,14 +96,18 @@ extension Work {
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
 
-            content = try .standardBeat(Self.transformed(parts, partID: partID, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: pitchRange)
             }, tempoMap)
 
         case let .standardWall(parts):
             typealias PartType = Part<WallTime, Pitch>
 
-            content = try .standardWall(Self.transformed(parts, partID: partID, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardWall(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: pitchRange)
             })
 
@@ -121,7 +133,7 @@ extension Work {
             typealias PartType = Part<BeatTime, Frequency>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts.filter { partIDs.contains($0.partID) })
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             }
 
@@ -131,7 +143,7 @@ extension Work {
             typealias PartType = Part<WallTime, Frequency>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts.filter { partIDs.contains($0.partID) })
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             }
 
@@ -159,7 +171,7 @@ extension Work {
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts.filter { partIDs.contains($0.partID) })
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             }
 
@@ -169,7 +181,7 @@ extension Work {
             typealias PartType = Part<WallTime, NoteNumber>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts.filter { partIDs.contains($0.partID) })
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             }
 
@@ -197,7 +209,7 @@ extension Work {
             typealias PartType = Part<BeatTime, Pitch>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts.filter { partIDs.contains($0.partID) })
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             }
 
@@ -207,7 +219,7 @@ extension Work {
             typealias PartType = Part<WallTime, Pitch>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts.filter { partIDs.contains($0.partID) })
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             }
 
@@ -233,7 +245,7 @@ extension Work {
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts)
 
-            content = try .absoluteBeat(Self.transformed(parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteBeat(Self.transformed(parts: parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             }, tempoMap)
 
@@ -242,7 +254,7 @@ extension Work {
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts)
 
-            content = try .absoluteWall(Self.transformed(parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteWall(Self.transformed(parts: parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             })
 
@@ -266,7 +278,7 @@ extension Work {
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts)
 
-            content = try .keyboardBeat(Self.transformed(parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardBeat(Self.transformed(parts: parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             }, tempoMap)
 
@@ -275,7 +287,7 @@ extension Work {
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts)
 
-            content = try .keyboardWall(Self.transformed(parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardWall(Self.transformed(parts: parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             })
 
@@ -299,7 +311,7 @@ extension Work {
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts)
 
-            content = try .standardBeat(Self.transformed(parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardBeat(Self.transformed(parts: parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             }, tempoMap)
 
@@ -308,7 +320,7 @@ extension Work {
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: parts)
 
-            content = try .standardWall(Self.transformed(parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardWall(Self.transformed(parts: parts, kind: .invert) { (part: inout PartType) throws(PartType.Error) in
                 try part.invert(around: resolvedRange)
             })
 

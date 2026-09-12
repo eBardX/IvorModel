@@ -13,6 +13,7 @@ struct NoteTableAdvancedTests {
 // MARK: -
 
 extension NoteTableAdvancedTests {
+    private typealias NoteTableFB = NoteTable<BeatTime, Frequency>
     private typealias NoteTableSB = NoteTable<BeatTime, Pitch>
     private typealias NoteTableSW = NoteTable<WallTime, Pitch>
 
@@ -105,15 +106,43 @@ extension NoteTableAdvancedTests {
     }
 
     @Test
-    func varispeeded_preservesPitches() {
-        var table = NoteTableSB()
+    func varispeeded_tempoAboveNormalShiftsPitchUp() throws {
+        var table = NoteTableFB()
+        var tempoMap = TempoMap()
 
-        table.insert(attack: 1, duration: 1, pitch: .c4)
+        tempoMap.insert(beatTime: 0, tempo: Tempo(120))
+        table.insert(attack: 0, duration: 1, pitch: Frequency(440))
+
+        let result = table.varispeeded(using: tempoMap, normalTempo: Tempo(60))
+        let pitchRange = try #require(result.pitchRange)
+
+        #expect(pitchRange.lowerBound.numberValue > Frequency(440).numberValue)
+    }
+
+    @Test
+    func varispeeded_tempoBelowNormalShiftsPitchDown() throws {
+        var table = NoteTableFB()
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: Tempo(30))
+        table.insert(attack: 0, duration: 1, pitch: Frequency(440))
+
+        let result = table.varispeeded(using: tempoMap, normalTempo: Tempo(60))
+        let pitchRange = try #require(result.pitchRange)
+
+        #expect(pitchRange.lowerBound.numberValue < Frequency(440).numberValue)
+    }
+
+    @Test
+    func varispeeded_tempoEqualToNormalPreservesPitch() {
+        var table = NoteTableFB()
+
+        table.insert(attack: 1, duration: 1, pitch: Frequency(440))
 
         let result = table.varispeeded(using: TempoMap())
 
         // 1 beat at the default tempo (60 BPM) is 1 second, i.e. 1000 ms.
-        #expect(result.pitchRange?.lowerBound == .c4)
+        #expect(result.pitchRange?.lowerBound == Frequency(440))
         #expect(result.timeRange?.lowerBound == 1_000)
     }
 

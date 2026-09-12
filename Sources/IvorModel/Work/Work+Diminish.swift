@@ -32,21 +32,27 @@ extension Work {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
 
-            content = try .absoluteBeat(Self.transformed(parts, partID: partID, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: anchor, applyTo: applyTo)
             }, tempoMap)
 
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
 
-            content = try .keyboardBeat(Self.transformed(parts, partID: partID, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: anchor, applyTo: applyTo)
             }, tempoMap)
 
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
 
-            content = try .standardBeat(Self.transformed(parts, partID: partID, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: anchor, applyTo: applyTo)
             }, tempoMap)
 
@@ -78,21 +84,27 @@ extension Work {
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
 
-            content = try .absoluteWall(Self.transformed(parts, partID: partID, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteWall(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: anchor, applyTo: applyTo)
             })
 
         case let .keyboardWall(parts):
             typealias PartType = Part<WallTime, NoteNumber>
 
-            content = try .keyboardWall(Self.transformed(parts, partID: partID, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardWall(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: anchor, applyTo: applyTo)
             })
 
         case let .standardWall(parts):
             typealias PartType = Part<WallTime, Pitch>
 
-            content = try .standardWall(Self.transformed(parts, partID: partID, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardWall(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: anchor, applyTo: applyTo)
             })
 
@@ -126,7 +138,7 @@ extension Work {
             typealias PartType = Part<BeatTime, Frequency>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts.filter { partIDs.contains($0.partID) })?.lowerBound
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
 
@@ -136,7 +148,7 @@ extension Work {
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts.filter { partIDs.contains($0.partID) })?.lowerBound
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
 
@@ -146,7 +158,7 @@ extension Work {
             typealias PartType = Part<BeatTime, Pitch>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts.filter { partIDs.contains($0.partID) })?.lowerBound
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
 
@@ -182,7 +194,7 @@ extension Work {
             typealias PartType = Part<WallTime, Frequency>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts.filter { partIDs.contains($0.partID) })?.lowerBound
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
 
@@ -192,7 +204,7 @@ extension Work {
             typealias PartType = Part<WallTime, NoteNumber>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts.filter { partIDs.contains($0.partID) })?.lowerBound
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
 
@@ -202,7 +214,7 @@ extension Work {
             typealias PartType = Part<WallTime, Pitch>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts.filter { partIDs.contains($0.partID) })?.lowerBound
-            let newParts = try Self.transformed(parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
 
@@ -236,12 +248,12 @@ extension Work {
             typealias PartType = Part<BeatTime, Frequency>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts)?.lowerBound
-            let newParts = try Self.transformed(parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
-            let newTempoMap = try Self.carriedTempoMap(tempoMap,
-                                                       applyTo: applyTo,
-                                                       kind: .diminish) { (tempo: inout TempoMap) throws(TempoMap.Error) in
+            let newTempoMap = try Self.carried(tempoMap: tempoMap,
+                                               applyTo: applyTo,
+                                               kind: .diminish) { (tempo: inout TempoMap) throws(TempoMap.Error) in
                 try tempo.diminish(by: factor, anchor: resolvedAnchor)
             }
 
@@ -251,12 +263,12 @@ extension Work {
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts)?.lowerBound
-            let newParts = try Self.transformed(parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
-            let newTempoMap = try Self.carriedTempoMap(tempoMap,
-                                                       applyTo: applyTo,
-                                                       kind: .diminish) { (tempo: inout TempoMap) throws(TempoMap.Error) in
+            let newTempoMap = try Self.carried(tempoMap: tempoMap,
+                                               applyTo: applyTo,
+                                               kind: .diminish) { (tempo: inout TempoMap) throws(TempoMap.Error) in
                 try tempo.diminish(by: factor, anchor: resolvedAnchor)
             }
 
@@ -266,12 +278,12 @@ extension Work {
             typealias PartType = Part<BeatTime, Pitch>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts)?.lowerBound
-            let newParts = try Self.transformed(parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
-            let newTempoMap = try Self.carriedTempoMap(tempoMap,
-                                                       applyTo: applyTo,
-                                                       kind: .diminish) { (tempo: inout TempoMap) throws(TempoMap.Error) in
+            let newTempoMap = try Self.carried(tempoMap: tempoMap,
+                                               applyTo: applyTo,
+                                               kind: .diminish) { (tempo: inout TempoMap) throws(TempoMap.Error) in
                 try tempo.diminish(by: factor, anchor: resolvedAnchor)
             }
 
@@ -304,7 +316,7 @@ extension Work {
             typealias PartType = Part<WallTime, Frequency>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts)?.lowerBound
-            let newParts = try Self.transformed(parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
 
@@ -314,7 +326,7 @@ extension Work {
             typealias PartType = Part<WallTime, NoteNumber>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts)?.lowerBound
-            let newParts = try Self.transformed(parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
 
@@ -324,7 +336,7 @@ extension Work {
             typealias PartType = Part<WallTime, Pitch>
 
             let resolvedAnchor = anchor ?? Self.aggregateTimeRange(of: parts)?.lowerBound
-            let newParts = try Self.transformed(parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
 

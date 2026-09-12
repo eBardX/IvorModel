@@ -24,14 +24,18 @@ extension Work {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
 
-            content = try .absoluteBeat(Self.transformed(parts, partID: partID, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             }, tempoMap)
 
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
 
-            content = try .absoluteWall(Self.transformed(parts, partID: partID, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteWall(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             })
 
@@ -56,14 +60,18 @@ extension Work {
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
 
-            content = try .keyboardBeat(Self.transformed(parts, partID: partID, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             }, tempoMap)
 
         case let .keyboardWall(parts):
             typealias PartType = Part<WallTime, NoteNumber>
 
-            content = try .keyboardWall(Self.transformed(parts, partID: partID, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardWall(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             })
 
@@ -88,14 +96,18 @@ extension Work {
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
 
-            content = try .standardBeat(Self.transformed(parts, partID: partID, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardBeat(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             }, tempoMap)
 
         case let .standardWall(parts):
             typealias PartType = Part<WallTime, Pitch>
 
-            content = try .standardWall(Self.transformed(parts, partID: partID, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardWall(Self.transformed(parts: parts,
+                                                         partID: partID,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             })
 
@@ -120,14 +132,18 @@ extension Work {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
 
-            content = try .absoluteBeat(Self.transformed(parts, partIDs: partIDs, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteBeat(Self.transformed(parts: parts,
+                                                         partIDs: partIDs,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             }, tempoMap)
 
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
 
-            content = try .absoluteWall(Self.transformed(parts, partIDs: partIDs, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteWall(Self.transformed(parts: parts,
+                                                         partIDs: partIDs,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             })
 
@@ -152,14 +168,18 @@ extension Work {
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
 
-            content = try .keyboardBeat(Self.transformed(parts, partIDs: partIDs, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardBeat(Self.transformed(parts: parts,
+                                                         partIDs: partIDs,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             }, tempoMap)
 
         case let .keyboardWall(parts):
             typealias PartType = Part<WallTime, NoteNumber>
 
-            content = try .keyboardWall(Self.transformed(parts, partIDs: partIDs, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardWall(Self.transformed(parts: parts,
+                                                         partIDs: partIDs,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             })
 
@@ -184,14 +204,18 @@ extension Work {
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
 
-            content = try .standardBeat(Self.transformed(parts, partIDs: partIDs, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardBeat(Self.transformed(parts: parts,
+                                                         partIDs: partIDs,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             }, tempoMap)
 
         case let .standardWall(parts):
             typealias PartType = Part<WallTime, Pitch>
 
-            content = try .standardWall(Self.transformed(parts, partIDs: partIDs, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardWall(Self.transformed(parts: parts,
+                                                         partIDs: partIDs,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             })
 
@@ -213,14 +237,16 @@ extension Work {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
 
-            content = try .absoluteBeat(Self.transformed(parts, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteBeat(Self.transformed(parts: parts,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             }, tempoMap)
 
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
 
-            content = try .absoluteWall(Self.transformed(parts, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .absoluteWall(Self.transformed(parts: parts,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             })
 
@@ -242,14 +268,16 @@ extension Work {
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
 
-            content = try .keyboardBeat(Self.transformed(parts, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardBeat(Self.transformed(parts: parts,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             }, tempoMap)
 
         case let .keyboardWall(parts):
             typealias PartType = Part<WallTime, NoteNumber>
 
-            content = try .keyboardWall(Self.transformed(parts, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .keyboardWall(Self.transformed(parts: parts,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             })
 
@@ -271,14 +299,16 @@ extension Work {
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
 
-            content = try .standardBeat(Self.transformed(parts, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardBeat(Self.transformed(parts: parts,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             }, tempoMap)
 
         case let .standardWall(parts):
             typealias PartType = Part<WallTime, Pitch>
 
-            content = try .standardWall(Self.transformed(parts, kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            content = try .standardWall(Self.transformed(parts: parts,
+                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
             })
 
