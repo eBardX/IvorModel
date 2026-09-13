@@ -11,8 +11,6 @@ struct NoteTableNoteIDTests {
 // MARK: -
 
 extension NoteTableNoteIDTests {
-    private typealias NoteID = NoteTable<BeatTime, Pitch>.NoteID
-
     @Test
     func init_generated() {
         let id1 = NoteID()

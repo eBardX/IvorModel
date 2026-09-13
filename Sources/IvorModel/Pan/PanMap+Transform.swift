@@ -224,3 +224,38 @@ extension PanMap {
         return first.time...last.time
     }
 }
+
+// MARK: -
+
+extension PanMap where TimeType == BeatTime {
+
+    // MARK: Public Instance Methods
+
+    /// Quantizes entry times to the nearest grid point defined by `quantizer`.
+    ///
+    /// Unlike `augment`/`diminish`/`move`/`reverse`, this never throws — an already-built
+    /// ``BeatQuantizer`` has already had its factors validated, so there is nothing left for
+    /// this call to fail on, and snapping an entry to a grid point can never overflow the way a
+    /// relative move can.
+    ///
+    /// - Parameter quantizer:   The quantizer whose grid to snap entry times to.
+    /// - Parameter entryIDs:    The identities of the entries to quantize, or `nil` to quantize
+    ///                          every entry in the map.
+    public mutating func quantize(using quantizer: BeatQuantizer,
+                                  entryIDs: Set<EntryID>? = nil) {
+        guard !entries.isEmpty
+        else { return }
+
+        for (idx, entry) in entries.enumerated() {
+            guard entryIDs?.contains(entry.entryID) ?? true
+            else { continue }
+
+            entries[idx] = Entry(entryID: entry.entryID,
+                                 time: quantizer.quantize(entry.time),
+                                 pan: entry.pan,
+                                 extras: entry.extras)
+        }
+
+        entries.sort()
+    }
+}

@@ -69,7 +69,7 @@ extension DynamicMapEntryTests {
 
     @Test
     func entryID_explicit() {
-        let entryID = DynamicMap<BeatTime>.EntryID()
+        let entryID = EntryID()
         let entry = Entry(entryID: entryID, time: 1, dynamic: .f, extras: nil)
 
         #expect(entry.entryID == entryID)

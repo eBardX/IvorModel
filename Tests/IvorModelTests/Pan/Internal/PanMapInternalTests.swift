@@ -32,7 +32,7 @@ extension PanMapInternalTests {
     @Test
     func firstIndex_entryID_found() throws {
         var map = PanMap<BeatTime>()
-        var foundEntryID: PanMap<BeatTime>.EntryID?
+        var foundEntryID: EntryID?
 
         map.insert(time: 1, pan: .left)
 
@@ -44,7 +44,7 @@ extension PanMapInternalTests {
     @Test
     func firstIndex_entryID_notFound() {
         let map = PanMap<BeatTime>()
-        let position = map.firstIndex(entryID: PanMap<BeatTime>.EntryID())
+        let position = map.firstIndex(entryID: EntryID())
 
         #expect(position == nil)
     }

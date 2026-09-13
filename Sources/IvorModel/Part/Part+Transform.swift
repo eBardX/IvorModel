@@ -335,37 +335,46 @@ extension Part where TimeType == BeatTime {
 
     // MARK: Public Instance Methods
 
-    /// Quantizes note attack and release times to the nearest subdivision given by `factors`.
+    /// Quantizes note attack and release times to the nearest subdivision given by `factors`,
+    /// along with any parameter maps selected by `applyTo`.
     ///
     /// - Parameter factors:    An array of positive integer subdivision factors.
     /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize
-    ///                         every note in the note table.
+    ///                         every note in the note table. Also narrows which entries of any
+    ///                         map selected by `applyTo` are carried along, to those falling
+    ///                         within the selected notes’ own time range.
+    /// - Parameter applyTo:    The parameter maps to quantize along with the note table.
+    ///                         Defaults to ``MapTargets/all``.
     ///
     /// - Throws:   ``Part/Error/noteTableFailure(_:)`` wrapping
     ///             ``NoteTable/Error/emptyQuantizationFactors`` or
     ///             ``NoteTable/Error/invalidQuantizationFactor(_:)`` if `factors` is invalid.
-    ///
-    /// - Note: No `applyTo` parameter — carrying `dynamicMap`/`instrumentMap`/`panMap` along with
-    ///         a quantize is a separate, unresolved design question (continuous automation
-    ///         doesn't obviously want to snap to the same rhythmic grid as note attacks) and is
-    ///         deliberately out of scope here. Do not add `MapTargets` to this method.
     public mutating func quantize(to factors: [Int],
-                                  noteIDs: Set<NoteID>? = nil) throws(Error) {
-        var newNoteTable = noteTable
+                                  noteIDs: Set<NoteID>? = nil,
+                                  applyTo: MapTargets = .all) throws(Error) {
+        let quantizer: BeatQuantizer
 
         do {
-            try newNoteTable.quantize(to: factors,
-                                      noteIDs: noteIDs)
+            quantizer = try BeatQuantizer(factors: factors)
         } catch {
-            throw Error.noteTableFailure(error)
+            switch error {
+            case .emptyFactors:
+                throw Error.noteTableFailure(.emptyQuantizationFactors)
+
+            case let .invalidFactor(factor):
+                throw Error.noteTableFailure(.invalidQuantizationFactor(factor))
+            }
         }
 
-        noteTable = newNoteTable
+        quantize(to: quantizer,
+                 noteIDs: noteIDs,
+                 applyTo: applyTo)
     }
 
-    /// Quantizes note attack and release times to the nearest grid point defined by `quantizer`.
+    /// Quantizes note attack and release times to the nearest grid point defined by `quantizer`,
+    /// along with any parameter maps selected by `applyTo`.
     ///
-    /// Unlike ``quantize(to:noteIDs:)-(_,_)``, this never throws — an already-built
+    /// Unlike ``quantize(to:noteIDs:applyTo:)-(_,_,_)``, this never throws — an already-built
     /// ``BeatQuantizer`` has already had its factors validated, so there is nothing left for this
     /// call to fail on. This is the overload ``Work``'s whole-work and targeted quantize variants
     /// (`Work+Quantize.swift`) call, so a single `BeatQuantizer` can be validated once and reused
@@ -373,11 +382,31 @@ extension Part where TimeType == BeatTime {
     ///
     /// - Parameter quantizer:   The quantizer whose grid to snap attack/release times to.
     /// - Parameter noteIDs:     The identities of the notes to quantize, or `nil` to quantize
-    ///                          every note in the note table.
+    ///                          every note in the note table. Also narrows which entries of any
+    ///                          map selected by `applyTo` are carried along, to those falling
+    ///                          within the selected notes’ own time range.
+    /// - Parameter applyTo:     The parameter maps to quantize along with the note table.
+    ///                          Defaults to ``MapTargets/all``.
     public mutating func quantize(to quantizer: BeatQuantizer,
-                                  noteIDs: Set<NoteID>? = nil) {
+                                  noteIDs: Set<NoteID>? = nil,
+                                  applyTo: MapTargets = .all) {
         noteTable.quantize(using: quantizer,
                            noteIDs: noteIDs)
+
+        if applyTo.contains(.dynamic) {
+            dynamicMap.quantize(using: quantizer,
+                                entryIDs: _dynamicEntryIDs(forNoteIDs: noteIDs))
+        }
+
+        if applyTo.contains(.instrument) {
+            instrumentMap.quantize(using: quantizer,
+                                   entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
+        }
+
+        if applyTo.contains(.pan) {
+            panMap.quantize(using: quantizer,
+                            entryIDs: _panEntryIDs(forNoteIDs: noteIDs))
+        }
     }
 }
 
@@ -387,33 +416,14 @@ extension Part {
 
     // MARK: Private Instance Methods
 
-    //
-    // `noteIDs` of `nil` means "every note", so the map should likewise carry no restriction —
-    // `nil` entryIDs, not the (possibly empty) derived set below. Only a concrete selection
-    // narrows the map, to entries whose time falls within that selection's own resolved range —
-    // the same range `NoteTable`'s own anchor/reverse logic (Phase 1) resolves for it, reused
-    // here rather than recomputed. A selection whose own range comes back `nil` (an empty or
-    // unmatched `noteIDs`) narrows the map to no entries at all, rather than falling back to
-    // every entry.
-    //
-
-    //
-    // `noteIDs` of `nil` means "every note", so the map should likewise carry no restriction —
-    // `nil` entryIDs, not the (possibly empty) derived set below. Only a concrete selection
-    // narrows the map, to entries whose time falls within that selection's own resolved range —
-    // the same range `NoteTable`'s own anchor/reverse logic (Phase 1) resolves for it, reused
-    // here rather than recomputed. A selection whose own range comes back `nil` (an empty or
-    // unmatched `noteIDs`) narrows the map to no entries at all, rather than falling back to
-    // every entry.
-    //
-    private func _dynamicEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<DynamicMap<TimeType>.EntryID>? {
+    private func _dynamicEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
         guard let noteIDs
         else { return nil }
 
         guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
-        var entryIDs: Set<DynamicMap<TimeType>.EntryID> = []
+        var entryIDs: Set<EntryID> = []
 
         dynamicMap.forEach { entryID, time, _, _ in
             if range.contains(time) {
@@ -424,14 +434,14 @@ extension Part {
         return entryIDs
     }
 
-    private func _instrumentEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<InstrumentMap<TimeType>.EntryID>? {
+    private func _instrumentEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
         guard let noteIDs
         else { return nil }
 
         guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
-        var entryIDs: Set<InstrumentMap<TimeType>.EntryID> = []
+        var entryIDs: Set<EntryID> = []
 
         instrumentMap.forEach { entryID, time, _, _ in
             if range.contains(time) {
@@ -442,14 +452,14 @@ extension Part {
         return entryIDs
     }
 
-    private func _panEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<PanMap<TimeType>.EntryID>? {
+    private func _panEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
         guard let noteIDs
         else { return nil }
 
         guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
-        var entryIDs: Set<PanMap<TimeType>.EntryID> = []
+        var entryIDs: Set<EntryID> = []
 
         panMap.forEach { entryID, time, _, _ in
             if range.contains(time) {

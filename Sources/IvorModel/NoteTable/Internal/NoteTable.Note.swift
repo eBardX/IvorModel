@@ -31,7 +31,7 @@ extension NoteTable.Note {
     // decoded note. Passing one explicitly is for the `move*` methods, which need
     // to keep an existing identity across a content change.
     //
-    internal init(noteID: NoteTable.NoteID = NoteTable.NoteID(),
+    internal init(noteID: NoteID = NoteID(),
                   attack: TimeType,
                   duration: NoteTable.DurationType,
                   startPitch: PitchType,
@@ -97,7 +97,7 @@ extension NoteTable.Note {
         min(startPitch, endPitch)
     }
 
-    internal var noteID: NoteTable.NoteID {
+    internal var noteID: NoteID {
         switch self {
         case let .extended(noteID, _, _, _, _),
             let .glide(noteID, _, _, _),

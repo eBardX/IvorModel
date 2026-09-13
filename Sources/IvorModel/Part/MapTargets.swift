@@ -24,8 +24,8 @@ extension MapTargets {
 
     // MARK: Public Type Properties
 
-    /// Every parameter map.
-    public static let all: Self = [.dynamic, .instrument, .pan]
+    /// Every parameter map, including the work’s own tempo map.
+    public static let all: Self = [.dynamic, .instrument, .pan, .tempo]
 
     /// The dynamic map.
     public static let dynamic = Self(rawValue: 1 << 0)
@@ -35,6 +35,11 @@ extension MapTargets {
 
     /// The pan map.
     public static let pan = Self(rawValue: 1 << 2)
+
+    /// The work’s own tempo map. Only meaningful to a whole-work transform — a `Part` has no
+    /// tempo map of its own, so this target is ignored wherever `MapTargets` selects among a
+    /// single part’s maps.
+    public static let tempo = Self(rawValue: 1 << 3)
 }
 
 // MARK: - Sendable

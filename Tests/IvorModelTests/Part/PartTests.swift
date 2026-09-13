@@ -5,6 +5,7 @@ import Foundation
 import IvorTiming
 import IvorTuning
 import Testing
+import XestiNumbers
 
 struct PartTests {
 }
@@ -12,6 +13,30 @@ struct PartTests {
 // MARK: -
 
 extension PartTests {
+    @Test
+    func attackingIn_matching() {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        let matchID = part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+
+        part.noteTable.insert(attack: 5, duration: 1, pitch: .e4)
+
+        let result = part.attackingIn(0...2)
+
+        #expect(result == [matchID])
+    }
+
+    @Test
+    func attackingIn_notMatching() {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
+
+        let result = part.attackingIn(0...2)
+
+        #expect(result.isEmpty)
+    }
+
     @Test
     func codable() throws {
         let original = Part<BeatTime, Pitch>(name: "Violin")
@@ -61,6 +86,53 @@ extension PartTests {
         let part = Part<BeatTime, Pitch>(name: "Cello")
 
         #expect(part.name == "Cello")
+    }
+
+    @Test
+    func pitchIn_matching() {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        let matchID = part.noteTable.insert(attack: 0, duration: 1, pitch: .e4)
+
+        part.noteTable.insert(attack: 1, duration: 1, pitch: .a4)
+
+        let result = part.pitchIn(.c4...(.g4))
+
+        #expect(result == [matchID])
+    }
+
+    @Test
+    func pitchIn_notMatching() {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 0, duration: 1, pitch: .a4)
+
+        let result = part.pitchIn(.c4...(.g4))
+
+        #expect(result.isEmpty)
+    }
+
+    @Test
+    func soundingIn_matching() {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        // Attacks before the range, but sustains through it.
+        let overlapID = part.noteTable.insert(attack: 0, duration: 10, pitch: .c4)
+
+        let result = part.soundingIn(5...6)
+
+        #expect(result == [overlapID])
+    }
+
+    @Test
+    func soundingIn_notMatching() {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 10, duration: 1, pitch: .c4)
+
+        let result = part.soundingIn(0...2)
+
+        #expect(result.isEmpty)
     }
 
     @Test

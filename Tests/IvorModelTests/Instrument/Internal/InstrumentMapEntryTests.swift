@@ -67,7 +67,7 @@ extension InstrumentMapEntryTests {
 
     @Test
     func entryID_explicit() {
-        let entryID = InstrumentMap<BeatTime>.EntryID()
+        let entryID = EntryID()
         let entry = Entry(entryID: entryID, time: 1, instrument: guitar, extras: nil)
 
         #expect(entry.entryID == entryID)
