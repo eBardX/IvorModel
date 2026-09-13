@@ -75,49 +75,49 @@ extension WorkPartEditingTests {
     }
 
     @Test
-    func movePart_clampsOutOfRangeIndex() {
+    func shiftPart_clampsOutOfRangeIndex() {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
         var work = Work(content: .standardBeat([part1, part2], TempoMap()))
 
-        work.movePart(part1.partID,
-                      to: 100)
+        work.shiftPart(part1.partID,
+                       to: 100)
 
         #expect(work.partIDs == [part2.partID, part1.partID])
     }
 
     @Test
-    func movePart_missingID_isNoOp() {
+    func shiftPart_missingID_isNoOp() {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         var work = Work(content: .standardBeat([part], TempoMap()))
 
-        work.movePart(PartID(),
-                      to: 0)
+        work.shiftPart(PartID(),
+                       to: 0)
 
         #expect(work.partIDs == [part.partID])
     }
 
     @Test
-    func movePart_movesToTargetIndex() {
+    func shiftPart_movesToTargetIndex() {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
         let part3 = Part<BeatTime, Pitch>(name: "Viola")
         var work = Work(content: .standardBeat([part1, part2, part3], TempoMap()))
 
-        work.movePart(part3.partID,
-                      to: 0)
+        work.shiftPart(part3.partID,
+                       to: 0)
 
         #expect(work.partIDs == [part3.partID, part1.partID, part2.partID])
     }
 
     @Test
-    func movePart_movingFirstUp_isInertNoOp() {
+    func shiftPart_movingFirstUp_isInertNoOp() {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
         var work = Work(content: .standardBeat([part1, part2], TempoMap()))
 
-        work.movePart(part1.partID,
-                      to: -1)
+        work.shiftPart(part1.partID,
+                       to: -1)
 
         #expect(work.partIDs == [part1.partID, part2.partID])
     }

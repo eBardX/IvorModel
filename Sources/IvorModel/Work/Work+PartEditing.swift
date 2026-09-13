@@ -226,13 +226,13 @@ extension Work {
         }
     }
 
-    /// Moves the part with the given ID to the given index, clamping to the valid
+    /// Shifts the part with the given ID to the given index, clamping to the valid
     /// range of indices. No-ops if no part with `partID` is found.
     ///
-    /// - Parameter partID: The ID of the part to move.
-    /// - Parameter index:  The zero-based index to move the part to.
-    public mutating func movePart(_ partID: PartID,
-                                  to index: Int) {
+    /// - Parameter partID: The ID of the part to shift.
+    /// - Parameter index:  The zero-based index to shift the part to.
+    public mutating func shiftPart(_ partID: PartID,
+                                   to index: Int) {
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
