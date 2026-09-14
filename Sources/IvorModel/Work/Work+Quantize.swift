@@ -67,14 +67,17 @@ extension Work {
     }
 
     /// Quantizes note attack/release times for a set of beat-time parts in this work, along with
-    /// any parameter maps selected by `applyTo`. All-or-nothing across just the targeted parts.
+    /// any parameter maps selected by `applyTo` and, when `applyTo` contains ``MapTargets/tempo``,
+    /// the work’s own tempo map. The tempo map is work-wide and so is quantized regardless of
+    /// which parts are targeted; the note-table quantization itself is all-or-nothing across just
+    /// the targeted parts.
     ///
     /// - Parameter partIDs:   The IDs of the parts to quantize.
     /// - Parameter factors:   An array of positive integer subdivision factors.
     /// - Parameter noteIDs:   The identities of the notes to quantize, or `nil` to quantize
     ///                        every note in each targeted part.
-    /// - Parameter applyTo:   The parameter maps to quantize along with each targeted part’s note
-    ///                        table. Defaults to ``MapTargets/all``.
+    /// - Parameter applyTo:   The parameter maps (and tempo map) to quantize along with each
+    ///                        targeted part’s note table. Defaults to ``MapTargets/all``.
     ///
     /// - Throws:   ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
     ///             time; ``Work/Error/emptyQuantizationFactors`` /
@@ -90,35 +93,50 @@ extension Work {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
 
-            content = try .absoluteBeat(Self.transformed(parts: parts,
-                                                         partIDs: partIDs,
-                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts,
+                                                partIDs: partIDs,
+                                                kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
                 part.quantize(to: quantizer,
                               noteIDs: noteIDs,
                               applyTo: applyTo)
-            }, tempoMap)
+            }
+
+            content = .absoluteBeat(newParts,
+                                    Self._quantized(tempoMap: tempoMap,
+                                                    using: quantizer,
+                                                    applyTo: applyTo))
 
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
 
-            content = try .keyboardBeat(Self.transformed(parts: parts,
-                                                         partIDs: partIDs,
-                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts,
+                                                partIDs: partIDs,
+                                                kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
                 part.quantize(to: quantizer,
                               noteIDs: noteIDs,
                               applyTo: applyTo)
-            }, tempoMap)
+            }
+
+            content = .keyboardBeat(newParts,
+                                    Self._quantized(tempoMap: tempoMap,
+                                                    using: quantizer,
+                                                    applyTo: applyTo))
 
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
 
-            content = try .standardBeat(Self.transformed(parts: parts,
-                                                         partIDs: partIDs,
-                                                         kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts,
+                                                partIDs: partIDs,
+                                                kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
                 part.quantize(to: quantizer,
                               noteIDs: noteIDs,
                               applyTo: applyTo)
-            }, tempoMap)
+            }
+
+            content = .standardBeat(newParts,
+                                    Self._quantized(tempoMap: tempoMap,
+                                                    using: quantizer,
+                                                    applyTo: applyTo))
 
         default:
             throw Error.timeBasisMismatch(expected: .beat)
