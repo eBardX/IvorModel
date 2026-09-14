@@ -140,10 +140,10 @@ extension NoteTable {
             guard noteIDs?.contains(note.noteID) ?? true
             else { continue }
 
-            guard let dirInt1 = loPitch.interval(to: note.startPitch),
-                  let dirInt2 = loPitch.interval(to: note.endPitch),
-                  let newStartPitch = hiPitch.transposed(by: dirInt1),
-                  let newEndPitch = hiPitch.transposed(by: dirInt2)
+            guard let dirInt1 = note.startPitch.interval(to: hiPitch),
+                  let dirInt2 = note.endPitch.interval(to: hiPitch),
+                  let newStartPitch = loPitch.transposed(by: dirInt1),
+                  let newEndPitch = loPitch.transposed(by: dirInt2)
             else { throw Error.invertFailure(note.attack, note.duration, note.startPitch, note.endPitch) }
 
             notes[idx] = Note(noteID: note.noteID,
