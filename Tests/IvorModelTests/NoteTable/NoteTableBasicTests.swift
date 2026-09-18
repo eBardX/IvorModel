@@ -5,6 +5,7 @@ import IvorTiming
 import IvorTuning
 import Testing
 import XestiNumbers
+import XestiTools
 
 struct NoteTableBasicTests {
 }
@@ -314,5 +315,98 @@ extension NoteTableBasicTests {
 
         #expect(table.timeRange?.lowerBound == 0)
         #expect(table.timeRange?.upperBound == 4)
+    }
+
+    @Test
+    func updateExtras_found() throws {
+        var table = NoteTableSB()
+        var foundNoteID: NoteID?
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+
+        table.forEach { noteID, _, _, _, _, _ in foundNoteID = noteID }
+
+        let noteID = try #require(foundNoteID)
+        let updated = table.updateExtras(noteID: noteID,
+                                         extras: Extras(elements: [Extra(name: "accent")]))
+
+        #expect(updated)
+        #expect(table.hasExtras)
+    }
+
+    @Test
+    func updateExtras_notFound() {
+        var table = NoteTableSB()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+
+        let updated = table.updateExtras(noteID: NoteID(),
+                                         extras: Extras(elements: [Extra(name: "accent")]))
+
+        #expect(!updated)
+    }
+
+    @Test
+    func updateExtras_preservesIdentity() throws {
+        var table = NoteTableSB()
+        var foundNoteID: NoteID?
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+
+        table.forEach { noteID, _, _, _, _, _ in foundNoteID = noteID }
+
+        let originalID = try #require(foundNoteID)
+
+        table.updateExtras(noteID: originalID,
+                           extras: Extras(elements: [Extra(name: "accent")]))
+
+        var idAfterUpdate: NoteID?
+
+        table.forEach { noteID, _, _, _, _, _ in idAfterUpdate = noteID }
+
+        #expect(idAfterUpdate == originalID)
+    }
+
+    //
+    // Regression test: two notes tying on attack/duration/pitch used to swap relative order
+    // whenever the array-first one had its extras "updated" via remove-then-reinsert (the same
+    // mechanism `moveAttack` and its siblings use) — `insertionIndex` always lands a reinserted
+    // note after every note it ties with. `updateExtras` exists specifically to update in place
+    // instead, so order among ties must survive regardless of which of the pair is edited.
+    //
+    @Test
+    func updateExtras_preservesOrderAmongTies() {
+        var table = NoteTableSB()
+
+        let firstID = table.insert(attack: 0, duration: 1, pitch: .c4)
+        let secondID = table.insert(attack: 0, duration: 1, pitch: .c4)
+
+        table.updateExtras(noteID: firstID,
+                           extras: Extras(elements: [Extra(name: "accent")]))
+
+        var order: [NoteID] = []
+
+        table.forEach { noteID, _, _, _, _, _ in order.append(noteID) }
+
+        #expect(order == [firstID, secondID])
+    }
+
+    @Test
+    func updateExtras_removesExtras() throws {
+        var table = NoteTableSB()
+        var foundNoteID: NoteID?
+
+        table.insert(attack: 0,
+                     duration: 1,
+                     pitch: .c4,
+                     extras: Extras(elements: [Extra(name: "accent")]))
+
+        table.forEach { noteID, _, _, _, _, _ in foundNoteID = noteID }
+
+        let noteID = try #require(foundNoteID)
+        let updated = table.updateExtras(noteID: noteID, extras: nil)
+
+        #expect(updated)
+        #expect(!table.hasExtras)
     }
 }

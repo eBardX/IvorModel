@@ -330,6 +330,43 @@ extension NoteTable {
         return true
     }
 
+    /// Updates the extras attached to the note with the given identity, keeping its attack,
+    /// duration, and pitches unchanged.
+    ///
+    /// Unlike ``moveAttack(noteID:to:)`` and its siblings, this never reorders the table — a
+    /// note's position depends only on its attack, duration, and pitches (see
+    /// ``insertionIndex(for:duration:startPitch:endPitch:)``), which extras play no part in — so
+    /// this replaces the note in place at its existing index rather than removing and
+    /// reinserting it. That distinction matters when two notes tie on every
+    /// position-determining field: reinserting one of them would always land it after the other
+    /// (see `insertionIndex`'s doc comment), silently swapping their relative order even though
+    /// neither note's own position actually changed.
+    ///
+    /// - Parameter noteID:  The identity of the note to update.
+    /// - Parameter extras:  The new extras for the note.
+    ///
+    /// - Returns:  `true` if `noteID` identified a note and it was updated; `false` if `noteID`
+    ///             named no note and nothing happened.
+    @discardableResult
+    public mutating func updateExtras(noteID: NoteID,
+                                      extras: Extras?) -> Bool {
+        guard let position = firstIndex(noteID: noteID)
+        else { return false }
+
+        let note = notes[position]
+
+        notes[position] = Note(noteID: noteID,
+                               attack: note.attack,
+                               duration: note.duration,
+                               startPitch: note.startPitch,
+                               endPitch: note.endPitch,
+                               extras: extras)
+
+        hasExtras = Self.hasExtras(in: notes)
+
+        return true
+    }
+
     // MARK: Private Instance Methods
 
     private mutating func _insert(noteID: NoteID,
