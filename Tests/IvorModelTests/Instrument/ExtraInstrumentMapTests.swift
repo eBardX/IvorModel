@@ -26,6 +26,60 @@ extension ExtraInstrumentMapTests {
     }
 
     @Test
+    func midiElevation() {
+        #expect(Extra.midiElevation.name == "midiElevation")
+        #expect(Extra.midiElevation.values.isEmpty)
+    }
+
+    @Test
+    func midiProgram() {
+        #expect(Extra.midiProgram.name == "midiProgram")
+        #expect(Extra.midiProgram.values.isEmpty)
+    }
+
+    @Test
+    func midiUnpitched() {
+        #expect(Extra.midiUnpitched.name == "midiUnpitched")
+        #expect(Extra.midiUnpitched.values.isEmpty)
+    }
+
+    @Test
+    func midiVolume() {
+        #expect(Extra.midiVolume.name == "midiVolume")
+        #expect(Extra.midiVolume.values.isEmpty)
+    }
+
+    @Test
+    func midiProgramAndMidiVolume_roundTripThroughInstrumentMapEntry() {
+        var instrumentMap = InstrumentMap<BeatTime>()
+
+        instrumentMap.insert(time: 1,
+                             instrument: .vanilla,
+                             extras: Extras(elements: [Extra(name: Extra.midiProgram.name,
+                                                             values: [.int(41)]),
+                                                       Extra(name: Extra.midiVolume.name,
+                                                             values: [.double(80)])]))
+
+        var foundProgram: Int?
+        var foundVolume: Double?
+
+        instrumentMap.forEach { _, _, _, extras in
+            for extra in extras?.elements ?? [] {
+                if extra.name == Extra.midiProgram.name,
+                   case let .int(value)? = extra.values.first {
+                    foundProgram = value
+                } else if extra.name == Extra.midiVolume.name,
+                          case let .double(value)? = extra.values.first {
+                    foundVolume = value
+                }
+            }
+        }
+
+        #expect(foundProgram == 41)
+        #expect(foundVolume == 80)
+    }
+
+    @Test
     func midiChannelAndMidiBank_roundTripThroughInstrumentMapEntry() {
         var instrumentMap = InstrumentMap<BeatTime>()
 
