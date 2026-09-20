@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/XestiSexp",
       "state" : {
-        "revision" : "6f565450b29224d042201679916b968d896781dc",
-        "version" : "5.0.3"
+        "revision" : "e5a8c0e0d0e6618b6a9cf3a344cbcb54ce7d5ccd",
+        "version" : "5.0.4"
       }
     },
     {
