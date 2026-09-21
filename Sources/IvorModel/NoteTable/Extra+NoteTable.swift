@@ -57,7 +57,7 @@ extension Extra {
     /// it can't (ABC, always well-nested), this is a bare flag instead.
     public static let slurEnd = Self(name: "slurEnd")
 
-    /// This ``NoteTable`` note begins a slur. When the originating format
+    /// This ``NoteTable`` note starts a slur. When the originating format
     /// can express overlapping/crossing slurs (MusicXML, Guido), payload is
     /// a single `.string` id matching the corresponding ``slurEnd``; when
     /// it can't (ABC, always well-nested), this is a bare flag instead.

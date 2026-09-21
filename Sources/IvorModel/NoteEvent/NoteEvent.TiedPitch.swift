@@ -9,13 +9,13 @@ extension NoteEvent {
         /// A pitch that is not tied to any adjacent note.
         case neither(PitchType)
 
-        /// A pitch that begins a tie to the following note.
+        /// A pitch that starts a tie to the following note.
         case start(PitchType)
 
         /// A pitch that ends a tie from the preceding note.
         case stop(PitchType)
 
-        /// A pitch that ends a tie from the preceding note and begins a tie to the following note.
+        /// A pitch that ends a tie from the preceding note and starts a tie to the following note.
         case stopStart(PitchType)
     }
 }
@@ -29,12 +29,12 @@ extension NoteEvent.TiedPitch {
     /// Creates a tied pitch from a pitch and tie flags.
     ///
     /// - Parameter pitch:      The pitch.
-    /// - Parameter beginsTie:  A Boolean value indicating whether this pitch begins a tie to the following note. Defaults to `false`.
+    /// - Parameter startsTie:  A Boolean value indicating whether this pitch starts a tie to the following note. Defaults to `false`.
     /// - Parameter endsTie:    A Boolean value indicating whether this pitch ends a tie from the preceding note. Defaults to `false`.
     public init(pitch: PitchType,
-                beginsTie: Bool = false,
+                startsTie: Bool = false,
                 endsTie: Bool = false) {
-        switch (beginsTie, endsTie) {
+        switch (startsTie, endsTie) {
         case (false, false):
             self = .neither(pitch)
 
@@ -50,18 +50,6 @@ extension NoteEvent.TiedPitch {
     }
 
     // MARK: Public Instance Properties
-
-    /// A Boolean value indicating whether this pitch begins a tie to the following note.
-    public var beginsTie: Bool {
-        switch self {
-        case .start,
-             .stopStart:
-            true
-
-        default:
-            false
-        }
-    }
 
     /// A Boolean value indicating whether this pitch ends a tie from the preceding note.
     public var endsTie: Bool {
@@ -83,6 +71,18 @@ extension NoteEvent.TiedPitch {
             let .stop(pit),
             let .stopStart(pit):
             pit
+        }
+    }
+
+    /// A Boolean value indicating whether this pitch starts a tie to the following note.
+    public var startsTie: Bool {
+        switch self {
+        case .start,
+             .stopStart:
+            true
+
+        default:
+            false
         }
     }
 

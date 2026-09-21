@@ -25,6 +25,34 @@ extension NoteTable where TimeType == BeatTime {
 
     // MARK: Public Instance Methods
 
+    /// Quantizes note attack and release times to the nearest subdivision given by `factors`.
+    ///
+    /// - Parameter factors:    An array of positive integer subdivision factors.
+    /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize
+    ///                         every note in the table.
+    ///
+    /// - Throws:   ``NoteTable/Error/emptyQuantizationFactors`` if `factors` is empty, or
+    ///             ``NoteTable/Error/invalidQuantizationFactor(_:)`` if any factor is not
+    ///             positive.
+    public mutating func quantize(to factors: [Int],
+                                  noteIDs: Set<NoteID>? = nil) throws(Error) {
+        let quantizer: BeatQuantizer
+
+        do {
+            quantizer = try BeatQuantizer(factors: factors)
+        } catch {
+            switch error {
+            case .emptyFactors:
+                throw Error.emptyQuantizationFactors
+
+            case let .invalidFactor(factor):
+                throw Error.invalidQuantizationFactor(factor)
+            }
+        }
+
+        quantize(using: quantizer, noteIDs: noteIDs)
+    }
+
     /// Quantizes note attack and release times to the nearest grid point defined by `quantizer`.
     ///
     /// - Parameter quantizer:   The quantizer whose grid to snap attack/release times to.
@@ -55,34 +83,6 @@ extension NoteTable where TimeType == BeatTime {
         notes.sort()
 
         timeRange = Self.timeRange(in: notes)
-    }
-
-    /// Quantizes note attack and release times to the nearest subdivision given by `factors`.
-    ///
-    /// - Parameter factors:    An array of positive integer subdivision factors.
-    /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize
-    ///                         every note in the table.
-    ///
-    /// - Throws:   ``NoteTable/Error/emptyQuantizationFactors`` if `factors` is empty, or
-    ///             ``NoteTable/Error/invalidQuantizationFactor(_:)`` if any factor is not
-    ///             positive.
-    public mutating func quantize(to factors: [Int],
-                                  noteIDs: Set<NoteID>? = nil) throws(Error) {
-        let quantizer: BeatQuantizer
-
-        do {
-            quantizer = try BeatQuantizer(factors: factors)
-        } catch {
-            switch error {
-            case .emptyFactors:
-                throw Error.emptyQuantizationFactors
-
-            case let .invalidFactor(factor):
-                throw Error.invalidQuantizationFactor(factor)
-            }
-        }
-
-        quantize(using: quantizer, noteIDs: noteIDs)
     }
 }
 

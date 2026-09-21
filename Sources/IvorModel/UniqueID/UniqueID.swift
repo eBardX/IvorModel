@@ -12,13 +12,6 @@ private import Foundation
 /// `isValid(_:)` are supplied here.
 public protocol UniqueID: StringRepresentable {
 
-    // MARK: Public Initializers
-
-    /// Creates a new instance from a string value already known to be valid.
-    ///
-    /// - Parameter stringValue:    The string identifying this instance.
-    init(uncheckedStringValue stringValue: String)
-
     // MARK: Public Type Properties
 
     /// The regular expression that a valid string value must wholly match.
@@ -26,11 +19,30 @@ public protocol UniqueID: StringRepresentable {
 
     /// The two-character prefix identifying this type's string values.
     static var validPrefix: String { get }
+
+    // MARK: Public Initializers
+
+    /// Creates a new instance from a string value already known to be valid.
+    ///
+    /// - Parameter stringValue:    The string identifying this instance.
+    init(uncheckedStringValue stringValue: String)
 }
 
 // MARK: -
 
 extension UniqueID {
+
+    // MARK: Public Type Methods
+
+    /// Returns a Boolean value indicating whether the provided string is a
+    /// valid identity.
+    ///
+    /// - Parameter stringValue:    The string to validate.
+    ///
+    /// - Returns:  `true` if `stringValue` is valid; otherwise, `false`.
+    public static func isValid(_ stringValue: String) -> Bool {
+        stringValue.wholeMatch(of: validPattern) != nil
+    }
 
     // MARK: Public Initializers
 
@@ -48,17 +60,5 @@ extension UniqueID {
         else { return nil }
 
         self.init(uncheckedStringValue: stringValue)
-    }
-
-    // MARK: Public Type Methods
-
-    /// Returns a Boolean value indicating whether the provided string is a
-    /// valid identity.
-    ///
-    /// - Parameter stringValue:    The string to validate.
-    ///
-    /// - Returns:  `true` if `stringValue` is valid; otherwise, `false`.
-    public static func isValid(_ stringValue: String) -> Bool {
-        stringValue.wholeMatch(of: validPattern) != nil
     }
 }

@@ -348,6 +348,25 @@ extension PartTransformTests {
     }
 
     @Test
+    func quantize_toFactorsNoteIDsRestrictsAffectedNotes() throws {
+        var part = PartSB(name: "Test")
+
+        let noteID1 = part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        let noteID2 = part.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
+
+        try part.quantize(to: [1], noteIDs: [noteID1])
+
+        var attacksByID: [NoteID: BeatTime] = [:]
+
+        part.noteTable.forEach { noteID, attack, _, _, _, _ in
+            attacksByID[noteID] = attack
+        }
+
+        #expect(attacksByID[noteID1] == 0)
+        #expect(attacksByID[noteID2] == BeatTime(4.49))
+    }
+
+    @Test
     func quantize_toFactorsNoteIDsRestrictsCarriedMapEntries() throws {
         var part = PartSB(name: "Test")
 
@@ -379,25 +398,6 @@ extension PartTransformTests {
         //
         #expect(earlyTime == 0)
         #expect(lateTime == 10)
-    }
-
-    @Test
-    func quantize_toFactorsNoteIDsRestrictsAffectedNotes() throws {
-        var part = PartSB(name: "Test")
-
-        let noteID1 = part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
-        let noteID2 = part.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
-
-        try part.quantize(to: [1], noteIDs: [noteID1])
-
-        var attacksByID: [NoteID: BeatTime] = [:]
-
-        part.noteTable.forEach { noteID, attack, _, _, _, _ in
-            attacksByID[noteID] = attack
-        }
-
-        #expect(attacksByID[noteID1] == 0)
-        #expect(attacksByID[noteID2] == BeatTime(4.49))
     }
 
     @Test

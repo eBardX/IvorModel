@@ -20,6 +20,29 @@ extension ExtraDynamicMapTests {
     }
 
     @Test
+    func dynamicMark_roundTripsThroughDynamicMapEntry() {
+        var dynamicMap = DynamicMap<BeatTime>()
+
+        dynamicMap.insert(time: 1,
+                          dynamic: .mf,
+                          extras: Extras(elements: [Extra(name: Extra.dynamicMark.name,
+                                                          values: [.string("sfz")])]))
+
+        var found = false
+
+        dynamicMap.forEach { _, _, _, extras in
+            if let mark = extras?.elements.first(where: { $0.name == Extra.dynamicMark.name }),
+               case let .string(text)? = mark.values.first {
+                found = true
+
+                #expect(text == "sfz")
+            }
+        }
+
+        #expect(found)
+    }
+
+    @Test
     func expressionValue() {
         #expect(Extra.expressionValue.name == "expressionValue")
         #expect(Extra.expressionValue.values.isEmpty)
@@ -59,28 +82,5 @@ extension ExtraDynamicMapTests {
 
         #expect(foundVelocity == 84)
         #expect(foundExpression == 100)
-    }
-
-    @Test
-    func dynamicMark_roundTripsThroughDynamicMapEntry() {
-        var dynamicMap = DynamicMap<BeatTime>()
-
-        dynamicMap.insert(time: 1,
-                          dynamic: .mf,
-                          extras: Extras(elements: [Extra(name: Extra.dynamicMark.name,
-                                                          values: [.string("sfz")])]))
-
-        var found = false
-
-        dynamicMap.forEach { _, _, _, extras in
-            if let mark = extras?.elements.first(where: { $0.name == Extra.dynamicMark.name }),
-               case let .string(text)? = mark.values.first {
-                found = true
-
-                #expect(text == "sfz")
-            }
-        }
-
-        #expect(found)
     }
 }

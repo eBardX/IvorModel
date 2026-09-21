@@ -1,7 +1,7 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
 /// A set of a part’s parameter maps that a time-based transform should also carry along.
-public struct MapTargets: OptionSet {
+public struct MapTargets {
 
     // MARK: Public Initializers
 
@@ -40,6 +40,11 @@ extension MapTargets {
     /// tempo map of its own, so this target is ignored wherever `MapTargets` selects among a
     /// single part’s maps.
     public static let tempo = Self(rawValue: 1 << 3)
+}
+
+// MARK: - OptionSet
+
+extension MapTargets: OptionSet {
 }
 
 // MARK: - Sendable

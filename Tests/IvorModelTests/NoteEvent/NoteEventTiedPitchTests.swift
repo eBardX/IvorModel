@@ -15,34 +15,6 @@ extension NoteEventTiedPitchTests {
     typealias TiedPitchSB = NoteEvent<BeatTime, Pitch>.TiedPitch
 
     @Test
-    func beginsTie_neither() {
-        let tp = TiedPitchSB(pitch: .a4)
-
-        #expect(!tp.beginsTie)
-    }
-
-    @Test
-    func beginsTie_start() {
-        let tp = TiedPitchSB(pitch: .a4, beginsTie: true)
-
-        #expect(tp.beginsTie)
-    }
-
-    @Test
-    func beginsTie_stop() {
-        let tp = TiedPitchSB(pitch: .a4, endsTie: true)
-
-        #expect(!tp.beginsTie)
-    }
-
-    @Test
-    func beginsTie_stopStart() {
-        let tp = TiedPitchSB(pitch: .a4, beginsTie: true, endsTie: true)
-
-        #expect(tp.beginsTie)
-    }
-
-    @Test
     func codable() throws {
         for original: TiedPitchSB in [.neither(.a4), .start(.a4), .stop(.a4), .stopStart(.a4)] {
             let data = try JSONEncoder().encode(original)
@@ -82,7 +54,7 @@ extension NoteEventTiedPitchTests {
 
     @Test
     func endsTie_start() {
-        let tp = TiedPitchSB(pitch: .a4, beginsTie: true)
+        let tp = TiedPitchSB(pitch: .a4, startsTie: true)
 
         #expect(!tp.endsTie)
     }
@@ -96,7 +68,7 @@ extension NoteEventTiedPitchTests {
 
     @Test
     func endsTie_stopStart() {
-        let tp = TiedPitchSB(pitch: .a4, beginsTie: true, endsTie: true)
+        let tp = TiedPitchSB(pitch: .a4, startsTie: true, endsTie: true)
 
         #expect(tp.endsTie)
     }
@@ -110,7 +82,7 @@ extension NoteEventTiedPitchTests {
 
     @Test
     func init_start() {
-        let tp = TiedPitchSB(pitch: .a4, beginsTie: true)
+        let tp = TiedPitchSB(pitch: .a4, startsTie: true)
 
         #expect(tp == .start(.a4))
     }
@@ -124,7 +96,7 @@ extension NoteEventTiedPitchTests {
 
     @Test
     func init_stopStart() {
-        let tp = TiedPitchSB(pitch: .a4, beginsTie: true, endsTie: true)
+        let tp = TiedPitchSB(pitch: .a4, startsTie: true, endsTie: true)
 
         #expect(tp == .stopStart(.a4))
     }
@@ -135,5 +107,33 @@ extension NoteEventTiedPitchTests {
         #expect(TiedPitchSB.start(.a4).pitch == .a4)
         #expect(TiedPitchSB.stop(.a4).pitch == .a4)
         #expect(TiedPitchSB.stopStart(.a4).pitch == .a4)
+    }
+
+    @Test
+    func startsTie_neither() {
+        let tp = TiedPitchSB(pitch: .a4)
+
+        #expect(!tp.startsTie)
+    }
+
+    @Test
+    func startsTie_start() {
+        let tp = TiedPitchSB(pitch: .a4, startsTie: true)
+
+        #expect(tp.startsTie)
+    }
+
+    @Test
+    func startsTie_stop() {
+        let tp = TiedPitchSB(pitch: .a4, endsTie: true)
+
+        #expect(!tp.startsTie)
+    }
+
+    @Test
+    func startsTie_stopStart() {
+        let tp = TiedPitchSB(pitch: .a4, startsTie: true, endsTie: true)
+
+        #expect(tp.startsTie)
     }
 }

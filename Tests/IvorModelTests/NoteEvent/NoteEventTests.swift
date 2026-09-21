@@ -31,9 +31,9 @@ extension NoteEventTests {
     @Test
     func init_complex() {
         let expectedTiedPitches = [TiedPitchS(pitch: .a4,
-                                              beginsTie: true),
+                                              startsTie: true),
                                    TiedPitchS(pitch: .d5,
-                                              beginsTie: true,
+                                              startsTie: true,
                                               endsTie: true),
                                    TiedPitchS(pitch: .e5,
                                               endsTie: true),

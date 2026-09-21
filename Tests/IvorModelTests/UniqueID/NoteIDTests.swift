@@ -5,12 +5,12 @@ import IvorTiming
 import IvorTuning
 import Testing
 
-struct NoteTableNoteIDTests {
+struct NoteIDTests {
 }
 
 // MARK: -
 
-extension NoteTableNoteIDTests {
+extension NoteIDTests {
     @Test
     func init_generated() {
         let id1 = NoteID()

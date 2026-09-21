@@ -197,9 +197,53 @@ extension WorkAugmentTests {
         part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
 
+        let partID = part.partID
+        let detail = "Invalid anchor: does not contain the range of entries it is being applied to"
         var work = Work(content: .standardBeat([part], TempoMap()))
 
-        #expect(throws: Work.Error.self) {
+        #expect(throws: Work.Error.dynamicMapTransformFailure(kind: .augment,
+                                                              partID: partID,
+                                                              detail: detail)) {
+            try work.augment(by: Number(2), anchor: BeatTime(5))
+        }
+
+        #expect(work.beatTimeRange == BeatTime(5)...BeatTime(6))
+    }
+
+    @Test
+    func mapTransformFailure_wrapsUnderlyingInstrumentMapError() {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
+        part.instrumentMap.insert(time: 0, instrument: .vanilla)
+
+        let partID = part.partID
+        let detail = "Invalid anchor: does not contain the range of entries it is being applied to"
+        var work = Work(content: .standardBeat([part], TempoMap()))
+
+        #expect(throws: Work.Error.instrumentMapTransformFailure(kind: .augment,
+                                                                 partID: partID,
+                                                                 detail: detail)) {
+            try work.augment(by: Number(2), anchor: BeatTime(5))
+        }
+
+        #expect(work.beatTimeRange == BeatTime(5)...BeatTime(6))
+    }
+
+    @Test
+    func mapTransformFailure_wrapsUnderlyingPanMapError() {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
+        part.panMap.insert(time: 0, pan: .center)
+
+        let partID = part.partID
+        let detail = "Invalid anchor: does not contain the range of entries it is being applied to"
+        var work = Work(content: .standardBeat([part], TempoMap()))
+
+        #expect(throws: Work.Error.panMapTransformFailure(kind: .augment,
+                                                          partID: partID,
+                                                          detail: detail)) {
             try work.augment(by: Number(2), anchor: BeatTime(5))
         }
 

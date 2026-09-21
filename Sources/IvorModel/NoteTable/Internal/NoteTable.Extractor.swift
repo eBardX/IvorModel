@@ -122,7 +122,7 @@ extension NoteTable.Extractor {
             let isTied = !remainingDuration.isZero
 
             let slicePitch = TiedPitch(pitch: current.pitch,
-                                       beginsTie: isTied,
+                                       startsTie: isTied,
                                        endsTie: current.endsTie)
 
             tiedPitches.append(slicePitch)

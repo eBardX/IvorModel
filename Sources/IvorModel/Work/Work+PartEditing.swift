@@ -226,88 +226,6 @@ extension Work {
         }
     }
 
-    /// Shifts the part with the given ID to the given index, clamping to the valid
-    /// range of indices. No-ops if no part with `partID` is found.
-    ///
-    /// - Parameter partID: The ID of the part to shift.
-    /// - Parameter index:  The zero-based index to shift the part to.
-    public mutating func shiftPart(_ partID: PartID,
-                                   to index: Int) {
-        switch content {
-        case let .absoluteBeat(parts, tempoMap):
-            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
-            else { return }
-
-            var newParts = parts
-            let part = newParts.remove(at: currentIndex)
-
-            newParts.insert(part,
-                            at: Self._clamp(index, to: newParts.count))
-
-            content = .absoluteBeat(newParts, tempoMap)
-
-        case let .absoluteWall(parts):
-            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
-            else { return }
-
-            var newParts = parts
-            let part = newParts.remove(at: currentIndex)
-
-            newParts.insert(part,
-                            at: Self._clamp(index, to: newParts.count))
-
-            content = .absoluteWall(newParts)
-
-        case let .keyboardBeat(parts, tempoMap):
-            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
-            else { return }
-
-            var newParts = parts
-            let part = newParts.remove(at: currentIndex)
-
-            newParts.insert(part,
-                            at: Self._clamp(index, to: newParts.count))
-
-            content = .keyboardBeat(newParts, tempoMap)
-
-        case let .keyboardWall(parts):
-            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
-            else { return }
-
-            var newParts = parts
-            let part = newParts.remove(at: currentIndex)
-
-            newParts.insert(part,
-                            at: Self._clamp(index, to: newParts.count))
-
-            content = .keyboardWall(newParts)
-
-        case let .standardBeat(parts, tempoMap):
-            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
-            else { return }
-
-            var newParts = parts
-            let part = newParts.remove(at: currentIndex)
-
-            newParts.insert(part,
-                            at: Self._clamp(index, to: newParts.count))
-
-            content = .standardBeat(newParts, tempoMap)
-
-        case let .standardWall(parts):
-            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
-            else { return }
-
-            var newParts = parts
-            let part = newParts.remove(at: currentIndex)
-
-            newParts.insert(part,
-                            at: Self._clamp(index, to: newParts.count))
-
-            content = .standardWall(newParts)
-        }
-    }
-
     /// Removes the part with the given ID. No-ops if no part with `partID` is found.
     ///
     /// - Parameter partID: The ID of the part to remove.
@@ -439,6 +357,88 @@ extension Work {
             var newParts = parts
 
             newParts[index].name = name
+
+            content = .standardWall(newParts)
+        }
+    }
+
+    /// Shifts the part with the given ID to the given index, clamping to the valid
+    /// range of indices. No-ops if no part with `partID` is found.
+    ///
+    /// - Parameter partID: The ID of the part to shift.
+    /// - Parameter index:  The zero-based index to shift the part to.
+    public mutating func shiftPart(_ partID: PartID,
+                                   to index: Int) {
+        switch content {
+        case let .absoluteBeat(parts, tempoMap):
+            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
+            else { return }
+
+            var newParts = parts
+            let part = newParts.remove(at: currentIndex)
+
+            newParts.insert(part,
+                            at: Self._clamp(index, to: newParts.count))
+
+            content = .absoluteBeat(newParts, tempoMap)
+
+        case let .absoluteWall(parts):
+            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
+            else { return }
+
+            var newParts = parts
+            let part = newParts.remove(at: currentIndex)
+
+            newParts.insert(part,
+                            at: Self._clamp(index, to: newParts.count))
+
+            content = .absoluteWall(newParts)
+
+        case let .keyboardBeat(parts, tempoMap):
+            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
+            else { return }
+
+            var newParts = parts
+            let part = newParts.remove(at: currentIndex)
+
+            newParts.insert(part,
+                            at: Self._clamp(index, to: newParts.count))
+
+            content = .keyboardBeat(newParts, tempoMap)
+
+        case let .keyboardWall(parts):
+            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
+            else { return }
+
+            var newParts = parts
+            let part = newParts.remove(at: currentIndex)
+
+            newParts.insert(part,
+                            at: Self._clamp(index, to: newParts.count))
+
+            content = .keyboardWall(newParts)
+
+        case let .standardBeat(parts, tempoMap):
+            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
+            else { return }
+
+            var newParts = parts
+            let part = newParts.remove(at: currentIndex)
+
+            newParts.insert(part,
+                            at: Self._clamp(index, to: newParts.count))
+
+            content = .standardBeat(newParts, tempoMap)
+
+        case let .standardWall(parts):
+            guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
+            else { return }
+
+            var newParts = parts
+            let part = newParts.remove(at: currentIndex)
+
+            newParts.insert(part,
+                            at: Self._clamp(index, to: newParts.count))
 
             content = .standardWall(newParts)
         }

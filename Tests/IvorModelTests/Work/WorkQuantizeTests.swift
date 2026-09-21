@@ -157,32 +157,6 @@ extension WorkQuantizeTests {
     }
 
     @Test
-    func quantize_wholeWork_keyboardBeat_snapsEveryPart() throws {
-        var part = Part<BeatTime, NoteNumber>(name: "Violin")
-
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: NoteNumber(60))
-
-        var work = Work(content: .keyboardBeat([part], TempoMap()))
-
-        try work.quantize(to: [1])
-
-        #expect(work.beatTimeRange?.lowerBound == 0)
-    }
-
-    @Test
-    func quantize_wholeWork_standardBeat_snapsEveryPart() throws {
-        var part = Part<BeatTime, Pitch>(name: "Violin")
-
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
-
-        var work = Work(content: .standardBeat([part], TempoMap()))
-
-        try work.quantize(to: [1])
-
-        #expect(work.beatTimeRange?.lowerBound == 0)
-    }
-
-    @Test
     func quantize_wholeWork_applyToCarriesSelectedMap() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
@@ -192,29 +166,6 @@ extension WorkQuantizeTests {
         var work = Work(content: .standardBeat([part], TempoMap()))
 
         try work.quantize(to: [1], applyTo: .dynamic)
-
-        guard case let .standardBeat(parts, _) = work.content
-        else { Issue.record("Expected .standardBeat content."); return }
-
-        var dynamicTimes: [BeatTime] = []
-
-        parts[0].dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
-        }
-
-        #expect(dynamicTimes == [0])
-    }
-
-    @Test
-    func quantize_wholeWork_defaultApplyToCarriesMaps() throws {
-        var part = Part<BeatTime, Pitch>(name: "Violin")
-
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
-        part.dynamicMap.insert(time: 0.49, dynamic: .mp)
-
-        var work = Work(content: .standardBeat([part], TempoMap()))
-
-        try work.quantize(to: [1])
 
         guard case let .standardBeat(parts, _) = work.content
         else { Issue.record("Expected .standardBeat content."); return }
@@ -255,6 +206,29 @@ extension WorkQuantizeTests {
     }
 
     @Test
+    func quantize_wholeWork_defaultApplyToCarriesMaps() throws {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.dynamicMap.insert(time: 0.49, dynamic: .mp)
+
+        var work = Work(content: .standardBeat([part], TempoMap()))
+
+        try work.quantize(to: [1])
+
+        guard case let .standardBeat(parts, _) = work.content
+        else { Issue.record("Expected .standardBeat content."); return }
+
+        var dynamicTimes: [BeatTime] = []
+
+        parts[0].dynamicMap.forEach { _, time, _, _ in
+            dynamicTimes.append(time)
+        }
+
+        #expect(dynamicTimes == [0])
+    }
+
+    @Test
     func quantize_wholeWork_defaultApplyToCarriesTempoMap() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
@@ -278,6 +252,32 @@ extension WorkQuantizeTests {
         }
 
         #expect(tempoBeatTimes == [0])
+    }
+
+    @Test
+    func quantize_wholeWork_keyboardBeat_snapsEveryPart() throws {
+        var part = Part<BeatTime, NoteNumber>(name: "Violin")
+
+        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: NoteNumber(60))
+
+        var work = Work(content: .keyboardBeat([part], TempoMap()))
+
+        try work.quantize(to: [1])
+
+        #expect(work.beatTimeRange?.lowerBound == 0)
+    }
+
+    @Test
+    func quantize_wholeWork_standardBeat_snapsEveryPart() throws {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+
+        var work = Work(content: .standardBeat([part], TempoMap()))
+
+        try work.quantize(to: [1])
+
+        #expect(work.beatTimeRange?.lowerBound == 0)
     }
 
     @Test

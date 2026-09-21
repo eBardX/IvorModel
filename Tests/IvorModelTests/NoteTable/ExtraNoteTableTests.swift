@@ -22,6 +22,35 @@ extension ExtraNoteTableTests {
     }
 
     @Test
+    func accentAndSlurStart_roundTripThroughNoteTableEntry() {
+        var table = NoteTableSB()
+
+        table.insert(attack: 0,
+                     duration: 1,
+                     pitch: .c4,
+                     extras: Extras(elements: [Extra(name: Extra.accent.name, values: []),
+                                               Extra(name: Extra.slurStart.name,
+                                                     values: [.string("1")])]))
+
+        var foundAccent = false
+        var foundSlurID: String?
+
+        table.forEach { _, _, _, _, _, extras in
+            for extra in extras?.elements ?? [] {
+                if extra.name == Extra.accent.name {
+                    foundAccent = true
+                } else if extra.name == Extra.slurStart.name,
+                          case let .string(value)? = extra.values.first {
+                    foundSlurID = value
+                }
+            }
+        }
+
+        #expect(foundAccent)
+        #expect(foundSlurID == "1")
+    }
+
+    @Test
     func articulation() {
         #expect(Extra.articulation.name == "articulation")
         #expect(Extra.articulation.values.isEmpty)
@@ -121,34 +150,5 @@ extension ExtraNoteTableTests {
     func upBow() {
         #expect(Extra.upBow.name == "upBow")
         #expect(Extra.upBow.values.isEmpty)
-    }
-
-    @Test
-    func accentAndSlurStart_roundTripThroughNoteTableEntry() {
-        var table = NoteTableSB()
-
-        table.insert(attack: 0,
-                     duration: 1,
-                     pitch: .c4,
-                     extras: Extras(elements: [Extra(name: Extra.accent.name, values: []),
-                                               Extra(name: Extra.slurStart.name,
-                                                     values: [.string("1")])]))
-
-        var foundAccent = false
-        var foundSlurID: String?
-
-        table.forEach { _, _, _, _, _, extras in
-            for extra in extras?.elements ?? [] {
-                if extra.name == Extra.accent.name {
-                    foundAccent = true
-                } else if extra.name == Extra.slurStart.name,
-                          case let .string(value)? = extra.values.first {
-                    foundSlurID = value
-                }
-            }
-        }
-
-        #expect(foundAccent)
-        #expect(foundSlurID == "1")
     }
 }

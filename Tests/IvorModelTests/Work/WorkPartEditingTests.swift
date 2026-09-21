@@ -75,54 +75,6 @@ extension WorkPartEditingTests {
     }
 
     @Test
-    func shiftPart_clampsOutOfRangeIndex() {
-        let part1 = Part<BeatTime, Pitch>(name: "Violin")
-        let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
-
-        work.shiftPart(part1.partID,
-                       to: 100)
-
-        #expect(work.partIDs == [part2.partID, part1.partID])
-    }
-
-    @Test
-    func shiftPart_missingID_isNoOp() {
-        let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
-
-        work.shiftPart(PartID(),
-                       to: 0)
-
-        #expect(work.partIDs == [part.partID])
-    }
-
-    @Test
-    func shiftPart_movesToTargetIndex() {
-        let part1 = Part<BeatTime, Pitch>(name: "Violin")
-        let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        let part3 = Part<BeatTime, Pitch>(name: "Viola")
-        var work = Work(content: .standardBeat([part1, part2, part3], TempoMap()))
-
-        work.shiftPart(part3.partID,
-                       to: 0)
-
-        #expect(work.partIDs == [part3.partID, part1.partID, part2.partID])
-    }
-
-    @Test
-    func shiftPart_movingFirstUp_isInertNoOp() {
-        let part1 = Part<BeatTime, Pitch>(name: "Violin")
-        let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
-
-        work.shiftPart(part1.partID,
-                       to: -1)
-
-        #expect(work.partIDs == [part1.partID, part2.partID])
-    }
-
-    @Test
     func partIDs_matchesParts() {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
@@ -185,5 +137,53 @@ extension WorkPartEditingTests {
 
         #expect(work.partName(at: 0) == "Cello")
         #expect(work.partIDs == [part.partID])
+    }
+
+    @Test
+    func shiftPart_clampsOutOfRangeIndex() {
+        let part1 = Part<BeatTime, Pitch>(name: "Violin")
+        let part2 = Part<BeatTime, Pitch>(name: "Cello")
+        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
+
+        work.shiftPart(part1.partID,
+                       to: 100)
+
+        #expect(work.partIDs == [part2.partID, part1.partID])
+    }
+
+    @Test
+    func shiftPart_missingID_isNoOp() {
+        let part = Part<BeatTime, Pitch>(name: "Violin")
+        var work = Work(content: .standardBeat([part], TempoMap()))
+
+        work.shiftPart(PartID(),
+                       to: 0)
+
+        #expect(work.partIDs == [part.partID])
+    }
+
+    @Test
+    func shiftPart_movesToTargetIndex() {
+        let part1 = Part<BeatTime, Pitch>(name: "Violin")
+        let part2 = Part<BeatTime, Pitch>(name: "Cello")
+        let part3 = Part<BeatTime, Pitch>(name: "Viola")
+        var work = Work(content: .standardBeat([part1, part2, part3], TempoMap()))
+
+        work.shiftPart(part3.partID,
+                       to: 0)
+
+        #expect(work.partIDs == [part3.partID, part1.partID, part2.partID])
+    }
+
+    @Test
+    func shiftPart_movingFirstUp_isInertNoOp() {
+        let part1 = Part<BeatTime, Pitch>(name: "Violin")
+        let part2 = Part<BeatTime, Pitch>(name: "Cello")
+        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
+
+        work.shiftPart(part1.partID,
+                       to: -1)
+
+        #expect(work.partIDs == [part1.partID, part2.partID])
     }
 }
