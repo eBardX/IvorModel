@@ -56,12 +56,6 @@ extension ExtraInstrumentMapTests {
     }
 
     @Test
-    func midiElevation() {
-        #expect(Extra.midiElevation.name == "midiElevation")
-        #expect(Extra.midiElevation.values.isEmpty)
-    }
-
-    @Test
     func midiProgram() {
         #expect(Extra.midiProgram.name == "midiProgram")
         #expect(Extra.midiProgram.values.isEmpty)

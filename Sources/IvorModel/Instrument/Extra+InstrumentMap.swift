@@ -16,12 +16,6 @@ extension Extra {
     /// Payload: a single `.int`.
     public static let midiChannel = Self(name: "midiChannel")
 
-    /// The elevation (in degrees, -180 to 180) of an ``InstrumentMap``
-    /// entry's sound in 3-D space relative to the listener, as MusicXML's
-    /// `<midi-instrument><elevation>` declares it. Payload: a single
-    /// `.double`.
-    public static let midiElevation = Self(name: "midiElevation")
-
     /// The General MIDI program number (1–128) in effect for an
     /// ``InstrumentMap`` entry, matching the 1-based convention both
     /// MusicXML's `<midi-program>` and ABC 2.1's `%%MIDI voice
