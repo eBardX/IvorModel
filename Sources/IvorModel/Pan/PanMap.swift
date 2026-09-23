@@ -5,7 +5,7 @@ public import XestiTools
 
 private import XestiNumbers
 
-/// A time-indexed map of stereo pan positions with a configurable default.
+/// A time-indexed map of spatial pan positions with a configurable default.
 public struct PanMap<TimeType: TimeProtocol> {
 
     // MARK: Public Initializers
@@ -57,9 +57,16 @@ extension PanMap {
 
     /// Returns the interpolated pan position in effect at the given time.
     ///
+    /// Between two entries, the horizontal and vertical angles are each
+    /// interpolated linearly along the *shortest* rotation from one entry’s
+    /// angle to the next; an exact half-turn rotates clockwise (toward
+    /// increasing angles). A move of more than 180° in either angle — or a
+    /// full revolution — therefore needs intermediate entries to spell out
+    /// its path.
+    ///
     /// - Parameter time:   The time at which to query the pan position.
     ///
-    /// - Returns:  The linearly interpolated ``Pan`` value at `time`, or
+    /// - Returns:  The interpolated ``Pan`` value at `time`, or
     ///             ``defaultPan`` if this pan map is empty.
     public subscript(_ time: TimeType) -> Pan {
         guard !entries.isEmpty
@@ -77,11 +84,15 @@ extension PanMap {
         let fraction = time.fraction(from: startEntry.time,
                                      through: endEntry.time)
 
-        let rawStart = startEntry.pan.doubleValue
-        let rawEnd = endEntry.pan.doubleValue
-        let offset = (rawEnd - rawStart) * fraction
+        guard fraction > 0
+        else { return startEntry.pan }
 
-        return Pan(Number(rawStart + offset))
+        return Pan(horizontal: Self._interpolate(from: startEntry.pan.horizontal,
+                                                 to: endEntry.pan.horizontal,
+                                                 fraction: fraction),
+                   vertical: Self._interpolate(from: startEntry.pan.vertical,
+                                               to: endEntry.pan.vertical,
+                                               fraction: fraction))
     }
 
     // MARK: Public Instance Methods
@@ -311,6 +322,16 @@ extension PanMap {
         hasExtras = Self.hasExtras(in: entries)
 
         return (true, removedEntryID)
+    }
+
+    // MARK: Private Type Methods
+
+    private static func _interpolate(from start: Pan.Angle,
+                                     to end: Pan.Angle,
+                                     fraction: Double) -> Pan.Angle {
+        let rotation = (end - start).doubleValue
+
+        return Pan.Angle(Number(start.doubleValue + rotation * fraction))
     }
 
     // MARK: Private Instance Methods

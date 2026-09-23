@@ -46,9 +46,23 @@ extension Pan.FormatStyle: FormatStyle {
     ///
     /// - Parameter value:  The ``Pan`` value to format.
     ///
-    /// - Returns:  An `AttributedString` representation of the pan position’s numeric value.
+    /// - Returns:  An `AttributedString` representation of the pan position’s horizontal and
+    ///             vertical angles, in degrees and labeled `H` and `V`, joined by a
+    ///             non-breaking space (for example, “-45°H 30°V”). The vertical angle is
+    ///             omitted when it is `0` (for example, “-45°H”).
     public func format(_ value: Pan) -> AttributedString {
-        baseStyle.format(value.numberValue)
+        var result = baseStyle.format(value.horizontal.numberValue)
+
+        result += AttributedString("°H")
+
+        guard !value.vertical.numberValue.isZero
+        else { return result }
+
+        result += AttributedString("\u{00A0}")
+        result += baseStyle.format(value.vertical.numberValue)
+        result += AttributedString("°V")
+
+        return result
     }
 }
 

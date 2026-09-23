@@ -3,6 +3,7 @@
 import Foundation
 @testable import IvorModel
 import Testing
+import XestiNumbers
 
 struct PanFormatStyleTests {
 }
@@ -16,6 +17,30 @@ extension PanFormatStyleTests {
         let result = style.format(.center)
 
         #expect(!result.characters.isEmpty)
+    }
+
+    @Test
+    func format_showsBothAngles() {
+        let style = Pan.FormatStyle(locale: Locale(identifier: "en_US"))
+        let result = style.format(Pan(horizontal: -45, vertical: 30))
+
+        #expect(String(result.characters) == "-45°H\u{00A0}30°V")
+    }
+
+    @Test
+    func format_omitsZeroVertical() {
+        let style = Pan.FormatStyle(locale: Locale(identifier: "en_US"))
+        let result = style.format(Pan(horizontal: -45))
+
+        #expect(String(result.characters) == "-45°H")
+    }
+
+    @Test
+    func format_parsesAsPlain() {
+        let pan = Pan(horizontal: -45, vertical: 30)
+        let result = Pan.FormatStyle(locale: Locale(identifier: "en_US")).format(pan)
+
+        #expect(Pan(plain: String(result.characters)) == pan)
     }
 
     @Test

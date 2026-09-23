@@ -198,6 +198,63 @@ extension PanMapTests {
     }
 
     @Test
+    func subscript_atEntryTime_isExact() {
+        var map = PanMap<BeatTime>()
+
+        map.insert(time: 1, pan: Pan(horizontal: 30, vertical: 10))
+        map.insert(time: 3, pan: .right)
+
+        #expect(map[BeatTime(1)] == Pan(horizontal: 30, vertical: 10))
+    }
+
+    @Test
+    func subscript_interpolatesBothAngles() {
+        var map = PanMap<BeatTime>()
+
+        map.insert(time: 0, pan: Pan(horizontal: -90, vertical: 0))
+        map.insert(time: 2, pan: Pan(horizontal: 90, vertical: 60))
+
+        let pan = map[BeatTime(1)]
+
+        #expect(abs(pan.horizontal.doubleValue) < 1e-9)
+        #expect(abs(pan.vertical.doubleValue - 30) < 1e-9)
+    }
+
+    @Test
+    func subscript_interpolatesOverhead() {
+        var map = PanMap<BeatTime>()
+
+        map.insert(time: 0, pan: .center)
+        map.insert(time: 2, pan: Pan(horizontal: 0, vertical: 180))
+
+        let pan = map[BeatTime(1)]
+
+        #expect(abs(pan.horizontal.doubleValue) < 1e-9)
+        #expect(abs(pan.vertical.doubleValue - 90) < 1e-9)
+    }
+
+    @Test
+    func subscript_interpolatesShortestArc() {
+        var map = PanMap<BeatTime>()
+
+        map.insert(time: 0, pan: Pan(horizontal: 170))
+        map.insert(time: 2, pan: Pan(horizontal: -170))
+
+        #expect(abs(map[BeatTime(1)].horizontal.doubleValue - 180) < 1e-9)
+        #expect(abs(map[BeatTime(Number(numerator: 3, denominator: 2))].horizontal.doubleValue - -175) < 1e-9)
+    }
+
+    @Test
+    func subscript_halfTurnRotatesClockwise() {
+        var map = PanMap<BeatTime>()
+
+        map.insert(time: 0, pan: .center)
+        map.insert(time: 2, pan: .behind)
+
+        #expect(abs(map[BeatTime(1)].horizontal.doubleValue - 90) < 1e-9)
+    }
+
+    @Test
     func update_collapsesIntoDuplicate() throws {
         var map = PanMap<BeatTime>()
         var ids: [EntryID] = []
