@@ -1,5 +1,5 @@
 {
-  "originHash" : "56f3678075cd7302b541e9c38b845e69fe58dc0b6c661dc8cdd7555f04f28dfc",
+  "originHash" : "28506f09adf5121a9c4587b292ac842bd5a6124307195ad82511a11ba68dd24f",
   "pins" : [
     {
       "identity" : "bigint",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTiming.git",
       "state" : {
-        "revision" : "b1a352e40ac1df953ae4725d58ccb5de9ee3b1e3",
-        "version" : "0.12.0"
+        "revision" : "f4b1672f6462f58e7b17cf76893ac4778374b3bf",
+        "version" : "0.13.0"
       }
     },
     {

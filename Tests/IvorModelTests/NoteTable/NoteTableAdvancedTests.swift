@@ -97,8 +97,8 @@ extension NoteTableAdvancedTests {
     func unwarped_convertsToBeatTime() {
         var table = NoteTableSW()
 
-        // 1000 ms = 1 second, which at the default tempo (60 BPM) is 1 beat.
-        table.insert(attack: 1_000, duration: 1_000, pitch: .c4)
+        // 1,000,000 µs = 1 second, which at the default tempo (60 BPM) is 1 beat.
+        table.insert(attack: 1_000_000, duration: 1_000_000, pitch: .c4)
 
         let result = table.unwarped(using: TempoMap())
 
@@ -141,9 +141,9 @@ extension NoteTableAdvancedTests {
 
         let result = table.varispeeded(using: TempoMap())
 
-        // 1 beat at the default tempo (60 BPM) is 1 second, i.e. 1000 ms.
+        // 1 beat at the default tempo (60 BPM) is 1 second, i.e. 1,000,000 µs.
         #expect(result.pitchRange?.lowerBound == Frequency(440))
-        #expect(result.timeRange?.lowerBound == 1_000)
+        #expect(result.timeRange?.lowerBound == 1_000_000)
     }
 
     @Test
@@ -154,7 +154,7 @@ extension NoteTableAdvancedTests {
 
         let result = table.warped(using: TempoMap())
 
-        // 1 beat at the default tempo (60 BPM) is 1 second, i.e. 1000 ms.
-        #expect(result.timeRange?.lowerBound == 1_000)
+        // 1 beat at the default tempo (60 BPM) is 1 second, i.e. 1,000,000 µs.
+        #expect(result.timeRange?.lowerBound == 1_000_000)
     }
 }
