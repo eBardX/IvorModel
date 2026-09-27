@@ -11,21 +11,12 @@
       }
     },
     {
-      "identity" : "ivorsmpte",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/eBardX/IvorSMPTE.git",
-      "state" : {
-        "revision" : "8d31137b34ceb47c0e5fd2040a6cf2e1884c9a2a",
-        "version" : "0.1.1"
-      }
-    },
-    {
       "identity" : "ivortiming",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTiming.git",
       "state" : {
-        "revision" : "9800ad59e4080db6aec0b5e8833b16fdb71d232c",
-        "version" : "0.14.1"
+        "revision" : "5f214f0c67d4e88addca6cbb11e029c514ea5b43",
+        "version" : "0.15.0"
       }
     },
     {
