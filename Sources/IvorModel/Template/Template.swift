@@ -112,12 +112,8 @@ extension Template: Codable {
         self.content = try container.decode(Content.self,
                                             forKey: .content)
 
-        //
-        // Absent from files written before this property existed; such templates were never
-        // locked.
-        //
-        self.isLocked = try container.decodeIfPresent(Bool.self,
-                                                      forKey: .isLocked) ?? false
+        self.isLocked = try container.decode(Bool.self,
+                                             forKey: .isLocked)
 
         self.name = try container.decode(String.self,
                                          forKey: .name)
