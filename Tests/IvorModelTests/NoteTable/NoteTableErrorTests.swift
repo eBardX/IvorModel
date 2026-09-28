@@ -104,4 +104,11 @@ extension NoteTableErrorTests {
 
         #expect(msg.contains("transpose"))
     }
+
+    @Test
+    func message_varispeedFailure() {
+        let msg = ErrorSB.varispeedFailure(0, 1, .c4, .c4).message
+
+        #expect(msg.contains("varispeed"))
+    }
 }

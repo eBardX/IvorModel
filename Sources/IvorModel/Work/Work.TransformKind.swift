@@ -4,7 +4,7 @@ extension Work {
 
     // MARK: Public Nested Types
 
-    /// One of the six standard note-table transforms, named for error reporting.
+    /// One of the note-table transforms, named for error reporting.
     public enum TransformKind {
         /// The `augment(by:...)` transform.
         case augment
@@ -26,6 +26,9 @@ extension Work {
 
         /// The `transpose(by:...)` transform.
         case transpose
+
+        /// The `varispeeded(normalTempo:)` transform.
+        case varispeed
     }
 }
 
@@ -56,6 +59,9 @@ extension Work.TransformKind: CustomStringConvertible {
 
         case .transpose:
             "transpose"
+
+        case .varispeed:
+            "varispeed"
         }
     }
 }

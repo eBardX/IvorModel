@@ -38,6 +38,10 @@ extension NoteTable {
 
         /// A failure that occurred while transposing a note.
         case transposeFailure(TimeType, DurationType, PitchType, PitchType)
+
+        /// A failure that occurred while varispeeding a note — the tempo-scaled pitch fell outside
+        /// the representable frequency range.
+        case varispeedFailure(TimeType, DurationType, PitchType, PitchType)
     }
 }
 
@@ -84,6 +88,9 @@ extension NoteTable.Error: EnhancedError {
 
         case let .transposeFailure(attack, duration, startPitch, endPitch):
             "Unable to transpose note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
+
+        case let .varispeedFailure(attack, duration, startPitch, endPitch):
+            "Unable to varispeed note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
         }
     }
 

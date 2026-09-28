@@ -106,6 +106,20 @@ extension NoteTableAdvancedTests {
     }
 
     @Test
+    func varispeeded_pitchOutOfRange_throws() throws {
+        var table = NoteTableFB()
+        var tempoMap = TempoMap()
+        let lowestPitch = try #require(Frequency(uintValue: 1))
+
+        tempoMap.insert(beatTime: 0, tempo: Tempo(1))
+        table.insert(attack: 0, duration: 1, pitch: lowestPitch)
+
+        #expect(throws: NoteTableFB.Error.varispeedFailure(0, 1, lowestPitch, lowestPitch)) {
+            try table.varispeeded(using: tempoMap, normalTempo: Tempo(60))
+        }
+    }
+
+    @Test
     func varispeeded_tempoAboveNormalShiftsPitchUp() throws {
         var table = NoteTableFB()
         var tempoMap = TempoMap()
@@ -113,7 +127,7 @@ extension NoteTableAdvancedTests {
         tempoMap.insert(beatTime: 0, tempo: Tempo(120))
         table.insert(attack: 0, duration: 1, pitch: Frequency(440))
 
-        let result = table.varispeeded(using: tempoMap, normalTempo: Tempo(60))
+        let result = try table.varispeeded(using: tempoMap, normalTempo: Tempo(60))
         let pitchRange = try #require(result.pitchRange)
 
         #expect(pitchRange.lowerBound.numberValue > Frequency(440).numberValue)
@@ -127,19 +141,19 @@ extension NoteTableAdvancedTests {
         tempoMap.insert(beatTime: 0, tempo: Tempo(30))
         table.insert(attack: 0, duration: 1, pitch: Frequency(440))
 
-        let result = table.varispeeded(using: tempoMap, normalTempo: Tempo(60))
+        let result = try table.varispeeded(using: tempoMap, normalTempo: Tempo(60))
         let pitchRange = try #require(result.pitchRange)
 
         #expect(pitchRange.lowerBound.numberValue < Frequency(440).numberValue)
     }
 
     @Test
-    func varispeeded_tempoEqualToNormalPreservesPitch() {
+    func varispeeded_tempoEqualToNormalPreservesPitch() throws {
         var table = NoteTableFB()
 
         table.insert(attack: 1, duration: 1, pitch: Frequency(440))
 
-        let result = table.varispeeded(using: TempoMap())
+        let result = try table.varispeeded(using: TempoMap())
 
         // 1 beat at the default tempo (60 BPM) is 1 second, i.e. 1,000,000 µs.
         #expect(result.pitchRange?.lowerBound == Frequency(440))

@@ -18,6 +18,7 @@ extension WorkTransformKindTests {
         #expect(Work.TransformKind.quantize.description == "quantize")
         #expect(Work.TransformKind.reverse.description == "reverse")
         #expect(Work.TransformKind.transpose.description == "transpose")
+        #expect(Work.TransformKind.varispeed.description == "varispeed")
     }
 
     @Test

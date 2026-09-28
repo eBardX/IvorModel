@@ -170,8 +170,12 @@ extension NoteTable where TimeType == BeatTime, PitchType == Frequency {
     ///                             `.default`.
     ///
     /// - Returns:  A new ``NoteTable`` keyed by ``WallTime`` with varispeed-adjusted pitches.
+    ///
+    /// - Throws:   ``NoteTable/Error/varispeedFailure(_:_:_:_:)`` if shifting any note’s pitch
+    ///             by the tempo ratio in effect produces a frequency outside the representable
+    ///             range.
     public func varispeeded(using tempoMap: TempoMap,
-                            normalTempo: Tempo = .default) -> NoteTable<WallTime, Frequency> {
+                            normalTempo: Tempo = .default) throws(Error) -> NoteTable<WallTime, Frequency> {
         var wtNotes: [NoteTable<WallTime, Frequency>.Note] = []
 
         if !notes.isEmpty {
@@ -180,14 +184,19 @@ extension NoteTable where TimeType == BeatTime, PitchType == Frequency {
             for note in notes {
                 let wallAttack = tc.wallTime(at: note.attack)
                 let wallRelease = tc.wallTime(at: note.release)
-                let varispeedStartPitch = Self._varispeed(of: note.startPitch,
-                                                          at: note.attack,
-                                                          using: tempoMap,
-                                                          normalTempo: normalTempo)
-                let varispeedEndPitch = Self._varispeed(of: note.endPitch,
-                                                        at: note.release,
-                                                        using: tempoMap,
-                                                        normalTempo: normalTempo)
+
+                guard let varispeedStartPitch = Self._varispeed(of: note.startPitch,
+                                                                at: note.attack,
+                                                                using: tempoMap,
+                                                                normalTempo: normalTempo),
+                      let varispeedEndPitch = Self._varispeed(of: note.endPitch,
+                                                              at: note.release,
+                                                              using: tempoMap,
+                                                              normalTempo: normalTempo)
+                else { throw .varispeedFailure(note.attack,
+                                               note.duration,
+                                               note.startPitch,
+                                               note.endPitch) }
 
                 wtNotes.append(.init(attack: wallAttack,
                                      duration: wallRelease - wallAttack,
@@ -205,27 +214,25 @@ extension NoteTable where TimeType == BeatTime, PitchType == Frequency {
     private static func _varispeed(of pitch: Frequency,
                                    at beatTime: BeatTime,
                                    using tempoMap: TempoMap,
-                                   normalTempo: Tempo) -> Frequency {
+                                   normalTempo: Tempo) -> Frequency? {
         _varispeed(of: pitch,
                    by: tempoMap[beatTime].numberValue / normalTempo.numberValue)
     }
 
     private static func _varispeed(of pitch: Frequency,
-                                   by factor: Number) -> Frequency {
+                                   by factor: Number) -> Frequency? {
         if factor > 1 {
-            guard let ratio = Ratio(numberValue: factor),
-                  let shifted = pitch.transposed(by: DirectedInterval(interval: ratio,
-                                                                      direction: .ascending))
-            else { fatalError("Varispeed factor \(factor) produced an invalid ratio or out-of-range frequency.") }
+            guard let ratio = Ratio(numberValue: factor)
+            else { return nil }
 
-            return shifted
+            return pitch.transposed(by: DirectedInterval(interval: ratio,
+                                                         direction: .ascending))
         } else if factor < 1 {
-            guard let ratio = Ratio(numberValue: 1 / factor),
-                  let shifted = pitch.transposed(by: DirectedInterval(interval: ratio,
-                                                                      direction: .descending))
-            else { fatalError("Varispeed factor \(factor) produced an invalid ratio or out-of-range frequency.") }
+            guard let ratio = Ratio(numberValue: 1 / factor)
+            else { return nil }
 
-            return shifted
+            return pitch.transposed(by: DirectedInterval(interval: ratio,
+                                                         direction: .descending))
         } else {
             return pitch
         }

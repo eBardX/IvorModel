@@ -2,6 +2,8 @@
 
 public import IvorTiming
 
+private import IvorTuning
+
 extension Work {
 
     // MARK: Public Instance Methods
@@ -133,25 +135,41 @@ extension Work {
     /// conversion ``warped()`` uses — none of them carries a pitch axis, so none is
     /// varispeed-shifted; only note pitches are.
     ///
-    /// Always succeeds, even on a locked work — see ``warped()``'s doc comment for why.
+    /// Works even on a locked work — see ``warped()``'s doc comment for why.
     ///
     /// - Parameter normalTempo:   The reference tempo used for pitch shifting. Defaults to
     ///                            `.default`.
-    public func varispeeded(normalTempo: Tempo = .default) -> Work? {
+    ///
+    /// - Throws:   ``Work/Error/transformFailure(kind:partID:detail:)`` with kind
+    ///             ``Work/TransformKind/varispeed`` if shifting any note’s pitch by the tempo
+    ///             ratio in effect produces a frequency outside the representable range.
+    public func varispeeded(normalTempo: Tempo = .default) throws(Error) -> Work? {
         guard case let .absoluteBeat(parts, tempoMap) = content
         else { return nil }
 
         let timeConverter = TimeConverter(tempoMap: tempoMap)
-        let newParts = parts.map { part in
-            Part(name: part.name,
-                 noteTable: part.noteTable.varispeeded(using: tempoMap,
-                                                       normalTempo: normalTempo),
-                 dynamicMap: Self.convertBeatTimes(in: part.dynamicMap,
-                                                   using: timeConverter),
-                 instrumentMap: Self.convertBeatTimes(in: part.instrumentMap,
-                                                      using: timeConverter),
-                 panMap: Self.convertBeatTimes(in: part.panMap,
-                                               using: timeConverter))
+        var newParts: [Part<WallTime, Frequency>] = []
+
+        for part in parts {
+            let noteTable: NoteTable<WallTime, Frequency>
+
+            do {
+                noteTable = try part.noteTable.varispeeded(using: tempoMap,
+                                                           normalTempo: normalTempo)
+            } catch {
+                throw .transformFailure(kind: .varispeed,
+                                        partID: part.partID,
+                                        detail: error.message)
+            }
+
+            newParts.append(Part(name: part.name,
+                                 noteTable: noteTable,
+                                 dynamicMap: Self.convertBeatTimes(in: part.dynamicMap,
+                                                                   using: timeConverter),
+                                 instrumentMap: Self.convertBeatTimes(in: part.instrumentMap,
+                                                                      using: timeConverter),
+                                 panMap: Self.convertBeatTimes(in: part.panMap,
+                                                               using: timeConverter)))
         }
 
         return Work(name: name,

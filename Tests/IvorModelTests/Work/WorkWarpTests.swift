@@ -67,9 +67,9 @@ extension WorkWarpTests {
     func unwarped_beatTimeContent_returnsNil() {
         let tempoMap = TempoMap()
 
-        #expect(Work(content: .absoluteBeat([], tempoMap)).unwarped(using: tempoMap) == nil)
-        #expect(Work(content: .keyboardBeat([], tempoMap)).unwarped(using: tempoMap) == nil)
-        #expect(Work(content: .standardBeat([], tempoMap)).unwarped(using: tempoMap) == nil)
+        #expect(try Work(content: .absoluteBeat([], tempoMap)).unwarped(using: tempoMap) == nil)
+        #expect(try Work(content: .keyboardBeat([], tempoMap)).unwarped(using: tempoMap) == nil)
+        #expect(try Work(content: .standardBeat([], tempoMap)).unwarped(using: tempoMap) == nil)
     }
 
     @Test
@@ -138,7 +138,7 @@ extension WorkWarpTests {
                                              panMap: panMap)
         let work = Work(content: .absoluteBeat([part], tempoMap))
 
-        let result = try #require(work.varispeeded(normalTempo: Tempo(60)))
+        let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
         guard case let .absoluteWall(parts) = result.content
         else { Issue.record("Expected .absoluteWall content."); return }
@@ -159,18 +159,45 @@ extension WorkWarpTests {
 
         work.isLocked = true
 
-        let result = try #require(work.varispeeded())
+        let result = try #require(try work.varispeeded())
 
         #expect(result.isLocked == false)
     }
 
     @Test
-    func varispeeded_nonAbsoluteBeatContent_returnsNil() {
-        #expect(Work(content: .absoluteWall([])).varispeeded() == nil)
-        #expect(Work(content: .keyboardBeat([], TempoMap())).varispeeded() == nil)
-        #expect(Work(content: .keyboardWall([])).varispeeded() == nil)
-        #expect(Work(content: .standardBeat([], TempoMap())).varispeeded() == nil)
-        #expect(Work(content: .standardWall([])).varispeeded() == nil)
+    func varispeeded_nonAbsoluteBeatContent_returnsNil() throws {
+        #expect(try Work(content: .absoluteWall([])).varispeeded() == nil)
+        #expect(try Work(content: .keyboardBeat([], TempoMap())).varispeeded() == nil)
+        #expect(try Work(content: .keyboardWall([])).varispeeded() == nil)
+        #expect(try Work(content: .standardBeat([], TempoMap())).varispeeded() == nil)
+        #expect(try Work(content: .standardWall([])).varispeeded() == nil)
+    }
+
+    @Test
+    func varispeeded_pitchOutOfRange_throwsTransformFailure() throws {
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: Tempo(1))
+
+        var table = NoteTable<BeatTime, Frequency>()
+
+        try table.insert(attack: 0, duration: 1, pitch: #require(Frequency(uintValue: 1)))
+
+        let part = Part<BeatTime, Frequency>(name: "Piano", noteTable: table)
+        let work = Work(content: .absoluteBeat([part], tempoMap))
+
+        do {
+            _ = try work.varispeeded(normalTempo: Tempo(60))
+
+            Issue.record("Expected varispeeded(normalTempo:) to throw.")
+        } catch {
+            guard case let .transformFailure(kind, partID, detail) = error
+            else { Issue.record("Expected .transformFailure, got \(error)."); return }
+
+            #expect(kind == .varispeed)
+            #expect(partID == part.partID)
+            #expect(detail.contains("varispeed"))
+        }
     }
 
     @Test
@@ -186,7 +213,7 @@ extension WorkWarpTests {
         let part = Part<BeatTime, Frequency>(name: "Piano", noteTable: table)
         let work = Work(content: .absoluteBeat([part], tempoMap))
 
-        let result = try #require(work.varispeeded(normalTempo: Tempo(60)))
+        let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
         guard case let .absoluteWall(parts) = result.content
         else { Issue.record("Expected .absoluteWall content."); return }
@@ -209,7 +236,7 @@ extension WorkWarpTests {
         let part = Part<BeatTime, Frequency>(name: "Piano", noteTable: table)
         let work = Work(content: .absoluteBeat([part], tempoMap))
 
-        let result = try #require(work.varispeeded(normalTempo: Tempo(60)))
+        let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
         guard case let .absoluteWall(parts) = result.content
         else { Issue.record("Expected .absoluteWall content."); return }
@@ -232,7 +259,7 @@ extension WorkWarpTests {
         let part = Part<BeatTime, Frequency>(name: "Piano", noteTable: table)
         let work = Work(content: .absoluteBeat([part], tempoMap))
 
-        let result = try #require(work.varispeeded(normalTempo: Tempo(60)))
+        let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
         guard case let .absoluteWall(parts) = result.content
         else { Issue.record("Expected .absoluteWall content."); return }
@@ -324,9 +351,9 @@ extension WorkWarpTests {
 
     @Test
     func warped_wallTimeContent_returnsNil() {
-        #expect(Work(content: .absoluteWall([])).warped() == nil)
-        #expect(Work(content: .keyboardWall([])).warped() == nil)
-        #expect(Work(content: .standardWall([])).warped() == nil)
+        #expect(try Work(content: .absoluteWall([])).warped() == nil)
+        #expect(try Work(content: .keyboardWall([])).warped() == nil)
+        #expect(try Work(content: .standardWall([])).warped() == nil)
     }
 
     @Test
