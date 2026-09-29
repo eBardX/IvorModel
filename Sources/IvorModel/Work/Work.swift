@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+public import IvorSMPTE
 public import IvorTiming
 public import IvorTuning
 
@@ -10,17 +11,21 @@ public struct Work {
 
     // MARK: Public Initializers
 
-    /// Creates a new work with the given name and content.
+    /// Creates a new work with the given name, content, and SMPTE start time.
     ///
-    /// - Parameter name:     The display name of the work. Defaults to an empty string.
-    /// - Parameter content:  The ``Work/Content`` holding the parts. Defaults to an empty
-    ///                       standard-beat content with an empty tempo map.
+    /// - Parameter name:           The display name of the work. Defaults to an empty string.
+    /// - Parameter content:        The ``Work/Content`` holding the parts. Defaults to an empty
+    ///                             standard-beat content with an empty tempo map.
+    /// - Parameter smpteStartTime: The SMPTE timecode at which the work’s wall time zero falls.
+    ///                             Defaults to ``defaultSMPTEStartTime``.
     public init(name: String = "",
-                content: Content? = nil) {
+                content: Content? = nil,
+                smpteStartTime: SMPTETime = Self.defaultSMPTEStartTime) {
         self.unsafeContent = content ?? .standardBeat([],
                                                       TempoMap())
         self.isLocked = false
         self.name = name
+        self.smpteStartTime = smpteStartTime
         self.workID = WorkID()
         self.version = Self.currentVersion
     }
@@ -45,6 +50,14 @@ public struct Work {
 
     /// The display name of the work.
     public var name: String
+
+    /// The SMPTE timecode at which the work’s wall time zero falls.
+    ///
+    /// Its frame rate is the one the work’s times are shown and entered in when shown as timecode.
+    /// It only has meaning for wall-time content, but is kept whatever the time basis, so it isn’t
+    /// lost if the content is converted to beat time and back. Like ``name``, it is not protected
+    /// by ``isLocked`` here; it’s on callers to check ``isLocked`` before changing it.
+    public var smpteStartTime: SMPTETime
 
     /// The musical content of the work.
     ///
@@ -79,6 +92,11 @@ extension Work {
 
     /// The current work file format version.
     public static let currentVersion = 1
+
+    /// The SMPTE start time a work has unless given another: 00:00:00:00 at 25 fps.
+    public static let defaultSMPTEStartTime = SMPTETime(frameRate: .fps25,
+                                                        frameCount: 0,
+                                                        subframe: 0)!  // swiftlint:disable:this force_unwrapping
 
     // MARK: Public Instance Properties
 
@@ -213,11 +231,12 @@ extension Work {
 
     // MARK: Public Instance Methods
 
-    /// Returns a copy of this work with the same content but a distinct, freshly
-    /// minted ``WorkID``.
+    /// Returns a copy of this work with the same content and ``smpteStartTime`` but a
+    /// distinct, freshly minted ``WorkID``.
     public func duplicated() -> Self {
         Self(name: name,
-             content: content)
+             content: content,
+             smpteStartTime: smpteStartTime)
     }
 
     /// Returns the name of the part at the given index.
@@ -312,6 +331,8 @@ extension Work: Codable {
         self.name = try container.decode(String.self,
                                          forKey: .name)
 
+        self.smpteStartTime = try Self._decodeSMPTEStartTime(from: container)
+
         self.version = try container.decode(Int.self,
                                             forKey: .version)
 
@@ -347,6 +368,9 @@ extension Work: Codable {
         try container.encode(name,
                              forKey: .name)
 
+        try container.encode([smpteStartTime.frameRate.description, smpteStartTime.description],
+                             forKey: .smpteStartTime)
+
         try container.encode(content,
                              forKey: .content)
     }
@@ -357,8 +381,29 @@ extension Work: Codable {
         case content
         case isLocked
         case name
+        case smpteStartTime
         case version
         case workID
+    }
+
+    // MARK: Private Type Methods
+
+    //
+    // Kept as a frame rate and timecode pair of strings, since `SMPTETime` isn't `Codable`.
+    //
+    private static func _decodeSMPTEStartTime(from container: KeyedDecodingContainer<CodingKeys>) throws -> SMPTETime {
+        let strings = try container.decode([String].self,
+                                           forKey: .smpteStartTime)
+
+        guard strings.count == 2,
+              let frameRate = SMPTEFrameRate(string: strings[0]),
+              let startTime = SMPTETime(string: strings[1],
+                                        frameRate: frameRate)
+        else { throw DecodingError.dataCorruptedError(forKey: .smpteStartTime,
+                                                      in: container,
+                                                      debugDescription: "Invalid SMPTE start time: \(strings)") }
+
+        return startTime
     }
 }
 

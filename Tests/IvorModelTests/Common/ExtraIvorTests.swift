@@ -285,12 +285,6 @@ extension ExtraIvorTests {
     }
 
     @Test
-    func smpteOffset() {
-        #expect(Extra.smpteOffset.name == "smpteOffset")
-        #expect(Extra.smpteOffset.values.isEmpty)
-    }
-
-    @Test
     func staccato() {
         #expect(Extra.staccato.name == "staccato")
         #expect(Extra.staccato.values.isEmpty)

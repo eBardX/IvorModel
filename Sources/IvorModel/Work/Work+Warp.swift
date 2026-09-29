@@ -10,7 +10,8 @@ extension Work {
 
     /// Returns a new work with beat-time content converted to wall time, using this work's own
     /// tempo map — a fixed-media export at the tempo curve currently in effect. `nil` for
-    /// wall-time content, which has no tempo map to convert with.
+    /// wall-time content, which has no tempo map to convert with. The new work keeps this
+    /// work's ``Work/smpteStartTime``.
     ///
     /// Always succeeds, even on a locked work: this returns an independent, unlocked copy rather
     /// than mutating `self`, so ``Work/isLocked`` — which only protects `self.content` from
@@ -20,7 +21,8 @@ extension Work {
         else { return nil }
 
         return Work(name: name,
-                    content: newContent)
+                    content: newContent,
+                    smpteStartTime: smpteStartTime)
     }
 
     // MARK: Private Type Methods
@@ -65,7 +67,8 @@ extension Work {
 
     /// Returns a new work with wall-time content converted to beat time using the given tempo
     /// map — re-deriving editable beat-time content from a wall-time recording, e.g. a tapped-in
-    /// or detected tempo map. `nil` for beat-time content, which is already beat time.
+    /// or detected tempo map. `nil` for beat-time content, which is already beat time. The new
+    /// work keeps this work's ``Work/smpteStartTime``.
     ///
     /// Unlike ``Work/convert(timeBasis:pitchNotation:context:)``'s own wall-to-beat conversion,
     /// which always produces content backed by a fresh, empty tempo map, the beat-time content
@@ -82,7 +85,8 @@ extension Work {
         else { return nil }
 
         return Work(name: name,
-                    content: newContent)
+                    content: newContent,
+                    smpteStartTime: smpteStartTime)
     }
 
     // MARK: Private Type Methods
@@ -129,7 +133,8 @@ extension Work {
     /// this work's own tempo map, with note pitches varispeed-shifted to reflect the tempo in
     /// effect at each note's attack and release. `nil` for any content other than `.absoluteBeat`
     /// — no other pitch notation has an exact representation for a continuous pitch shift (see
-    /// ``NoteTable/varispeeded(using:normalTempo:)``).
+    /// ``NoteTable/varispeeded(using:normalTempo:)``). The new work keeps this work's
+    /// ``Work/smpteStartTime``.
     ///
     /// The parameter maps (`dynamicMap`/`instrumentMap`/`panMap`) go through the same plain time
     /// conversion ``warped()`` uses — none of them carries a pitch axis, so none is
@@ -173,6 +178,7 @@ extension Work {
         }
 
         return Work(name: name,
-                    content: .absoluteWall(newParts))
+                    content: .absoluteWall(newParts),
+                    smpteStartTime: smpteStartTime)
     }
 }

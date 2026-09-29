@@ -1,6 +1,8 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
+import IvorSMPTE
 import IvorTiming
 import IvorTuning
 import Testing
@@ -161,6 +163,62 @@ extension WorkTests {
         let work = Work(content: .standardBeat([], TempoMap()))
 
         #expect(work.pitchNotation == .standard)
+    }
+
+    @Test
+    func smpteStartTime_decodesInvalidAsError() throws {
+        let data = try JSONEncoder().encode(Work(name: "Cue"))
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        object["smpteStartTime"] = ["25", "01:00:00:99"]
+
+        let badData = try JSONSerialization.data(withJSONObject: object)
+
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(Work.self, from: badData)
+        }
+    }
+
+    @Test
+    func smpteStartTime_default() {
+        let startTime = Work().smpteStartTime
+
+        #expect(startTime == Work.defaultSMPTEStartTime)
+        #expect(startTime.frameRate == .fps25)
+        #expect(startTime.description == "00:00:00:00")
+    }
+
+    @Test
+    func smpteStartTime_duplicated() throws {
+        let original = try Work(name: "Cue",
+                                smpteStartTime: #require(SMPTETime(string: "01:00:00:00", frameRate: .fps25)))
+
+        #expect(original.duplicated().smpteStartTime == original.smpteStartTime)
+    }
+
+    @Test
+    func smpteStartTime_missingIsError() throws {
+        let data = try JSONEncoder().encode(Work(name: "Cue"))
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        object["smpteStartTime"] = nil
+
+        let badData = try JSONSerialization.data(withJSONObject: object)
+
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(Work.self, from: badData)
+        }
+    }
+
+    @Test
+    func smpteStartTime_roundTrips() throws {
+        var work = Work(name: "Cue", content: .standardWall([]))
+
+        work.smpteStartTime = try #require(SMPTETime(string: "01:00:00;02", frameRate: .fps2997Drop))
+
+        let decoded = try JSONDecoder().decode(Work.self, from: JSONEncoder().encode(work))
+
+        #expect(decoded.smpteStartTime == work.smpteStartTime)
     }
 
     @Test

@@ -139,15 +139,6 @@ extension Extra {
     /// it can't (ABC, always well-nested), this is a bare flag instead.
     public static let slurStart = Self(name: "slurStart")
 
-    /// The SMPTE timecode at which a work starts. In a beat-time work it's
-    /// attached to the ``TempoMap`` entry at beat zero; in a wall-time work,
-    /// which has no tempo map, to each part's ``InstrumentMap`` entry at time
-    /// zero. Use it as the start timecode of an `SMPTETimeConverter`.
-    /// Payload: a `.string` holding the frame rate (a `SMPTEFrameRate`
-    /// description, such as `"25"` or `"29.97DF"`), then a `.string` holding
-    /// the timecode (an `SMPTETime` description, such as `"01:00:00:00"`).
-    public static let smpteOffset = Self(name: "smpteOffset")
-
     /// A staccato articulation on a ``NoteTable`` note. Bare flag, no
     /// payload.
     public static let staccato = Self(name: "staccato")

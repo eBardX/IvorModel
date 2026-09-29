@@ -1,6 +1,7 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
 @testable import IvorModel
+import IvorSMPTE
 import IvorTiming
 import IvorTuning
 import Testing
@@ -96,6 +97,15 @@ extension WorkWarpTests {
     }
 
     @Test
+    func unwarped_keepsSMPTEStartTime() throws {
+        let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps24))
+        let work = Work(content: .standardWall([]),
+                        smpteStartTime: startTime)
+
+        #expect(work.unwarped(using: TempoMap())?.smpteStartTime == startTime)
+    }
+
+    @Test
     func unwarped_standardWall() {
         var table = NoteTable<WallTime, Pitch>()
 
@@ -151,6 +161,15 @@ extension WorkWarpTests {
         #expect(parts[0].instrumentMap.entries.first?.instrument == Instrument(stringValue: "Piano").require())
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.pan == .center)
+    }
+
+    @Test
+    func varispeeded_keepsSMPTEStartTime() throws {
+        let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps24))
+        let work = Work(content: .absoluteBeat([], TempoMap()),
+                        smpteStartTime: startTime)
+
+        #expect(try work.varispeeded()?.smpteStartTime == startTime)
     }
 
     @Test
@@ -312,6 +331,15 @@ extension WorkWarpTests {
         #expect(parts[0].dynamicMap.entries.first?.time == expectedTime)
         #expect(parts[0].instrumentMap.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
+    }
+
+    @Test
+    func warped_keepsSMPTEStartTime() throws {
+        let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps24))
+        let work = Work(content: .standardBeat([], TempoMap()),
+                        smpteStartTime: startTime)
+
+        #expect(work.warped()?.smpteStartTime == startTime)
     }
 
     @Test
