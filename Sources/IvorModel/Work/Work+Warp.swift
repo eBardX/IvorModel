@@ -14,8 +14,8 @@ extension Work {
     /// work's ``Work/smpteStartTime``.
     ///
     /// Always succeeds, even on a locked work: this returns an independent, unlocked copy rather
-    /// than mutating `self`, so ``Work/isLocked`` — which only protects `self.content` from
-    /// direct reassignment — does not apply here.
+    /// than mutating `self`, so ``Work/isLocked`` — which only protects `self` from being
+    /// modified — does not apply here.
     public func warped() -> Work? {
         guard let newContent = Self._warped(content)
         else { return nil }

@@ -17,6 +17,9 @@ extension Template {
         /// No part was found at the requested index.
         case partNotFound(Int)
 
+        /// The template is locked, so it cannot be modified.
+        case templateIsLocked
+
         /// The template was encoded with an unsupported version number.
         case unsupportedVersion(Int)
     }
@@ -44,6 +47,9 @@ extension Template.Error: EnhancedError {
 
         case let .partNotFound(index):
             "Ivor part not found at index \(index)"
+
+        case .templateIsLocked:
+            "The template is locked and cannot be modified."
 
         case let .unsupportedVersion(version):
             "Unsupported Ivor template version: \(version)"

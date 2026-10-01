@@ -64,38 +64,77 @@ extension ProjectTests {
         var project = Project()
 
         _ = project.updateTemplate(tmpl)
-        let removed = project.removeTemplate(tmpl.templateID)
+        let removed = try project.removeTemplate(tmpl.templateID)
 
         #expect(removed == tmpl)
         #expect(project.templates.isEmpty)
     }
 
     @Test
-    func removeTemplate_missing() {
+    func removeTemplate_locked_throws() throws {
+        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        var tmpl = Template(name: "My Template", content: .standardBeat(mc))
         var project = Project()
-        let id = TemplateID()
 
-        #expect(project.removeTemplate(id) == nil)
+        tmpl.isLocked = true
+        _ = project.updateTemplate(tmpl)
+
+        let error = #expect(throws: Project.Error.self) {
+            try project.removeTemplate(tmpl.templateID)
+        }
+
+        guard case let .templateIsLocked(templateID) = error
+        else { Issue.record("Expected templateIsLocked, got \(String(describing: error))"); return }
+
+        #expect(templateID == tmpl.templateID)
+        #expect(project.fetchTemplate(tmpl.templateID) == tmpl)
     }
 
     @Test
-    func removeWork() {
+    func removeTemplate_missing() throws {
+        var project = Project()
+        let id = TemplateID()
+
+        #expect(try project.removeTemplate(id) == nil)
+    }
+
+    @Test
+    func removeWork() throws {
         let work = Work(name: "Concerto")
         var project = Project()
 
         _ = project.updateWork(work)
-        let removed = project.removeWork(work.workID)
+        let removed = try project.removeWork(work.workID)
 
         #expect(removed == work)
         #expect(project.works.isEmpty)
     }
 
     @Test
-    func removeWork_missing() {
+    func removeWork_locked_throws() {
+        var work = Work(name: "Concerto")
+        var project = Project()
+
+        work.isLocked = true
+        _ = project.updateWork(work)
+
+        let error = #expect(throws: Project.Error.self) {
+            try project.removeWork(work.workID)
+        }
+
+        guard case let .workIsLocked(workID) = error
+        else { Issue.record("Expected workIsLocked, got \(String(describing: error))"); return }
+
+        #expect(workID == work.workID)
+        #expect(project.fetchWork(work.workID) == work)
+    }
+
+    @Test
+    func removeWork_missing() throws {
         var project = Project()
         let id = WorkID()
 
-        #expect(project.removeWork(id) == nil)
+        #expect(try project.removeWork(id) == nil)
     }
 
     @Test

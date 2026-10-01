@@ -25,8 +25,7 @@ extension Work {
               || self.pitchNotation != pitchNotation
         else { return self }
 
-        guard !isLocked
-        else { throw Error.workIsLocked }
+        try ensureUnlocked()
 
         var result = self
 

@@ -13,6 +13,28 @@ struct WorkMoveTests {
 
 extension WorkMoveTests {
     @Test
+    func move_lockedWork_throwsAndLeavesWorkUnchanged() throws {
+        var (work, partID) = makeLockedWorkSB()
+        let directedDuration = try #require(BeatTime(0).duration(to: 2))
+        let beatTimeRange = work.beatTimeRange
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.move(partID, by: directedDuration)
+        }
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.move([partID], by: directedDuration)
+        }
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.move(by: directedDuration)
+        }
+
+        #expect(work.beatTimeRange == beatTimeRange)
+        #expect(work.pitchRange?.lowerBound as? Pitch == .c4)
+    }
+
+    @Test
     func move_wholeWorkBeat_shiftsEveryPartAndTempoMap() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 

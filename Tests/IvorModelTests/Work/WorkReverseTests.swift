@@ -13,6 +13,27 @@ struct WorkReverseTests {
 
 extension WorkReverseTests {
     @Test
+    func reverse_lockedWork_throwsAndLeavesWorkUnchanged() {
+        var (work, partID) = makeLockedWorkSB()
+        let beatTimeRange = work.beatTimeRange
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.reverse(partID, within: nil as ClosedRange<BeatTime>?)
+        }
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.reverse([partID], within: nil as ClosedRange<BeatTime>?)
+        }
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.reverse(within: nil as ClosedRange<BeatTime>?)
+        }
+
+        #expect(work.beatTimeRange == beatTimeRange)
+        #expect(work.pitchRange?.lowerBound as? Pitch == .c4)
+    }
+
+    @Test
     func reverse_wholeWorkBeat_mirrorsEveryPartAndTempoMap() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 

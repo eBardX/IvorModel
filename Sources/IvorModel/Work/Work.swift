@@ -40,34 +40,36 @@ public struct Work {
 
     /// A Boolean value indicating whether this work is locked.
     ///
-    /// A locked work’s ``content`` cannot be modified — assigning to it traps — until it is
-    /// unlocked; this type enforces that invariant directly. Locking is meant to protect the
-    /// work as a whole, including against renaming and deletion, but those operations aren’t
-    /// performed through this type — it’s on callers (e.g. `ProjectDocument`) to check
-    /// `isLocked` before renaming or deleting a work. Setting `isLocked` itself is always
-    /// permitted, so a locked work can always be unlocked.
+    /// A locked work cannot be modified until it is unlocked. Every method that would change its
+    /// ``content``, ``name`` or ``smpteStartTime`` throws ``Work/Error/workIsLocked`` instead,
+    /// and ``Project/removeWork(_:)`` refuses to remove it. Methods that return a new work, such
+    /// as ``duplicated()`` or ``warped()``, leave this work untouched and so are always permitted.
+    /// Setting `isLocked` itself is always permitted, so a locked work can always be unlocked.
     public var isLocked: Bool
 
     /// The display name of the work.
-    public var name: String
+    ///
+    /// To change it, use ``rename(to:)``.
+    public internal(set) var name: String
 
     /// The SMPTE timecode at which the work’s wall time zero falls.
     ///
     /// Its frame rate is the one the work’s times are shown and entered in when shown as timecode.
     /// It only has meaning for wall-time content, but is kept whatever the time basis, so it isn’t
-    /// lost if the content is converted to beat time and back. Like ``name``, it is not protected
-    /// by ``isLocked`` here; it’s on callers to check ``isLocked`` before changing it.
-    public var smpteStartTime: SMPTETime
+    /// lost if the content is converted to beat time and back. To change it, use
+    /// ``setSMPTEStartTime(_:)``.
+    public internal(set) var smpteStartTime: SMPTETime
 
     /// The musical content of the work.
     ///
-    /// - Precondition: ``isLocked`` must be `false`. Callers are expected to check ``isLocked``
-    ///                  (or otherwise keep editing UI from reaching a locked work) before
-    ///                  assigning; this is a programmer error, not a recoverable condition, so it
-    ///                  traps rather than silently discarding the assignment.
-    public var content: Content {
+    /// To replace it, use ``replaceContent(with:)``.
+    public internal(set) var content: Content {
         get { unsafeContent }
         set {
+            //
+            // Every public mutator checks `isLocked` (via `ensureUnlocked()`) before it gets here,
+            // so reaching this with a locked work is a bug in this package.
+            //
             precondition(!isLocked, "Cannot assign content to a locked work.")
 
             unsafeContent = newValue
@@ -266,6 +268,39 @@ extension Work {
         }
     }
 
+    /// Changes the display name of this work.
+    ///
+    /// - Parameter name:   The new display name.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
+    public mutating func rename(to name: String) throws(Error) {
+        try ensureUnlocked()
+
+        self.name = name
+    }
+
+    /// Replaces the musical content of this work.
+    ///
+    /// - Parameter content:    The new ``Work/Content``.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
+    public mutating func replaceContent(with content: Content) throws(Error) {
+        try ensureUnlocked()
+
+        self.content = content
+    }
+
+    /// Changes the SMPTE timecode at which this work’s wall time zero falls.
+    ///
+    /// - Parameter smpteStartTime: The new SMPTE start time.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
+    public mutating func setSMPTEStartTime(_ smpteStartTime: SMPTETime) throws(Error) {
+        try ensureUnlocked()
+
+        self.smpteStartTime = smpteStartTime
+    }
+
     // MARK: Internal Type Methods
 
     //
@@ -300,6 +335,17 @@ extension Work {
 
             return min(acc.lowerBound, partRange.lowerBound)...max(acc.upperBound, partRange.upperBound)
         }
+    }
+
+    // MARK: Internal Instance Methods
+
+    //
+    // Called first by every public mutator, so a locked work is rejected before anything else is
+    // checked and is left unchanged.
+    //
+    internal func ensureUnlocked() throws(Error) {
+        guard !isLocked
+        else { throw Error.workIsLocked }
     }
 }
 

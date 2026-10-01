@@ -15,11 +15,14 @@ extension Work {
     /// - Parameter directedInterval:  The directed ratio by which to transpose the part’s
     ///                                pitches.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             absolute (frequency) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func transpose(_ partID: PartID,
                                    by directedInterval: DirectedInterval<Ratio>) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
@@ -51,11 +54,14 @@ extension Work {
     /// - Parameter directedInterval:  The directed note distance by which to transpose the
     ///                                part’s pitches.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             keyboard (MIDI note number) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func transpose(_ partID: PartID,
                                    by directedInterval: DirectedInterval<NoteDistance>) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
@@ -87,11 +93,14 @@ extension Work {
     /// - Parameter directedInterval:  The directed interval by which to transpose the part’s
     ///                                pitches.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             standard (staff) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func transpose(_ partID: PartID,
                                    by directedInterval: DirectedInterval<Interval>) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
@@ -123,11 +132,14 @@ extension Work {
     /// - Parameter directedInterval:  The directed ratio by which to transpose the targeted
     ///                                parts’ pitches.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             absolute (frequency) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func transpose(_ partIDs: Set<PartID>,
                                    by directedInterval: DirectedInterval<Ratio>) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
@@ -159,11 +171,14 @@ extension Work {
     /// - Parameter directedInterval:  The directed note distance by which to transpose the
     ///                                targeted parts’ pitches.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             keyboard (MIDI note number) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func transpose(_ partIDs: Set<PartID>,
                                    by directedInterval: DirectedInterval<NoteDistance>) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
@@ -195,11 +210,14 @@ extension Work {
     /// - Parameter directedInterval:  The directed interval by which to transpose the targeted
     ///                                parts’ pitches.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             standard (staff) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func transpose(_ partIDs: Set<PartID>,
                                    by directedInterval: DirectedInterval<Interval>) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
@@ -229,10 +247,13 @@ extension Work {
     /// - Parameter directedInterval:   The directed ratio by which to transpose every part’s
     ///                                 pitches.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             absolute (frequency) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func transpose(by directedInterval: DirectedInterval<Ratio>) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
@@ -260,10 +281,13 @@ extension Work {
     /// - Parameter directedInterval:   The directed note distance by which to transpose every
     ///                                 part’s pitches.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             keyboard (MIDI note number) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func transpose(by directedInterval: DirectedInterval<NoteDistance>) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
@@ -291,10 +315,13 @@ extension Work {
     /// - Parameter directedInterval:   The directed interval by which to transpose every part’s
     ///                                 pitches.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             standard (staff) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func transpose(by directedInterval: DirectedInterval<Interval>) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>

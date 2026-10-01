@@ -37,15 +37,17 @@ public struct Template {
 
     /// A Boolean value indicating whether this template is locked.
     ///
-    /// A template’s ``content`` is always immutable, regardless of lock state; locking is
-    /// meant to protect the template against renaming and deletion instead. Neither operation
-    /// is performed through this type — it’s on callers (e.g. `ProjectDocument`) to check
-    /// `isLocked` before renaming or deleting a template. Setting `isLocked` itself is always
+    /// A template’s ``content`` is always immutable, regardless of lock state; locking protects
+    /// the template against renaming and deletion instead. ``rename(to:)`` throws
+    /// ``Template/Error/templateIsLocked`` on a locked template, and
+    /// ``Project/removeTemplate(_:)`` refuses to remove it. Setting `isLocked` itself is always
     /// permitted, so a locked template can always be unlocked.
     public var isLocked: Bool
 
     /// The display name of this template.
-    public var name: String
+    ///
+    /// To change it, use ``rename(to:)``.
+    public internal(set) var name: String
 }
 
 // MARK: -
@@ -90,6 +92,20 @@ extension Template {
     /// The time basis used by this template.
     public var timeBasis: TimeBasis {
         content.timeBasis
+    }
+
+    // MARK: Public Instance Methods
+
+    /// Changes the display name of this template.
+    ///
+    /// - Parameter name:   The new display name.
+    ///
+    /// - Throws:   ``Template/Error/templateIsLocked`` if this template is locked.
+    public mutating func rename(to name: String) throws(Error) {
+        guard !isLocked
+        else { throw Error.templateIsLocked }
+
+        self.name = name
     }
 }
 

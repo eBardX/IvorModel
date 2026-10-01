@@ -103,12 +103,18 @@ extension Project {
     /// - Parameter templateID:     The ID of the template to remove.
     ///
     /// - Returns:  The removed ``Template``, or `nil` if no template with that ID exists.
+    ///
+    /// - Throws:   ``Project/Error/templateIsLocked(_:)`` if the template is locked; the
+    ///             project is left unchanged.
     @discardableResult
-    public mutating func removeTemplate(_ templateID: TemplateID) -> Template? {
-        guard let template = templateMap.removeValue(forKey: templateID)
+    public mutating func removeTemplate(_ templateID: TemplateID) throws(Error) -> Template? {
+        guard let template = templateMap[templateID]
         else { return nil }
 
-        return template
+        guard !template.isLocked
+        else { throw Error.templateIsLocked(templateID) }
+
+        return templateMap.removeValue(forKey: templateID)
     }
 
     /// Removes the work with the given ID from this project.
@@ -116,12 +122,18 @@ extension Project {
     /// - Parameter workID:     The ID of the work to remove.
     ///
     /// - Returns:  The removed ``Work``, or `nil` if no work with that ID exists.
+    ///
+    /// - Throws:   ``Project/Error/workIsLocked(_:)`` if the work is locked; the project is
+    ///             left unchanged.
     @discardableResult
-    public mutating func removeWork(_ workID: WorkID) -> Work? {
-        guard let work = workMap.removeValue(forKey: workID)
+    public mutating func removeWork(_ workID: WorkID) throws(Error) -> Work? {
+        guard let work = workMap[workID]
         else { return nil }
 
-        return work
+        guard !work.isLocked
+        else { throw Error.workIsLocked(workID) }
+
+        return workMap.removeValue(forKey: workID)
     }
 
     /// Serializes this project to a file wrapper.

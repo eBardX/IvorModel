@@ -50,6 +50,27 @@ extension WorkQuantizeTests {
     }
 
     @Test
+    func quantize_lockedWork_throwsAndLeavesWorkUnchanged() {
+        var (work, partID) = makeLockedWorkSB()
+        let beatTimeRange = work.beatTimeRange
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.quantize(partID, to: [1])
+        }
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.quantize([partID], to: [1])
+        }
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.quantize(to: [1])
+        }
+
+        #expect(work.beatTimeRange == beatTimeRange)
+        #expect(work.pitchRange?.lowerBound as? Pitch == .c4)
+    }
+
+    @Test
     func quantize_noteIDs_restrictsAffectedNotes() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 

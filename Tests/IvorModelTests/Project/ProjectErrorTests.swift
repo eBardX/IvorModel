@@ -72,9 +72,25 @@ extension ProjectErrorTests {
     }
 
     @Test
+    func message_templateIsLocked() {
+        let templateID = TemplateID()
+        let msg = Project.Error.templateIsLocked(templateID).message
+
+        #expect(msg.contains(templateID.stringValue))
+    }
+
+    @Test
     func message_unsupportedVersion() {
         let msg = Project.Error.unsupportedVersion(42).message
 
         #expect(msg.contains("42"))
+    }
+
+    @Test
+    func message_workIsLocked() {
+        let workID = WorkID()
+        let msg = Project.Error.workIsLocked(workID).message
+
+        #expect(msg.contains(workID.stringValue))
     }
 }

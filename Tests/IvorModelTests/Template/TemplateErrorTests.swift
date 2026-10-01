@@ -43,6 +43,11 @@ extension TemplateErrorTests {
     }
 
     @Test
+    func message_templateIsLocked() {
+        #expect(!Template.Error.templateIsLocked.message.isEmpty)
+    }
+
+    @Test
     func message_unsupportedVersion() {
         let msg = Template.Error.unsupportedVersion(99).message
 

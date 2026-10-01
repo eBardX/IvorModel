@@ -14,8 +14,14 @@ extension Project {
         /// A failure that occurred while saving the project.
         case saveFailure((any EnhancedError)?)
 
+        /// The template is locked, so it cannot be removed.
+        case templateIsLocked(TemplateID)
+
         /// The project was encoded with an unsupported version number.
         case unsupportedVersion(Int)
+
+        /// The work is locked, so it cannot be removed.
+        case workIsLocked(WorkID)
     }
 }
 
@@ -51,8 +57,14 @@ extension Project.Error: EnhancedError {
         case .saveFailure:
             "Unable to save Ivor project"
 
+        case let .templateIsLocked(templateID):
+            "Template \(templateID.stringValue) is locked and cannot be removed."
+
         case let .unsupportedVersion(version):
             "Unsupported Ivor manifest version: \(version)"
+
+        case let .workIsLocked(workID):
+            "Work \(workID.stringValue) is locked and cannot be removed."
         }
     }
 }

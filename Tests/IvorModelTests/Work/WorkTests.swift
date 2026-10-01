@@ -86,37 +86,15 @@ extension WorkTests {
         #expect(!work.isLocked)
     }
 
-    //
-    // This type's `name` setter has no locked-check of its own — see `isLocked`'s doc comment —
-    // so renaming a locked work here succeeds; it's `ProjectDocument` that's expected to refuse
-    // to rename (or delete) a locked work before ever reaching this setter.
-    //
-
     @Test
-    func isLocked_nameSetterHasNoGuard() {
-        var work = Work(name: "Original")
-
-        work.isLocked = true
-        work.name = "Renamed"
-
-        #expect(work.name == "Renamed")
-    }
-
-    //
-    // `content`'s setter traps (via `precondition`) rather than silently discarding an assignment
-    // to a locked work's content — see its doc comment. A `precondition` failure aborts the test
-    // process, so that contract isn't exercisable from here; `isLocked_unlockingAllowsContentAssignment`
-    // below covers the unlocked-write path instead.
-    //
-
-    @Test
-    func isLocked_unlockingAllowsContentAssignment() {
+    func isLocked_unlockingAllowsContentReplacement() throws {
         var work = Work(content: .standardWall([]))
         let part = Part<WallTime, Pitch>(name: "Cello")
 
         work.isLocked = true
         work.isLocked = false
-        work.content = .standardWall([part])
+
+        try work.replaceContent(with: .standardWall([part]))
 
         #expect(work.partCount == 1)
     }
@@ -163,6 +141,73 @@ extension WorkTests {
         let work = Work(content: .standardBeat([], TempoMap()))
 
         #expect(work.pitchNotation == .standard)
+    }
+
+    @Test
+    func rename() throws {
+        var work = Work(name: "Original")
+
+        try work.rename(to: "Renamed")
+
+        #expect(work.name == "Renamed")
+    }
+
+    @Test
+    func rename_lockedWork_throws() {
+        var work = Work(name: "Original")
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.rename(to: "Renamed")
+        }
+        #expect(work.name == "Original")
+    }
+
+    @Test
+    func replaceContent() throws {
+        var work = Work(content: .standardWall([]))
+        let part = Part<WallTime, Pitch>(name: "Cello")
+
+        try work.replaceContent(with: .standardWall([part]))
+
+        #expect(work.partIDs == [part.partID])
+    }
+
+    @Test
+    func replaceContent_lockedWork_throws() {
+        var work = Work(content: .standardWall([]))
+        let part = Part<WallTime, Pitch>(name: "Cello")
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.replaceContent(with: .standardWall([part]))
+        }
+        #expect(work.partCount == 0)
+    }
+
+    @Test
+    func setSMPTEStartTime() throws {
+        var work = Work()
+        let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps25))
+
+        try work.setSMPTEStartTime(startTime)
+
+        #expect(work.smpteStartTime == startTime)
+    }
+
+    @Test
+    func setSMPTEStartTime_lockedWork_throws() throws {
+        var work = Work()
+        let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps25))
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.setSMPTEStartTime(startTime)
+        }
+        #expect(work.smpteStartTime == Work.defaultSMPTEStartTime)
     }
 
     @Test
@@ -214,7 +259,7 @@ extension WorkTests {
     func smpteStartTime_roundTrips() throws {
         var work = Work(name: "Cue", content: .standardWall([]))
 
-        work.smpteStartTime = try #require(SMPTETime(string: "01:00:00;02", frameRate: .fps2997Drop))
+        try work.setSMPTEStartTime(#require(SMPTETime(string: "01:00:00;02", frameRate: .fps2997Drop)))
 
         let decoded = try JSONDecoder().decode(Work.self, from: JSONEncoder().encode(work))
 

@@ -17,7 +17,8 @@ extension Work {
     /// - Parameter applyTo:   The parameter maps to quantize along with the part’s note table.
     ///                        Defaults to ``MapTargets/all``.
     ///
-    /// - Throws:   ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
     ///             time; ``Work/Error/emptyQuantizationFactors`` /
     ///             ``Work/Error/invalidQuantizationFactor(_:)`` if `factors` is invalid;
     ///             otherwise a transform-failure case naming the part.
@@ -25,6 +26,8 @@ extension Work {
                                   to factors: [Int],
                                   noteIDs: Set<NoteID>? = nil,
                                   applyTo: MapTargets = .all) throws(Error) {
+        try ensureUnlocked()
+
         let quantizer = try Self._quantizer(factors)
 
         switch content {
@@ -79,7 +82,8 @@ extension Work {
     /// - Parameter applyTo:   The parameter maps (and tempo map) to quantize along with each
     ///                        targeted part’s note table. Defaults to ``MapTargets/all``.
     ///
-    /// - Throws:   ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
     ///             time; ``Work/Error/emptyQuantizationFactors`` /
     ///             ``Work/Error/invalidQuantizationFactor(_:)`` if `factors` is invalid;
     ///             otherwise a transform-failure case naming the part.
@@ -87,6 +91,8 @@ extension Work {
                                   to factors: [Int],
                                   noteIDs: Set<NoteID>? = nil,
                                   applyTo: MapTargets = .all) throws(Error) {
+        try ensureUnlocked()
+
         let quantizer = try Self._quantizer(factors)
 
         switch content {
@@ -151,12 +157,15 @@ extension Work {
     /// - Parameter applyTo:   The parameter maps (and tempo map) to quantize along with each
     ///                        part’s note table. Defaults to ``MapTargets/all``.
     ///
-    /// - Throws:   ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
     ///             time; ``Work/Error/emptyQuantizationFactors`` /
     ///             ``Work/Error/invalidQuantizationFactor(_:)`` if `factors` is invalid;
     ///             otherwise a transform-failure case naming the part.
     public mutating func quantize(to factors: [Int],
                                   applyTo: MapTargets = .all) throws(Error) {
+        try ensureUnlocked()
+
         let quantizer = try Self._quantizer(factors)
 
         switch content {

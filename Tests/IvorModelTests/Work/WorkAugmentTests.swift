@@ -13,6 +13,27 @@ struct WorkAugmentTests {
 
 extension WorkAugmentTests {
     @Test
+    func augment_lockedWork_throwsAndLeavesWorkUnchanged() {
+        var (work, partID) = makeLockedWorkSB()
+        let beatTimeRange = work.beatTimeRange
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.augment(partID, by: Number(2), anchor: nil as BeatTime?)
+        }
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.augment([partID], by: Number(2), anchor: nil as BeatTime?)
+        }
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.augment(by: Number(2), anchor: nil as BeatTime?)
+        }
+
+        #expect(work.beatTimeRange == beatTimeRange)
+        #expect(work.pitchRange?.lowerBound as? Pitch == .c4)
+    }
+
+    @Test
     func augment_partIDs_allOrNothingLeavesWorkUnchangedOnFailure() {
         var goodPart = Part<BeatTime, Pitch>(name: "Violin")
         var badPart = Part<BeatTime, Pitch>(name: "Cello")

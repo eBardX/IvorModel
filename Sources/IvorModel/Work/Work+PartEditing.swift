@@ -37,8 +37,12 @@ extension Work {
     /// - Parameter name:   The display name of the new part. Defaults to an empty string.
     ///
     /// - Returns:  The ID of the newly added part.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
     @discardableResult
-    public mutating func addPart(name: String = "") -> PartID {
+    public mutating func addPart(name: String = "") throws(Error) -> PartID {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             let part = Part<BeatTime, Frequency>(name: name)
@@ -109,8 +113,12 @@ extension Work {
     ///
     /// - Returns:  The ID of the newly added duplicate, or `nil` if no part with
     ///             `partID` was found.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
     @discardableResult
-    public mutating func duplicatePart(_ partID: PartID) -> PartID? {
+    public mutating func duplicatePart(_ partID: PartID) throws(Error) -> PartID? {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
@@ -229,7 +237,11 @@ extension Work {
     /// Removes the part with the given ID. No-ops if no part with `partID` is found.
     ///
     /// - Parameter partID: The ID of the part to remove.
-    public mutating func removePart(_ partID: PartID) {
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
+    public mutating func removePart(_ partID: PartID) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
@@ -297,8 +309,12 @@ extension Work {
     ///
     /// - Parameter partID: The ID of the part to rename.
     /// - Parameter name:   The new display name for the part.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
     public mutating func renamePart(_ partID: PartID,
-                                    to name: String) {
+                                    to name: String) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
@@ -367,8 +383,12 @@ extension Work {
     ///
     /// - Parameter partID: The ID of the part to shift.
     /// - Parameter index:  The zero-based index to shift the part to.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
     public mutating func shiftPart(_ partID: PartID,
-                                   to index: Int) {
+                                   to index: Int) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })

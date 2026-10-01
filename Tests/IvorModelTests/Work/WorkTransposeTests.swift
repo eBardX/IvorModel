@@ -13,6 +13,28 @@ struct WorkTransposeTests {
 
 extension WorkTransposeTests {
     @Test
+    func transpose_lockedWork_throwsAndLeavesWorkUnchanged() throws {
+        var (work, partID) = makeLockedWorkSB()
+        let interval = try #require(Pitch.c4.interval(to: .e4))
+        let beatTimeRange = work.beatTimeRange
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.transpose(partID, by: interval)
+        }
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.transpose([partID], by: interval)
+        }
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.transpose(by: interval)
+        }
+
+        #expect(work.beatTimeRange == beatTimeRange)
+        #expect(work.pitchRange?.lowerBound as? Pitch == .c4)
+    }
+
+    @Test
     func transpose_wholeWork_transposesEveryPart() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 

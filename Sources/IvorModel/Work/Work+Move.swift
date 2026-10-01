@@ -18,12 +18,15 @@ extension Work {
     /// - Parameter applyTo:           The parameter maps to move along with the note table.
     ///                                Defaults to every map.
     ///
-    /// - Throws:   ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
     ///             time; otherwise, a transform-failure case naming the part and sub-structure
     ///             that failed.
     public mutating func move(_ partID: PartID,
                               by directedDuration: DirectedDuration<BeatDuration>,
                               applyTo: MapTargets = .all) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
@@ -61,12 +64,15 @@ extension Work {
     /// - Parameter applyTo:           The parameter maps to move along with the note table.
     ///                                Defaults to every map.
     ///
-    /// - Throws:   ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use wall
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use wall
     ///             time; otherwise, a transform-failure case naming the part and sub-structure
     ///             that failed.
     public mutating func move(_ partID: PartID,
                               by directedDuration: DirectedDuration<WallDuration>,
                               applyTo: MapTargets = .all) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
@@ -106,12 +112,15 @@ extension Work {
     /// - Parameter applyTo:           The parameter maps (and tempo map) to move along with each
     ///                                targeted note table. Defaults to every map.
     ///
-    /// - Throws:   ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
     ///             time; otherwise, a transform-failure case naming the part (or the tempo map)
     ///             and sub-structure that failed.
     public mutating func move(_ partIDs: Set<PartID>,
                               by directedDuration: DirectedDuration<BeatDuration>,
                               applyTo: MapTargets = .all) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
@@ -170,12 +179,15 @@ extension Work {
     /// - Parameter applyTo:           The parameter maps to move along with each targeted note
     ///                                table. Defaults to every map.
     ///
-    /// - Throws:   ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use wall
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use wall
     ///             time; otherwise, a transform-failure case naming the part and sub-structure
     ///             that failed.
     public mutating func move(_ partIDs: Set<PartID>,
                               by directedDuration: DirectedDuration<WallDuration>,
                               applyTo: MapTargets = .all) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
@@ -218,11 +230,14 @@ extension Work {
     /// - Parameter applyTo:            The parameter maps (and tempo map) to move along with
     ///                                 every note table. Defaults to every map.
     ///
-    /// - Throws:   ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
     ///             time; otherwise, a transform-failure case naming the part (or the tempo map)
     ///             and sub-structure that failed.
     public mutating func move(by directedDuration: DirectedDuration<BeatDuration>,
                               applyTo: MapTargets = .all) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
@@ -273,11 +288,14 @@ extension Work {
     /// - Parameter applyTo:            The parameter maps to move along with every note table.
     ///                                 Defaults to every map.
     ///
-    /// - Throws:   ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use wall
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use wall
     ///             time; otherwise, a transform-failure case naming the part and sub-structure
     ///             that failed.
     public mutating func move(by directedDuration: DirectedDuration<WallDuration>,
                               applyTo: MapTargets = .all) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>

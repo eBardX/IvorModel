@@ -15,11 +15,14 @@ extension Work {
     /// - Parameter pitchRange:  The frequency range to invert pitches around. `nil` resolves to
     ///                          the part’s own frequency range.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             absolute (frequency) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func invert(_ partID: PartID,
                                 around pitchRange: ClosedRange<Frequency>? = nil) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
@@ -51,11 +54,14 @@ extension Work {
     /// - Parameter pitchRange:  The note number range to invert pitches around. `nil` resolves to
     ///                          the part’s own note number range.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             keyboard (MIDI note number) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func invert(_ partID: PartID,
                                 around pitchRange: ClosedRange<NoteNumber>? = nil) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
@@ -87,11 +93,14 @@ extension Work {
     /// - Parameter pitchRange:  The pitch range to invert pitches around. `nil` resolves to the
     ///                          part’s own pitch range.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             standard (staff) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func invert(_ partID: PartID,
                                 around pitchRange: ClosedRange<Pitch>? = nil) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
@@ -123,11 +132,14 @@ extension Work {
     /// - Parameter pitchRange:  The frequency range to invert pitches around. `nil` resolves to
     ///                          the aggregate frequency range spanned by the targeted parts.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             absolute (frequency) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func invert(_ partIDs: Set<PartID>,
                                 around pitchRange: ClosedRange<Frequency>? = nil) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
@@ -161,11 +173,14 @@ extension Work {
     /// - Parameter pitchRange:  The note number range to invert pitches around. `nil` resolves to
     ///                          the aggregate note number range spanned by the targeted parts.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             keyboard (MIDI note number) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func invert(_ partIDs: Set<PartID>,
                                 around pitchRange: ClosedRange<NoteNumber>? = nil) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
@@ -199,11 +214,14 @@ extension Work {
     /// - Parameter pitchRange:  The pitch range to invert pitches around. `nil` resolves to the
     ///                          aggregate pitch range spanned by the targeted parts.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             standard (staff) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func invert(_ partIDs: Set<PartID>,
                                 around pitchRange: ClosedRange<Pitch>? = nil) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>
@@ -235,10 +253,13 @@ extension Work {
     /// - Parameter pitchRange:   The frequency range to invert pitches around. `nil` resolves to
     ///                           the aggregate frequency range spanned by every part.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             absolute (frequency) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func invert(around pitchRange: ClosedRange<Frequency>? = nil) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .absoluteBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Frequency>
@@ -268,10 +289,13 @@ extension Work {
     /// - Parameter pitchRange:   The note number range to invert pitches around. `nil` resolves
     ///                           to the aggregate note number range spanned by every part.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             keyboard (MIDI note number) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func invert(around pitchRange: ClosedRange<NoteNumber>? = nil) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .keyboardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, NoteNumber>
@@ -301,10 +325,13 @@ extension Work {
     /// - Parameter pitchRange:   The pitch range to invert pitches around. `nil` resolves to the
     ///                           aggregate pitch range spanned by every part.
     ///
-    /// - Throws:   ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             standard (staff) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
     public mutating func invert(around pitchRange: ClosedRange<Pitch>? = nil) throws(Error) {
+        try ensureUnlocked()
+
         switch content {
         case let .standardBeat(parts, tempoMap):
             typealias PartType = Part<BeatTime, Pitch>

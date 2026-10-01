@@ -20,4 +20,9 @@ extension WorkErrorTests {
 
         #expect(msg.contains("42"))
     }
+
+    @Test
+    func message_workIsLocked() {
+        #expect(!Work.Error.workIsLocked.message.isEmpty)
+    }
 }
