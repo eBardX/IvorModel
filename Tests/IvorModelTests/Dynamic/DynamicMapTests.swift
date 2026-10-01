@@ -27,7 +27,7 @@ extension DynamicMapTests {
         let decoded = try JSONDecoder().decode(DynamicMap<BeatTime>.self, from: data)
         var count = 0
 
-        for entry in decoded {
+        for _ in decoded {
             count += 1
         }
 

@@ -63,25 +63,12 @@ extension Template {
 
     /// The maximum pattern depth supported by this template.
     public var maximumOrder: Int {
-        switch content {
-        case let .absoluteBeat(markovChain):
-            markovChain.maximumOrder
+        accept(_MaximumOrderVisitor())
+    }
 
-        case let .absoluteWall(markovChain):
-            markovChain.maximumOrder
-
-        case let .keyboardBeat(markovChain):
-            markovChain.maximumOrder
-
-        case let .keyboardWall(markovChain):
-            markovChain.maximumOrder
-
-        case let .standardBeat(markovChain):
-            markovChain.maximumOrder
-
-        case let .standardWall(markovChain):
-            markovChain.maximumOrder
-        }
+    /// Metrics describing how this template’s Markov chain was trained.
+    public var metrics: Metrics {
+        accept(_MetricsVisitor())
     }
 
     /// The pitch notation used by this template.
@@ -96,6 +83,34 @@ extension Template {
 
     // MARK: Public Instance Methods
 
+    /// Calls the given visitor with this template’s Markov chain, at its
+    /// concrete time and pitch types.
+    ///
+    /// - Parameter visitor:    The visitor to call.
+    ///
+    /// - Returns:  The result of the visit.
+    public func accept<Visitor: ContentVisitor>(_ visitor: Visitor) -> Visitor.Result {
+        switch content {
+        case let .absoluteBeat(markovChain):
+            visitor.visit(markovChain)
+
+        case let .absoluteWall(markovChain):
+            visitor.visit(markovChain)
+
+        case let .keyboardBeat(markovChain):
+            visitor.visit(markovChain)
+
+        case let .keyboardWall(markovChain):
+            visitor.visit(markovChain)
+
+        case let .standardBeat(markovChain):
+            visitor.visit(markovChain)
+
+        case let .standardWall(markovChain):
+            visitor.visit(markovChain)
+        }
+    }
+
     /// Changes the display name of this template.
     ///
     /// - Parameter name:   The new display name.
@@ -106,6 +121,28 @@ extension Template {
         else { throw Error.templateIsLocked }
 
         self.name = name
+    }
+
+    // MARK: Private Nested Types
+
+    private struct _MaximumOrderVisitor: ContentVisitor {
+        func visit(_ markovChain: MarkovChain<NoteEvent<some TimeProtocol, some PitchProtocol>>) -> Int {
+            markovChain.maximumOrder
+        }
+    }
+
+    private struct _MetricsVisitor: ContentVisitor {
+        func visit(_ markovChain: MarkovChain<NoteEvent<some TimeProtocol, some PitchProtocol>>) -> Metrics {
+            let metrics = markovChain.metrics()
+            let order = markovChain.maximumOrder
+            let orderMetrics = metrics.orderMetrics[order]
+
+            return Metrics(branchingRatio: orderMetrics.branchingRatio,
+                           order: order,
+                           recommendedOrder: metrics.recommendedOrder,
+                           stateCount: metrics.distinctStates,
+                           transitionCount: orderMetrics.totalTransitions)
+        }
     }
 }
 

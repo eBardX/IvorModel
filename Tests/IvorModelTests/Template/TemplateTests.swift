@@ -5,6 +5,7 @@ import IvorTiming
 @testable import IvorTuning
 import Testing
 import XestiMarkov
+import XestiNumbers
 
 struct TemplateTests {
 }
@@ -12,6 +13,32 @@ struct TemplateTests {
 // MARK: -
 
 extension TemplateTests {
+    @Test
+    func accept() throws {
+        let absoluteBeat = try #require(MarkovChain<NoteEvent<BeatTime, Frequency>>())
+        let absoluteWall = try #require(MarkovChain<NoteEvent<WallTime, Frequency>>())
+        let keyboardBeat = try #require(MarkovChain<NoteEvent<BeatTime, NoteNumber>>())
+        let keyboardWall = try #require(MarkovChain<NoteEvent<WallTime, NoteNumber>>())
+        let standardBeat = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        let standardWall = try #require(MarkovChain<NoteEvent<WallTime, Pitch>>())
+        let visitor = _TypeNameVisitor()
+
+        #expect(Template(name: "T", content: .absoluteBeat(absoluteBeat)).accept(visitor) == "BeatTime Frequency")
+        #expect(Template(name: "T", content: .absoluteWall(absoluteWall)).accept(visitor) == "WallTime Frequency")
+        #expect(Template(name: "T", content: .keyboardBeat(keyboardBeat)).accept(visitor) == "BeatTime NoteNumber")
+        #expect(Template(name: "T", content: .keyboardWall(keyboardWall)).accept(visitor) == "WallTime NoteNumber")
+        #expect(Template(name: "T", content: .standardBeat(standardBeat)).accept(visitor) == "BeatTime Pitch")
+        #expect(Template(name: "T", content: .standardWall(standardWall)).accept(visitor) == "WallTime Pitch")
+    }
+
+    @Test
+    func accept_passesMarkovChain() throws {
+        let markovChain = try #require(MarkovChain<NoteEvent<WallTime, NoteNumber>>(maximumOrder: 3))
+        let tmpl = Template(name: "T", content: .keyboardWall(markovChain))
+
+        #expect(tmpl.accept(_MaximumOrderVisitor()) == 3)
+    }
+
     @Test
     func comparable() throws {
         let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
@@ -67,6 +94,46 @@ extension TemplateTests {
         let tmpl = Template(name: "Test", content: .standardBeat(mc))
 
         #expect(tmpl.maximumOrder >= 0)
+    }
+
+    @Test
+    func metrics_empty() throws {
+        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>(maximumOrder: 2))
+        let metrics = Template(name: "T", content: .standardBeat(markovChain)).metrics
+
+        #expect(metrics.order == 2)
+        #expect(metrics.recommendedOrder == nil)
+        #expect(metrics.stateCount == 0)
+        #expect(metrics.transitionCount == 0)
+        #expect(metrics.branchingRatio == 0)
+    }
+
+    @Test
+    func metrics_trained() throws {
+        var table = NoteTable<BeatTime, Pitch>()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+        table.insert(attack: 1, duration: 1, pitch: .e4)
+        table.insert(attack: 2, duration: 1, pitch: .c4)
+        table.insert(attack: 3, duration: 2, pitch: .g4)
+
+        let work = Work(name: "W", content: .standardBeat([Part(name: "Piano", noteTable: table)], TempoMap()))
+        let tmpl = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1)
+
+        guard case let .standardBeat(markovChain) = tmpl.content
+        else { Issue.record("Unexpected content"); return }
+
+        let expected = markovChain.metrics()
+        let metrics = tmpl.metrics
+
+        #expect(metrics.order == 1)
+        #expect(metrics.recommendedOrder == expected.recommendedOrder)
+        #expect(metrics.stateCount == expected.distinctStates)
+        #expect(metrics.stateCount == 3)
+        #expect(metrics.transitionCount == expected.orderMetrics[1].totalTransitions)
+        #expect(metrics.transitionCount > 0)
+        #expect(metrics.branchingRatio == expected.orderMetrics[1].branchingRatio)
+        #expect(metrics.branchingRatio > 0)
     }
 
     @Test
@@ -130,5 +197,21 @@ extension TemplateTests {
         let tmpl = Template(name: "Test", content: .standardWall(mc))
 
         #expect(tmpl.timeBasis == .wall)
+    }
+}
+
+// MARK: -
+
+extension TemplateTests {
+    private struct _MaximumOrderVisitor: Template.ContentVisitor {
+        func visit(_ markovChain: MarkovChain<NoteEvent<some TimeProtocol, some PitchProtocol>>) -> Int {
+            markovChain.maximumOrder
+        }
+    }
+
+    private struct _TypeNameVisitor: Template.ContentVisitor {
+        func visit<TimeType: TimeProtocol, PitchType: PitchProtocol>(_ markovChain: MarkovChain<NoteEvent<TimeType, PitchType>>) -> String {
+            "\(TimeType.self) \(PitchType.self)"
+        }
     }
 }

@@ -379,9 +379,9 @@ extension WorkWarpTests {
 
     @Test
     func warped_wallTimeContent_returnsNil() {
-        #expect(try Work(content: .absoluteWall([])).warped() == nil)
-        #expect(try Work(content: .keyboardWall([])).warped() == nil)
-        #expect(try Work(content: .standardWall([])).warped() == nil)
+        #expect(Work(content: .absoluteWall([])).warped() == nil)
+        #expect(Work(content: .keyboardWall([])).warped() == nil)
+        #expect(Work(content: .standardWall([])).warped() == nil)
     }
 
     @Test

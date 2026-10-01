@@ -34,7 +34,7 @@ extension InstrumentMapTests {
         let decoded = try JSONDecoder().decode(InstrumentMap<BeatTime>.self, from: data)
         var count = 0
 
-        for entry in decoded {
+        for _ in decoded {
             count += 1
         }
 

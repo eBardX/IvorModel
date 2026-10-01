@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorSMPTE.git",
       "state" : {
-        "revision" : "b1c4593b5917807c5cdc0a5eeeb19fac0655b5ac",
-        "version" : "0.2.0"
+        "revision" : "bc2a594c2ee6f717cf35ebc5569e21b21945fff0",
+        "version" : "0.3.0"
       }
     },
     {
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTuning.git",
       "state" : {
-        "revision" : "8ccff8d95f17ed0c9e16684f5fc404890f5dd158",
-        "version" : "0.9.0"
+        "revision" : "533c755e3fdddfa5dff501196a6a6bc22bd8b4e2",
+        "version" : "0.10.0"
       }
     },
     {
