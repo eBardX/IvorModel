@@ -51,6 +51,9 @@ extension Work {
         /// A failure that occurred in a part’s note table while applying a transform.
         case transformFailure(kind: TransformKind, partID: PartID, detail: String)
 
+        /// Converting pitches between the two notations is not supported.
+        case unsupportedPitchConversion(from: PitchNotation, to: PitchNotation)
+
         /// The context’s tuning system does not support standard pitch notation.
         case unsupportedStandardConversion
 
@@ -111,6 +114,9 @@ extension Work.Error: EnhancedError {
 
         case let .transformFailure(kind, partID, detail):
             "Note table failure during \(kind) of part \(partID.stringValue): \(detail)"
+
+        case let .unsupportedPitchConversion(from, to):
+            "Conversion from \(from) pitch notation to \(to) pitch notation is not supported."
 
         case .unsupportedStandardConversion:
             "The tuning system does not support standard pitch notation."

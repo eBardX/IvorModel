@@ -1,5 +1,5 @@
 {
-  "originHash" : "e1e536c72d71fbbbf24bd2742982b093fb4852075c475ff7e6dd2e53eef125e4",
+  "originHash" : "d0cbef8805d7919d2f8141aecc3b0235acdf21eb710f9a61d13adb012dc17e8a",
   "pins" : [
     {
       "identity" : "bigint",
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTuning.git",
       "state" : {
-        "revision" : "be524d192709441d60518a82fb8e495d0e53c118",
-        "version" : "0.8.0"
+        "revision" : "8ccff8d95f17ed0c9e16684f5fc404890f5dd158",
+        "version" : "0.9.0"
       }
     },
     {

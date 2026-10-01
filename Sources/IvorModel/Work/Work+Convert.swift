@@ -7,42 +7,58 @@ extension Work {
 
     // MARK: Public Instance Methods
 
-    /// Converts this work to the provided time basis and pitch notation.
+    /// Returns a new work with this work’s content converted to the provided time basis and pitch
+    /// notation, or `nil` if this work already has both, so there is nothing to convert.
+    ///
+    /// Like ``warped()``, the new work has a fresh ``Work/workID``, is unlocked, and keeps this
+    /// work’s ``Work/name`` and ``Work/smpteStartTime``.
+    ///
+    /// Always permitted, even on a locked work: this returns an independent copy rather than
+    /// mutating `self`, so ``Work/isLocked`` does not apply.
     ///
     /// - Parameter timeBasis:      The time basis to which to convert.
-    /// - Parameter pitchNotation:  The pitch notation to which to convert.
+    /// - Parameter pitchNotation:  The pitch notation to which to convert. Use
+    ///                             `PitchNotation.isConversionSupported(to:)` to check that
+    ///                             converting this work’s pitch notation to it is supported.
     /// - Parameter context:        The conversion dependencies. Defaults to `.default`
     ///                             (12-EDO, A4 = 440 Hz, Meredith pitch speller).
     ///
-    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked — converting would modify
-    ///             its content; ``Work/Error/unsupportedStandardConversion`` if the context’s
-    ///             tuning system does not support standard pitch notation and the conversion
-    ///             requires it; other ``Work/Error`` cases for other missing context dependencies.
+    /// - Returns:  The converted work, or `nil` if this work already has `timeBasis` and
+    ///             `pitchNotation`.
+    ///
+    /// - Throws:   ``Work/Error/unsupportedPitchConversion(from:to:)`` if converting this work’s
+    ///             pitch notation to `pitchNotation` is not supported;
+    ///             ``Work/Error/unsupportedStandardConversion`` if the context’s tuning system
+    ///             does not support standard pitch notation and the conversion requires it; other
+    ///             ``Work/Error`` cases for other missing context dependencies.
     public func convert(timeBasis: TimeBasis,
                         pitchNotation: PitchNotation,
-                        context: ConvertContext = .default) throws(Error) -> Work {
+                        context: ConvertContext = .default) throws(Error) -> Work? {
         guard self.timeBasis != timeBasis
               || self.pitchNotation != pitchNotation
-        else { return self }
+        else { return nil }
 
-        try ensureUnlocked()
+        guard self.pitchNotation == pitchNotation
+              || self.pitchNotation.isConversionSupported(to: pitchNotation)
+        else { throw Error.unsupportedPitchConversion(from: self.pitchNotation,
+                                                      to: pitchNotation) }
 
-        var result = self
+        var newContent = content
 
-        if result.content.timeBasis != timeBasis {
-            result.content = Self._convertTimeBasis(of: result.content,
-                                                    to: timeBasis)
+        if newContent.timeBasis != timeBasis {
+            newContent = Self._convertTimeBasis(of: newContent,
+                                                to: timeBasis)
         }
 
-        if result.content.pitchNotation != pitchNotation {
+        if newContent.pitchNotation != pitchNotation {
             do {
-                result.content = try Self._convertPitchNotation(of: result.content,
-                                                                to: pitchNotation,
-                                                                with: context)
+                newContent = try Self._convertPitchNotation(of: newContent,
+                                                            to: pitchNotation,
+                                                            with: context)
             } catch let error as Error {
                 throw error
-            } catch is TuningError {
-                throw Error.unsupportedStandardConversion
+            } catch let error as TuningError {
+                throw Self._workError(for: error)
             } catch {
                 // Unreachable: `_convertPitchNotation` only ever throws `Work.Error` or
                 // `TuningError`, both handled above.
@@ -50,7 +66,9 @@ extension Work {
             }
         }
 
-        return result
+        return Work(name: name,
+                    content: newContent,
+                    smpteStartTime: smpteStartTime)
     }
 
     // MARK: Internal Type Methods
@@ -439,7 +457,7 @@ extension Work {
         guard let keyboardMap = context.keyboardMap
         else { throw Error.missingKeyboardMap }
 
-        let pitchConverter = AbsoluteToKeyboardPitchConverter(keyboardMap: keyboardMap)
+        let pitchConverter = try AbsoluteToKeyboardPitchConverter(keyboardMap: keyboardMap)
 
         return { pitchConverter.convert($0) }
     }
@@ -451,21 +469,21 @@ extension Work {
         guard let pitchSpeller = context.pitchSpeller
         else { throw Error.missingPitchSpeller }
 
-        func makePitchConverter(_ pitchSpeller: some PitchSpeller) -> (Frequency) -> Pitch {
-            let pitchConverter = AbsoluteToStandardPitchConverter(keyboardMap: keyboardMap,
-                                                                  pitchSpeller: pitchSpeller)
+        func makePitchConverter(_ pitchSpeller: some PitchSpeller) throws -> (Frequency) -> Pitch {
+            let pitchConverter = try AbsoluteToStandardPitchConverter(keyboardMap: keyboardMap,
+                                                                      pitchSpeller: pitchSpeller)
 
             return { pitchConverter.convert($0) }
         }
 
-        return makePitchConverter(pitchSpeller)
+        return try makePitchConverter(pitchSpeller)
     }
 
     private static func _makeKeyboardToAbsolutePitchConverter(with context: ConvertContext) throws -> (NoteNumber) -> Frequency {
         guard let keyboardMap = context.keyboardMap
         else { throw Error.missingKeyboardMap }
 
-        let pitchConverter = KeyboardToAbsolutePitchConverter(keyboardMap: keyboardMap)
+        let pitchConverter = try KeyboardToAbsolutePitchConverter(keyboardMap: keyboardMap)
 
         return { pitchConverter.convert($0) }
     }
@@ -474,13 +492,13 @@ extension Work {
         guard let pitchSpeller = context.pitchSpeller
         else { throw Error.missingPitchSpeller }
 
-        func makePitchConverter(_ pitchSpeller: some PitchSpeller) -> (NoteNumber) -> Pitch {
-            let pitchConverter = KeyboardToStandardPitchConverter(pitchSpeller: pitchSpeller)
+        func makePitchConverter(_ pitchSpeller: some PitchSpeller) throws -> (NoteNumber) -> Pitch {
+            let pitchConverter = try KeyboardToStandardPitchConverter(pitchSpeller: pitchSpeller)
 
             return { pitchConverter.convert($0) }
         }
 
-        return makePitchConverter(pitchSpeller)
+        return try makePitchConverter(pitchSpeller)
     }
 
     private static func _makeStandardToAbsolutePitchConverter(with context: ConvertContext) throws -> (Pitch) -> Frequency {
@@ -506,14 +524,25 @@ extension Work {
         guard let keyboardMap = context.keyboardMap
         else { throw Error.missingKeyboardMap }
 
-        func makePitchConverter(_ tuningSystem: some TuningSystem) -> (Pitch) -> NoteNumber {
-            let pitchConverter = StandardToKeyboardPitchConverter(keyboardMap: keyboardMap,
-                                                                  tuningSystem: tuningSystem,
-                                                                  pitchStandard: pitchStandard)
+        func makePitchConverter(_ tuningSystem: some TuningSystem) throws -> (Pitch) -> NoteNumber {
+            let pitchConverter = try StandardToKeyboardPitchConverter(keyboardMap: keyboardMap,
+                                                                      tuningSystem: tuningSystem,
+                                                                      pitchStandard: pitchStandard)
 
             return { pitchConverter.convert($0) }
         }
 
-        return makePitchConverter(tuningSystem)
+        return try makePitchConverter(tuningSystem)
+    }
+
+    private static func _workError(for error: TuningError) -> Error {
+        switch error {
+        case let .unsupportedConversion(from, to):
+            .unsupportedPitchConversion(from: from,
+                                        to: to)
+
+        case .unsupportedStandardConversion:
+            .unsupportedStandardConversion
+        }
     }
 }
