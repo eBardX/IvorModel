@@ -40,7 +40,7 @@ public struct NoteTable<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     // MARK: Internal Initializers
 
-    internal init(notes: [Note]) {
+    internal init(notes: [StoredNote]) {
         self.hasExtras = Self.hasExtras(in: notes)
         self.hasPortamento = Self.hasPortamento(in: notes)
         self.isMonophonic = Self.isMonophonic(in: notes)
@@ -51,7 +51,7 @@ public struct NoteTable<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     // MARK: Internal Instance Properties
 
-    internal var notes: [Note]
+    internal var notes: [StoredNote]
 }
 
 // MARK: - Codable
@@ -68,7 +68,7 @@ extension NoteTable: Codable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        try self.init(notes: container.decode([Note].self,
+        try self.init(notes: container.decode([StoredNote].self,
                                               forKey: .notes))
 
         notes.sort()
@@ -95,6 +95,77 @@ extension NoteTable: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case notes
+    }
+}
+
+// MARK: - RandomAccessCollection
+
+extension NoteTable: RandomAccessCollection {
+
+    // MARK: Public Instance Properties
+
+    /// The position one past the last note in this note table.
+    public var endIndex: Index {
+        Index(notes.endIndex)
+    }
+
+    /// The position of the first note in this note table, or ``endIndex`` if this note table is
+    /// empty.
+    public var startIndex: Index {
+        Index(notes.startIndex)
+    }
+
+    // MARK: Public Instance Subscripts
+
+    /// Returns the note at the given position.
+    ///
+    /// - Parameter position:   A valid position in this note table, other than ``endIndex``.
+    ///
+    /// - Returns:  The ``Note`` at `position`.
+    public subscript(position: Index) -> Note {
+        Note(notes[position.offset])
+    }
+
+    // MARK: Public Instance Methods
+
+    /// Returns the number of positions between two positions in this note table.
+    ///
+    /// - Parameter start:  A valid position in this note table.
+    /// - Parameter end:    Another valid position in this note table.
+    ///
+    /// - Returns:  The distance from `start` to `end`, negative if `end` precedes `start`.
+    public func distance(from start: Index,
+                         to end: Index) -> Int {
+        end.offset - start.offset
+    }
+
+    /// Returns a position offset by the given distance from the given position.
+    ///
+    /// - Parameter index:      A valid position in this note table.
+    /// - Parameter distance:   The distance to offset `index` by.
+    ///
+    /// - Returns:  The position `distance` positions from `index`.
+    public func index(_ index: Index,
+                      offsetBy distance: Int) -> Index {
+        Index(index.offset + distance)
+    }
+
+    /// Returns the position immediately after the given position.
+    ///
+    /// - Parameter index:  A valid position in this note table, other than ``endIndex``.
+    ///
+    /// - Returns:  The position after `index`.
+    public func index(after index: Index) -> Index {
+        Index(index.offset + 1)
+    }
+
+    /// Returns the position immediately before the given position.
+    ///
+    /// - Parameter index:  A valid position in this note table, other than ``startIndex``.
+    ///
+    /// - Returns:  The position before `index`.
+    public func index(before index: Index) -> Index {
+        Index(index.offset - 1)
     }
 }
 

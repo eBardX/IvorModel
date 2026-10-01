@@ -13,16 +13,37 @@ struct WorkAugmentTests {
 
 extension WorkAugmentTests {
     @Test
+    func augment_allPartIDs_matchesWholeWork() throws {
+        var violin = Part<BeatTime, Pitch>(name: "Violin")
+        var cello = Part<BeatTime, Pitch>(name: "Cello")
+
+        violin.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        cello.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 3, tempo: .default)
+
+        var selected = Work(content: .standardBeat([violin, cello], tempoMap))
+        var whole = selected
+
+        try selected.augment(by: Number(2),
+                             anchor: nil as BeatTime?,
+                             partIDs: [violin.partID, cello.partID])
+        try whole.augment(by: Number(2),
+                          anchor: nil as BeatTime?)
+
+        #expect(selected.beatTimeRange == whole.beatTimeRange)
+        #expect(selected.tempoMap?.map(\.beatTime) == whole.tempoMap?.map(\.beatTime))
+    }
+
+    @Test
     func augment_lockedWork_throwsAndLeavesWorkUnchanged() {
         var (work, partID) = makeLockedWorkSB()
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.augment(partID, by: Number(2), anchor: nil as BeatTime?)
-        }
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.augment([partID], by: Number(2), anchor: nil as BeatTime?)
+            try work.augment(by: Number(2), anchor: nil as BeatTime?, partIDs: [partID])
         }
 
         #expect(throws: Work.Error.workIsLocked) {
@@ -49,7 +70,7 @@ extension WorkAugmentTests {
         // containment check fails, even though it's a valid anchor for `badPart` (5...6):
         //
         #expect(throws: Work.Error.self) {
-            try work.augment(partIDs, by: Number(2), anchor: BeatTime(3))
+            try work.augment(by: Number(2), anchor: BeatTime(3), partIDs: partIDs)
         }
 
         #expect(work.partName(at: 0) == "Violin")
@@ -61,7 +82,7 @@ extension WorkAugmentTests {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         var work = Work(content: .standardBeat([part], TempoMap()))
 
-        try work.augment(PartID(), by: Number(2), anchor: nil as BeatTime?)
+        try work.augment(by: Number(2), anchor: nil as BeatTime?, partIDs: [PartID()])
 
         #expect(work.partCount == 1)
     }
@@ -77,7 +98,7 @@ extension WorkAugmentTests {
         let targetID = part1.partID
         var work = Work(content: .standardBeat([part1, part2], TempoMap()))
 
-        try work.augment(targetID, by: Number(2), anchor: nil as BeatTime?)
+        try work.augment(by: Number(2), anchor: nil as BeatTime?, partIDs: [targetID])
 
         #expect(work.partName(at: 0) == "Violin")
         #expect(work.partName(at: 1) == "Cello")
@@ -123,27 +144,27 @@ extension WorkAugmentTests {
         var panTimes: [BeatTime] = []
 
         for part in parts {
-            part.noteTable.forEach { _, attack, duration, _, _, _ in
-                attacksAndDurations.append((attack, duration))
+            for note in part.noteTable {
+                attacksAndDurations.append((note.attack, note.duration))
             }
 
-            part.dynamicMap.forEach { _, time, _, _ in
-                dynamicTimes.append(time)
+            for entry in part.dynamicMap {
+                dynamicTimes.append(entry.time)
             }
 
-            part.instrumentMap.forEach { _, time, _, _ in
-                instrumentTimes.append(time)
+            for entry in part.instrumentMap {
+                instrumentTimes.append(entry.time)
             }
 
-            part.panMap.forEach { _, time, _, _ in
-                panTimes.append(time)
+            for entry in part.panMap {
+                panTimes.append(entry.time)
             }
         }
 
         var tempoTimes: [BeatTime] = []
 
-        newTempoMap.forEach { _, time, _, _ in
-            tempoTimes.append(time)
+        for entry in newTempoMap {
+            tempoTimes.append(entry.beatTime)
         }
 
         #expect(attacksAndDurations.map(\.0).sorted() == [0, 4])
@@ -165,11 +186,7 @@ extension WorkAugmentTests {
 
         try work.augment(by: Number(2), anchor: nil as BeatTime?, applyTo: [])
 
-        var tempoTimes: [BeatTime] = []
-
-        work.tempoMap?.forEach { _, beatTime, _, _ in
-            tempoTimes.append(beatTime)
-        }
+        let tempoTimes = work.tempoMap?.map(\.beatTime) ?? []
 
         #expect(tempoTimes.sorted() == [0, 2])
     }
@@ -193,11 +210,7 @@ extension WorkAugmentTests {
 
         #expect(work.beatTimeRange?.upperBound == 6)
 
-        var tempoTimes: [BeatTime] = []
-
-        work.tempoMap?.forEach { _, beatTime, _, _ in
-            tempoTimes.append(beatTime)
-        }
+        let tempoTimes = work.tempoMap?.map(\.beatTime) ?? []
 
         #expect(tempoTimes.sorted() == [0, 4])
     }

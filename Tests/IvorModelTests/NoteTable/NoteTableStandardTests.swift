@@ -46,10 +46,8 @@ extension NoteTableStandardTests {
 
         var duration4: NoteTableSB.DurationType?
 
-        table.forEach { noteID, _, duration, _, _, _ in
-            if noteID == noteID2 {
-                duration4 = duration
-            }
+        for note in table where note.noteID == noteID2 {
+            duration4 = note.duration
         }
 
         //
@@ -60,10 +58,8 @@ extension NoteTableStandardTests {
 
         var attack4: BeatTime?
 
-        table.forEach { noteID, attack, _, _, _, _ in
-            if noteID == noteID2 {
-                attack4 = attack
-            }
+        for note in table where note.noteID == noteID2 {
+            attack4 = note.attack
         }
 
         #expect(attack4 == 4)
@@ -81,8 +77,8 @@ extension NoteTableStandardTests {
 
         var attacks: [BeatTime] = []
 
-        table.forEach { _, attack, _, _, _, _ in
-            attacks.append(attack)
+        for note in table {
+            attacks.append(note.attack)
         }
 
         #expect(attacks.sorted() == [0, 4])
@@ -154,10 +150,8 @@ extension NoteTableStandardTests {
 
         var pitch1: Pitch?
 
-        table.forEach { _, attack, _, startPitch, _, _ in
-            if attack == 0 {
-                pitch1 = startPitch
-            }
+        for note in table where note.attack == 0 {
+            pitch1 = note.startPitch
         }
 
         //
@@ -208,8 +202,8 @@ extension NoteTableStandardTests {
 
         var attacks: [BeatTime] = []
 
-        table.forEach { _, attack, _, _, _, _ in
-            attacks.append(attack)
+        for note in table {
+            attacks.append(note.attack)
         }
 
         #expect(attacks.sorted() == [2, 4])
@@ -255,10 +249,8 @@ extension NoteTableStandardTests {
 
         var phraseAttacks: [BeatTime] = []
 
-        table.forEach { noteID, attack, _, _, _, _ in
-            if noteID == phraseID1 || noteID == phraseID2 {
-                phraseAttacks.append(attack)
-            }
+        for note in table where note.noteID == phraseID1 || note.noteID == phraseID2 {
+            phraseAttacks.append(note.attack)
         }
 
         //
@@ -285,8 +277,8 @@ extension NoteTableStandardTests {
 
         var swapped = false
 
-        table.forEach { _, _, _, startPitch, endPitch, _ in
-            swapped = (startPitch == .e4 && endPitch == .c4)
+        for note in table {
+            swapped = (note.startPitch == .e4 && note.endPitch == .c4)
         }
 
         #expect(table.timeRange == originalTimeRange)
@@ -321,10 +313,8 @@ extension NoteTableStandardTests {
 
         var pitch2: Pitch?
 
-        table.forEach { _, attack, _, startPitch, _, _ in
-            if attack == 1 {
-                pitch2 = startPitch
-            }
+        for note in table where note.attack == 1 {
+            pitch2 = note.startPitch
         }
 
         //

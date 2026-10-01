@@ -13,7 +13,7 @@ extension NoteTable {
     // values, to keep `extended` under `enum_case_associated_values_count`'s
     // threshold now that identity is a sixth field every case carries.
     //
-    internal enum Note {
+    internal enum StoredNote {
         case extended(NoteID, TimeType, DurationType, (start: PitchType, end: PitchType), Extras)
         case glide(NoteID, TimeType, DurationType, (start: PitchType, end: PitchType))
         case simple(NoteID, TimeType, DurationType, PitchType)
@@ -22,7 +22,7 @@ extension NoteTable {
 
 // MARK: -
 
-extension NoteTable.Note {
+extension NoteTable.StoredNote {
 
     // MARK: Internal Initializers
 
@@ -132,7 +132,7 @@ extension NoteTable.Note {
 
 // MARK: - Codable
 
-extension NoteTable.Note: Codable {
+extension NoteTable.StoredNote: Codable {
 
     // MARK: Internal Initializers
 
@@ -178,7 +178,7 @@ extension NoteTable.Note: Codable {
 
 // MARK: - Comparable
 
-extension NoteTable.Note: Comparable {
+extension NoteTable.StoredNote: Comparable {
 
     // MARK: Internal Type Methods
 
@@ -190,7 +190,7 @@ extension NoteTable.Note: Comparable {
 
 // MARK: - Equatable
 
-extension NoteTable.Note: Equatable {
+extension NoteTable.StoredNote: Equatable {
 
     // MARK: Internal Type Methods
 
@@ -212,5 +212,5 @@ extension NoteTable.Note: Equatable {
 
 // MARK: - Sendable
 
-extension NoteTable.Note: Sendable {
+extension NoteTable.StoredNote: Sendable {
 }

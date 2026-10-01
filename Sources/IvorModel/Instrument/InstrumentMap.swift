@@ -30,7 +30,7 @@ public struct InstrumentMap<TimeType: TimeProtocol> {
     // MARK: Internal Initializers
 
     internal init(defaultInstrument: Instrument,
-                  entries: [Entry]) {
+                  entries: [StoredEntry]) {
         self.defaultInstrument = defaultInstrument
         self.entries = entries
         self.hasExtras = Self.hasExtras(in: entries)
@@ -38,20 +38,12 @@ public struct InstrumentMap<TimeType: TimeProtocol> {
 
     // MARK: Internal Instance Properties
 
-    internal var entries: [Entry]
+    internal var entries: [StoredEntry]
 }
 
 // MARK: -
 
 extension InstrumentMap {
-
-    // MARK: Public Instance Properties
-
-    /// A Boolean value indicating whether this instrument map contains no
-    /// entries.
-    public var isEmpty: Bool {
-        entries.isEmpty
-    }
 
     // MARK: Public Instance Subscripts
 
@@ -75,19 +67,6 @@ extension InstrumentMap {
     }
 
     // MARK: Public Instance Methods
-
-    /// Calls the given closure for each entry in this instrument map, in order.
-    ///
-    /// - Parameter body:   A closure that receives the identity, time,
-    ///                     instrument, and optional extras for each entry.
-    public func forEach(_ body: (EntryID, TimeType, Instrument, Extras?) -> Void) {
-        entries.forEach {
-            body($0.entryID,
-                 $0.time,
-                 $0.instrument,
-                 $0.extras)
-        }
-    }
 
     /// Inserts an instrument entry into this instrument map at the given time.
     ///
@@ -202,48 +181,15 @@ extension InstrumentMap {
         return true
     }
 
-    /// Removes a matching instrument entry from this instrument map, if
-    /// present.
-    ///
-    /// - Parameter time:       The time of the entry to remove.
-    /// - Parameter instrument: The instrument designation of the entry to remove.
-    /// - Parameter extras:     The optional extra data of the entry to remove.
-    ///                         Defaults to `nil`.
-    ///
-    /// - Returns:  The identity of the entry that was removed, or `nil` if
-    ///             no entry matched `time`, `instrument`, and `extras`.
-    @discardableResult
-    public mutating func remove(time: TimeType,
-                                instrument: Instrument,
-                                extras: Extras? = nil) -> EntryID? {
-        guard let index = firstIndex(time: time,
-                                     instrument: instrument,
-                                     extras: extras)
-        else { return nil }
-
-        let entryID = entries[index].entryID
-
-        entries.remove(at: index)
-
-        if extras != nil {
-            hasExtras = Self.hasExtras(in: entries)
-        }
-
-        return entryID
-    }
-
     /// Replaces the instrument entry with the given identity, in place.
     ///
-    /// Unlike a ``remove(time:instrument:extras:)`` followed by an
-    /// ``insert(time:instrument:extras:)``, this does not reorder entries.
-    /// That distinction only matters when more than one entry shares a time:
-    /// value-based removal cannot tell which of them was meant, and
-    /// insertion always lands after every entry already at that time — so a
-    /// remove-then-insert edit of one entry among ties silently changes the
-    /// order of entries that were never touched. Updating in place at a
-    /// known identity avoids both problems, and — unlike a position — that
-    /// identity keeps addressing this same entry across any other entry’s
-    /// edit, so a caller never needs to re-resolve it first.
+    /// Unlike a ``remove(entryID:)`` followed by an ``insert(time:instrument:extras:)``, this
+    /// keeps the entry’s identity and does not reorder entries. Reordering only matters when more
+    /// than one entry shares a time: insertion always lands after every entry already at that
+    /// time, so a remove-then-insert edit of one entry among ties silently changes the order of
+    /// entries that were never touched. And — unlike a position — the identity keeps addressing
+    /// this same entry across any other entry’s edit, so a caller never needs to re-resolve it
+    /// first.
     ///
     /// The edit can turn this entry into an exact duplicate of another one
     /// already at the same time — same time, instrument, and extras — the
@@ -277,17 +223,17 @@ extension InstrumentMap {
         guard let position = firstIndex(entryID: entryID)
         else { return (false, nil) }
 
-        entries[position] = Entry(entryID: entryID,
-                                  time: entries[position].time,
-                                  instrument: instrument,
-                                  extras: extras)
+        entries[position] = StoredEntry(entryID: entryID,
+                                        time: entries[position].time,
+                                        instrument: instrument,
+                                        extras: extras)
 
         //
         // The edit may have turned this entry into an exact duplicate of another
         // one already at the same time — see `insert(time:instrument:extras:)`
         // for why that combination carries no information beyond a single
         // entry. Drop the other one rather than leave the duplicate in place.
-        // `Entry`'s own `==` already excludes identity, so comparing whole
+        // `StoredEntry`'s own `==` already excludes identity, so comparing whole
         // entries is enough to find one that only *differs* in which entry it
         // is.
         //
@@ -319,10 +265,10 @@ extension InstrumentMap {
             return (entries[existing].entryID, false)
         }
 
-        entries.insert(Entry(entryID: entryID,
-                             time: time,
-                             instrument: instrument,
-                             extras: extras),
+        entries.insert(StoredEntry(entryID: entryID,
+                                   time: time,
+                                   instrument: instrument,
+                                   extras: extras),
                        at: insertionIndex(for: time))
 
         if extras != nil {
@@ -354,7 +300,7 @@ extension InstrumentMap: Codable {
         self.defaultInstrument = try container.decode(Instrument.self,
                                                       forKey: .defaultInstrument)
 
-        let decodedEntries = try container.decode([Entry].self,
+        let decodedEntries = try container.decode([StoredEntry].self,
                                                   forKey: .entries)
 
         self.entries = Self.deduplicated(decodedEntries)
@@ -384,6 +330,77 @@ extension InstrumentMap: Codable {
     private enum CodingKeys: String, CodingKey {
         case defaultInstrument
         case entries
+    }
+}
+
+// MARK: - RandomAccessCollection
+
+extension InstrumentMap: RandomAccessCollection {
+
+    // MARK: Public Instance Properties
+
+    /// The position one past the last entry in this instrument map.
+    public var endIndex: Index {
+        Index(entries.endIndex)
+    }
+
+    /// The position of the first entry in this instrument map, or ``endIndex`` if this instrument map is
+    /// empty.
+    public var startIndex: Index {
+        Index(entries.startIndex)
+    }
+
+    // MARK: Public Instance Subscripts
+
+    /// Returns the entry at the given position.
+    ///
+    /// - Parameter position:   A valid position in this instrument map, other than ``endIndex``.
+    ///
+    /// - Returns:  The ``Entry`` at `position`.
+    public subscript(position: Index) -> Entry {
+        Entry(entries[position.offset])
+    }
+
+    // MARK: Public Instance Methods
+
+    /// Returns the number of positions between two positions in this instrument map.
+    ///
+    /// - Parameter start:  A valid position in this instrument map.
+    /// - Parameter end:    Another valid position in this instrument map.
+    ///
+    /// - Returns:  The distance from `start` to `end`, negative if `end` precedes `start`.
+    public func distance(from start: Index,
+                         to end: Index) -> Int {
+        end.offset - start.offset
+    }
+
+    /// Returns a position offset by the given distance from the given position.
+    ///
+    /// - Parameter index:      A valid position in this instrument map.
+    /// - Parameter distance:   The distance to offset `index` by.
+    ///
+    /// - Returns:  The position `distance` positions from `index`.
+    public func index(_ index: Index,
+                      offsetBy distance: Int) -> Index {
+        Index(index.offset + distance)
+    }
+
+    /// Returns the position immediately after the given position.
+    ///
+    /// - Parameter index:  A valid position in this instrument map, other than ``endIndex``.
+    ///
+    /// - Returns:  The position after `index`.
+    public func index(after index: Index) -> Index {
+        Index(index.offset + 1)
+    }
+
+    /// Returns the position immediately before the given position.
+    ///
+    /// - Parameter index:  A valid position in this instrument map, other than ``startIndex``.
+    ///
+    /// - Returns:  The position before `index`.
+    public func index(before index: Index) -> Index {
+        Index(index.offset - 1)
     }
 }
 

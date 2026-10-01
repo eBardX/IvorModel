@@ -30,6 +30,39 @@ extension Work {
 
 extension Work.Content {
 
+    // MARK: Public Type Methods
+
+    /// Returns content with no parts in the given time basis and pitch notation.
+    ///
+    /// Beat-time content gets an empty tempo map with the default tempo.
+    ///
+    /// - Parameter timeBasis:      The time basis of the content.
+    /// - Parameter pitchNotation:  The pitch notation of the content.
+    ///
+    /// - Returns:  Empty ``Work/Content`` of the matching case.
+    public static func empty(timeBasis: TimeBasis,
+                             pitchNotation: PitchNotation) -> Self {
+        switch (pitchNotation, timeBasis) {
+        case (.absolute, .beat):
+            .absoluteBeat([], TempoMap())
+
+        case (.absolute, .wall):
+            .absoluteWall([])
+
+        case (.keyboard, .beat):
+            .keyboardBeat([], TempoMap())
+
+        case (.keyboard, .wall):
+            .keyboardWall([])
+
+        case (.standard, .beat):
+            .standardBeat([], TempoMap())
+
+        case (.standard, .wall):
+            .standardWall([])
+        }
+    }
+
     // MARK: Internal Instance Properties
 
     internal var pitchNotation: PitchNotation {

@@ -55,11 +55,7 @@ extension WorkQuantizeTests {
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.quantize(partID, to: [1])
-        }
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.quantize([partID], to: [1])
+            try work.quantize(to: [1], partIDs: [partID])
         }
 
         #expect(throws: Work.Error.workIsLocked) {
@@ -80,15 +76,15 @@ extension WorkQuantizeTests {
         let targetID = part.partID
         var work = Work(content: .standardBeat([part], TempoMap()))
 
-        try work.quantize(targetID, to: [1], noteIDs: [noteID1])
+        try work.quantize(to: [1], noteIDs: [noteID1], partIDs: [targetID])
 
         guard case let .standardBeat(parts, _) = work.content
         else { Issue.record("Expected .standardBeat content."); return }
 
         var attacksByID: [NoteID: BeatTime] = [:]
 
-        parts[0].noteTable.forEach { noteID, attack, _, _, _, _ in
-            attacksByID[noteID] = attack
+        for note in parts[0].noteTable {
+            attacksByID[note.noteID] = note.attack
         }
 
         #expect(attacksByID[noteID1] == 0)
@@ -105,7 +101,7 @@ extension WorkQuantizeTests {
         var work = Work(content: .standardBeat([part], TempoMap()))
 
         #expect(throws: Work.Error.emptyQuantizationFactors) {
-            try work.quantize(partIDs, to: [])
+            try work.quantize(to: [], partIDs: partIDs)
         }
 
         guard case let .standardBeat(parts, _) = work.content
@@ -125,7 +121,7 @@ extension WorkQuantizeTests {
         let partIDs: Set<PartID> = [part1.partID]
         var work = Work(content: .standardBeat([part1, part2], TempoMap()))
 
-        try work.quantize(partIDs, to: [1])
+        try work.quantize(to: [1], partIDs: partIDs)
 
         guard case let .standardBeat(parts, _) = work.content
         else { Issue.record("Expected .standardBeat content."); return }
@@ -139,7 +135,7 @@ extension WorkQuantizeTests {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         var work = Work(content: .standardBeat([part], TempoMap()))
 
-        try work.quantize(PartID(), to: [1])
+        try work.quantize(to: [1], partIDs: [PartID()])
 
         #expect(work.partCount == 1)
     }
@@ -155,7 +151,7 @@ extension WorkQuantizeTests {
         let targetID = part1.partID
         var work = Work(content: .standardBeat([part1, part2], TempoMap()))
 
-        try work.quantize(targetID, to: [1])
+        try work.quantize(to: [1], partIDs: [targetID])
 
         guard case let .standardBeat(parts, _) = work.content
         else { Issue.record("Expected .standardBeat content."); return }
@@ -193,8 +189,8 @@ extension WorkQuantizeTests {
 
         var dynamicTimes: [BeatTime] = []
 
-        parts[0].dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
+        for entry in parts[0].dynamicMap {
+            dynamicTimes.append(entry.time)
         }
 
         #expect(dynamicTimes == [0])
@@ -219,8 +215,8 @@ extension WorkQuantizeTests {
 
         var tempoBeatTimes: [BeatTime] = []
 
-        newTempoMap.forEach { _, beatTime, _, _ in
-            tempoBeatTimes.append(beatTime)
+        for entry in newTempoMap {
+            tempoBeatTimes.append(entry.beatTime)
         }
 
         #expect(tempoBeatTimes == [0])
@@ -242,8 +238,8 @@ extension WorkQuantizeTests {
 
         var dynamicTimes: [BeatTime] = []
 
-        parts[0].dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
+        for entry in parts[0].dynamicMap {
+            dynamicTimes.append(entry.time)
         }
 
         #expect(dynamicTimes == [0])
@@ -268,8 +264,8 @@ extension WorkQuantizeTests {
 
         var tempoBeatTimes: [BeatTime] = []
 
-        newTempoMap.forEach { _, beatTime, _, _ in
-            tempoBeatTimes.append(beatTime)
+        for entry in newTempoMap {
+            tempoBeatTimes.append(entry.beatTime)
         }
 
         #expect(tempoBeatTimes == [0])

@@ -8,11 +8,11 @@ extension PanMap {
 
     //
     // Keeps the first occurrence of each exact duplicate (same time, pan position,
-    // and extras — `Entry`'s own `==` already excludes identity) and drops the
+    // and extras — `StoredEntry`'s own `==` already excludes identity) and drops the
     // rest, matching the rule `insert(time:pan:extras:)` applies to a live pan map.
     //
-    internal static func deduplicated(_ entries: [Entry]) -> [Entry] {
-        var result: [Entry] = []
+    internal static func deduplicated(_ entries: [StoredEntry]) -> [StoredEntry] {
+        var result: [StoredEntry] = []
 
         for entry in entries where !result.contains(entry) {
             result.append(entry)
@@ -21,7 +21,7 @@ extension PanMap {
         return result
     }
 
-    internal static func hasExtras(in entries: [Entry]) -> Bool {
+    internal static func hasExtras(in entries: [StoredEntry]) -> Bool {
         entries.contains { $0.extras != nil }
     }
 

@@ -8,17 +8,18 @@ extension Work {
     // MARK: Internal Type Aliases
 
     //
-    // Shorthand for a per-part transform closure, used only to keep the `transformed(...)`
-    // overloads' own signatures below a manageable line length.
+    // Shorthand for a per-part transform closure, used only to keep `transformed(...)`'s own
+    // signature below a manageable line length.
     //
     internal typealias PartTransform<T: TimeProtocol, P: PitchProtocol> = (inout Part<T, P>) throws(Part<T, P>.Error) -> Void
 
     // MARK: Internal Type Methods
 
     //
-    // `applyTo` also governs whether a whole-work transform carries the work's own `tempoMap`
+    // `applyTo` also governs whether a beat-time transform carries the work's own `tempoMap`
     // along (§7a's Key Concepts) — an empty `applyTo` leaves it untouched, exactly as it leaves
-    // every per-part map untouched.
+    // every per-part map untouched. Which parts are targeted makes no difference: the tempo map
+    // is work-wide.
     //
     internal static func carried(tempoMap: TempoMap,
                                  applyTo: MapTargets,
@@ -40,71 +41,30 @@ extension Work {
     }
 
     //
-    // Applies `transform` to every part, building the result into a local array and only
-    // returning it once every part has succeeded — all-or-nothing, since a thrown error abandons
-    // the whole array rather than returning a partially transformed one.
+    // The parts a transform targets: those whose ID is in `partIDs`, or every part when
+    // `partIDs` is `nil`. Used to resolve a default anchor or range over just the targeted parts.
     //
-    internal static func transformed<T: TimeProtocol, P: PitchProtocol>(parts: [Part<T, P>],
-                                                                        kind: TransformKind,
-                                                                        transform: PartTransform<T, P>) throws(Error) -> [Part<T, P>] {
-        var result: [Part<T, P>] = []
-
-        result.reserveCapacity(parts.count)
-
-        for part in parts {
-            var newPart = part
-
-            do {
-                try transform(&newPart)
-            } catch {
-                throw Self.wrapped(error: error,
-                                   kind: kind,
-                                   partID: part.partID)
-            }
-
-            result.append(newPart)
-        }
-
-        return result
-    }
-
-    //
-    // Applies `transform` to just the part with `partID`, leaving every other part untouched and
-    // in place. Returns `parts` unchanged if no part with `partID` is found, matching the
-    // no-op-if-not-found convention `Work+PartEditing.swift`'s methods already follow.
-    //
-    internal static func transformed<T: TimeProtocol, P: PitchProtocol>(parts: [Part<T, P>],
-                                                                        partID: PartID,
-                                                                        kind: TransformKind,
-                                                                        transform: PartTransform<T, P>) throws(Error) -> [Part<T, P>] {
-        guard let index = parts.firstIndex(where: { $0.partID == partID })
+    internal static func selected<T: TimeProtocol, P: PitchProtocol>(_ parts: [Part<T, P>],
+                                                                     partIDs: Set<PartID>?) -> [Part<T, P>] {
+        guard let partIDs
         else { return parts }
 
-        var result = parts
-
-        do {
-            try transform(&result[index])
-        } catch {
-            throw Self.wrapped(error: error,
-                               kind: kind,
-                               partID: partID)
-        }
-
-        return result
+        return parts.filter { partIDs.contains($0.partID) }
     }
 
     //
-    // Applies `transform` to every part whose ID is in `partIDs`, leaving every other part
-    // untouched and in place. All-or-nothing across just the targeted subset: a thrown error
-    // abandons the local `result` array before it is ever assigned to `content`.
+    // Applies `transform` to every part whose ID is in `partIDs` — every part when `partIDs` is
+    // `nil` — leaving every other part untouched and in place. IDs naming no part are ignored.
+    // All-or-nothing: a thrown error abandons the local `result` array before it is ever
+    // assigned to `content`.
     //
     internal static func transformed<T: TimeProtocol, P: PitchProtocol>(parts: [Part<T, P>],
-                                                                        partIDs: Set<PartID>,
+                                                                        partIDs: Set<PartID>?,
                                                                         kind: TransformKind,
                                                                         transform: PartTransform<T, P>) throws(Error) -> [Part<T, P>] {
         var result = parts
 
-        for index in result.indices where partIDs.contains(result[index].partID) {
+        for index in result.indices where partIDs?.contains(result[index].partID) ?? true {
             do {
                 try transform(&result[index])
             } catch {

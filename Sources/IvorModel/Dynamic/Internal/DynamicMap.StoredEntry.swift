@@ -2,13 +2,13 @@
 
 internal import XestiTools
 
-extension InstrumentMap {
+extension DynamicMap {
 
     // MARK: Internal Nested Types
 
-    internal enum Entry {
-        case extended(EntryID, TimeType, Instrument, Extras)
-        case simple(EntryID, TimeType, Instrument)
+    internal enum StoredEntry {
+        case extended(EntryID, TimeType, Dynamic, Extras)
+        case simple(EntryID, TimeType, Dynamic)
 
         // MARK: Internal Initializers
 
@@ -16,16 +16,16 @@ extension InstrumentMap {
         // `entryID` defaults to a fresh identity — the common case, a newly inserted or
         // decoded entry. Passing one explicitly is for the one caller that needs to
         // keep an existing identity across a content change:
-        // `update(entryID:instrument:extras:)`.
+        // `update(entryID:dynamic:extras:)`.
         //
         internal init(entryID: EntryID = EntryID(),
                       time: TimeType,
-                      instrument: Instrument,
+                      dynamic: Dynamic,
                       extras: Extras?) {
             if let extras, !extras.isEmpty {
-                self = .extended(entryID, time, instrument, extras)
+                self = .extended(entryID, time, dynamic, extras)
             } else {
-                self = .simple(entryID, time, instrument)
+                self = .simple(entryID, time, dynamic)
             }
         }
     }
@@ -33,9 +33,17 @@ extension InstrumentMap {
 
 // MARK: -
 
-extension InstrumentMap.Entry {
+extension DynamicMap.StoredEntry {
 
     // MARK: Internal Instance Properties
+
+    internal var dynamic: Dynamic {
+        switch self {
+        case let .extended(_, _, dynamic, _),
+            let .simple(_, _, dynamic):
+            dynamic
+        }
+    }
 
     internal var entryID: EntryID {
         switch self {
@@ -55,14 +63,6 @@ extension InstrumentMap.Entry {
         }
     }
 
-    internal var instrument: Instrument {
-        switch self {
-        case let .extended(_, _, instrument, _),
-            let .simple(_, _, instrument):
-            instrument
-        }
-    }
-
     internal var time: TimeType {
         switch self {
         case let .extended(_, time, _, _),
@@ -74,7 +74,7 @@ extension InstrumentMap.Entry {
 
 // MARK: - Codable
 
-extension InstrumentMap.Entry: Codable {
+extension DynamicMap.StoredEntry: Codable {
 
     // MARK: Internal Initializers
 
@@ -87,11 +87,11 @@ extension InstrumentMap.Entry: Codable {
         var container = try decoder.unkeyedContainer()
 
         let time = try container.decode(TimeType.self)
-        let instrument = try container.decode(Instrument.self)
+        let dynamic = try container.decode(Dynamic.self)
         let extras = try container.decodeIfPresent(Extras.self)
 
         self.init(time: time,
-                  instrument: instrument,
+                  dynamic: dynamic,
                   extras: extras)
     }
 
@@ -101,7 +101,7 @@ extension InstrumentMap.Entry: Codable {
         var container = encoder.unkeyedContainer()
 
         try container.encode(time)
-        try container.encode(instrument)
+        try container.encode(dynamic)
 
         if let extras {
             try container.encode(extras)
@@ -111,7 +111,7 @@ extension InstrumentMap.Entry: Codable {
 
 // MARK: - Comparable
 
-extension InstrumentMap.Entry: Comparable {
+extension DynamicMap.StoredEntry: Comparable {
 
     // MARK: Internal Type Methods
 
@@ -123,24 +123,24 @@ extension InstrumentMap.Entry: Comparable {
 
 // MARK: - Equatable
 
-extension InstrumentMap.Entry: Equatable {
+extension DynamicMap.StoredEntry: Equatable {
 
     // MARK: Internal Type Methods
 
     //
     // Identity is deliberately excluded: two entries are equal here exactly when
-    // they carry the same time, instrument, and extras, regardless of which
+    // they carry the same time, dynamic level, and extras, regardless of which
     // `EntryID` each holds. This is what lets `insert`'s exact-duplicate check keep
     // working — a synthesized `==` that compared identity too would make every
     // content-identical pair unequal, since each gets a fresh, distinct entryID.
     //
     internal static func == (lhs: Self,
                              rhs: Self) -> Bool {
-        (lhs.time, lhs.instrument, lhs.extras) == (rhs.time, rhs.instrument, rhs.extras)
+        (lhs.time, lhs.dynamic, lhs.extras) == (rhs.time, rhs.dynamic, rhs.extras)
     }
 }
 
 // MARK: - Sendable
 
-extension InstrumentMap.Entry: Sendable {
+extension DynamicMap.StoredEntry: Sendable {
 }

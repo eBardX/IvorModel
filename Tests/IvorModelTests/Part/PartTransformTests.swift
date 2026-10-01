@@ -33,8 +33,8 @@ extension PartTransformTests {
         //
         var dynamicTimes: [BeatTime] = []
 
-        part.dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
+        for entry in part.dynamicMap {
+            dynamicTimes.append(entry.time)
         }
 
         #expect(dynamicTimes.sorted() == [0, 2])
@@ -44,8 +44,8 @@ extension PartTransformTests {
         //
         var instrumentTimes: [BeatTime] = []
 
-        part.instrumentMap.forEach { _, time, _, _ in
-            instrumentTimes.append(time)
+        for entry in part.instrumentMap {
+            instrumentTimes.append(entry.time)
         }
 
         #expect(instrumentTimes.sorted() == [0, 4])
@@ -67,8 +67,8 @@ extension PartTransformTests {
 
         var times: [BeatTime] = []
 
-        part.dynamicMap.forEach { _, time, _, _ in
-            times.append(time)
+        for entry in part.dynamicMap {
+            times.append(entry.time)
         }
 
         #expect(times.sorted() == [0, 4])
@@ -112,13 +112,13 @@ extension PartTransformTests {
         var earlyTime: BeatTime?
         var lateTime: BeatTime?
 
-        part.dynamicMap.forEach { entryID, time, _, _ in
-            if entryID == entryIDEarly {
-                earlyTime = time
+        for entry in part.dynamicMap {
+            if entry.entryID == entryIDEarly {
+                earlyTime = entry.time
             }
 
-            if entryID == entryIDLate {
-                lateTime = time
+            if entry.entryID == entryIDLate {
+                lateTime = entry.time
             }
         }
 
@@ -157,16 +157,16 @@ extension PartTransformTests {
 
         var dynamicTimes: [BeatTime] = []
 
-        part.dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
+        for entry in part.dynamicMap {
+            dynamicTimes.append(entry.time)
         }
 
         #expect(dynamicTimes.sorted() == [0, 4])
 
         var panTimes: [BeatTime] = []
 
-        part.panMap.forEach { _, time, _, _ in
-            panTimes.append(time)
+        for entry in part.panMap {
+            panTimes.append(entry.time)
         }
 
         #expect(panTimes.sorted() == [0, 4])
@@ -194,13 +194,13 @@ extension PartTransformTests {
         var lowTime: BeatTime?
         var middleTime: BeatTime?
 
-        part.dynamicMap.forEach { entryID, time, _, _ in
-            if entryID == entryIDLow {
-                lowTime = time
+        for entry in part.dynamicMap {
+            if entry.entryID == entryIDLow {
+                lowTime = entry.time
             }
 
-            if entryID == entryIDMiddle {
-                middleTime = time
+            if entry.entryID == entryIDMiddle {
+                middleTime = entry.time
             }
         }
 
@@ -228,8 +228,8 @@ extension PartTransformTests {
 
         var dynamicTimes: [BeatTime] = []
 
-        part.dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
+        for entry in part.dynamicMap {
+            dynamicTimes.append(entry.time)
         }
 
         #expect(dynamicTimes.sorted() == [0, 2])
@@ -246,8 +246,8 @@ extension PartTransformTests {
 
         var dynamicTimes: [BeatTime] = []
 
-        part.dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
+        for entry in part.dynamicMap {
+            dynamicTimes.append(entry.time)
         }
 
         #expect(dynamicTimes == [0])
@@ -271,13 +271,13 @@ extension PartTransformTests {
         var earlyTime: BeatTime?
         var lateTime: BeatTime?
 
-        part.dynamicMap.forEach { entryID, time, _, _ in
-            if entryID == entryIDEarly {
-                earlyTime = time
+        for entry in part.dynamicMap {
+            if entry.entryID == entryIDEarly {
+                earlyTime = entry.time
             }
 
-            if entryID == entryIDLate {
-                lateTime = time
+            if entry.entryID == entryIDLate {
+                lateTime = entry.time
             }
         }
 
@@ -300,8 +300,8 @@ extension PartTransformTests {
 
         var dynamicTimes: [BeatTime] = []
 
-        part.dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
+        for entry in part.dynamicMap {
+            dynamicTimes.append(entry.time)
         }
 
         #expect(dynamicTimes == [2])
@@ -318,8 +318,8 @@ extension PartTransformTests {
 
         var dynamicTimes: [BeatTime] = []
 
-        part.dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
+        for entry in part.dynamicMap {
+            dynamicTimes.append(entry.time)
         }
 
         #expect(dynamicTimes == [0])
@@ -340,8 +340,8 @@ extension PartTransformTests {
         //
         var dynamicTimes: [BeatTime] = []
 
-        part.dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
+        for entry in part.dynamicMap {
+            dynamicTimes.append(entry.time)
         }
 
         #expect(dynamicTimes == [0])
@@ -358,8 +358,8 @@ extension PartTransformTests {
 
         var attacksByID: [NoteID: BeatTime] = [:]
 
-        part.noteTable.forEach { noteID, attack, _, _, _, _ in
-            attacksByID[noteID] = attack
+        for note in part.noteTable {
+            attacksByID[note.noteID] = note.attack
         }
 
         #expect(attacksByID[noteID1] == 0)
@@ -382,13 +382,13 @@ extension PartTransformTests {
         var earlyTime: BeatTime?
         var lateTime: BeatTime?
 
-        part.dynamicMap.forEach { entryID, time, _, _ in
-            if entryID == entryIDEarly {
-                earlyTime = time
+        for entry in part.dynamicMap {
+            if entry.entryID == entryIDEarly {
+                earlyTime = entry.time
             }
 
-            if entryID == entryIDLate {
-                lateTime = time
+            if entry.entryID == entryIDLate {
+                lateTime = entry.time
             }
         }
 
@@ -435,8 +435,8 @@ extension PartTransformTests {
 
         var panTimes: [BeatTime] = []
 
-        part.panMap.forEach { _, time, _, _ in
-            panTimes.append(time)
+        for entry in part.panMap {
+            panTimes.append(entry.time)
         }
 
         #expect(panTimes == [0])
@@ -467,8 +467,8 @@ extension PartTransformTests {
 
         var dynamicTimes: [BeatTime] = []
 
-        part.dynamicMap.forEach { _, time, _, _ in
-            dynamicTimes.append(time)
+        for entry in part.dynamicMap {
+            dynamicTimes.append(entry.time)
         }
 
         #expect(dynamicTimes.sorted() == [0, 2])
@@ -487,8 +487,8 @@ extension PartTransformTests {
 
         var instrumentTimes: [BeatTime] = []
 
-        part.instrumentMap.forEach { _, time, _, _ in
-            instrumentTimes.append(time)
+        for entry in part.instrumentMap {
+            instrumentTimes.append(entry.time)
         }
 
         #expect(instrumentTimes == [0])

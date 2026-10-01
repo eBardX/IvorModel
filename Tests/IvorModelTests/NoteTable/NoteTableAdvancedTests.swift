@@ -74,8 +74,8 @@ extension NoteTableAdvancedTests {
 
         var attacksByID: [NoteID: BeatTime] = [:]
 
-        table.forEach { noteID, attack, _, _, _, _ in
-            attacksByID[noteID] = attack
+        for note in table {
+            attacksByID[note.noteID] = note.attack
         }
 
         #expect(attacksByID[noteID1] == 0)

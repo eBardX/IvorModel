@@ -5,6 +5,7 @@ import Foundation
 import IvorTiming
 import Testing
 import XestiNumbers
+import XestiTools
 
 struct DynamicMapTests {
 }
@@ -19,16 +20,47 @@ extension DynamicMapTests {
         // Simulates a document saved before `insert`'s dedup rule existed: nothing
         // about `Codable` itself enforces uniqueness, so two exact-duplicate entries
         // can land in `entries` directly, bypassing `insert`'s own guard.
-        map.entries = [DynamicMap<BeatTime>.Entry(time: 1, dynamic: .f, extras: nil),
-                       DynamicMap<BeatTime>.Entry(time: 1, dynamic: .f, extras: nil)]
+        map.entries = [DynamicMap<BeatTime>.StoredEntry(time: 1, dynamic: .f, extras: nil),
+                       DynamicMap<BeatTime>.StoredEntry(time: 1, dynamic: .f, extras: nil)]
 
         let data = try JSONEncoder().encode(map)
         let decoded = try JSONDecoder().decode(DynamicMap<BeatTime>.self, from: data)
         var count = 0
 
-        decoded.forEach { _, _, _, _ in count += 1 }
+        for entry in decoded {
+            count += 1
+        }
 
         #expect(count == 1)
+    }
+
+    @Test
+    func collection_empty() {
+        let map = DynamicMap<BeatTime>()
+
+        #expect(map.isEmpty)
+        #expect(map.startIndex == map.endIndex)
+        #expect(map.first == nil)
+        #expect(map.last == nil)
+    }
+
+    @Test
+    func collection_iteratesEntriesInTimeOrder() {
+        var map = DynamicMap<BeatTime>()
+
+        let later = map.insert(time: 2,
+                               dynamic: .ff)
+        let earlier = map.insert(time: 1,
+                                 dynamic: .p)
+
+        #expect(map.count == 2)
+        #expect(map.map(\.entryID) == [earlier.entryID, later.entryID])
+        #expect(map.map(\.time) == [1, 2])
+        #expect(map.first?.dynamic == .p)
+        #expect(map[map.index(after: map.startIndex)].dynamic == .ff)
+        #expect(map.index(map.startIndex, offsetBy: 2) == map.endIndex)
+        #expect(map.distance(from: map.endIndex, to: map.startIndex) == -2)
+        #expect(map.index(before: map.endIndex) == map.index(after: map.startIndex))
     }
 
     @Test
@@ -56,8 +88,8 @@ extension DynamicMapTests {
 
         var keys: [BeatTime] = []
 
-        map.forEach { _, time, _, _ in
-            keys.append(time)
+        for entry in map {
+            keys.append(entry.time)
         }
 
         #expect(keys.count == 2)
@@ -73,7 +105,9 @@ extension DynamicMapTests {
         map.insert(time: 1, dynamic: .f)
         map.insert(time: 2, dynamic: .p)
 
-        map.forEach { entryID, _, _, _ in ids.append(entryID) }
+        for entry in map {
+            ids.append(entry.entryID)
+        }
 
         #expect(Set(ids).count == 2)
     }
@@ -120,6 +154,31 @@ extension DynamicMapTests {
     }
 
     @Test
+    func last_empty() {
+        #expect(DynamicMap<BeatTime>().last == nil)
+    }
+
+    @Test
+    func last_returnsLastEntryInTimeOrder() throws {
+        let extras = Extras(elements: [Extra(name: "tag")])
+        var map = DynamicMap<BeatTime>()
+
+        let later = map.insert(time: 2,
+                               dynamic: .ff,
+                               extras: extras)
+
+        map.insert(time: 1,
+                   dynamic: .mf)
+
+        let last = try #require(map.last)
+
+        #expect(last.entryID == later.entryID)
+        #expect(last.time == 2)
+        #expect(last.dynamic == .ff)
+        #expect(last.extras == extras)
+    }
+
+    @Test
     func merge() {
         var map1 = DynamicMap<BeatTime>()
         var map2 = DynamicMap<BeatTime>()
@@ -140,7 +199,9 @@ extension DynamicMapTests {
 
         map.insert(time: 1, dynamic: .f)
 
-        map.forEach { entryID, _, _, _ in movedID = entryID }
+        for entry in map {
+            movedID = entry.entryID
+        }
 
         let entryID = try #require(movedID)
         let newID = map.move(entryID: entryID, to: 5)
@@ -163,7 +224,9 @@ extension DynamicMapTests {
 
         map.insert(time: 1, dynamic: .f)
 
-        map.forEach { entryID, _, _, _ in removedID = entryID }
+        for entry in map {
+            removedID = entry.entryID
+        }
 
         let entryID = try #require(removedID)
         let removed = map.remove(entryID: entryID)
@@ -185,35 +248,28 @@ extension DynamicMapTests {
     }
 
     @Test
-    func remove_found() {
-        var map = DynamicMap<BeatTime>()
-
-        let inserted = map.insert(time: 1,
-                                  dynamic: .mf)
-        let removedID = map.remove(time: 1,
-                                   dynamic: .mf)
-
-        #expect(removedID == inserted.entryID)
-        #expect(map.isEmpty)
-    }
-
-    @Test
-    func remove_notFound() {
-        var map = DynamicMap<BeatTime>()
-
-        map.insert(time: 1, dynamic: .f)
-
-        let removedID = map.remove(time: 1, dynamic: .p)
-
-        #expect(removedID == nil)
-        #expect(!map.isEmpty)
-    }
-
-    @Test
     func subscript_empty() {
         let map = DynamicMap<BeatTime>()
 
         #expect(map[BeatTime(1)] == .mp)
+    }
+
+    @Test
+    func subscript_integerLiteral_isTime() {
+        var map = DynamicMap<BeatTime>()
+
+        map.insert(time: 0,
+                   dynamic: .p)
+        map.insert(time: 1,
+                   dynamic: .ff)
+
+        //
+        // `1` must resolve to the time subscript, not a position — positions are an opaque
+        // `Index` precisely so an integer literal can’t select them:
+        //
+        let value = map[1]
+
+        #expect(value == .ff)
     }
 
     @Test
@@ -224,7 +280,9 @@ extension DynamicMapTests {
         map.insert(time: 1, dynamic: .f)
         map.insert(time: 1, dynamic: .p)
 
-        map.forEach { entryID, _, _, _ in ids.append(entryID) }
+        for entry in map {
+            ids.append(entry.entryID)
+        }
 
         // Editing the second entry back to `.f` makes it an exact duplicate of
         // the first, so it should be dropped rather than left in place.
@@ -235,7 +293,9 @@ extension DynamicMapTests {
 
         var remaining: [EntryID] = []
 
-        map.forEach { entryID, _, _, _ in remaining.append(entryID) }
+        for entry in map {
+            remaining.append(entry.entryID)
+        }
 
         #expect(remaining == [ids.last])
     }
@@ -247,7 +307,9 @@ extension DynamicMapTests {
 
         map.insert(time: 1, dynamic: .f)
 
-        map.forEach { entryID, _, _, _ in foundEntryID = entryID }
+        for entry in map {
+            foundEntryID = entry.entryID
+        }
 
         let result = try map.update(entryID: #require(foundEntryID), dynamic: .p)
 

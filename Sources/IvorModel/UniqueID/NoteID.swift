@@ -12,7 +12,7 @@ internal import XestiTools
 /// across an edit that reorders it, rather than recomputing which ordinal
 /// position it landed on.
 ///
-/// Not persisted: `NoteTable.Note`’s `Codable` conformance never encodes a
+/// Not persisted: `NoteTable.StoredNote`’s `Codable` conformance never encodes a
 /// note’s identity, and assigns every decoded note a fresh one, the same as a
 /// newly inserted note. A note’s identity is therefore stable only within one
 /// in-memory note table’s lifetime — never across an encode/decode round trip,

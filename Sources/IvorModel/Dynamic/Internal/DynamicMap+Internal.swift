@@ -8,12 +8,12 @@ extension DynamicMap {
 
     //
     // Keeps the first occurrence of each exact duplicate (same time, dynamic level,
-    // and extras — `Entry`'s own `==` already excludes identity) and drops the
+    // and extras — `StoredEntry`'s own `==` already excludes identity) and drops the
     // rest, matching the rule `insert(time:dynamic:extras:)` applies to a live
     // dynamic map.
     //
-    internal static func deduplicated(_ entries: [Entry]) -> [Entry] {
-        var result: [Entry] = []
+    internal static func deduplicated(_ entries: [StoredEntry]) -> [StoredEntry] {
+        var result: [StoredEntry] = []
 
         for entry in entries where !result.contains(entry) {
             result.append(entry)
@@ -22,7 +22,7 @@ extension DynamicMap {
         return result
     }
 
-    internal static func hasExtras(in entries: [Entry]) -> Bool {
+    internal static func hasExtras(in entries: [StoredEntry]) -> Bool {
         entries.contains { $0.extras != nil }
     }
 

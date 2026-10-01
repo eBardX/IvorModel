@@ -36,8 +36,8 @@ extension ExtraIvorTests {
         var foundAccent = false
         var foundSlurID: String?
 
-        table.forEach { _, _, _, _, _, extras in
-            for extra in extras?.elements ?? [] {
+        for note in table {
+            for extra in note.extras?.elements ?? [] {
                 if extra.name == Extra.accent.name {
                     foundAccent = true
                 } else if extra.name == Extra.slurStart.name,
@@ -86,8 +86,8 @@ extension ExtraIvorTests {
 
         var found = false
 
-        dynamicMap.forEach { _, _, _, extras in
-            if let mark = extras?.elements.first(where: { $0.name == Extra.dynamicMark.name }),
+        for entry in dynamicMap {
+            if let mark = entry.extras?.elements.first(where: { $0.name == Extra.dynamicMark.name }),
                case let .string(text)? = mark.values.first {
                 found = true
 
@@ -154,8 +154,8 @@ extension ExtraIvorTests {
         var foundChannel: Int?
         var foundBank: Int?
 
-        instrumentMap.forEach { _, _, _, extras in
-            for extra in extras?.elements ?? [] {
+        for entry in instrumentMap {
+            for extra in entry.extras?.elements ?? [] {
                 if extra.name == Extra.midiChannel.name,
                    case let .int(value)? = extra.values.first {
                     foundChannel = value
@@ -202,8 +202,8 @@ extension ExtraIvorTests {
         var foundProgram: Int?
         var foundVolume: Double?
 
-        instrumentMap.forEach { _, _, _, extras in
-            for extra in extras?.elements ?? [] {
+        for entry in instrumentMap {
+            for extra in entry.extras?.elements ?? [] {
                 if extra.name == Extra.midiProgram.name,
                    case let .int(value)? = extra.values.first {
                     foundProgram = value
@@ -307,8 +307,8 @@ extension ExtraIvorTests {
 
         var found = false
 
-        tempoMap.forEach { _, _, _, extras in
-            if let mark = extras?.elements.first(where: { $0.name == Extra.tempoText.name }),
+        for entry in tempoMap {
+            if let mark = entry.extras?.elements.first(where: { $0.name == Extra.tempoText.name }),
                case let .string(text)? = mark.values.first {
                 found = true
 
@@ -363,8 +363,8 @@ extension ExtraIvorTests {
         var foundVelocity: Int?
         var foundExpression: Int?
 
-        dynamicMap.forEach { _, _, _, extras in
-            for extra in extras?.elements ?? [] {
+        for entry in dynamicMap {
+            for extra in entry.extras?.elements ?? [] {
                 if extra.name == Extra.velocity.name,
                    case let .int(value)? = extra.values.first {
                     foundVelocity = value

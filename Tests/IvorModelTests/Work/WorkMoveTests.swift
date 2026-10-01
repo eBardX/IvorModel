@@ -19,11 +19,7 @@ extension WorkMoveTests {
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.move(partID, by: directedDuration)
-        }
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.move([partID], by: directedDuration)
+            try work.move(by: directedDuration, partIDs: [partID])
         }
 
         #expect(throws: Work.Error.workIsLocked) {
@@ -52,11 +48,7 @@ extension WorkMoveTests {
 
         #expect(work.beatTimeRange?.lowerBound == 2)
 
-        var tempoTimes: [BeatTime] = []
-
-        work.tempoMap?.forEach { _, beatTime, _, _ in
-            tempoTimes.append(beatTime)
-        }
+        let tempoTimes = work.tempoMap?.map(\.beatTime) ?? []
 
         #expect(tempoTimes == [2])
     }

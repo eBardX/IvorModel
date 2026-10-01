@@ -18,11 +18,7 @@ extension WorkReverseTests {
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.reverse(partID, within: nil as ClosedRange<BeatTime>?)
-        }
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.reverse([partID], within: nil as ClosedRange<BeatTime>?)
+            try work.reverse(within: nil as ClosedRange<BeatTime>?, partIDs: [partID])
         }
 
         #expect(throws: Work.Error.workIsLocked) {
@@ -31,6 +27,33 @@ extension WorkReverseTests {
 
         #expect(work.beatTimeRange == beatTimeRange)
         #expect(work.pitchRange?.lowerBound as? Pitch == .c4)
+    }
+
+    @Test
+    func reverse_partialSelection_carriesTempoMap() throws {
+        var violin = Part<BeatTime, Pitch>(name: "Violin")
+        var cello = Part<BeatTime, Pitch>(name: "Cello")
+
+        violin.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        violin.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        cello.noteTable.insert(attack: 5, duration: 1, pitch: .g4)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: .default)
+        tempoMap.insert(beatTime: 2, tempo: .default)
+
+        var work = Work(content: .standardBeat([violin, cello], tempoMap))
+
+        try work.reverse(within: nil as ClosedRange<BeatTime>?,
+                         partIDs: [violin.partID])
+
+        //
+        // The tempo map is work-wide, so it is reversed within the targeted part’s range (0...3)
+        // even though only one part was targeted; the untargeted part is left alone.
+        //
+        #expect(work.tempoMap?.map(\.beatTime) == [1, 3])
+        #expect(work.part(cello.partID, as: Part<BeatTime, Pitch>.self)?.timeRange == 5...6)
     }
 
     @Test
@@ -49,11 +72,7 @@ extension WorkReverseTests {
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 
-        var tempoTimes: [BeatTime] = []
-
-        work.tempoMap?.forEach { _, beatTime, _, _ in
-            tempoTimes.append(beatTime)
-        }
+        let tempoTimes = work.tempoMap?.map(\.beatTime) ?? []
 
         //
         // The part spans 0...3 (a note at 0 of duration 1, and one at 2 of duration 1), so the

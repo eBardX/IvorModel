@@ -26,9 +26,9 @@ extension InstrumentMapInternalTests {
 
     @Test
     func deduplicated_keepsFirstOccurrence() {
-        let first = InstrumentMap<BeatTime>.Entry(time: 1, instrument: guitar, extras: nil)
-        let duplicate = InstrumentMap<BeatTime>.Entry(time: 1, instrument: guitar, extras: nil)
-        let distinct = InstrumentMap<BeatTime>.Entry(time: 2, instrument: piano, extras: nil)
+        let first = InstrumentMap<BeatTime>.StoredEntry(time: 1, instrument: guitar, extras: nil)
+        let duplicate = InstrumentMap<BeatTime>.StoredEntry(time: 1, instrument: guitar, extras: nil)
+        let distinct = InstrumentMap<BeatTime>.StoredEntry(time: 2, instrument: piano, extras: nil)
         let result = InstrumentMap<BeatTime>.deduplicated([first, duplicate, distinct])
 
         #expect(result.count == 2)
@@ -43,7 +43,9 @@ extension InstrumentMapInternalTests {
 
         map.insert(time: 1, instrument: guitar)
 
-        map.forEach { entryID, _, _, _ in foundEntryID = entryID }
+        for entry in map {
+            foundEntryID = entry.entryID
+        }
 
         #expect(try map.firstIndex(entryID: #require(foundEntryID)) == 0)
     }
@@ -79,16 +81,16 @@ extension InstrumentMapInternalTests {
 
     @Test
     func hasExtras_withExtras() {
-        let entries = [InstrumentMap<BeatTime>.Entry(time: 1,
-                                                     instrument: guitar,
-                                                     extras: Extras(elements: [Extra(name: "muted")]))]
+        let entries = [InstrumentMap<BeatTime>.StoredEntry(time: 1,
+                                                           instrument: guitar,
+                                                           extras: Extras(elements: [Extra(name: "muted")]))]
 
         #expect(InstrumentMap<BeatTime>.hasExtras(in: entries))
     }
 
     @Test
     func hasExtras_withoutExtras() {
-        let entries = [InstrumentMap<BeatTime>.Entry(time: 1, instrument: guitar, extras: nil)]
+        let entries = [InstrumentMap<BeatTime>.StoredEntry(time: 1, instrument: guitar, extras: nil)]
 
         #expect(!InstrumentMap<BeatTime>.hasExtras(in: entries))
     }

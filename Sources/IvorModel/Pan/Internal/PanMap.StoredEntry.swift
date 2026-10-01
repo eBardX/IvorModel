@@ -2,30 +2,29 @@
 
 internal import XestiTools
 
-extension DynamicMap {
+extension PanMap {
 
     // MARK: Internal Nested Types
 
-    internal enum Entry {
-        case extended(EntryID, TimeType, Dynamic, Extras)
-        case simple(EntryID, TimeType, Dynamic)
+    internal enum StoredEntry {
+        case extended(EntryID, TimeType, Pan, Extras)
+        case simple(EntryID, TimeType, Pan)
 
         // MARK: Internal Initializers
 
         //
         // `entryID` defaults to a fresh identity — the common case, a newly inserted or
         // decoded entry. Passing one explicitly is for the one caller that needs to
-        // keep an existing identity across a content change:
-        // `update(entryID:dynamic:extras:)`.
+        // keep an existing identity across a content change: `update(entryID:pan:extras:)`.
         //
         internal init(entryID: EntryID = EntryID(),
                       time: TimeType,
-                      dynamic: Dynamic,
+                      pan: Pan,
                       extras: Extras?) {
             if let extras, !extras.isEmpty {
-                self = .extended(entryID, time, dynamic, extras)
+                self = .extended(entryID, time, pan, extras)
             } else {
-                self = .simple(entryID, time, dynamic)
+                self = .simple(entryID, time, pan)
             }
         }
     }
@@ -33,17 +32,9 @@ extension DynamicMap {
 
 // MARK: -
 
-extension DynamicMap.Entry {
+extension PanMap.StoredEntry {
 
     // MARK: Internal Instance Properties
-
-    internal var dynamic: Dynamic {
-        switch self {
-        case let .extended(_, _, dynamic, _),
-            let .simple(_, _, dynamic):
-            dynamic
-        }
-    }
 
     internal var entryID: EntryID {
         switch self {
@@ -63,6 +54,14 @@ extension DynamicMap.Entry {
         }
     }
 
+    internal var pan: Pan {
+        switch self {
+        case let .extended(_, _, pan, _),
+            let .simple(_, _, pan):
+            pan
+        }
+    }
+
     internal var time: TimeType {
         switch self {
         case let .extended(_, time, _, _),
@@ -74,7 +73,7 @@ extension DynamicMap.Entry {
 
 // MARK: - Codable
 
-extension DynamicMap.Entry: Codable {
+extension PanMap.StoredEntry: Codable {
 
     // MARK: Internal Initializers
 
@@ -87,11 +86,11 @@ extension DynamicMap.Entry: Codable {
         var container = try decoder.unkeyedContainer()
 
         let time = try container.decode(TimeType.self)
-        let dynamic = try container.decode(Dynamic.self)
+        let pan = try container.decode(Pan.self)
         let extras = try container.decodeIfPresent(Extras.self)
 
         self.init(time: time,
-                  dynamic: dynamic,
+                  pan: pan,
                   extras: extras)
     }
 
@@ -101,7 +100,7 @@ extension DynamicMap.Entry: Codable {
         var container = encoder.unkeyedContainer()
 
         try container.encode(time)
-        try container.encode(dynamic)
+        try container.encode(pan)
 
         if let extras {
             try container.encode(extras)
@@ -111,7 +110,7 @@ extension DynamicMap.Entry: Codable {
 
 // MARK: - Comparable
 
-extension DynamicMap.Entry: Comparable {
+extension PanMap.StoredEntry: Comparable {
 
     // MARK: Internal Type Methods
 
@@ -123,24 +122,24 @@ extension DynamicMap.Entry: Comparable {
 
 // MARK: - Equatable
 
-extension DynamicMap.Entry: Equatable {
+extension PanMap.StoredEntry: Equatable {
 
     // MARK: Internal Type Methods
 
     //
     // Identity is deliberately excluded: two entries are equal here exactly when
-    // they carry the same time, dynamic level, and extras, regardless of which
+    // they carry the same time, pan position, and extras, regardless of which
     // `EntryID` each holds. This is what lets `insert`'s exact-duplicate check keep
     // working — a synthesized `==` that compared identity too would make every
     // content-identical pair unequal, since each gets a fresh, distinct entryID.
     //
     internal static func == (lhs: Self,
                              rhs: Self) -> Bool {
-        (lhs.time, lhs.dynamic, lhs.extras) == (rhs.time, rhs.dynamic, rhs.extras)
+        (lhs.time, lhs.pan, lhs.extras) == (rhs.time, rhs.pan, rhs.extras)
     }
 }
 
 // MARK: - Sendable
 
-extension DynamicMap.Entry: Sendable {
+extension PanMap.StoredEntry: Sendable {
 }

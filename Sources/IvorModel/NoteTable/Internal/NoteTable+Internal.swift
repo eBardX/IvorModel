@@ -9,15 +9,15 @@ extension NoteTable {
 
     // MARK: Internal Type Methods
 
-    internal static func hasExtras(in notes: [Note]) -> Bool {
+    internal static func hasExtras(in notes: [StoredNote]) -> Bool {
         notes.contains { $0.extras != nil }
     }
 
-    internal static func hasPortamento(in notes: [Note]) -> Bool {
+    internal static func hasPortamento(in notes: [StoredNote]) -> Bool {
         notes.contains { $0.startPitch != $0.endPitch }
     }
 
-    internal static func isMonophonic(in notes: [Note]) -> Bool {
+    internal static func isMonophonic(in notes: [StoredNote]) -> Bool {
         guard !notes.isEmpty
         else { return true }
 
@@ -36,15 +36,15 @@ extension NoteTable {
 
     internal static func mergePitchRanges(_ range1: ClosedRange<PitchType>,
                                           _ range2: ClosedRange<PitchType>) -> ClosedRange<PitchType> {
-        min(range1.lowerBound, range2.lowerBound)...max(range1.upperBound, range2.upperBound)
+        Swift.min(range1.lowerBound, range2.lowerBound)...Swift.max(range1.upperBound, range2.upperBound)
     }
 
     internal static func mergeTimeRanges(_ range1: ClosedRange<TimeType>,
                                          _ range2: ClosedRange<TimeType>) -> ClosedRange<TimeType> {
-        min(range1.lowerBound, range2.lowerBound)...max(range1.upperBound, range2.upperBound)
+        Swift.min(range1.lowerBound, range2.lowerBound)...Swift.max(range1.upperBound, range2.upperBound)
     }
 
-    internal static func pitchRange(in notes: [Note]) -> ClosedRange<PitchType>? {
+    internal static func pitchRange(in notes: [StoredNote]) -> ClosedRange<PitchType>? {
         guard !notes.isEmpty
         else { return nil }
 
@@ -64,7 +64,7 @@ extension NoteTable {
         return minPitch...maxPitch
     }
 
-    internal static func timeRange(in notes: [Note]) -> ClosedRange<TimeType>? {
+    internal static func timeRange(in notes: [StoredNote]) -> ClosedRange<TimeType>? {
         guard !notes.isEmpty
         else { return nil }
 
@@ -85,16 +85,6 @@ extension NoteTable {
     }
 
     // MARK: Internal Instance Methods
-
-    internal func firstIndex(attack: TimeType,
-                             duration: DurationType,
-                             startPitch: PitchType,
-                             endPitch: PitchType,
-                             extras: Extras?) -> Int? {
-        notes.firstIndex {
-            (attack, duration, startPitch, endPitch, extras) == ($0.attack, $0.duration, $0.startPitch, $0.endPitch, $0.extras)
-        }
-    }
 
     internal func firstIndex(noteID: NoteID) -> Int? {
         notes.firstIndex { $0.noteID == noteID }

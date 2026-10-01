@@ -18,11 +18,7 @@ extension WorkInvertTests {
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.invert(partID, around: nil as ClosedRange<Pitch>?)
-        }
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.invert([partID], around: nil as ClosedRange<Pitch>?)
+            try work.invert(around: nil as ClosedRange<Pitch>?, partIDs: [partID])
         }
 
         #expect(throws: Work.Error.workIsLocked) {

@@ -19,11 +19,7 @@ extension WorkTransposeTests {
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.transpose(partID, by: interval)
-        }
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.transpose([partID], by: interval)
+            try work.transpose(by: interval, partIDs: [partID])
         }
 
         #expect(throws: Work.Error.workIsLocked) {

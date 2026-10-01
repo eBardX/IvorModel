@@ -19,9 +19,9 @@ extension PanMapInternalTests {
 
     @Test
     func deduplicated_keepsFirstOccurrence() {
-        let first = PanMap<BeatTime>.Entry(time: 1, pan: .left, extras: nil)
-        let duplicate = PanMap<BeatTime>.Entry(time: 1, pan: .left, extras: nil)
-        let distinct = PanMap<BeatTime>.Entry(time: 2, pan: .right, extras: nil)
+        let first = PanMap<BeatTime>.StoredEntry(time: 1, pan: .left, extras: nil)
+        let duplicate = PanMap<BeatTime>.StoredEntry(time: 1, pan: .left, extras: nil)
+        let distinct = PanMap<BeatTime>.StoredEntry(time: 2, pan: .right, extras: nil)
         let result = PanMap<BeatTime>.deduplicated([first, duplicate, distinct])
 
         #expect(result.count == 2)
@@ -36,7 +36,9 @@ extension PanMapInternalTests {
 
         map.insert(time: 1, pan: .left)
 
-        map.forEach { entryID, _, _, _ in foundEntryID = entryID }
+        for entry in map {
+            foundEntryID = entry.entryID
+        }
 
         #expect(try map.firstIndex(entryID: #require(foundEntryID)) == 0)
     }
@@ -72,16 +74,16 @@ extension PanMapInternalTests {
 
     @Test
     func hasExtras_withExtras() {
-        let entries = [PanMap<BeatTime>.Entry(time: 1,
-                                              pan: .left,
-                                              extras: Extras(elements: [Extra(name: "auto")]))]
+        let entries = [PanMap<BeatTime>.StoredEntry(time: 1,
+                                                    pan: .left,
+                                                    extras: Extras(elements: [Extra(name: "auto")]))]
 
         #expect(PanMap<BeatTime>.hasExtras(in: entries))
     }
 
     @Test
     func hasExtras_withoutExtras() {
-        let entries = [PanMap<BeatTime>.Entry(time: 1, pan: .left, extras: nil)]
+        let entries = [PanMap<BeatTime>.StoredEntry(time: 1, pan: .left, extras: nil)]
 
         #expect(!PanMap<BeatTime>.hasExtras(in: entries))
     }

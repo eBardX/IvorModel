@@ -35,6 +35,19 @@ extension WorkContentTests {
         #expect(decoded.timeBasis == original.timeBasis)
     }
 
+    @Test(arguments: [TimeBasis.beat, .wall],
+          [PitchNotation.absolute, .keyboard, .standard])
+    func empty(timeBasis: TimeBasis,
+               pitchNotation: PitchNotation) {
+        let work = Work(content: .empty(timeBasis: timeBasis,
+                                        pitchNotation: pitchNotation))
+
+        #expect(work.timeBasis == timeBasis)
+        #expect(work.pitchNotation == pitchNotation)
+        #expect(work.partCount == 0)
+        #expect((work.tempoMap != nil) == (timeBasis == .beat))
+    }
+
     @Test
     func pitchNotation_absolute() {
         let content: Work.Content = .absoluteWall([])

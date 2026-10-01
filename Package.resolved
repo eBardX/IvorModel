@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTiming.git",
       "state" : {
-        "revision" : "2f6494512fea65efc85ffd1e8a85533ff88987df",
-        "version" : "0.16.0"
+        "revision" : "8932dd49f0db9b2ffa44d323f947c9542a0f7eab",
+        "version" : "0.17.0"
       }
     },
     {

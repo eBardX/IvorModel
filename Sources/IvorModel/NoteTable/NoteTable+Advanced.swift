@@ -72,12 +72,12 @@ extension NoteTable where TimeType == BeatTime {
             let rawDuration = quantizedRelease - quantizedAttack
             let newDuration = rawDuration.isZero ? quantizer.gridUnit : rawDuration
 
-            notes[idx] = Note(noteID: note.noteID,
-                              attack: quantizedAttack,
-                              duration: newDuration,
-                              startPitch: note.startPitch,
-                              endPitch: note.endPitch,
-                              extras: note.extras)
+            notes[idx] = StoredNote(noteID: note.noteID,
+                                    attack: quantizedAttack,
+                                    duration: newDuration,
+                                    startPitch: note.startPitch,
+                                    endPitch: note.endPitch,
+                                    extras: note.extras)
         }
 
         notes.sort()
@@ -100,7 +100,7 @@ extension NoteTable where TimeType == WallTime {
     ///
     /// - Returns:  A new ``NoteTable`` keyed by ``BeatTime``.
     public func unwarped(using tempoMap: TempoMap) -> NoteTable<BeatTime, PitchType> {
-        var btNotes: [NoteTable<BeatTime, PitchType>.Note] = []
+        var btNotes: [NoteTable<BeatTime, PitchType>.StoredNote] = []
 
         if !notes.isEmpty {
             let tc = TimeConverter(tempoMap: tempoMap)
@@ -135,7 +135,7 @@ extension NoteTable where TimeType == BeatTime {
     ///
     /// - Returns:  A new ``NoteTable`` keyed by ``WallTime``.
     public func warped(using tempoMap: TempoMap) -> NoteTable<WallTime, PitchType> {
-        var wtNotes: [NoteTable<WallTime, PitchType>.Note] = []
+        var wtNotes: [NoteTable<WallTime, PitchType>.StoredNote] = []
 
         if !notes.isEmpty {
             let tc = TimeConverter(tempoMap: tempoMap)
@@ -176,7 +176,7 @@ extension NoteTable where TimeType == BeatTime, PitchType == Frequency {
     ///             range.
     public func varispeeded(using tempoMap: TempoMap,
                             normalTempo: Tempo = .default) throws(Error) -> NoteTable<WallTime, Frequency> {
-        var wtNotes: [NoteTable<WallTime, Frequency>.Note] = []
+        var wtNotes: [NoteTable<WallTime, Frequency>.StoredNote] = []
 
         if !notes.isEmpty {
             let tc = TimeConverter(tempoMap: tempoMap)

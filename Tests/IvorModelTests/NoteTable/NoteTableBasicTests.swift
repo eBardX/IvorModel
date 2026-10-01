@@ -16,6 +16,33 @@ extension NoteTableBasicTests {
     private typealias NoteTableSB = NoteTable<BeatTime, Pitch>
 
     @Test
+    func collection_empty() {
+        let table = NoteTableSB()
+
+        #expect(table.isEmpty)
+        #expect(table.startIndex == table.endIndex)
+        #expect(table.first == nil)
+        #expect(table.last == nil)
+    }
+
+    @Test
+    func collection_iteratesNotesInAttackOrder() {
+        var table = NoteTableSB()
+
+        let laterID = table.insert(attack: 2, duration: 1, pitch: .e4)
+        let earlierID = table.insert(attack: 1, duration: 1, pitch: .c4)
+
+        #expect(table.count == 2)
+        #expect(table.map(\.noteID) == [earlierID, laterID])
+        #expect(table.map(\.attack) == [1, 2])
+        #expect(table.first?.startPitch == .c4)
+        #expect(table[table.index(after: table.startIndex)].endPitch == .e4)
+        #expect(table.index(table.startIndex, offsetBy: 2) == table.endIndex)
+        #expect(table.distance(from: table.endIndex, to: table.startIndex) == -2)
+        #expect(table.index(before: table.endIndex) == table.index(after: table.startIndex))
+    }
+
+    @Test
     func forEach() {
         var table = NoteTableSB()
 
@@ -24,8 +51,8 @@ extension NoteTableBasicTests {
 
         var pitches: [Pitch] = []
 
-        table.forEach { _, _, _, startPitch, _, _ in
-            pitches.append(startPitch)
+        for note in table {
+            pitches.append(note.startPitch)
         }
 
         #expect(pitches.count == 2)
@@ -43,7 +70,9 @@ extension NoteTableBasicTests {
         table.insert(attack: 0, duration: 1, pitch: .c4)
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
-        table.forEach { noteID, _, _, _, _, _ in ids.append(noteID) }
+        for note in table {
+            ids.append(note.noteID)
+        }
 
         #expect(Set(ids).count == 2)
     }
@@ -94,6 +123,36 @@ extension NoteTableBasicTests {
     }
 
     @Test
+    func last_empty() {
+        #expect(NoteTable<BeatTime, Pitch>().last == nil)
+    }
+
+    @Test
+    func last_returnsLastNoteInAttackOrder() throws {
+        let extras = Extras(elements: [Extra(name: "accent")])
+        var ntab = NoteTable<BeatTime, Pitch>()
+
+        let laterID = ntab.insert(attack: 2,
+                                  duration: 3,
+                                  startPitch: .c4,
+                                  endPitch: .e4,
+                                  extras: extras)
+
+        ntab.insert(attack: 1,
+                    duration: 1,
+                    pitch: .g4)
+
+        let last = try #require(ntab.last)
+
+        #expect(last.noteID == laterID)
+        #expect(last.attack == 2)
+        #expect(last.duration == 3)
+        #expect(last.startPitch == .c4)
+        #expect(last.endPitch == .e4)
+        #expect(last.extras == extras)
+    }
+
+    @Test
     func merge() {
         var table1 = NoteTableSB()
         var table2 = NoteTableSB()
@@ -114,7 +173,9 @@ extension NoteTableBasicTests {
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
-        table.forEach { noteID, _, _, _, _, _ in foundNoteID = noteID }
+        for note in table {
+            foundNoteID = note.noteID
+        }
 
         let moved = try table.moveAttack(noteID: #require(foundNoteID), to: 5)
 
@@ -137,7 +198,9 @@ extension NoteTableBasicTests {
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
-        table.forEach { noteID, _, _, _, _, _ in foundNoteID = noteID }
+        for note in table {
+            foundNoteID = note.noteID
+        }
 
         let moved = try table.moveDuration(noteID: #require(foundNoteID), to: 4)
 
@@ -160,7 +223,9 @@ extension NoteTableBasicTests {
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
-        table.forEach { noteID, _, _, _, _, _ in foundNoteID = noteID }
+        for note in table {
+            foundNoteID = note.noteID
+        }
 
         let moved = try table.movePitchEnd(noteID: #require(foundNoteID), to: .e4)
 
@@ -183,12 +248,16 @@ extension NoteTableBasicTests {
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
-        table.forEach { noteID, _, _, _, _, _ in foundNoteID = noteID }
+        for note in table {
+            foundNoteID = note.noteID
+        }
 
         let moved = try table.movePitchStart(noteID: #require(foundNoteID), to: .e4)
         var startPitch: Pitch?
 
-        table.forEach { _, _, _, notePitch, _, _ in startPitch = notePitch }
+        for note in table {
+            startPitch = note.startPitch
+        }
 
         #expect(moved)
         #expect(startPitch == .e4)
@@ -209,7 +278,9 @@ extension NoteTableBasicTests {
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
-        table.forEach { noteID, _, _, _, _, _ in foundNoteID = noteID }
+        for note in table {
+            foundNoteID = note.noteID
+        }
 
         let originalID = try #require(foundNoteID)
 
@@ -217,7 +288,9 @@ extension NoteTableBasicTests {
 
         var idAfterMove: NoteID?
 
-        table.forEach { noteID, _, _, _, _, _ in idAfterMove = noteID }
+        for note in table {
+            idAfterMove = note.noteID
+        }
 
         #expect(idAfterMove == originalID)
     }
@@ -235,45 +308,15 @@ extension NoteTableBasicTests {
     }
 
     @Test
-    func remove_found() {
-        var table = NoteTableSB()
-
-        let insertedID = table.insert(attack: 0, duration: 1, pitch: .c4)
-        let removedID = table.remove(attack: 0, duration: 1, pitch: .c4)
-
-        #expect(removedID == insertedID)
-        #expect(table.isEmpty)
-    }
-
-    @Test
-    func remove_matchesEarliestDuplicate() {
-        var table = NoteTableSB()
-
-        // Exact duplicates are allowed in a note table, so both of these match the
-        // same `attack`/`duration`/`pitch`/`extras`. `remove` should remove the one
-        // that was inserted first and report its identity, leaving the other intact.
-        let firstID = table.insert(attack: 0, duration: 1, pitch: .c4)
-        let secondID = table.insert(attack: 0, duration: 1, pitch: .c4)
-
-        let removedID = table.remove(attack: 0, duration: 1, pitch: .c4)
-
-        #expect(removedID == firstID)
-
-        var remaining: [NoteID] = []
-
-        table.forEach { noteID, _, _, _, _, _ in remaining.append(noteID) }
-
-        #expect(remaining == [secondID])
-    }
-
-    @Test
     func remove_noteID_found() throws {
         var table = NoteTableSB()
         var removedID: NoteID?
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
-        table.forEach { noteID, _, _, _, _, _ in removedID = noteID }
+        for note in table {
+            removedID = note.noteID
+        }
 
         let noteID = try #require(removedID)
         let removed = table.remove(noteID: noteID)
@@ -295,18 +338,6 @@ extension NoteTableBasicTests {
     }
 
     @Test
-    func remove_notFound() {
-        var table = NoteTableSB()
-
-        table.insert(attack: 0, duration: 1, pitch: .c4)
-
-        let removedID = table.remove(attack: 0, duration: 1, pitch: .g5)
-
-        #expect(removedID == nil)
-        #expect(!table.isEmpty)
-    }
-
-    @Test
     func timeRange() {
         var table = NoteTableSB()
 
@@ -324,7 +355,9 @@ extension NoteTableBasicTests {
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
-        table.forEach { noteID, _, _, _, _, _ in foundNoteID = noteID }
+        for note in table {
+            foundNoteID = note.noteID
+        }
 
         let noteID = try #require(foundNoteID)
         let updated = table.updateExtras(noteID: noteID,
@@ -353,7 +386,9 @@ extension NoteTableBasicTests {
 
         table.insert(attack: 0, duration: 1, pitch: .c4)
 
-        table.forEach { noteID, _, _, _, _, _ in foundNoteID = noteID }
+        for note in table {
+            foundNoteID = note.noteID
+        }
 
         let originalID = try #require(foundNoteID)
 
@@ -362,7 +397,9 @@ extension NoteTableBasicTests {
 
         var idAfterUpdate: NoteID?
 
-        table.forEach { noteID, _, _, _, _, _ in idAfterUpdate = noteID }
+        for note in table {
+            idAfterUpdate = note.noteID
+        }
 
         #expect(idAfterUpdate == originalID)
     }
@@ -386,7 +423,9 @@ extension NoteTableBasicTests {
 
         var order: [NoteID] = []
 
-        table.forEach { noteID, _, _, _, _, _ in order.append(noteID) }
+        for note in table {
+            order.append(note.noteID)
+        }
 
         #expect(order == [firstID, secondID])
     }
@@ -401,7 +440,9 @@ extension NoteTableBasicTests {
                      pitch: .c4,
                      extras: Extras(elements: [Extra(name: "accent")]))
 
-        table.forEach { noteID, _, _, _, _, _ in foundNoteID = noteID }
+        for note in table {
+            foundNoteID = note.noteID
+        }
 
         let noteID = try #require(foundNoteID)
         let updated = table.updateExtras(noteID: noteID, extras: nil)

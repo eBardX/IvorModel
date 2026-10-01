@@ -4,35 +4,7 @@ public import XestiTools
 
 extension NoteTable {
 
-    // MARK: Public Instance Properties
-
-    /// The number of notes in the note table.
-    public var count: Int {
-        notes.count
-    }
-
-    /// A Boolean value indicating whether the note table contains no notes.
-    public var isEmpty: Bool {
-        notes.isEmpty
-    }
-
     // MARK: Public Instance Methods
-
-    /// Calls the given closure for each note in the table, in order.
-    ///
-    /// - Parameter body:   A closure that receives the identity, attack time,
-    ///                     duration, start pitch, end pitch, and optional extras for
-    ///                     each note.
-    public func forEach(_ body: (NoteID, TimeType, DurationType, PitchType, PitchType, Extras?) -> Void) {
-        notes.forEach {
-            body($0.noteID,
-                 $0.attack,
-                 $0.duration,
-                 $0.startPitch,
-                 $0.endPitch,
-                 $0.extras)
-        }
-    }
 
     /// Inserts a note with a single pitch into the table.
     ///
@@ -232,75 +204,6 @@ extension NoteTable {
         return true
     }
 
-    /// Removes a note with a single pitch from the table, if present.
-    ///
-    /// - Parameter attack:     The attack time of the note to remove.
-    /// - Parameter duration:   The duration of the note to remove.
-    /// - Parameter pitch:      The pitch of the note to remove.
-    /// - Parameter extras:     The optional extra data of the note to remove. Defaults to `nil`.
-    ///
-    /// - Returns:  The identity of the note that was removed, or `nil` if no
-    ///             note matched `attack`, `duration`, `pitch`, and `extras`.
-    @discardableResult
-    public mutating func remove(attack: TimeType,
-                                duration: DurationType,
-                                pitch: PitchType,
-                                extras: Extras? = nil) -> NoteID? {
-        remove(attack: attack,
-               duration: duration,
-               startPitch: pitch,
-               endPitch: pitch,
-               extras: extras)
-    }
-
-    /// Removes a note with a start pitch and an end pitch from the table, if present.
-    ///
-    /// Exact duplicates are allowed in a note table (see
-    /// ``insert(attack:duration:startPitch:endPitch:extras:)``), so more than one note can match
-    /// `attack`, `duration`, `startPitch`, `endPitch`, and `extras`. When that happens, this removes
-    /// whichever one ``firstIndex(attack:duration:startPitch:endPitch:extras:)`` finds first; the
-    /// returned identity tells a caller exactly which note that was.
-    ///
-    /// - Parameter attack:      The attack time of the note to remove.
-    /// - Parameter duration:    The duration of the note to remove.
-    /// - Parameter startPitch:  The start pitch of the note to remove.
-    /// - Parameter endPitch:    The end pitch of the note to remove.
-    /// - Parameter extras:      The optional extra data of the note to remove. Defaults to `nil`.
-    ///
-    /// - Returns:  The identity of the note that was removed, or `nil` if no
-    ///             note matched `attack`, `duration`, `startPitch`, `endPitch`, and `extras`.
-    @discardableResult
-    public mutating func remove(attack: TimeType,
-                                duration: DurationType,
-                                startPitch: PitchType,
-                                endPitch: PitchType,
-                                extras: Extras? = nil) -> NoteID? {
-        guard let index = firstIndex(attack: attack,
-                                     duration: duration,
-                                     startPitch: startPitch,
-                                     endPitch: endPitch,
-                                     extras: extras)
-        else { return nil }
-
-        let noteID = notes[index].noteID
-
-        notes.remove(at: index)
-
-        if extras != nil {
-            hasExtras = Self.hasExtras(in: notes)
-        }
-
-        if startPitch != endPitch {
-            hasPortamento = Self.hasPortamento(in: notes)
-        }
-
-        isMonophonic = Self.isMonophonic(in: notes)
-        pitchRange = Self.pitchRange(in: notes)
-        timeRange = Self.timeRange(in: notes)
-
-        return noteID
-    }
-
     /// Removes the note with the given identity, if present.
     ///
     /// - Parameter noteID:  The identity of the note to remove. An identity
@@ -355,12 +258,12 @@ extension NoteTable {
 
         let note = notes[position]
 
-        notes[position] = Note(noteID: noteID,
-                               attack: note.attack,
-                               duration: note.duration,
-                               startPitch: note.startPitch,
-                               endPitch: note.endPitch,
-                               extras: extras)
+        notes[position] = StoredNote(noteID: noteID,
+                                     attack: note.attack,
+                                     duration: note.duration,
+                                     startPitch: note.startPitch,
+                                     endPitch: note.endPitch,
+                                     extras: extras)
 
         hasExtras = Self.hasExtras(in: notes)
 
@@ -375,12 +278,12 @@ extension NoteTable {
                                   startPitch: PitchType,
                                   endPitch: PitchType,
                                   extras: Extras?) {
-        notes.insert(Note(noteID: noteID,
-                          attack: attack,
-                          duration: duration,
-                          startPitch: startPitch,
-                          endPitch: endPitch,
-                          extras: extras),
+        notes.insert(StoredNote(noteID: noteID,
+                                attack: attack,
+                                duration: duration,
+                                startPitch: startPitch,
+                                endPitch: endPitch,
+                                extras: extras),
                      at: insertionIndex(for: attack,
                                         duration: duration,
                                         startPitch: startPitch,

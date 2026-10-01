@@ -2,29 +2,30 @@
 
 internal import XestiTools
 
-extension PanMap {
+extension InstrumentMap {
 
     // MARK: Internal Nested Types
 
-    internal enum Entry {
-        case extended(EntryID, TimeType, Pan, Extras)
-        case simple(EntryID, TimeType, Pan)
+    internal enum StoredEntry {
+        case extended(EntryID, TimeType, Instrument, Extras)
+        case simple(EntryID, TimeType, Instrument)
 
         // MARK: Internal Initializers
 
         //
         // `entryID` defaults to a fresh identity — the common case, a newly inserted or
         // decoded entry. Passing one explicitly is for the one caller that needs to
-        // keep an existing identity across a content change: `update(entryID:pan:extras:)`.
+        // keep an existing identity across a content change:
+        // `update(entryID:instrument:extras:)`.
         //
         internal init(entryID: EntryID = EntryID(),
                       time: TimeType,
-                      pan: Pan,
+                      instrument: Instrument,
                       extras: Extras?) {
             if let extras, !extras.isEmpty {
-                self = .extended(entryID, time, pan, extras)
+                self = .extended(entryID, time, instrument, extras)
             } else {
-                self = .simple(entryID, time, pan)
+                self = .simple(entryID, time, instrument)
             }
         }
     }
@@ -32,7 +33,7 @@ extension PanMap {
 
 // MARK: -
 
-extension PanMap.Entry {
+extension InstrumentMap.StoredEntry {
 
     // MARK: Internal Instance Properties
 
@@ -54,11 +55,11 @@ extension PanMap.Entry {
         }
     }
 
-    internal var pan: Pan {
+    internal var instrument: Instrument {
         switch self {
-        case let .extended(_, _, pan, _),
-            let .simple(_, _, pan):
-            pan
+        case let .extended(_, _, instrument, _),
+            let .simple(_, _, instrument):
+            instrument
         }
     }
 
@@ -73,7 +74,7 @@ extension PanMap.Entry {
 
 // MARK: - Codable
 
-extension PanMap.Entry: Codable {
+extension InstrumentMap.StoredEntry: Codable {
 
     // MARK: Internal Initializers
 
@@ -86,11 +87,11 @@ extension PanMap.Entry: Codable {
         var container = try decoder.unkeyedContainer()
 
         let time = try container.decode(TimeType.self)
-        let pan = try container.decode(Pan.self)
+        let instrument = try container.decode(Instrument.self)
         let extras = try container.decodeIfPresent(Extras.self)
 
         self.init(time: time,
-                  pan: pan,
+                  instrument: instrument,
                   extras: extras)
     }
 
@@ -100,7 +101,7 @@ extension PanMap.Entry: Codable {
         var container = encoder.unkeyedContainer()
 
         try container.encode(time)
-        try container.encode(pan)
+        try container.encode(instrument)
 
         if let extras {
             try container.encode(extras)
@@ -110,7 +111,7 @@ extension PanMap.Entry: Codable {
 
 // MARK: - Comparable
 
-extension PanMap.Entry: Comparable {
+extension InstrumentMap.StoredEntry: Comparable {
 
     // MARK: Internal Type Methods
 
@@ -122,24 +123,24 @@ extension PanMap.Entry: Comparable {
 
 // MARK: - Equatable
 
-extension PanMap.Entry: Equatable {
+extension InstrumentMap.StoredEntry: Equatable {
 
     // MARK: Internal Type Methods
 
     //
     // Identity is deliberately excluded: two entries are equal here exactly when
-    // they carry the same time, pan position, and extras, regardless of which
+    // they carry the same time, instrument, and extras, regardless of which
     // `EntryID` each holds. This is what lets `insert`'s exact-duplicate check keep
     // working — a synthesized `==` that compared identity too would make every
     // content-identical pair unequal, since each gets a fresh, distinct entryID.
     //
     internal static func == (lhs: Self,
                              rhs: Self) -> Bool {
-        (lhs.time, lhs.pan, lhs.extras) == (rhs.time, rhs.pan, rhs.extras)
+        (lhs.time, lhs.instrument, lhs.extras) == (rhs.time, rhs.instrument, rhs.extras)
     }
 }
 
 // MARK: - Sendable
 
-extension PanMap.Entry: Sendable {
+extension InstrumentMap.StoredEntry: Sendable {
 }

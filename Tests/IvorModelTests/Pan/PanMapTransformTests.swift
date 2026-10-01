@@ -25,8 +25,8 @@ extension PanMapTransformTests {
 
         var times: [BeatTime] = []
 
-        map.forEach { _, time, _, _ in
-            times.append(time)
+        for entry in map {
+            times.append(entry.time)
         }
 
         #expect(times.sorted() == [0, 4])
@@ -66,13 +66,13 @@ extension PanMapTransformTests {
         var time10: BeatTime?
         var time14: BeatTime?
 
-        map.forEach { entryID, time, _, _ in
-            if entryID == entryID10 {
-                time10 = time
+        for entry in map {
+            if entry.entryID == entryID10 {
+                time10 = entry.time
             }
 
-            if entryID == entryID14 {
-                time14 = time
+            if entry.entryID == entryID14 {
+                time14 = entry.time
             }
         }
 
@@ -96,8 +96,8 @@ extension PanMapTransformTests {
 
         var times: [BeatTime] = []
 
-        map.forEach { _, time, _, _ in
-            times.append(time)
+        for entry in map {
+            times.append(entry.time)
         }
 
         #expect(times.sorted() == [1, 5])
@@ -113,8 +113,8 @@ extension PanMapTransformTests {
 
         var times: [BeatTime] = []
 
-        map.forEach { _, time, _, _ in
-            times.append(time)
+        for entry in map {
+            times.append(entry.time)
         }
 
         #expect(times == [2])
@@ -140,8 +140,8 @@ extension PanMapTransformTests {
 
         var times: [BeatTime] = []
 
-        map.forEach { _, time, _, _ in
-            times.append(time)
+        for entry in map {
+            times.append(entry.time)
         }
 
         #expect(times.sorted() == [2, 4])
@@ -161,8 +161,8 @@ extension PanMapTransformTests {
 
         var times: [BeatTime] = []
 
-        map.forEach { _, time, _, _ in
-            times.append(time)
+        for entry in map {
+            times.append(entry.time)
         }
 
         #expect(times.sorted() == [2, 4])
@@ -180,8 +180,8 @@ extension PanMapTransformTests {
 
         var times: [BeatTime] = []
 
-        map.forEach { _, time, _, _ in
-            times.append(time)
+        for entry in map {
+            times.append(entry.time)
         }
 
         #expect(times == [2])
@@ -200,8 +200,8 @@ extension PanMapTransformTests {
 
         var timesByID: [EntryID: BeatTime] = [:]
 
-        map.forEach { entryID, time, _, _ in
-            timesByID[entryID] = time
+        for entry in map {
+            timesByID[entry.entryID] = entry.time
         }
 
         #expect(timesByID[entryID1] == 0)
@@ -221,8 +221,8 @@ extension PanMapTransformTests {
 
         var times: [BeatTime] = []
 
-        map.forEach { _, time, _, _ in
-            times.append(time)
+        for entry in map {
+            times.append(entry.time)
         }
 
         #expect(times.sorted() == [0, 4])
@@ -243,9 +243,9 @@ extension PanMapTransformTests {
 
         var phraseTimes: [BeatTime] = []
 
-        map.forEach { entryID, time, _, _ in
-            if entryID == phraseID1 || entryID == phraseID2 {
-                phraseTimes.append(time)
+        for entry in map {
+            if entry.entryID == phraseID1 || entry.entryID == phraseID2 {
+                phraseTimes.append(entry.time)
             }
         }
 
@@ -258,8 +258,8 @@ extension PanMapTransformTests {
 
         var allTimes: [BeatTime] = []
 
-        map.forEach { _, time, _, _ in
-            allTimes.append(time)
+        for entry in map {
+            allTimes.append(entry.time)
         }
 
         //
@@ -291,8 +291,8 @@ extension PanMapTransformTests {
 
         var times: [BeatTime] = []
 
-        map.forEach { _, time, _, _ in
-            times.append(time)
+        for entry in map {
+            times.append(entry.time)
         }
 
         #expect(times.sorted() == [0, 2])
@@ -309,8 +309,8 @@ extension PanMapTransformTests {
 
         var times: [BeatTime] = []
 
-        map.forEach { _, time, _, _ in
-            times.append(time)
+        for entry in map {
+            times.append(entry.time)
         }
 
         #expect(times.sorted() == [0, 2])

@@ -423,15 +423,7 @@ extension Part {
         guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
-        var entryIDs: Set<EntryID> = []
-
-        dynamicMap.forEach { entryID, time, _, _ in
-            if range.contains(time) {
-                entryIDs.insert(entryID)
-            }
-        }
-
-        return entryIDs
+        return Set(dynamicMap.filter { range.contains($0.time) }.map(\.entryID))
     }
 
     private func _instrumentEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
@@ -441,15 +433,7 @@ extension Part {
         guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
-        var entryIDs: Set<EntryID> = []
-
-        instrumentMap.forEach { entryID, time, _, _ in
-            if range.contains(time) {
-                entryIDs.insert(entryID)
-            }
-        }
-
-        return entryIDs
+        return Set(instrumentMap.filter { range.contains($0.time) }.map(\.entryID))
     }
 
     private func _panEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
@@ -459,14 +443,6 @@ extension Part {
         guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
-        var entryIDs: Set<EntryID> = []
-
-        panMap.forEach { entryID, time, _, _ in
-            if range.contains(time) {
-                entryIDs.insert(entryID)
-            }
-        }
-
-        return entryIDs
+        return Set(panMap.filter { range.contains($0.time) }.map(\.entryID))
     }
 }

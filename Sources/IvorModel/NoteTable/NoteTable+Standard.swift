@@ -50,12 +50,12 @@ extension NoteTable {
                   let newDuration = note.duration.multiplied(by: factor)
             else { throw Error.augmentFailure(note.attack, note.duration, note.startPitch, note.endPitch) }
 
-            notes[idx] = Note(noteID: note.noteID,
-                              attack: newAttack,
-                              duration: newDuration,
-                              startPitch: note.startPitch,
-                              endPitch: note.endPitch,
-                              extras: note.extras)
+            notes[idx] = StoredNote(noteID: note.noteID,
+                                    attack: newAttack,
+                                    duration: newDuration,
+                                    startPitch: note.startPitch,
+                                    endPitch: note.endPitch,
+                                    extras: note.extras)
         }
 
         timeRange = Self.timeRange(in: notes)
@@ -102,12 +102,12 @@ extension NoteTable {
                   let newDuration = note.duration.divided(by: factor)
             else { throw Error.diminishFailure(note.attack, note.duration, note.startPitch, note.endPitch) }
 
-            notes[idx] = Note(noteID: note.noteID,
-                              attack: newAttack,
-                              duration: newDuration,
-                              startPitch: note.startPitch,
-                              endPitch: note.endPitch,
-                              extras: note.extras)
+            notes[idx] = StoredNote(noteID: note.noteID,
+                                    attack: newAttack,
+                                    duration: newDuration,
+                                    startPitch: note.startPitch,
+                                    endPitch: note.endPitch,
+                                    extras: note.extras)
         }
 
         timeRange = Self.timeRange(in: notes)
@@ -146,12 +146,12 @@ extension NoteTable {
                   let newEndPitch = loPitch.transposed(by: dirInt2)
             else { throw Error.invertFailure(note.attack, note.duration, note.startPitch, note.endPitch) }
 
-            notes[idx] = Note(noteID: note.noteID,
-                              attack: note.attack,
-                              duration: note.duration,
-                              startPitch: newStartPitch,
-                              endPitch: newEndPitch,
-                              extras: note.extras)
+            notes[idx] = StoredNote(noteID: note.noteID,
+                                    attack: note.attack,
+                                    duration: note.duration,
+                                    startPitch: newStartPitch,
+                                    endPitch: newEndPitch,
+                                    extras: note.extras)
         }
 
         notes.sort()
@@ -178,12 +178,12 @@ extension NoteTable {
             guard let newAttack = note.attack.moved(by: directedDuration)
             else { throw Error.moveFailure(note.attack, note.duration, note.startPitch, note.endPitch) }
 
-            notes[idx] = Note(noteID: note.noteID,
-                              attack: newAttack,
-                              duration: note.duration,
-                              startPitch: note.startPitch,
-                              endPitch: note.endPitch,
-                              extras: note.extras)
+            notes[idx] = StoredNote(noteID: note.noteID,
+                                    attack: newAttack,
+                                    duration: note.duration,
+                                    startPitch: note.startPitch,
+                                    endPitch: note.endPitch,
+                                    extras: note.extras)
         }
 
         timeRange = Self.timeRange(in: notes)
@@ -220,12 +220,12 @@ extension NoteTable {
                   let newAttack = loTime.moved(by: dirDur)
             else { throw Error.reverseFailure(note.attack, note.duration, note.startPitch, note.endPitch) }
 
-            notes[idx] = Note(noteID: note.noteID,
-                              attack: newAttack,
-                              duration: note.duration,
-                              startPitch: note.endPitch,
-                              endPitch: note.startPitch,
-                              extras: note.extras)
+            notes[idx] = StoredNote(noteID: note.noteID,
+                                    attack: newAttack,
+                                    duration: note.duration,
+                                    startPitch: note.endPitch,
+                                    endPitch: note.startPitch,
+                                    extras: note.extras)
         }
 
         notes.sort()
@@ -253,12 +253,12 @@ extension NoteTable {
                   let newEndPitch = note.endPitch.transposed(by: directedInterval)
             else { throw Error.transposeFailure(note.attack, note.duration, note.startPitch, note.endPitch) }
 
-            notes[idx] = Note(noteID: note.noteID,
-                              attack: note.attack,
-                              duration: note.duration,
-                              startPitch: newStartPitch,
-                              endPitch: newEndPitch,
-                              extras: note.extras)
+            notes[idx] = StoredNote(noteID: note.noteID,
+                                    attack: note.attack,
+                                    duration: note.duration,
+                                    startPitch: newStartPitch,
+                                    endPitch: newEndPitch,
+                                    extras: note.extras)
         }
 
         pitchRange = Self.pitchRange(in: notes)

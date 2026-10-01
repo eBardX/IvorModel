@@ -20,17 +20,17 @@ extension NoteTable {
 
         // MARK: Private Type Aliases
 
-        private typealias Duration  = NoteTable.DurationType
-        private typealias Note      = NoteTable.Note
-        private typealias NotePair  = (tiedPitch: TiedPitch, duration: Duration)
-        private typealias NoteSlice = NoteEvent<TimeType, PitchType>
-        private typealias TiedPitch = NoteSlice.TiedPitch
+        private typealias Duration   = NoteTable.DurationType
+        private typealias NotePair   = (tiedPitch: TiedPitch, duration: Duration)
+        private typealias NoteSlice  = NoteEvent<TimeType, PitchType>
+        private typealias StoredNote = NoteTable.StoredNote
+        private typealias TiedPitch  = NoteSlice.TiedPitch
 
         // MARK: Private Instance Properties
 
         private var currentPairs: [NotePair]
         private var currentTime: TimeType
-        private var noteReader: SequenceReader<[Note]>
+        private var noteReader: SequenceReader<[StoredNote]>
         private var noteSlices: [NoteSlice]
     }
 }

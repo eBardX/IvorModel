@@ -46,10 +46,10 @@ extension DynamicMap {
                                                                   direction: result.direction))
             else { throw Error.augmentFailure(entry.time) }
 
-            entries[idx] = Entry(entryID: entry.entryID,
-                                 time: newTime,
-                                 dynamic: entry.dynamic,
-                                 extras: entry.extras)
+            entries[idx] = StoredEntry(entryID: entry.entryID,
+                                       time: newTime,
+                                       dynamic: entry.dynamic,
+                                       extras: entry.extras)
         }
 
         entries.sort()
@@ -95,10 +95,10 @@ extension DynamicMap {
                                                                   direction: result.direction))
             else { throw Error.diminishFailure(entry.time) }
 
-            entries[idx] = Entry(entryID: entry.entryID,
-                                 time: newTime,
-                                 dynamic: entry.dynamic,
-                                 extras: entry.extras)
+            entries[idx] = StoredEntry(entryID: entry.entryID,
+                                       time: newTime,
+                                       dynamic: entry.dynamic,
+                                       extras: entry.extras)
         }
 
         entries.sort()
@@ -125,10 +125,10 @@ extension DynamicMap {
             guard let newTime = entry.time.moved(by: directedDuration)
             else { throw Error.moveFailure(entry.time) }
 
-            entries[idx] = Entry(entryID: entry.entryID,
-                                 time: newTime,
-                                 dynamic: entry.dynamic,
-                                 extras: entry.extras)
+            entries[idx] = StoredEntry(entryID: entry.entryID,
+                                       time: newTime,
+                                       dynamic: entry.dynamic,
+                                       extras: entry.extras)
         }
 
         entries.sort()
@@ -165,10 +165,10 @@ extension DynamicMap {
                   let newTime = loTime.moved(by: dirDur)
             else { throw Error.reverseFailure(entry.time) }
 
-            entries[idx] = Entry(entryID: entry.entryID,
-                                 time: newTime,
-                                 dynamic: entry.dynamic,
-                                 extras: entry.extras)
+            entries[idx] = StoredEntry(entryID: entry.entryID,
+                                       time: newTime,
+                                       dynamic: entry.dynamic,
+                                       extras: entry.extras)
         }
 
         entries.sort()
@@ -250,10 +250,10 @@ extension DynamicMap where TimeType == BeatTime {
             guard entryIDs?.contains(entry.entryID) ?? true
             else { continue }
 
-            entries[idx] = Entry(entryID: entry.entryID,
-                                 time: quantizer.quantize(entry.time),
-                                 dynamic: entry.dynamic,
-                                 extras: entry.extras)
+            entries[idx] = StoredEntry(entryID: entry.entryID,
+                                       time: quantizer.quantize(entry.time),
+                                       dynamic: entry.dynamic,
+                                       extras: entry.extras)
         }
 
         entries.sort()

@@ -19,9 +19,9 @@ extension DynamicMapInternalTests {
 
     @Test
     func deduplicated_keepsFirstOccurrence() {
-        let first = DynamicMap<BeatTime>.Entry(time: 1, dynamic: .f, extras: nil)
-        let duplicate = DynamicMap<BeatTime>.Entry(time: 1, dynamic: .f, extras: nil)
-        let distinct = DynamicMap<BeatTime>.Entry(time: 2, dynamic: .p, extras: nil)
+        let first = DynamicMap<BeatTime>.StoredEntry(time: 1, dynamic: .f, extras: nil)
+        let duplicate = DynamicMap<BeatTime>.StoredEntry(time: 1, dynamic: .f, extras: nil)
+        let distinct = DynamicMap<BeatTime>.StoredEntry(time: 2, dynamic: .p, extras: nil)
         let result = DynamicMap<BeatTime>.deduplicated([first, duplicate, distinct])
 
         #expect(result.count == 2)
@@ -36,7 +36,9 @@ extension DynamicMapInternalTests {
 
         map.insert(time: 1, dynamic: .f)
 
-        map.forEach { entryID, _, _, _ in foundEntryID = entryID }
+        for entry in map {
+            foundEntryID = entry.entryID
+        }
 
         #expect(try map.firstIndex(entryID: #require(foundEntryID)) == 0)
     }
@@ -72,16 +74,16 @@ extension DynamicMapInternalTests {
 
     @Test
     func hasExtras_withExtras() {
-        let entries = [DynamicMap<BeatTime>.Entry(time: 1,
-                                                  dynamic: .f,
-                                                  extras: Extras(elements: [Extra(name: "accent")]))]
+        let entries = [DynamicMap<BeatTime>.StoredEntry(time: 1,
+                                                        dynamic: .f,
+                                                        extras: Extras(elements: [Extra(name: "accent")]))]
 
         #expect(DynamicMap<BeatTime>.hasExtras(in: entries))
     }
 
     @Test
     func hasExtras_withoutExtras() {
-        let entries = [DynamicMap<BeatTime>.Entry(time: 1, dynamic: .f, extras: nil)]
+        let entries = [DynamicMap<BeatTime>.StoredEntry(time: 1, dynamic: .f, extras: nil)]
 
         #expect(!DynamicMap<BeatTime>.hasExtras(in: entries))
     }
