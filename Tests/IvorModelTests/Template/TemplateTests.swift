@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 @testable import IvorTuning
@@ -40,6 +41,20 @@ extension TemplateTests {
     }
 
     @Test
+    func codable_normalizesName() throws {
+        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        let data = try JSONEncoder().encode(Template(name: "T", content: .standardBeat(markovChain)))
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        object["name"] = "  My \n Template "
+
+        let decoded = try JSONDecoder().decode(Template.self,
+                                               from: JSONSerialization.data(withJSONObject: object))
+
+        #expect(decoded.name == "My Template")
+    }
+
+    @Test
     func comparable() throws {
         let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
         let alpha  = Template(name: "Alpha", content: .standardBeat(markovChain))
@@ -69,6 +84,13 @@ extension TemplateTests {
         let tmpl2  = Template(name: "My Template", content: .standardBeat(markovChain))
 
         #expect(tmpl1 != tmpl2)
+    }
+
+    @Test
+    func init_normalizesName() throws {
+        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+
+        #expect(Template(name: " My\t Template ", content: .standardBeat(markovChain)).name == "My Template")
     }
 
     @Test
@@ -181,6 +203,16 @@ extension TemplateTests {
             try tmpl.rename(to: "Renamed")
         }
         #expect(tmpl.name == "Original")
+    }
+
+    @Test
+    func rename_normalizesName() throws {
+        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        var tmpl = Template(name: "Original", content: .standardBeat(markovChain))
+
+        try tmpl.rename(to: "  Re  named ")
+
+        #expect(tmpl.name == "Re named")
     }
 
     @Test

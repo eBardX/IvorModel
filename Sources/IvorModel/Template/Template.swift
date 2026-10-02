@@ -5,6 +5,7 @@ public import IvorTuning
 
 private import Foundation
 private import XestiMarkov
+private import XestiTools
 
 /// An analysis of a ``Work`` that captures its musical essence and can generate new, derived works.
 public struct Template {
@@ -13,13 +14,14 @@ public struct Template {
 
     /// Creates a new template with the given name and content.
     ///
-    /// - Parameter name:     The display name of the template.
+    /// - Parameter name:     The display name of the template. Its whitespace is normalized to
+    ///                       a single line.
     /// - Parameter content:  The ``Template/Content`` holding the analysis data.
     public init(name: String,
                 content: Content) {
         self.content = content
         self.isLocked = false
-        self.name = name
+        self.name = name.normalizingWhitespace()
         self.templateID = TemplateID()
         self.version = Self.currentVersion
     }
@@ -44,7 +46,7 @@ public struct Template {
     /// permitted, so a locked template can always be unlocked.
     public var isLocked: Bool
 
-    /// The display name of this template.
+    /// The display name of this template, with whitespace normalized to a single line.
     ///
     /// To change it, use ``rename(to:)``.
     public internal(set) var name: String
@@ -113,14 +115,14 @@ extension Template {
 
     /// Changes the display name of this template.
     ///
-    /// - Parameter name:   The new display name.
+    /// - Parameter name:   The new display name. Its whitespace is normalized to a single line.
     ///
     /// - Throws:   ``Template/Error/templateIsLocked`` if this template is locked.
     public mutating func rename(to name: String) throws(Error) {
         guard !isLocked
         else { throw Error.templateIsLocked }
 
-        self.name = name
+        self.name = name.normalizingWhitespace()
     }
 
     // MARK: Private Nested Types
@@ -169,7 +171,7 @@ extension Template: Codable {
                                              forKey: .isLocked)
 
         self.name = try container.decode(String.self,
-                                         forKey: .name)
+                                         forKey: .name).normalizingWhitespace()
 
         self.templateID = try container.decode(TemplateID.self,
                                                forKey: .templateID)

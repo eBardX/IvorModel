@@ -11,7 +11,8 @@ extension Work {
     /// notation, or `nil` if this work already has both, so there is nothing to convert.
     ///
     /// Like ``warped()``, the new work has a fresh ``Work/workID``, is unlocked, and keeps this
-    /// work’s ``Work/name`` and ``Work/smpteStartTime``.
+    /// work’s ``Work/name``, ``Work/smpteStartTime``, and ``Work/metadata``, along with each
+    /// part’s ``Part/metadata``.
     ///
     /// Always permitted, even on a locked work: this returns an independent copy rather than
     /// mutating `self`, so ``Work/isLocked`` does not apply.
@@ -68,7 +69,8 @@ extension Work {
 
         return Work(name: name,
                     content: newContent,
-                    smpteStartTime: smpteStartTime)
+                    smpteStartTime: smpteStartTime,
+                    metadata: metadata)
     }
 
     // MARK: Internal Type Methods
@@ -119,7 +121,8 @@ extension Work {
              instrumentMap: convertBeatTimes(in: part.instrumentMap,
                                              using: timeConverter),
              panMap: convertBeatTimes(in: part.panMap,
-                                      using: timeConverter))
+                                      using: timeConverter),
+             metadata: Part.Metadata(part.metadata))
     }
 
     internal static func convertWallTimes<PitchType: PitchProtocol>(in part: Part<WallTime, PitchType>,
@@ -132,7 +135,8 @@ extension Work {
              instrumentMap: _convertWallTimes(in: part.instrumentMap,
                                               using: timeConverter),
              panMap: _convertWallTimes(in: part.panMap,
-                                       using: timeConverter))
+                                       using: timeConverter),
+             metadata: Part.Metadata(part.metadata))
     }
 
     // MARK: Private Type Methods
@@ -179,7 +183,8 @@ extension Work {
                                         using: convert),
              dynamicMap: part.dynamicMap,
              instrumentMap: part.instrumentMap,
-             panMap: part.panMap)
+             panMap: part.panMap,
+             metadata: Part.Metadata(part.metadata))
     }
 
     private static func _convertPitchNotation(of content: Content,

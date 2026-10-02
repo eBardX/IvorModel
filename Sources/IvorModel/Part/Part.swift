@@ -3,6 +3,8 @@
 public import IvorTiming
 public import IvorTuning
 
+private import XestiTools
+
 /// A named musical part containing a note table and its parameter maps.
 public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
@@ -18,7 +20,8 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     /// Creates a part with the given name and optional note/map data.
     ///
-    /// - Parameter name:           The display name of the part.
+    /// - Parameter name:           The display name of the part. Its whitespace is
+    ///                             normalized to a single line.
     /// - Parameter noteTable:      The note table for the part. Defaults to an
     ///                             empty note table.
     /// - Parameter dynamicMap:     The dynamic map for the part. Defaults to
@@ -27,14 +30,21 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
     ///                             an empty instrument map.
     /// - Parameter panMap:         The pan map for the part. Defaults to an
     ///                             empty pan map.
+    /// - Parameter metadata:       The descriptive ``Part/Metadata`` of the
+    ///                             part. Defaults to empty metadata.
     public init(name: String,
                 noteTable: NoteTable<TimeType, PitchType>? = nil,
                 dynamicMap: DynamicMap<TimeType>? = nil,
                 instrumentMap: InstrumentMap<TimeType>? = nil,
-                panMap: PanMap<TimeType>? = nil) {
+                panMap: PanMap<TimeType>? = nil,
+                metadata: Metadata = Metadata()) {
         self.dynamicMap = dynamicMap ?? DynamicMap()
         self.instrumentMap = instrumentMap ?? InstrumentMap()
-        self.name = name
+        self.metadata = metadata
+        //
+        // `didSet` doesn't run during initialization, so normalize here too:
+        //
+        self.name = name.normalizingWhitespace()
         self.noteTable = noteTable ?? NoteTable()
         self.panMap = panMap ?? PanMap()
         self.partID = PartID()
@@ -53,8 +63,13 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
     /// The instrument map for this part.
     public var instrumentMap: InstrumentMap<TimeType>
 
-    /// The display name of this part.
-    public var name: String
+    /// Descriptive metadata about this part.
+    public var metadata: Metadata
+
+    /// The display name of this part, with whitespace normalized to a single line.
+    public var name: String {
+        didSet { name = name.normalizingWhitespace() }
+    }
 
     /// The note table for this part.
     public var noteTable: NoteTable<TimeType, PitchType>
@@ -96,14 +111,15 @@ extension Part {
         noteTable.attackingIn(range)
     }
 
-    /// Returns a copy of this part with the same content but a distinct, freshly
-    /// minted ``PartID``.
+    /// Returns a copy of this part with the same content and ``metadata`` but a
+    /// distinct, freshly minted ``PartID``.
     public func duplicated() -> Self {
         Self(name: name,
              noteTable: noteTable,
              dynamicMap: dynamicMap,
              instrumentMap: instrumentMap,
-             panMap: panMap)
+             panMap: panMap,
+             metadata: metadata)
     }
 
     /// Returns the identities of the notes in this part whose pitch — start, end, or anything a
@@ -150,6 +166,9 @@ extension Part: Codable {
         let instrumentMap = try container.decode(InstrumentMap<TimeType>.self,
                                                  forKey: .instrumentMap)
 
+        let metadata = try container.decode(Metadata.self,
+                                            forKey: .metadata)
+
         let name = try container.decode(String.self,
                                         forKey: .name)
 
@@ -163,7 +182,8 @@ extension Part: Codable {
                   noteTable: noteTable,
                   dynamicMap: dynamicMap,
                   instrumentMap: instrumentMap,
-                  panMap: panMap)
+                  panMap: panMap,
+                  metadata: metadata)
     }
 
     // MARK: Public Instance Methods
@@ -181,6 +201,9 @@ extension Part: Codable {
         //
         try container.encode(name,
                              forKey: .name)
+
+        try container.encode(metadata,
+                             forKey: .metadata)
 
         try container.encode(noteTable,
                              forKey: .noteTable)
@@ -200,6 +223,7 @@ extension Part: Codable {
     private enum CodingKeys: String, CodingKey {
         case dynamicMap
         case instrumentMap
+        case metadata
         case name
         case noteTable
         case panMap

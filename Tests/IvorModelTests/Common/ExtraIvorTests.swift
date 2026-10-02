@@ -123,6 +123,48 @@ extension ExtraIvorTests {
     }
 
     @Test
+    func instrumentAbbreviation() {
+        #expect(Extra.instrumentAbbreviation.name == "instrumentAbbreviation")
+        #expect(Extra.instrumentAbbreviation.values.isEmpty)
+    }
+
+    @Test
+    func instrumentName() {
+        #expect(Extra.instrumentName.name == "instrumentName")
+        #expect(Extra.instrumentName.values.isEmpty)
+    }
+
+    @Test
+    func instrumentNameAndAbbreviation_roundTripThroughInstrumentMapEntry() {
+        var instrumentMap = InstrumentMap<BeatTime>()
+
+        instrumentMap.insert(time: 0,
+                             instrument: .vanilla,
+                             extras: Extras(elements: [Extra(name: Extra.instrumentName.name,
+                                                             values: [.string("Flauto 1")]),
+                                                       Extra(name: Extra.instrumentAbbreviation.name,
+                                                             values: [.string("Fl. 1")])]))
+
+        var foundName: String?
+        var foundAbbreviation: String?
+
+        for entry in instrumentMap {
+            for extra in entry.extras?.elements ?? [] {
+                if extra.name == Extra.instrumentName.name,
+                   case let .string(value)? = extra.values.first {
+                    foundName = value
+                } else if extra.name == Extra.instrumentAbbreviation.name,
+                          case let .string(value)? = extra.values.first {
+                    foundAbbreviation = value
+                }
+            }
+        }
+
+        #expect(foundName == "Flauto 1")
+        #expect(foundAbbreviation == "Fl. 1")
+    }
+
+    @Test
     func marcato() {
         #expect(Extra.marcato.name == "marcato")
         #expect(Extra.marcato.values.isEmpty)

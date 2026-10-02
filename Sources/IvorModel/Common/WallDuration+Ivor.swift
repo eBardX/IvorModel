@@ -18,6 +18,13 @@ extension WallDuration {
     ///
     /// - Parameter smpteTime:  The timecode to convert.
     public init(smpteTime: SMPTETime) {
-        self.init(smpteTime.elapsedSeconds.microseconds)
+        //
+        // Can't fail: the elapsed seconds are never negative, and timecode wraps around after
+        // 24 hours, far short of the largest wall duration.
+        //
+        guard let duration = Self(numberValue: smpteTime.elapsedSeconds.numberValue)
+        else { preconditionFailure("Unrepresentable wall duration for \(smpteTime)") }
+
+        self = duration
     }
 }

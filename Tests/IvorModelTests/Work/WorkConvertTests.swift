@@ -15,6 +15,23 @@ struct WorkConvertTests {
 
 extension WorkConvertTests {
     @Test
+    func convert_beatToWall_keepsMetadata() throws {
+        let part = Part<BeatTime, Pitch>(name: "Violin",
+                                         metadata: makePartMetadata(Part<BeatTime, Pitch>.self))
+        let work = Work(content: .standardBeat([part], TempoMap()),
+                        metadata: makeWorkMetadata())
+
+        let result = try #require(try work.convert(timeBasis: .wall,
+                                                   pitchNotation: .standard))
+
+        guard case let .standardWall(parts) = result.content
+        else { Issue.record("Expected .standardWall content."); return }
+
+        #expect(result.metadata == work.metadata)
+        #expect(parts[0].metadata == makePartMetadata(Part<WallTime, Pitch>.self))
+    }
+
+    @Test
     func convert_keepsNameAndSMPTEStartTime() throws {
         let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps24))
         let work = Work(name: "My Work",
@@ -101,6 +118,23 @@ extension WorkConvertTests {
     }
 
     @Test
+    func convert_pitchNotation_keepsMetadata() throws {
+        let part = Part<BeatTime, Pitch>(name: "Violin",
+                                         metadata: makePartMetadata(Part<BeatTime, Pitch>.self))
+        let work = Work(content: .standardBeat([part], TempoMap()),
+                        metadata: makeWorkMetadata())
+
+        let result = try #require(try work.convert(timeBasis: .beat,
+                                                   pitchNotation: .absolute))
+
+        guard case let .absoluteBeat(parts, _) = result.content
+        else { Issue.record("Expected .absoluteBeat content."); return }
+
+        #expect(result.metadata == work.metadata)
+        #expect(parts[0].metadata == makePartMetadata(Part<BeatTime, Frequency>.self))
+    }
+
+    @Test
     func convert_returnsNewWorkID() throws {
         let work = Work(content: .standardBeat([], TempoMap()))
 
@@ -178,5 +212,22 @@ extension WorkConvertTests {
             try work.convert(timeBasis: .beat,
                              pitchNotation: target)
         }
+    }
+
+    @Test
+    func convert_wallToBeat_keepsMetadata() throws {
+        let part = Part<WallTime, Pitch>(name: "Violin",
+                                         metadata: makePartMetadata(Part<WallTime, Pitch>.self))
+        let work = Work(content: .standardWall([part]),
+                        metadata: makeWorkMetadata())
+
+        let result = try #require(try work.convert(timeBasis: .beat,
+                                                   pitchNotation: .standard))
+
+        guard case let .standardBeat(parts, _) = result.content
+        else { Issue.record("Expected .standardBeat content."); return }
+
+        #expect(result.metadata == work.metadata)
+        #expect(parts[0].metadata == makePartMetadata(Part<BeatTime, Pitch>.self))
     }
 }

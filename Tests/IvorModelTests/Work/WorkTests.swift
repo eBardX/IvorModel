@@ -14,6 +14,43 @@ struct WorkTests {
 
 extension WorkTests {
     @Test
+    func codable_metadataRoundTrips() throws {
+        let work = Work(name: "Aubade", metadata: makeWorkMetadata())
+        let decoded = try JSONDecoder().decode(Work.self, from: JSONEncoder().encode(work))
+
+        #expect(decoded.metadata == work.metadata)
+    }
+
+    @Test
+    func codable_missingMetadataIsError() throws {
+        let data = try JSONEncoder().encode(Work(name: "Cue"))
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        #expect(object["metadata"] != nil)
+
+        object["metadata"] = nil
+
+        let badData = try JSONSerialization.data(withJSONObject: object)
+
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(Work.self, from: badData)
+        }
+    }
+
+    @Test
+    func codable_normalizesName() throws {
+        let data = try JSONEncoder().encode(Work(name: "Cue"))
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        object["name"] = "  Sketch \t 3 "
+
+        let decoded = try JSONDecoder().decode(Work.self,
+                                               from: JSONSerialization.data(withJSONObject: object))
+
+        #expect(decoded.name == "Sketch 3")
+    }
+
+    @Test
     func comparable() {
         let alpha = Work(name: "Alpha")
         let beta  = Work(name: "Beta")
@@ -40,6 +77,13 @@ extension WorkTests {
     }
 
     @Test
+    func duplicated_keepsMetadata() {
+        let original = Work(name: "Aubade", metadata: makeWorkMetadata())
+
+        #expect(original.duplicated().metadata == original.metadata)
+    }
+
+    @Test
     func duplicated_ofLockedWork_isUnlocked() {
         var original = Work(name: "Quartet")
 
@@ -53,6 +97,16 @@ extension WorkTests {
         let work = Work(name: "My Work")
 
         #expect(work == work)   // swiftlint:disable:this identical_operands
+    }
+
+    @Test
+    func equality_ignoresMetadata() {
+        var work = Work(name: "Aubade")
+        let original = work
+
+        try? work.modifyMetadata { $0.title = "Dawn" }
+
+        #expect(work == original)
     }
 
     @Test
@@ -72,11 +126,29 @@ extension WorkTests {
     }
 
     @Test
+    func init_metadata() {
+        let work = Work(name: "Aubade", metadata: makeWorkMetadata())
+
+        #expect(work.metadata == makeWorkMetadata())
+    }
+
+    @Test
+    func init_metadataDefaultsToEmpty() {
+        #expect(Work().metadata == Work.Metadata())
+    }
+
+    @Test
     func init_name() {
         let work = Work(name: "Symphony No. 1")
 
         #expect(work.name == "Symphony No. 1")
         #expect(work.version == Work.currentVersion)
+    }
+
+    @Test
+    func init_normalizesName() {
+        #expect(Work(name: "  Sketch  3\n").name == "Sketch 3")
+        #expect(Work(name: " \t ").name.isEmpty)
     }
 
     @Test
@@ -97,6 +169,32 @@ extension WorkTests {
         try work.replaceContent(with: .standardWall([part]))
 
         #expect(work.partCount == 1)
+    }
+
+    @Test
+    func modifyMetadata() throws {
+        var work = Work(name: "Aubade")
+
+        let result = try work.modifyMetadata { metadata in
+            metadata.title = " Aubade  in C "
+
+            return 42
+        }
+
+        #expect(result == 42)
+        #expect(work.metadata.title == "Aubade in C")
+    }
+
+    @Test
+    func modifyMetadata_lockedWork_throws() {
+        var work = Work(name: "Aubade")
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.modifyMetadata { $0.title = "Dawn" }
+        }
+        #expect(work.metadata.title == nil)
     }
 
     @Test
@@ -162,6 +260,15 @@ extension WorkTests {
             try work.rename(to: "Renamed")
         }
         #expect(work.name == "Original")
+    }
+
+    @Test
+    func rename_normalizesName() throws {
+        var work = Work(name: "Aubade")
+
+        try work.rename(to: "  Sketch\n3 ")
+
+        #expect(work.name == "Sketch 3")
     }
 
     @Test

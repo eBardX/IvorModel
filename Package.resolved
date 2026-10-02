@@ -1,5 +1,5 @@
 {
-  "originHash" : "d0cbef8805d7919d2f8141aecc3b0235acdf21eb710f9a61d13adb012dc17e8a",
+  "originHash" : "1ea274de2c2dec1adcb71ce826df4ef4846eaa29610e0cc80968216ebe38c68f",
   "pins" : [
     {
       "identity" : "bigint",
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTiming.git",
       "state" : {
-        "revision" : "8932dd49f0db9b2ffa44d323f947c9542a0f7eab",
-        "version" : "0.17.0"
+        "revision" : "6b39e3bc9aad892e663e82762d6471b3fa44c4fb",
+        "version" : "0.18.0"
       }
     },
     {
@@ -96,8 +96,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/XestiTools.git",
       "state" : {
-        "revision" : "35a4c43dde224aadcadad66dac7a35104537694d",
-        "version" : "10.0.0"
+        "revision" : "3dee54dd2f6b8732705e97ef9e3e1288d61002c9",
+        "version" : "10.1.0"
       }
     },
     {

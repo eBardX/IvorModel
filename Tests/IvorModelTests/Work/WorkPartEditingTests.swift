@@ -35,6 +35,15 @@ extension WorkPartEditingTests {
     }
 
     @Test
+    func addPart_normalizesName() throws {
+        var work = Work(content: .standardBeat([], TempoMap()))
+
+        try work.addPart(name: "  Violin \n 2 ")
+
+        #expect(work.partName(at: 0) == "Violin 2")
+    }
+
+    @Test
     func duplicatePart_insertsAfterOriginal() throws {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
@@ -45,6 +54,18 @@ extension WorkPartEditingTests {
         #expect(work.partCount == 3)
         #expect(work.partIDs == [part1.partID, duplicateID, part2.partID])
         #expect(work.partName(at: 1) == "Violin")
+    }
+
+    @Test
+    func duplicatePart_keepsMetadata() throws {
+        let part = Part<BeatTime, Pitch>(name: "Violin",
+                                         metadata: makePartMetadata(Part<BeatTime, Pitch>.self))
+        var work = Work(content: .standardBeat([part], TempoMap()))
+
+        let duplicateID = try #require(try work.duplicatePart(part.partID))
+        let duplicate = try #require(work.part(duplicateID, as: Part<BeatTime, Pitch>.self))
+
+        #expect(duplicate.metadata == part.metadata)
     }
 
     @Test
@@ -125,6 +146,17 @@ extension WorkPartEditingTests {
                             to: "Cello")
 
         #expect(work.partName(at: 0) == "Violin")
+    }
+
+    @Test
+    func renamePart_normalizesName() throws {
+        let part = Part<BeatTime, Pitch>(name: "Violin")
+        var work = Work(content: .standardBeat([part], TempoMap()))
+
+        try work.renamePart(part.partID,
+                            to: "\tCello  1 ")
+
+        #expect(work.partName(at: 0) == "Cello 1")
     }
 
     @Test

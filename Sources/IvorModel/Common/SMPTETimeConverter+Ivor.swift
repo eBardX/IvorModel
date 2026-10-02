@@ -41,6 +41,13 @@ extension SMPTETimeConverter {
     /// - Precondition: `time`’s frame rate must equal this converter’s
     ///                 `frameRate`.
     public func wallTime(at time: SMPTETime) -> WallTime {
-        WallTime(seconds(at: time).microseconds)
+        //
+        // Can't fail: the seconds are never negative, and timecode wraps around after 24 hours,
+        // far short of the largest wall time.
+        //
+        guard let wallTime = WallTime(numberValue: seconds(at: time).numberValue)
+        else { preconditionFailure("Unrepresentable wall time for \(time)") }
+
+        return wallTime
     }
 }

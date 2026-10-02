@@ -28,3 +28,18 @@ func makeLockedWorkSB() -> (work: Work, partID: PartID) {
 
     return (work, part.partID)
 }
+
+func makePartMetadata<T: TimeProtocol, P: PitchProtocol>(_ type: Part<T, P>.Type) -> Part<T, P>.Metadata {
+    Part<T, P>.Metadata(abbreviation: "Vln.",
+                        remarks: Remark(text: "Muted throughout.").map { [$0] } ?? [])
+}
+
+func makeWorkMetadata() -> Work.Metadata {
+    Work.Metadata(title: "Aubade",
+                  subtitles: ["for violin"],
+                  alternateTitles: ["Dawn Song"],
+                  parentWorkTitle: "Suite No. 1",
+                  credits: Credit(name: "J. Smith", role: .composer).map { [$0] } ?? [],
+                  rights: RightsNotice(text: "© 2026 J. Smith", scope: .music).map { [$0] } ?? [],
+                  remarks: Remark(text: "Written at dawn.", label: "history").map { [$0] } ?? [])
+}

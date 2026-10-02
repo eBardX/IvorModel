@@ -74,6 +74,22 @@ extension WorkWarpTests {
     }
 
     @Test
+    func unwarped_keepsMetadata() throws {
+        let part = Part<WallTime, Pitch>(name: "Violin",
+                                         metadata: makePartMetadata(Part<WallTime, Pitch>.self))
+        let work = Work(content: .standardWall([part]),
+                        metadata: makeWorkMetadata())
+
+        let result = try #require(work.unwarped(using: TempoMap()))
+
+        guard case let .standardBeat(parts, _) = result.content
+        else { Issue.record("Expected .standardBeat content."); return }
+
+        #expect(result.metadata == work.metadata)
+        #expect(parts[0].metadata == makePartMetadata(Part<BeatTime, Pitch>.self))
+    }
+
+    @Test
     func unwarped_keyboardWall() {
         var table = NoteTable<WallTime, NoteNumber>()
 
@@ -161,6 +177,22 @@ extension WorkWarpTests {
         #expect(parts[0].instrumentMap.entries.first?.instrument == Instrument(stringValue: "Piano").require())
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.pan == .center)
+    }
+
+    @Test
+    func varispeeded_keepsMetadata() throws {
+        let part = Part<BeatTime, Frequency>(name: "Violin",
+                                             metadata: makePartMetadata(Part<BeatTime, Frequency>.self))
+        let work = Work(content: .absoluteBeat([part], TempoMap()),
+                        metadata: makeWorkMetadata())
+
+        let result = try #require(try work.varispeeded())
+
+        guard case let .absoluteWall(parts) = result.content
+        else { Issue.record("Expected .absoluteWall content."); return }
+
+        #expect(result.metadata == work.metadata)
+        #expect(parts[0].metadata == makePartMetadata(Part<WallTime, Frequency>.self))
     }
 
     @Test
@@ -331,6 +363,22 @@ extension WorkWarpTests {
         #expect(parts[0].dynamicMap.entries.first?.time == expectedTime)
         #expect(parts[0].instrumentMap.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
+    }
+
+    @Test
+    func warped_keepsMetadata() throws {
+        let part = Part<BeatTime, Pitch>(name: "Violin",
+                                         metadata: makePartMetadata(Part<BeatTime, Pitch>.self))
+        let work = Work(content: .standardBeat([part], TempoMap()),
+                        metadata: makeWorkMetadata())
+
+        let result = try #require(work.warped())
+
+        guard case let .standardWall(parts) = result.content
+        else { Issue.record("Expected .standardWall content."); return }
+
+        #expect(result.metadata == work.metadata)
+        #expect(parts[0].metadata == makePartMetadata(Part<WallTime, Pitch>.self))
     }
 
     @Test

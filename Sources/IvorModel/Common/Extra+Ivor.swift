@@ -50,6 +50,18 @@ extension Extra {
     /// payload.
     public static let harmonic = Self(name: "harmonic")
 
+    /// The abbreviated form of ``instrumentName`` (e.g. `"Fl. 1"`), attached
+    /// to an ``InstrumentMap`` entry. Payload: a single `.string`, which
+    /// whoever creates the entry normalizes with `normalizingWhitespace()`.
+    public static let instrumentAbbreviation = Self(name: "instrumentAbbreviation")
+
+    /// The human-readable name of the instrument in effect from an
+    /// ``InstrumentMap`` entry (e.g. `"Flauto 1"`, `"Cl 1 (in A)"`), as
+    /// distinct from the playback ``Instrument`` designation. Payload: a
+    /// single `.string`, which whoever creates the entry normalizes with
+    /// `normalizingWhitespace()`.
+    public static let instrumentName = Self(name: "instrumentName")
+
     /// A marcato articulation on a ``NoteTable`` note. Bare flag, no
     /// payload.
     public static let marcato = Self(name: "marcato")
