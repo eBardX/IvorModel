@@ -11,8 +11,7 @@ extension Work {
     /// notation, or `nil` if this work already has both, so there is nothing to convert.
     ///
     /// Like ``warped()``, the new work has a fresh ``Work/workID``, is unlocked, and keeps this
-    /// work’s ``Work/name``, ``Work/smpteStartTime``, and ``Work/metadata``, along with each
-    /// part’s ``Part/metadata``.
+    /// work’s ``Work/name``, ``Work/smpteStartTime``, and ``Work/metadata``.
     ///
     /// Always permitted, even on a locked work: this returns an independent copy rather than
     /// mutating `self`, so ``Work/isLocked`` does not apply.
@@ -121,8 +120,7 @@ extension Work {
              instrumentMap: convertBeatTimes(in: part.instrumentMap,
                                              using: timeConverter),
              panMap: convertBeatTimes(in: part.panMap,
-                                      using: timeConverter),
-             metadata: Part.Metadata(part.metadata))
+                                      using: timeConverter))
     }
 
     internal static func convertWallTimes<PitchType: PitchProtocol>(in part: Part<WallTime, PitchType>,
@@ -135,8 +133,7 @@ extension Work {
              instrumentMap: _convertWallTimes(in: part.instrumentMap,
                                               using: timeConverter),
              panMap: _convertWallTimes(in: part.panMap,
-                                       using: timeConverter),
-             metadata: Part.Metadata(part.metadata))
+                                       using: timeConverter))
     }
 
     // MARK: Private Type Methods
@@ -183,8 +180,7 @@ extension Work {
                                         using: convert),
              dynamicMap: part.dynamicMap,
              instrumentMap: part.instrumentMap,
-             panMap: part.panMap,
-             metadata: Part.Metadata(part.metadata))
+             panMap: part.panMap)
     }
 
     private static func _convertPitchNotation(of content: Content,

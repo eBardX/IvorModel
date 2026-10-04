@@ -30,17 +30,13 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
     ///                             an empty instrument map.
     /// - Parameter panMap:         The pan map for the part. Defaults to an
     ///                             empty pan map.
-    /// - Parameter metadata:       The descriptive ``Part/Metadata`` of the
-    ///                             part. Defaults to empty metadata.
     public init(name: String,
                 noteTable: NoteTable<TimeType, PitchType>? = nil,
                 dynamicMap: DynamicMap<TimeType>? = nil,
                 instrumentMap: InstrumentMap<TimeType>? = nil,
-                panMap: PanMap<TimeType>? = nil,
-                metadata: Metadata = Metadata()) {
+                panMap: PanMap<TimeType>? = nil) {
         self.dynamicMap = dynamicMap ?? DynamicMap()
         self.instrumentMap = instrumentMap ?? InstrumentMap()
-        self.metadata = metadata
         //
         // `didSet` doesn't run during initialization, so normalize here too:
         //
@@ -62,9 +58,6 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     /// The instrument map for this part.
     public var instrumentMap: InstrumentMap<TimeType>
-
-    /// Descriptive metadata about this part.
-    public var metadata: Metadata
 
     /// The display name of this part, with whitespace normalized to a single line.
     public var name: String {
@@ -111,15 +104,14 @@ extension Part {
         noteTable.attackingIn(range)
     }
 
-    /// Returns a copy of this part with the same content and ``metadata`` but a
-    /// distinct, freshly minted ``PartID``.
+    /// Returns a copy of this part with the same content but a distinct, freshly
+    /// minted ``PartID``.
     public func duplicated() -> Self {
         Self(name: name,
              noteTable: noteTable,
              dynamicMap: dynamicMap,
              instrumentMap: instrumentMap,
-             panMap: panMap,
-             metadata: metadata)
+             panMap: panMap)
     }
 
     /// Returns the identities of the notes in this part whose pitch — start, end, or anything a
@@ -166,9 +158,6 @@ extension Part: Codable {
         let instrumentMap = try container.decode(InstrumentMap<TimeType>.self,
                                                  forKey: .instrumentMap)
 
-        let metadata = try container.decode(Metadata.self,
-                                            forKey: .metadata)
-
         let name = try container.decode(String.self,
                                         forKey: .name)
 
@@ -182,8 +171,7 @@ extension Part: Codable {
                   noteTable: noteTable,
                   dynamicMap: dynamicMap,
                   instrumentMap: instrumentMap,
-                  panMap: panMap,
-                  metadata: metadata)
+                  panMap: panMap)
     }
 
     // MARK: Public Instance Methods
@@ -201,9 +189,6 @@ extension Part: Codable {
         //
         try container.encode(name,
                              forKey: .name)
-
-        try container.encode(metadata,
-                             forKey: .metadata)
 
         try container.encode(noteTable,
                              forKey: .noteTable)
@@ -223,7 +208,6 @@ extension Part: Codable {
     private enum CodingKeys: String, CodingKey {
         case dynamicMap
         case instrumentMap
-        case metadata
         case name
         case noteTable
         case panMap

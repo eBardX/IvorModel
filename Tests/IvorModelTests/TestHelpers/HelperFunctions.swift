@@ -29,11 +29,6 @@ func makeLockedWorkSB() -> (work: Work, partID: PartID) {
     return (work, part.partID)
 }
 
-func makePartMetadata<T: TimeProtocol, P: PitchProtocol>(_ type: Part<T, P>.Type) -> Part<T, P>.Metadata {
-    Part<T, P>.Metadata(abbreviation: "Vln.",
-                        remarks: Remark(text: "Muted throughout.").map { [$0] } ?? [])
-}
-
 func makeWorkMetadata() -> Work.Metadata {
     Work.Metadata(title: "Aubade",
                   subtitles: ["for violin"],

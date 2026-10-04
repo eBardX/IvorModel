@@ -51,32 +51,6 @@ extension PartTests {
     }
 
     @Test
-    func codable_metadataRoundTrips() throws {
-        let original = Part<BeatTime, Pitch>(name: "Violin",
-                                             metadata: makePartMetadata(Part<BeatTime, Pitch>.self))
-        let decoded = try JSONDecoder().decode(Part<BeatTime, Pitch>.self,
-                                               from: JSONEncoder().encode(original))
-
-        #expect(decoded.metadata == original.metadata)
-    }
-
-    @Test
-    func codable_missingMetadataIsError() throws {
-        let data = try JSONEncoder().encode(Part<BeatTime, Pitch>(name: "Violin"))
-        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-
-        #expect(object["metadata"] != nil)
-
-        object["metadata"] = nil
-
-        let badData = try JSONSerialization.data(withJSONObject: object)
-
-        #expect(throws: DecodingError.self) {
-            try JSONDecoder().decode(Part<BeatTime, Pitch>.self, from: badData)
-        }
-    }
-
-    @Test
     func codable_normalizesName() throws {
         let data = try JSONEncoder().encode(Part<BeatTime, Pitch>(name: "Violin"))
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -102,14 +76,6 @@ extension PartTests {
     }
 
     @Test
-    func duplicated_keepsMetadata() {
-        let original = Part<BeatTime, Pitch>(name: "Violin",
-                                             metadata: makePartMetadata(Part<BeatTime, Pitch>.self))
-
-        #expect(original.duplicated().metadata == original.metadata)
-    }
-
-    @Test
     func init_defaults() {
         let part = Part<BeatTime, Pitch>(name: "Piano")
 
@@ -129,11 +95,6 @@ extension PartTests {
     }
 
     @Test
-    func init_metadataDefaultsToEmpty() {
-        #expect(Part<BeatTime, Pitch>(name: "Violin").metadata == Part<BeatTime, Pitch>.Metadata())
-    }
-
-    @Test
     func init_name() {
         let part = Part<BeatTime, Pitch>(name: "Cello")
 
@@ -144,15 +105,6 @@ extension PartTests {
     func init_normalizesName() {
         #expect(Part<BeatTime, Pitch>(name: "  Violin\t 1 ").name == "Violin 1")
         #expect(Part<BeatTime, Pitch>(name: "   ").name.isEmpty)
-    }
-
-    @Test
-    func metadata_isMutable() {
-        var part = Part<BeatTime, Pitch>(name: "Violin")
-
-        part.metadata.abbreviation = " Vln. "
-
-        #expect(part.metadata.abbreviation == "Vln.")
     }
 
     @Test

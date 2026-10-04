@@ -57,18 +57,6 @@ extension WorkPartEditingTests {
     }
 
     @Test
-    func duplicatePart_keepsMetadata() throws {
-        let part = Part<BeatTime, Pitch>(name: "Violin",
-                                         metadata: makePartMetadata(Part<BeatTime, Pitch>.self))
-        var work = Work(content: .standardBeat([part], TempoMap()))
-
-        let duplicateID = try #require(try work.duplicatePart(part.partID))
-        let duplicate = try #require(work.part(duplicateID, as: Part<BeatTime, Pitch>.self))
-
-        #expect(duplicate.metadata == part.metadata)
-    }
-
-    @Test
     func duplicatePart_missingID_isNoOp() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         var work = Work(content: .standardBeat([part], TempoMap()))
