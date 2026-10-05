@@ -11,7 +11,7 @@ extension Work {
     /// notation, or `nil` if this work already has both, so there is nothing to convert.
     ///
     /// Like ``warped()``, the new work has a fresh ``Work/workID``, is unlocked, and keeps this
-    /// work’s ``Work/name``, ``Work/smpteStartTime``, and ``Work/metadata``.
+    /// work’s ``Work/name``, ``Work/smpteStartTime``, and ``Work/info``.
     ///
     /// Always permitted, even on a locked work: this returns an independent copy rather than
     /// mutating `self`, so ``Work/isLocked`` does not apply.
@@ -69,7 +69,7 @@ extension Work {
         return Work(name: name,
                     content: newContent,
                     smpteStartTime: smpteStartTime,
-                    metadata: metadata)
+                    info: info)
     }
 
     // MARK: Internal Type Methods

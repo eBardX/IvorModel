@@ -12,7 +12,7 @@ public struct Work {
 
     // MARK: Public Initializers
 
-    /// Creates a new work with the given name, content, SMPTE start time, and metadata.
+    /// Creates a new work with the given name, content, SMPTE start time, and descriptive information.
     ///
     /// - Parameter name:           The display name of the work. Its whitespace is normalized
     ///                             to a single line. Defaults to an empty string.
@@ -20,16 +20,16 @@ public struct Work {
     ///                             standard-beat content with an empty tempo map.
     /// - Parameter smpteStartTime: The SMPTE timecode at which the work’s wall time zero falls.
     ///                             Defaults to ``defaultSMPTEStartTime``.
-    /// - Parameter metadata:       The descriptive ``Work/Metadata`` of the work. Defaults to
-    ///                             empty metadata.
+    /// - Parameter info:           The descriptive ``Work/Info`` of the work. Defaults to
+    ///                             empty information.
     public init(name: String = "",
                 content: Content? = nil,
                 smpteStartTime: SMPTETime = Self.defaultSMPTEStartTime,
-                metadata: Metadata = Metadata()) {
+                info: Info = Info()) {
         self.unsafeContent = content ?? .standardBeat([],
                                                       TempoMap())
+        self.info = info
         self.isLocked = false
-        self.metadata = metadata
         self.name = name.normalizingWhitespace()
         self.smpteStartTime = smpteStartTime
         self.workID = WorkID()
@@ -47,17 +47,17 @@ public struct Work {
     /// A Boolean value indicating whether this work is locked.
     ///
     /// A locked work cannot be modified until it is unlocked. Every method that would change its
-    /// ``content``, ``metadata``, ``name`` or ``smpteStartTime`` throws ``Work/Error/workIsLocked`` instead,
+    /// ``content``, ``info``, ``name`` or ``smpteStartTime`` throws ``Work/Error/workIsLocked`` instead,
     /// and ``Project/removeWork(_:)`` refuses to remove it. Methods that return a new work, such
     /// as ``duplicated()`` or ``warped()``, leave this work untouched and so are always permitted.
     /// Setting `isLocked` itself is always permitted, so a locked work can always be unlocked.
     public var isLocked: Bool
 
-    /// Descriptive metadata about this work.
+    /// Descriptive information about this work.
     ///
     /// It is about the work, not part of its identity, so it plays no part in comparing works.
-    /// To change it, use ``modifyMetadata(_:)``.
-    public internal(set) var metadata: Metadata
+    /// To change it, use ``modifyInfo(_:)``.
+    public internal(set) var info: Info
 
     /// The display name of the work, with whitespace normalized to a single line.
     ///
@@ -245,26 +245,26 @@ extension Work {
 
     // MARK: Public Instance Methods
 
-    /// Returns a copy of this work with the same content, ``smpteStartTime``, and ``metadata``
+    /// Returns a copy of this work with the same content, ``smpteStartTime``, and ``info``
     /// but a distinct, freshly minted ``WorkID``.
     public func duplicated() -> Self {
         Self(name: name,
              content: content,
              smpteStartTime: smpteStartTime,
-             metadata: metadata)
+             info: info)
     }
 
-    /// Edits the metadata of this work in place.
+    /// Edits the descriptive information of this work in place.
     ///
-    /// - Parameter body:   A closure that edits the metadata it is passed.
+    /// - Parameter body:   A closure that edits the information it is passed.
     ///
     /// - Returns:  The value returned by `body`.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
-    public mutating func modifyMetadata<R>(_ body: (inout Metadata) -> R) throws(Error) -> R {
+    public mutating func modifyInfo<R>(_ body: (inout Info) -> R) throws(Error) -> R {
         try ensureUnlocked()
 
-        return body(&metadata)
+        return body(&info)
     }
 
     /// Returns the name of the part at the given index.
@@ -397,11 +397,11 @@ extension Work: Codable {
         self.unsafeContent = try container.decode(Content.self,
                                                   forKey: .content)
 
+        self.info = try container.decode(Info.self,
+                                         forKey: .info)
+
         self.isLocked = try container.decode(Bool.self,
                                              forKey: .isLocked)
-
-        self.metadata = try container.decode(Metadata.self,
-                                             forKey: .metadata)
 
         self.name = try container.decode(String.self,
                                          forKey: .name).normalizingWhitespace()
@@ -446,8 +446,8 @@ extension Work: Codable {
         try container.encode([smpteStartTime.frameRate.description, smpteStartTime.description],
                              forKey: .smpteStartTime)
 
-        try container.encode(metadata,
-                             forKey: .metadata)
+        try container.encode(info,
+                             forKey: .info)
 
         try container.encode(content,
                              forKey: .content)
@@ -457,8 +457,8 @@ extension Work: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case content
+        case info
         case isLocked
-        case metadata
         case name
         case smpteStartTime
         case version

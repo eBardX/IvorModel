@@ -29,12 +29,13 @@ func makeLockedWorkSB() -> (work: Work, partID: PartID) {
     return (work, part.partID)
 }
 
-func makeWorkMetadata() -> Work.Metadata {
-    Work.Metadata(title: "Aubade",
-                  subtitles: ["for violin"],
-                  alternateTitles: ["Dawn Song"],
-                  parentWorkTitle: "Suite No. 1",
-                  credits: Credit(name: "J. Smith", role: .composer).map { [$0] } ?? [],
-                  rights: RightsNotice(text: "© 2026 J. Smith", scope: .music).map { [$0] } ?? [],
-                  remarks: Remark(text: "Written at dawn.", label: "history").map { [$0] } ?? [])
+func makeWorkInfo() -> Work.Info {
+    Work.Info(title: "Aubade",
+              subtitles: ["for violin"],
+              alternateTitles: ["Dawn Song"],
+              parentWorkTitle: "Suite No. 1",
+              dedication: "To my teacher",
+              credits: Credit(name: "J. Smith", role: .composer).map { [$0] } ?? [],
+              rights: RightsNotice(text: "© 2026 J. Smith", scope: .music).map { [$0] } ?? [],
+              remarks: Remark(text: "Written at dawn.", label: "history").map { [$0] } ?? [])
 }

@@ -74,17 +74,17 @@ extension WorkWarpTests {
     }
 
     @Test
-    func unwarped_keepsMetadata() throws {
+    func unwarped_keepsInfo() throws {
         let part = Part<WallTime, Pitch>(name: "Violin")
         let work = Work(content: .standardWall([part]),
-                        metadata: makeWorkMetadata())
+                        info: makeWorkInfo())
 
         let result = try #require(work.unwarped(using: TempoMap()))
 
         guard case .standardBeat = result.content
         else { Issue.record("Expected .standardBeat content."); return }
 
-        #expect(result.metadata == work.metadata)
+        #expect(result.info == work.info)
     }
 
     @Test
@@ -178,17 +178,17 @@ extension WorkWarpTests {
     }
 
     @Test
-    func varispeeded_keepsMetadata() throws {
+    func varispeeded_keepsInfo() throws {
         let part = Part<BeatTime, Frequency>(name: "Violin")
         let work = Work(content: .absoluteBeat([part], TempoMap()),
-                        metadata: makeWorkMetadata())
+                        info: makeWorkInfo())
 
         let result = try #require(try work.varispeeded())
 
         guard case .absoluteWall = result.content
         else { Issue.record("Expected .absoluteWall content."); return }
 
-        #expect(result.metadata == work.metadata)
+        #expect(result.info == work.info)
     }
 
     @Test
@@ -362,17 +362,17 @@ extension WorkWarpTests {
     }
 
     @Test
-    func warped_keepsMetadata() throws {
+    func warped_keepsInfo() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         let work = Work(content: .standardBeat([part], TempoMap()),
-                        metadata: makeWorkMetadata())
+                        info: makeWorkInfo())
 
         let result = try #require(work.warped())
 
         guard case .standardWall = result.content
         else { Issue.record("Expected .standardWall content."); return }
 
-        #expect(result.metadata == work.metadata)
+        #expect(result.info == work.info)
     }
 
     @Test

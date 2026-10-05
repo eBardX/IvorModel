@@ -14,21 +14,21 @@ struct WorkTests {
 
 extension WorkTests {
     @Test
-    func codable_metadataRoundTrips() throws {
-        let work = Work(name: "Aubade", metadata: makeWorkMetadata())
+    func codable_infoRoundTrips() throws {
+        let work = Work(name: "Aubade", info: makeWorkInfo())
         let decoded = try JSONDecoder().decode(Work.self, from: JSONEncoder().encode(work))
 
-        #expect(decoded.metadata == work.metadata)
+        #expect(decoded.info == work.info)
     }
 
     @Test
-    func codable_missingMetadataIsError() throws {
+    func codable_missingInfoIsError() throws {
         let data = try JSONEncoder().encode(Work(name: "Cue"))
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
-        #expect(object["metadata"] != nil)
+        #expect(object["info"] != nil)
 
-        object["metadata"] = nil
+        object["info"] = nil
 
         let badData = try JSONSerialization.data(withJSONObject: object)
 
@@ -77,10 +77,10 @@ extension WorkTests {
     }
 
     @Test
-    func duplicated_keepsMetadata() {
-        let original = Work(name: "Aubade", metadata: makeWorkMetadata())
+    func duplicated_keepsInfo() {
+        let original = Work(name: "Aubade", info: makeWorkInfo())
 
-        #expect(original.duplicated().metadata == original.metadata)
+        #expect(original.duplicated().info == original.info)
     }
 
     @Test
@@ -100,11 +100,11 @@ extension WorkTests {
     }
 
     @Test
-    func equality_ignoresMetadata() {
+    func equality_ignoresInfo() {
         var work = Work(name: "Aubade")
         let original = work
 
-        try? work.modifyMetadata { $0.title = "Dawn" }
+        try? work.modifyInfo { $0.title = "Dawn" }
 
         #expect(work == original)
     }
@@ -126,15 +126,15 @@ extension WorkTests {
     }
 
     @Test
-    func init_metadata() {
-        let work = Work(name: "Aubade", metadata: makeWorkMetadata())
+    func init_info() {
+        let work = Work(name: "Aubade", info: makeWorkInfo())
 
-        #expect(work.metadata == makeWorkMetadata())
+        #expect(work.info == makeWorkInfo())
     }
 
     @Test
-    func init_metadataDefaultsToEmpty() {
-        #expect(Work().metadata == Work.Metadata())
+    func init_infoDefaultsToEmpty() {
+        #expect(Work().info == Work.Info())
     }
 
     @Test
@@ -172,29 +172,29 @@ extension WorkTests {
     }
 
     @Test
-    func modifyMetadata() throws {
+    func modifyInfo() throws {
         var work = Work(name: "Aubade")
 
-        let result = try work.modifyMetadata { metadata in
-            metadata.title = " Aubade  in C "
+        let result = try work.modifyInfo { info in
+            info.title = " Aubade  in C "
 
             return 42
         }
 
         #expect(result == 42)
-        #expect(work.metadata.title == "Aubade in C")
+        #expect(work.info.title == "Aubade in C")
     }
 
     @Test
-    func modifyMetadata_lockedWork_throws() {
+    func modifyInfo_lockedWork_throws() {
         var work = Work(name: "Aubade")
 
         work.isLocked = true
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.modifyMetadata { $0.title = "Dawn" }
+            try work.modifyInfo { $0.title = "Dawn" }
         }
-        #expect(work.metadata.title == nil)
+        #expect(work.info.title == nil)
     }
 
     @Test

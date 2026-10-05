@@ -6,17 +6,18 @@ extension Work {
 
     // MARK: Public Nested Types
 
-    /// Descriptive metadata about a work: its titles, credits, rights, and remarks.
+    /// Descriptive information about a work: its titles, dedication, credits, rights, and remarks.
     ///
     /// Every title has its whitespace normalized to a single line, whether it is set through the
     /// initializer, by assignment, or by decoding. An optional title that is empty once
     /// normalized becomes `nil`, and an element of ``subtitles`` or ``alternateTitles`` that is
-    /// empty once normalized is removed.
-    public struct Metadata {
+    /// empty once normalized is removed. The ``dedication`` is normalized the same way, except
+    /// line by line, so its line breaks are kept.
+    public struct Info {
 
         // MARK: Public Initializers
 
-        /// Creates metadata for a work.
+        /// Creates descriptive information for a work.
         ///
         /// - Parameter title:              The main title of the work. Defaults to `nil`.
         /// - Parameter subtitles:          Subtitles, in display order. Defaults to none.
@@ -24,6 +25,8 @@ extension Work {
         ///                                 to none.
         /// - Parameter parentWorkTitle:    The title of the larger work this one belongs to.
         ///                                 Defaults to `nil`.
+        /// - Parameter dedication:         To whom or what the work is dedicated. Defaults to
+        ///                                 `nil`.
         /// - Parameter credits:            The people credited with the work, in source order.
         ///                                 Defaults to none.
         /// - Parameter rights:             Copyright and other rights notices, in source order.
@@ -33,6 +36,7 @@ extension Work {
                     subtitles: [String] = [],
                     alternateTitles: [String] = [],
                     parentWorkTitle: String? = nil,
+                    dedication: String? = nil,
                     credits: [Credit] = [],
                     rights: [RightsNotice] = [],
                     remarks: [Remark] = []) {
@@ -41,6 +45,7 @@ extension Work {
             //
             self.alternateTitles = Self._normalized(alternateTitles)
             self.credits = credits
+            self.dedication = Self._normalizedDedication(dedication)
             self.parentWorkTitle = parentWorkTitle?.normalizingWhitespace().nilIfEmpty
             self.remarks = remarks
             self.rights = rights
@@ -58,6 +63,12 @@ extension Work {
 
         /// The people credited with the work, in source order.
         public var credits: [Credit]
+
+        /// To whom or what the work is dedicated (e.g. `"To my teacher, R. Jones"`), or `nil`,
+        /// with whitespace normalized line by line, so its line breaks are kept.
+        public var dedication: String? {
+            didSet { dedication = Self._normalizedDedication(dedication) }
+        }
 
         /// The title of the larger work this one belongs to, such as the symphony that a movement
         /// comes from (MusicXML `work-title` when a `movement-title` is also present).
@@ -85,7 +96,7 @@ extension Work {
 
 // MARK: -
 
-extension Work.Metadata {
+extension Work.Info {
 
     // MARK: Public Instance Properties
 
@@ -99,17 +110,21 @@ extension Work.Metadata {
     private static func _normalized(_ titles: [String]) -> [String] {
         titles.compactMap { $0.normalizingWhitespace().nilIfEmpty }
     }
+
+    private static func _normalizedDedication(_ dedication: String?) -> String? {
+        dedication?.normalizingWhitespace(lineByLine: true).nilIfEmpty
+    }
 }
 
 // MARK: - Codable
 
-extension Work.Metadata: Codable {
+extension Work.Info: Codable {
 
     // MARK: Public Initializers
 
-    /// Creates work metadata by decoding from the provided decoder.
+    /// Creates work information by decoding from the provided decoder.
     ///
-    /// Every decoded title is normalized exactly as by the public initializer.
+    /// Every decoded title, and the dedication, is normalized exactly as by the public initializer.
     ///
     /// - Parameter decoder:    The decoder to read from.
     ///
@@ -122,6 +137,9 @@ extension Work.Metadata: Codable {
 
         let credits = try container.decode([Credit].self,
                                            forKey: .credits)
+
+        let dedication = try container.decodeIfPresent(String.self,
+                                                       forKey: .dedication)
 
         let parentWorkTitle = try container.decodeIfPresent(String.self,
                                                             forKey: .parentWorkTitle)
@@ -142,6 +160,7 @@ extension Work.Metadata: Codable {
                   subtitles: subtitles,
                   alternateTitles: alternateTitles,
                   parentWorkTitle: parentWorkTitle,
+                  dedication: dedication,
                   credits: credits,
                   rights: rights,
                   remarks: remarks)
@@ -149,7 +168,7 @@ extension Work.Metadata: Codable {
 
     // MARK: Public Instance Methods
 
-    /// Encodes this work metadata into the provided encoder.
+    /// Encodes this work information into the provided encoder.
     ///
     /// - Parameter encoder:    The encoder to write to.
     ///
@@ -172,6 +191,9 @@ extension Work.Metadata: Codable {
         try container.encodeIfPresent(parentWorkTitle,
                                       forKey: .parentWorkTitle)
 
+        try container.encodeIfPresent(dedication,
+                                      forKey: .dedication)
+
         try container.encode(credits,
                              forKey: .credits)
 
@@ -187,6 +209,7 @@ extension Work.Metadata: Codable {
     private enum CodingKeys: String, CodingKey {
         case alternateTitles
         case credits
+        case dedication
         case parentWorkTitle
         case remarks
         case rights
@@ -197,10 +220,10 @@ extension Work.Metadata: Codable {
 
 // MARK: - Hashable
 
-extension Work.Metadata: Hashable {
+extension Work.Info: Hashable {
 }
 
 // MARK: - Sendable
 
-extension Work.Metadata: Sendable {
+extension Work.Info: Sendable {
 }
