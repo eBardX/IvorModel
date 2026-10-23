@@ -308,6 +308,35 @@ extension NoteTableBasicTests {
     }
 
     @Test
+    func release_isAttackPlusDuration() {
+        var table = NoteTableSB()
+
+        table.insert(attack: 1, duration: 2, pitch: .c4)
+
+        #expect(table.first?.release == 3)
+    }
+
+    //
+    // 29.381986 + 1.304348 as doubles is a hair over 30.686334.
+    //
+    @Test
+    func release_meetsNextAttackExactly() throws {
+        var table = NoteTable<WallTime, Pitch>()
+
+        try table.insert(attack: #require(WallTime(uintValue: 29_381_986)),
+                         duration: #require(WallDuration(uintValue: 1_304_348)),
+                         pitch: .c4)
+        try table.insert(attack: #require(WallTime(uintValue: 30_686_334)),
+                         duration: #require(WallDuration(uintValue: 652_174)),
+                         pitch: .c4)
+
+        let notes = Array(table)
+
+        #expect(notes[0].release == notes[1].attack)
+        #expect(notes[0].release.doubleValue == notes[1].attack.doubleValue)
+    }
+
+    @Test
     func remove_noteID_found() throws {
         var table = NoteTableSB()
         var removedID: NoteID?

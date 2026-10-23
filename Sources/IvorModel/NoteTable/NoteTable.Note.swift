@@ -30,6 +30,14 @@ extension NoteTable {
         /// The stable identity of the note.
         public let noteID: NoteID
 
+        /// The release time of the note: its ``attack`` advanced by its ``duration``.
+        ///
+        /// It is worked out exactly, in the note's own time type, so a note that ends as the next
+        /// begins has a release equal to that note's attack. Prefer it to adding the two after
+        /// converting them to seconds or beats as floating-point numbers, which can land a little
+        /// either side.
+        public let release: TimeType
+
         /// The pitch at the start of the note.
         public let startPitch: PitchType
 
@@ -41,6 +49,7 @@ extension NoteTable {
             self.endPitch = note.endPitch
             self.extras = note.extras
             self.noteID = note.noteID
+            self.release = note.release
             self.startPitch = note.startPitch
         }
     }
