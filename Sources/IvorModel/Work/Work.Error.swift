@@ -11,6 +11,12 @@ extension Work {
         /// transform.
         case dynamicMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
 
+        /// Two parts share a part ID.
+        case duplicatePartID(PartID)
+
+        /// Two realizations share a realization ID.
+        case duplicateRealizationID(RealizationID)
+
         /// The quantization factors array is empty.
         case emptyQuantizationFactors
 
@@ -32,6 +38,9 @@ extension Work {
 
         /// The conversion context is missing a tuning system.
         case missingTuningSystem
+
+        /// A work must have at least one realization.
+        case noRealizations
 
         /// A failure that occurred in a part’s pan map while carrying it along with a transform.
         case panMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
@@ -79,6 +88,12 @@ extension Work.Error: EnhancedError {
         case let .dynamicMapTransformFailure(kind, partID, detail):
             "Dynamic map failure during \(kind) of part \(partID.stringValue): \(detail)"
 
+        case let .duplicatePartID(partID):
+            "Duplicate part ID: \(partID.stringValue)"
+
+        case let .duplicateRealizationID(realizationID):
+            "Duplicate realization ID: \(realizationID.stringValue)"
+
         case .emptyQuantizationFactors:
             "Invalid quantization factors: empty"
 
@@ -99,6 +114,9 @@ extension Work.Error: EnhancedError {
 
         case .missingTuningSystem:
             "A tuning system is required for this conversion."
+
+        case .noRealizations:
+            "A work must have at least one realization."
 
         case let .panMapTransformFailure(kind, partID, detail):
             "Pan map failure during \(kind) of part \(partID.stringValue): \(detail)"

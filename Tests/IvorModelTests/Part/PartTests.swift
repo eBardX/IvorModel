@@ -51,6 +51,15 @@ extension PartTests {
     }
 
     @Test
+    func codable_keepsPartID() throws {
+        let original = Part<BeatTime, Pitch>(name: "Violin")
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(Part<BeatTime, Pitch>.self, from: data)
+
+        #expect(decoded.partID == original.partID)
+    }
+
+    @Test
     func codable_normalizesName() throws {
         let data = try JSONEncoder().encode(Part<BeatTime, Pitch>(name: "Violin"))
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])

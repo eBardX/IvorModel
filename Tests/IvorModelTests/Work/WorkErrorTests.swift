@@ -16,6 +16,21 @@ extension WorkErrorTests {
     }
 
     @Test
+    func message_duplicatePartID() {
+        #expect(!Work.Error.duplicatePartID(PartID()).message.isEmpty)
+    }
+
+    @Test
+    func message_duplicateRealizationID() {
+        #expect(!Work.Error.duplicateRealizationID(RealizationID()).message.isEmpty)
+    }
+
+    @Test
+    func message_noRealizations() {
+        #expect(!Work.Error.noRealizations.message.isEmpty)
+    }
+
+    @Test
     func message_unsupportedPitchConversion() {
         let msg = Work.Error.unsupportedPitchConversion(from: .keyboard,
                                                         to: .standard).message

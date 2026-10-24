@@ -9,25 +9,7 @@ extension Work {
 
     /// The IDs of the parts in this work, in order.
     public var partIDs: [PartID] {
-        switch content {
-        case let .absoluteBeat(parts, _):
-            parts.map(\.partID)
-
-        case let .absoluteWall(parts):
-            parts.map(\.partID)
-
-        case let .keyboardBeat(parts, _):
-            parts.map(\.partID)
-
-        case let .keyboardWall(parts):
-            parts.map(\.partID)
-
-        case let .standardBeat(parts, _):
-            parts.map(\.partID)
-
-        case let .standardWall(parts):
-            parts.map(\.partID)
-        }
+        content.partIDs
     }
 
     // MARK: Public Instance Methods
@@ -107,7 +89,8 @@ extension Work {
     }
 
     /// Duplicates the part with the given ID, inserting the copy immediately after
-    /// the original.
+    /// the original. Every realization gives the copy the same patch table as the
+    /// original.
     ///
     /// - Parameter partID: The ID of the part to duplicate.
     ///
@@ -132,6 +115,9 @@ extension Work {
 
             content = .absoluteBeat(newParts, tempoMap)
 
+            copyPartTables(from: partID,
+                           to: duplicate.partID)
+
             return duplicate.partID
 
         case let .absoluteWall(parts):
@@ -145,6 +131,9 @@ extension Work {
                             at: index + 1)
 
             content = .absoluteWall(newParts)
+
+            copyPartTables(from: partID,
+                           to: duplicate.partID)
 
             return duplicate.partID
 
@@ -160,6 +149,9 @@ extension Work {
 
             content = .keyboardBeat(newParts, tempoMap)
 
+            copyPartTables(from: partID,
+                           to: duplicate.partID)
+
             return duplicate.partID
 
         case let .keyboardWall(parts):
@@ -173,6 +165,9 @@ extension Work {
                             at: index + 1)
 
             content = .keyboardWall(newParts)
+
+            copyPartTables(from: partID,
+                           to: duplicate.partID)
 
             return duplicate.partID
 
@@ -188,6 +183,9 @@ extension Work {
 
             content = .standardBeat(newParts, tempoMap)
 
+            copyPartTables(from: partID,
+                           to: duplicate.partID)
+
             return duplicate.partID
 
         case let .standardWall(parts):
@@ -201,6 +199,9 @@ extension Work {
                             at: index + 1)
 
             content = .standardWall(newParts)
+
+            copyPartTables(from: partID,
+                           to: duplicate.partID)
 
             return duplicate.partID
         }
@@ -234,7 +235,8 @@ extension Work {
         }
     }
 
-    /// Removes the part with the given ID. No-ops if no part with `partID` is found.
+    /// Removes the part with the given ID, along with its patch table in every
+    /// realization. No-ops if no part with `partID` is found.
     ///
     /// - Parameter partID: The ID of the part to remove.
     ///

@@ -35,6 +35,27 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
                 dynamicMap: DynamicMap<TimeType>? = nil,
                 instrumentMap: InstrumentMap<TimeType>? = nil,
                 panMap: PanMap<TimeType>? = nil) {
+        self.init(partID: PartID(),
+                  name: name,
+                  noteTable: noteTable,
+                  dynamicMap: dynamicMap,
+                  instrumentMap: instrumentMap,
+                  panMap: panMap)
+    }
+
+    // MARK: Internal Initializers
+
+    //
+    // Keeps an existing identity — for decoding, and for the work-level conversions that rebuild
+    // a part with new content but must leave it the same part, so that whatever refers to it
+    // (such as a `Realization`) still does.
+    //
+    internal init(partID: PartID,
+                  name: String,
+                  noteTable: NoteTable<TimeType, PitchType>? = nil,
+                  dynamicMap: DynamicMap<TimeType>? = nil,
+                  instrumentMap: InstrumentMap<TimeType>? = nil,
+                  panMap: PanMap<TimeType>? = nil) {
         self.dynamicMap = dynamicMap ?? DynamicMap()
         self.instrumentMap = instrumentMap ?? InstrumentMap()
         //
@@ -43,14 +64,12 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
         self.name = name.normalizingWhitespace()
         self.noteTable = noteTable ?? NoteTable()
         self.panMap = panMap ?? PanMap()
-        self.partID = PartID()
+        self.partID = partID
     }
 
     // MARK: Public Instance Properties
 
-    /// The stable identity of this part.
-    ///
-    /// Not persisted — see ``PartID``.
+    /// The stable identity of this part, kept across saving and reopening.
     public let partID: PartID
 
     /// The dynamic map for this part.
@@ -167,7 +186,11 @@ extension Part: Codable {
         let panMap = try container.decode(PanMap<TimeType>.self,
                                           forKey: .panMap)
 
-        self.init(name: name,
+        let partID = try container.decode(PartID.self,
+                                          forKey: .partID)
+
+        self.init(partID: partID,
+                  name: name,
                   noteTable: noteTable,
                   dynamicMap: dynamicMap,
                   instrumentMap: instrumentMap,
@@ -187,6 +210,9 @@ extension Part: Codable {
         //
         // Maintain order:
         //
+        try container.encode(partID,
+                             forKey: .partID)
+
         try container.encode(name,
                              forKey: .name)
 
@@ -211,6 +237,7 @@ extension Part: Codable {
         case name
         case noteTable
         case panMap
+        case partID
     }
 }
 

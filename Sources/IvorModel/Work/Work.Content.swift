@@ -65,6 +65,37 @@ extension Work.Content {
 
     // MARK: Internal Instance Properties
 
+    //
+    // The first part ID that more than one part shares, or `nil` if every part's is distinct.
+    //
+    internal var firstDuplicatePartID: PartID? {
+        var seen: Set<PartID> = []
+
+        return partIDs.first { !seen.insert($0).inserted }
+    }
+
+    internal var partIDs: [PartID] {
+        switch self {
+        case let .absoluteBeat(parts, _):
+            parts.map(\.partID)
+
+        case let .absoluteWall(parts):
+            parts.map(\.partID)
+
+        case let .keyboardBeat(parts, _):
+            parts.map(\.partID)
+
+        case let .keyboardWall(parts):
+            parts.map(\.partID)
+
+        case let .standardBeat(parts, _):
+            parts.map(\.partID)
+
+        case let .standardWall(parts):
+            parts.map(\.partID)
+        }
+    }
+
     internal var pitchNotation: PitchNotation {
         switch self {
         case .absoluteBeat,

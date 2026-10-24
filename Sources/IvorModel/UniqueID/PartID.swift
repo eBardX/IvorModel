@@ -4,11 +4,10 @@ internal import XestiTools
 
 /// A unique ID for a ``Part``, represented as a validated string.
 ///
-/// Not persisted: `Part`’s `Codable` conformance never encodes its identity, and
-/// assigns every decoded part a fresh one, the same as a newly inserted part. A
-/// part’s identity is therefore stable only within one in-memory project’s
-/// lifetime — never across an encode/decode round trip, and so never across a save
-/// and reopen.
+/// Persisted with the part, so a part keeps its identity across a save and reopen,
+/// and anything that refers to it by ID — such as a ``Realization`` — still does.
+/// A part’s ID is unique within its ``Work``; a duplicated work’s parts keep theirs,
+/// so the same ID may appear in more than one work.
 public struct PartID {
 
     // MARK: Public Initializers

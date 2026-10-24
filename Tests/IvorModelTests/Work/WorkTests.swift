@@ -282,6 +282,17 @@ extension WorkTests {
     }
 
     @Test
+    func replaceContent_duplicatePartID_throws() {
+        var work = Work(content: .standardWall([]))
+        let part = Part<WallTime, Pitch>(name: "Cello")
+
+        #expect(throws: Work.Error.duplicatePartID(part.partID)) {
+            try work.replaceContent(with: .standardWall([part, part]))
+        }
+        #expect(work.partIDs.isEmpty)
+    }
+
+    @Test
     func replaceContent_lockedWork_throws() {
         var work = Work(content: .standardWall([]))
         let part = Part<WallTime, Pitch>(name: "Cello")

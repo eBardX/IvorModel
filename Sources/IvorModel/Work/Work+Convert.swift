@@ -11,7 +11,8 @@ extension Work {
     /// notation, or `nil` if this work already has both, so there is nothing to convert.
     ///
     /// Like ``warped()``, the new work has a fresh ``Work/workID``, is unlocked, and keeps this
-    /// work’s ``Work/name``, ``Work/smpteStartTime``, and ``Work/info``.
+    /// work’s ``Work/name``, ``Work/smpteStartTime``, ``Work/info``, and ``Work/realizations``;
+    /// its parts keep their IDs.
     ///
     /// Always permitted, even on a locked work: this returns an independent copy rather than
     /// mutating `self`, so ``Work/isLocked`` does not apply.
@@ -69,7 +70,8 @@ extension Work {
         return Work(name: name,
                     content: newContent,
                     smpteStartTime: smpteStartTime,
-                    info: info)
+                    info: info,
+                    realizations: realizations)
     }
 
     // MARK: Internal Type Methods
@@ -112,7 +114,8 @@ extension Work {
 
     internal static func convertBeatTimes<PitchType: PitchProtocol>(in part: Part<BeatTime, PitchType>,
                                                                     using timeConverter: TimeConverter) -> Part<WallTime, PitchType> {
-        Part(name: part.name,
+        Part(partID: part.partID,
+             name: part.name,
              noteTable: _convertBeatTimes(in: part.noteTable,
                                           using: timeConverter),
              dynamicMap: convertBeatTimes(in: part.dynamicMap,
@@ -125,7 +128,8 @@ extension Work {
 
     internal static func convertWallTimes<PitchType: PitchProtocol>(in part: Part<WallTime, PitchType>,
                                                                     using timeConverter: TimeConverter) -> Part<BeatTime, PitchType> {
-        Part(name: part.name,
+        Part(partID: part.partID,
+             name: part.name,
              noteTable: _convertWallTimes(in: part.noteTable,
                                           using: timeConverter),
              dynamicMap: _convertWallTimes(in: part.dynamicMap,
@@ -175,7 +179,8 @@ extension Work {
                                         ToPitchType: PitchProtocol>(in part: Part<TimeType, FromPitchType>,
                                                                     using convert: (FromPitchType) -> ToPitchType) -> Part<TimeType,
                                                                                                                            ToPitchType> {
-        Part(name: part.name,
+        Part(partID: part.partID,
+             name: part.name,
              noteTable: _convertPitches(in: part.noteTable,
                                         using: convert),
              dynamicMap: part.dynamicMap,

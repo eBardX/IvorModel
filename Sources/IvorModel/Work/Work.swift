@@ -12,7 +12,8 @@ public struct Work {
 
     // MARK: Public Initializers
 
-    /// Creates a new work with the given name, content, SMPTE start time, and descriptive information.
+    /// Creates a new work with the given name, content, SMPTE start time, descriptive information,
+    /// and realizations.
     ///
     /// - Parameter name:           The display name of the work. Its whitespace is normalized
     ///                             to a single line. Defaults to an empty string.
@@ -22,18 +23,29 @@ public struct Work {
     ///                             Defaults to ``defaultSMPTEStartTime``.
     /// - Parameter info:           The descriptive ``Work/Info`` of the work. Defaults to
     ///                             empty information.
+    /// - Parameter realizations:   The ways the work can be realized when it plays, in order.
+    ///                             Must be non-empty, with distinct realization IDs. Part tables
+    ///                             for parts not in `content` are dropped. Defaults to a single,
+    ///                             empty realization named ``defaultRealizationName``.
     public init(name: String = "",
                 content: Content? = nil,
                 smpteStartTime: SMPTETime = Self.defaultSMPTEStartTime,
-                info: Info = Info()) {
+                info: Info = Info(),
+                realizations: [Realization] = [Realization(name: Self.defaultRealizationName)]) {
+        precondition(Self.firstRealizationError(in: realizations) == nil,
+                     "Realizations must be non-empty, with distinct realization IDs.")
+
         self.unsafeContent = content ?? .standardBeat([],
                                                       TempoMap())
         self.info = info
         self.isLocked = false
         self.name = name.normalizingWhitespace()
+        self.realizations = realizations
         self.smpteStartTime = smpteStartTime
         self.workID = WorkID()
         self.version = Self.currentVersion
+
+        removeOrphanedPartTables()
     }
 
     // MARK: Public Instance Properties
@@ -48,7 +60,8 @@ public struct Work {
     ///
     /// A locked work cannot be modified until it is unlocked. Every method that would change its
     /// ``content``, ``info``, ``name`` or ``smpteStartTime`` throws ``Work/Error/workIsLocked`` instead,
-    /// and ``Project/removeWork(_:)`` refuses to remove it. Methods that return a new work, such
+    /// and ``Project/removeWork(_:)`` refuses to remove it. The lock protects the music only: a
+    /// locked work’s ``realizations`` can still be changed. Methods that return a new work, such
     /// as ``duplicated()`` or ``warped()``, leave this work untouched and so are always permitted.
     /// Setting `isLocked` itself is always permitted, so a locked work can always be unlocked.
     public var isLocked: Bool
@@ -63,6 +76,14 @@ public struct Work {
     ///
     /// To change it, use ``rename(to:)``.
     public internal(set) var name: String
+
+    /// The ways this work can be realized when it plays, in order. Never empty, and no two share
+    /// a realization ID.
+    ///
+    /// Not part of the music, so not covered by ``isLocked``, and kept in step with the parts:
+    /// removing a part removes its tables, and duplicating one copies them. To change them, use
+    /// ``replaceRealizations(with:)`` or ``modifyRealization(_:_:)``.
+    public internal(set) var realizations: [Realization]
 
     /// The SMPTE timecode at which the work’s wall time zero falls.
     ///
@@ -85,6 +106,8 @@ public struct Work {
             precondition(!isLocked, "Cannot assign content to a locked work.")
 
             unsafeContent = newValue
+
+            removeOrphanedPartTables()
         }
     }
 
@@ -106,6 +129,9 @@ extension Work {
 
     /// The current work file format version.
     public static let currentVersion = 1
+
+    /// The name of the realization a work has unless given others.
+    public static let defaultRealizationName = "Default"
 
     /// The SMPTE start time a work has unless given another: 00:00:00:00 at 25 fps.
     public static let defaultSMPTEStartTime = SMPTETime(frameRate: .fps25,
@@ -245,13 +271,16 @@ extension Work {
 
     // MARK: Public Instance Methods
 
-    /// Returns a copy of this work with the same content, ``smpteStartTime``, and ``info``
-    /// but a distinct, freshly minted ``WorkID``.
+    /// Returns a copy of this work with the same content, ``smpteStartTime``, ``info``, and
+    /// ``realizations`` but a distinct, freshly minted ``WorkID``.
+    ///
+    /// The copy’s parts and realizations keep their IDs, which are unique only within a work.
     public func duplicated() -> Self {
         Self(name: name,
              content: content,
              smpteStartTime: smpteStartTime,
-             info: info)
+             info: info,
+             realizations: realizations)
     }
 
     /// Edits the descriptive information of this work in place.
@@ -307,11 +336,19 @@ extension Work {
 
     /// Replaces the musical content of this work.
     ///
+    /// Any realization’s patch table for a part not in `content` is dropped.
+    ///
     /// - Parameter content:    The new ``Work/Content``.
     ///
-    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
+    ///             ``Work/Error/duplicatePartID(_:)`` if two of the parts in `content` share a
+    ///             part ID.
     public mutating func replaceContent(with content: Content) throws(Error) {
         try ensureUnlocked()
+
+        if let partID = content.firstDuplicatePartID {
+            throw Error.duplicatePartID(partID)
+        }
 
         self.content = content
     }
@@ -406,6 +443,9 @@ extension Work: Codable {
         self.name = try container.decode(String.self,
                                          forKey: .name).normalizingWhitespace()
 
+        self.realizations = try container.decode([Realization].self,
+                                                 forKey: .realizations)
+
         self.smpteStartTime = try Self._decodeSMPTEStartTime(from: container)
 
         self.version = try container.decode(Int.self,
@@ -416,6 +456,8 @@ extension Work: Codable {
 
         self.workID = try container.decode(WorkID.self,
                                            forKey: .workID)
+
+        try _validateDecodedParts(in: container)
     }
 
     // MARK: Public Instance Methods
@@ -449,6 +491,9 @@ extension Work: Codable {
         try container.encode(info,
                              forKey: .info)
 
+        try container.encode(realizations,
+                             forKey: .realizations)
+
         try container.encode(content,
                              forKey: .content)
     }
@@ -460,6 +505,7 @@ extension Work: Codable {
         case info
         case isLocked
         case name
+        case realizations
         case smpteStartTime
         case version
         case workID
@@ -483,6 +529,37 @@ extension Work: Codable {
                                                       debugDescription: "Invalid SMPTE start time: \(strings)") }
 
         return startTime
+    }
+
+    // MARK: Private Instance Methods
+
+    //
+    // Decoding is strict: a work that saved its parts and realizations consistently decodes them
+    // unchanged, so anything else is corruption rather than something to repair.
+    //
+    private func _validateDecodedParts(in container: KeyedDecodingContainer<CodingKeys>) throws {
+        if let partID = content.firstDuplicatePartID {
+            throw DecodingError.dataCorruptedError(forKey: .content,
+                                                   in: container,
+                                                   debugDescription: Error.duplicatePartID(partID).message)
+        }
+
+        let partIDSet = Set(partIDs)
+
+        if let error = Self.firstRealizationError(in: realizations) {
+            throw DecodingError.dataCorruptedError(forKey: .realizations,
+                                                   in: container,
+                                                   debugDescription: error.message)
+        }
+
+        for realization in realizations {
+            guard let partID = realization.partTables.keys.first(where: { !partIDSet.contains($0) })
+            else { continue }
+
+            throw DecodingError.dataCorruptedError(forKey: .realizations,
+                                                   in: container,
+                                                   debugDescription: "Patch table for unknown part: \(partID.stringValue)")
+        }
     }
 }
 
