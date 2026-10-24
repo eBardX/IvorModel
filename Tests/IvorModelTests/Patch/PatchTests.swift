@@ -17,7 +17,7 @@ extension PatchTests {
         }
     }
 
-    @Test(arguments: [Patch.Kind.custom(program: 5, bankMSB: 1, bankLSB: nil, name: "Warm Pad"),
+    @Test(arguments: [Patch.Kind.custom(program: 5, bank: 15_489, name: "Warm Pad"),
                       .generalMIDI1(program: 41),
                       .generalMIDI1Percussion,
                       .generalMIDI2(program: 20, variation: 2),
@@ -32,16 +32,21 @@ extension PatchTests {
 
     @Test
     func init_normalizesCustomName() throws {
-        let blank = try #require(Patch(.custom(program: 1, bankMSB: nil, bankLSB: nil, name: "  ")))
-        let spaced = try #require(Patch(.custom(program: 1, bankMSB: nil, bankLSB: nil, name: " Warm\n Pad ")))
+        let blank = try #require(Patch(.custom(program: 1, bank: nil, name: "  ")))
+        let spaced = try #require(Patch(.custom(program: 1, bank: nil, name: " Warm\n Pad ")))
 
-        #expect(blank.kind == .custom(program: 1, bankMSB: nil, bankLSB: nil, name: nil))
-        #expect(spaced.kind == .custom(program: 1, bankMSB: nil, bankLSB: nil, name: "Warm Pad"))
+        #expect(blank.kind == .custom(program: 1, bank: nil, name: nil))
+        #expect(spaced.kind == .custom(program: 1, bank: nil, name: "Warm Pad"))
     }
 
-    @Test(arguments: [Patch.Kind.custom(program: 129, bankMSB: nil, bankLSB: nil, name: nil),
-                      .custom(program: 1, bankMSB: 128, bankLSB: nil, name: nil),
-                      .custom(program: 1, bankMSB: nil, bankLSB: -1, name: nil),
+    @Test(arguments: [0, 16_383])
+    func init_acceptsCustomBankBounds(bank: Int) {
+        #expect(Patch(.custom(program: 1, bank: bank, name: nil)) != nil)
+    }
+
+    @Test(arguments: [Patch.Kind.custom(program: 129, bank: nil, name: nil),
+                      .custom(program: 1, bank: 16_384, name: nil),
+                      .custom(program: 1, bank: -1, name: nil),
                       .generalMIDI1(program: 0),
                       .generalMIDI2(program: 1, variation: 128),
                       .generalMIDI2DrumSet(program: 129)])
@@ -55,6 +60,6 @@ extension PatchTests {
         #expect(try #require(Patch(.generalMIDI2DrumSet(program: 1))).isPercussion)
         #expect(try !#require(Patch(.generalMIDI1(program: 1))).isPercussion)
         #expect(try !#require(Patch(.generalMIDI2(program: 1, variation: 0))).isPercussion)
-        #expect(try !#require(Patch(.custom(program: 1, bankMSB: nil, bankLSB: nil, name: nil))).isPercussion)
+        #expect(try !#require(Patch(.custom(program: 1, bank: nil, name: nil))).isPercussion)
     }
 }

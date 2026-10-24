@@ -6,20 +6,21 @@ extension Patch {
 
     /// The kind of sound a ``Patch`` selects, and the numbers that select it.
     ///
-    /// Program numbers run from 1 to 128, and bank numbers from 0 to 127, matching the
-    /// conventions of the MIDI ``Extra`` values (such as ``Extra/midiProgram``). Only a
-    /// ``Patch`` checks that they’re in range.
+    /// Program numbers run from 1 to 128, matching the conventions of the MIDI ``Extra`` values
+    /// (such as ``Extra/midiProgram``); a custom bank runs from 0 to 16,383, and a variation
+    /// from 0 to 127. Only a ``Patch`` checks that they’re in range.
     public enum Kind {
         /// A custom patch, such as one on a hardware synthesizer that doesn’t follow General MIDI,
         /// selected by its program and, optionally, its bank.
         ///
         /// - Parameter program:    The program number (1–128).
-        /// - Parameter bankMSB:    The bank number’s most significant byte (Control Change 0,
-        ///                         0–127), or `nil` to send none.
-        /// - Parameter bankLSB:    The bank number’s least significant byte (Control Change 32,
-        ///                         0–127), or `nil` to send none.
+        /// - Parameter bank:       The bank number (0–16,383), sent as its most significant
+        ///                         7 bits (Control Change 0, bank MSB) and its least
+        ///                         significant 7 bits (Control Change 32, bank LSB) — so bank
+        ///                         MSB *m* with LSB *l* is bank *m* × 128 + *l* — or `nil` to
+        ///                         send no bank select.
         /// - Parameter name:       A name for the patch, for display only, or `nil`.
-        case custom(program: Int, bankMSB: Int?, bankLSB: Int?, name: String?)
+        case custom(program: Int, bank: Int?, name: String?)
 
         /// A General MIDI Level 1 instrument.
         ///

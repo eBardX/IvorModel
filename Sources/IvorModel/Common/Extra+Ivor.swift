@@ -67,9 +67,11 @@ extension Extra {
     public static let marcato = Self(name: "marcato")
 
     /// The MIDI bank number in effect for an ``InstrumentMap`` entry, as the
-    /// combined 14-bit Bank Select value (Control Change 0 MSB and Control
-    /// Change 32 LSB), numbered 1–16,384 to match MusicXML's own
-    /// `<midi-bank>` convention. Payload: a single `.int`.
+    /// combined 14-bit Bank Select value (Control Change 0 MSB × 128 +
+    /// Control Change 32 LSB), 0–16,383 — the value sent, and the same
+    /// numbering as ``Patch/Kind/custom(program:bank:name:)``. (MusicXML's
+    /// `<midi-bank>` numbers banks from 1, so it is converted on import and
+    /// export.) Payload: a single `.int`.
     public static let midiBank = Self(name: "midiBank")
 
     /// The MIDI channel (1–16) in effect for an ``InstrumentMap`` entry.

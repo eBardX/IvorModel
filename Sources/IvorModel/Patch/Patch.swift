@@ -23,15 +23,13 @@ public struct Patch {
     /// - Parameter kind:   The kind of sound, and the numbers that select it.
     public init?(_ kind: Kind) {
         switch kind {
-        case let .custom(program, bankMSB, bankLSB, name):
+        case let .custom(program, bank, name):
             guard Self._isValidProgram(program),
-                  bankMSB.map(Self._isValidBank) ?? true,
-                  bankLSB.map(Self._isValidBank) ?? true
+                  bank.map(Self._isValidCustomBank) ?? true
             else { return nil }
 
             self.kind = .custom(program: program,
-                                bankMSB: bankMSB,
-                                bankLSB: bankLSB,
+                                bank: bank,
                                 name: name?.normalizingWhitespace().nilIfEmpty)
 
         case let .generalMIDI1(program),
@@ -46,7 +44,7 @@ public struct Patch {
 
         case let .generalMIDI2(program, variation):
             guard Self._isValidProgram(program),
-                  Self._isValidBank(variation)
+                  Self._isValidVariation(variation)
             else { return nil }
 
             self.kind = kind
@@ -82,12 +80,16 @@ extension Patch {
 
     // MARK: Private Type Methods
 
-    private static func _isValidBank(_ bank: Int) -> Bool {
-        (0...127).contains(bank)
+    private static func _isValidCustomBank(_ bank: Int) -> Bool {
+        (0...16_383).contains(bank)
     }
 
     private static func _isValidProgram(_ program: Int) -> Bool {
         (1...128).contains(program)
+    }
+
+    private static func _isValidVariation(_ variation: Int) -> Bool {
+        (0...127).contains(variation)
     }
 }
 
