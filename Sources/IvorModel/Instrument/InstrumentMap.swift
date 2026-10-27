@@ -45,6 +45,26 @@ public struct InstrumentMap<TimeType: TimeProtocol> {
 
 extension InstrumentMap {
 
+    // MARK: Public Instance Properties
+
+    /// Every instrument this instrument map designates, each once, in the
+    /// order they first take effect.
+    ///
+    /// The array is just ``defaultInstrument`` if this instrument map is
+    /// empty.
+    public var instruments: [Instrument] {
+        guard !entries.isEmpty
+        else { return [defaultInstrument] }
+
+        var result: [Instrument] = []
+
+        for entry in entries where !result.contains(entry.instrument) {
+            result.append(entry.instrument)
+        }
+
+        return result
+    }
+
     // MARK: Public Instance Subscripts
 
     /// Returns the instrument in effect at the given time.
