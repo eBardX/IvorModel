@@ -26,8 +26,21 @@ extension WorkErrorTests {
     }
 
     @Test
+    func message_emptyKeyboardMap() {
+        #expect(!Work.Error.emptyKeyboardMap.message.isEmpty)
+    }
+
+    @Test
     func message_noRealizations() {
         #expect(!Work.Error.noRealizations.message.isEmpty)
+    }
+
+    @Test
+    func message_pitchOutOfRange() {
+        let partID = PartID()
+        let msg = Work.Error.pitchOutOfRange(partID: partID).message
+
+        #expect(msg.contains(partID.stringValue))
     }
 
     @Test

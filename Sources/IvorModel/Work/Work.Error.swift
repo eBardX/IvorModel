@@ -17,6 +17,9 @@ extension Work {
         /// Two realizations share a realization ID.
         case duplicateRealizationID(RealizationID)
 
+        /// The conversion context’s keyboard map does not map any MIDI note number.
+        case emptyKeyboardMap
+
         /// The quantization factors array is empty.
         case emptyQuantizationFactors
 
@@ -48,6 +51,9 @@ extension Work {
         /// The requested transform was invoked with a pitch notation that does not match the
         /// work’s own.
         case pitchNotationMismatch(expected: PitchNotation)
+
+        /// A note in the part has a pitch with no counterpart in the target pitch notation.
+        case pitchOutOfRange(partID: PartID)
 
         /// A failure that occurred in the work’s tempo map while carrying it along with a
         /// whole-work transform.
@@ -94,6 +100,9 @@ extension Work.Error: EnhancedError {
         case let .duplicateRealizationID(realizationID):
             "Duplicate realization ID: \(realizationID.stringValue)"
 
+        case .emptyKeyboardMap:
+            "The keyboard map does not map any MIDI note number."
+
         case .emptyQuantizationFactors:
             "Invalid quantization factors: empty"
 
@@ -123,6 +132,9 @@ extension Work.Error: EnhancedError {
 
         case let .pitchNotationMismatch(expected):
             "This transform requires \(expected) pitch notation."
+
+        case let .pitchOutOfRange(partID):
+            "Part \(partID.stringValue) has a pitch with no counterpart in the target pitch notation."
 
         case let .tempoMapTransformFailure(kind, detail):
             "Tempo map failure during \(kind): \(detail)"

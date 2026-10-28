@@ -73,6 +73,47 @@ extension WorkConvertTests {
     }
 
     @Test
+    func convert_emptyKeyboardMap() {
+        var table = NoteTable<BeatTime, Pitch>()
+
+        table.insert(attack: 0, duration: 1, pitch: .a4)
+
+        let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
+        let work = Work(content: .standardBeat([part], TempoMap()))
+        let kmap = KeyboardMap(referenceNote: 69,
+                               referenceFrequency: 440,
+                               middleNote: 69,
+                               equivalenceRatio: .octave,
+                               ratios: [nil, nil] as [Ratio?])
+        let context = Work.ConvertContext.default.keyboardMap(kmap)
+
+        #expect(throws: Work.Error.emptyKeyboardMap) {
+            try work.convert(timeBasis: .beat,
+                             pitchNotation: .keyboard,
+                             context: context)
+        }
+    }
+
+    @Test
+    func convert_missingKeyboardMap() {
+        var table = NoteTable<BeatTime, Pitch>()
+
+        table.insert(attack: 0, duration: 1, pitch: .a4)
+
+        let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
+        let work = Work(content: .standardBeat([part], TempoMap()))
+        let context = Work.ConvertContext()
+            .pitchStandard(.a440)
+            .tuningSystem(EqualTemperament.edo12)
+
+        #expect(throws: Work.Error.missingKeyboardMap) {
+            try work.convert(timeBasis: .beat,
+                             pitchNotation: .keyboard,
+                             context: context)
+        }
+    }
+
+    @Test
     func convert_missingPitchStandard() {
         var table = NoteTable<BeatTime, Pitch>()
 
@@ -162,6 +203,93 @@ extension WorkConvertTests {
     }
 
     @Test
+    func convert_standardToKeyboard() throws {
+        var table = NoteTable<BeatTime, Pitch>()
+
+        table.insert(attack: 0, duration: 1, pitch: .a4)
+        table.insert(attack: 1, duration: 1, pitch: "B#3")
+
+        let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
+        let work = Work(content: .standardBeat([part], TempoMap()))
+
+        let result = try #require(try work.convert(timeBasis: .beat,
+                                                   pitchNotation: .keyboard))
+
+        guard case let .keyboardBeat(parts, _) = result.content
+        else {
+            Issue.record("Expected keyboard-beat content")
+            return
+        }
+
+        let pitches = parts.first?.noteTable.map(\.startPitch)
+
+        #expect(try pitches == [#require(NoteNumber(uintValue: 69)), #require(NoteNumber(uintValue: 60))])
+        #expect(parts.first?.partID == part.partID)
+    }
+
+    @Test
+    func convert_standardToKeyboard_pitchOutOfRange() {
+        var table = NoteTable<WallTime, Pitch>()
+
+        table.insert(attack: 0, duration: 1, pitch: .a4)
+        table.insert(attack: 1, duration: 1, pitch: "G#9")
+
+        let part = Part<WallTime, Pitch>(name: "Piano", noteTable: table)
+        let work = Work(content: .standardWall([part]))
+
+        #expect(throws: Work.Error.pitchOutOfRange(partID: part.partID)) {
+            try work.convert(timeBasis: .wall,
+                             pitchNotation: .keyboard)
+        }
+    }
+
+    @Test
+    func convert_standardToKeyboard_dropsOutOfRangeNotes() throws {
+        var table = NoteTable<WallTime, Pitch>()
+
+        table.insert(attack: 0, duration: 1, pitch: .a4)
+        table.insert(attack: 1, duration: 1, pitch: "G#9")
+        table.insert(attack: 2, duration: 1, pitch: "Cb-1")
+
+        let part = Part<WallTime, Pitch>(name: "Piano", noteTable: table)
+        let work = Work(content: .standardWall([part]))
+
+        let result = try #require(try work.convert(timeBasis: .wall,
+                                                   pitchNotation: .keyboard,
+                                                   dropsOutOfRangeNotes: true))
+
+        guard case let .keyboardWall(parts) = result.content
+        else {
+            Issue.record("Expected keyboard-wall content")
+            return
+        }
+
+        #expect(parts.first?.noteTable.count == 1)
+        #expect(parts.first?.noteTable.first?.startPitch == NoteNumber(uintValue: 69))
+    }
+
+    @Test
+    func convert_standardToKeyboard_wall() throws {
+        var table = NoteTable<WallTime, Pitch>()
+
+        table.insert(attack: 0, duration: 1, pitch: "C4")
+
+        let part = Part<WallTime, Pitch>(name: "Piano", noteTable: table)
+        let work = Work(content: .standardWall([part]))
+
+        let result = try #require(try work.convert(timeBasis: .wall,
+                                                   pitchNotation: .keyboard))
+
+        guard case let .keyboardWall(parts) = result.content
+        else {
+            Issue.record("Expected keyboard-wall content")
+            return
+        }
+
+        #expect(parts.first?.noteTable.first?.startPitch == NoteNumber(uintValue: 60))
+    }
+
+    @Test
     func convert_timeBasis_beatToWall() throws {
         var table = NoteTable<BeatTime, Pitch>()
 
@@ -196,8 +324,7 @@ extension WorkConvertTests {
     @Test(arguments: [(PitchNotation.absolute, PitchNotation.keyboard),
                       (.absolute, .standard),
                       (.keyboard, .absolute),
-                      (.keyboard, .standard),
-                      (.standard, .keyboard)])
+                      (.keyboard, .standard)])
     func convert_unsupportedPitchConversion(source: PitchNotation,
                                             target: PitchNotation) {
         let work = Work(content: .empty(timeBasis: .beat,
