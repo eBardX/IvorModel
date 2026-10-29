@@ -78,7 +78,7 @@ extension Template {
     // MARK: Public Type Properties
 
     /// The current template file format version.
-    public static let currentVersion = 2
+    public static let currentVersion = 3
 
     // MARK: Public Instance Properties
 
@@ -104,31 +104,31 @@ extension Template {
 
     // MARK: Public Instance Methods
 
-    /// Calls the given visitor with this template’s Markov chain, at its
-    /// concrete time and pitch types.
+    /// Calls the given visitor with this template’s model, at its concrete
+    /// time and pitch types.
     ///
     /// - Parameter visitor:    The visitor to call.
     ///
     /// - Returns:  The result of the visit.
     public func accept<Visitor: ContentVisitor>(_ visitor: Visitor) -> Visitor.Result {
         switch content {
-        case let .absoluteBeat(markovChain):
-            visitor.visit(markovChain)
+        case let .absoluteBeat(model):
+            visitor.visit(model)
 
-        case let .absoluteWall(markovChain):
-            visitor.visit(markovChain)
+        case let .absoluteWall(model):
+            visitor.visit(model)
 
-        case let .keyboardBeat(markovChain):
-            visitor.visit(markovChain)
+        case let .keyboardBeat(model):
+            visitor.visit(model)
 
-        case let .keyboardWall(markovChain):
-            visitor.visit(markovChain)
+        case let .keyboardWall(model):
+            visitor.visit(model)
 
-        case let .standardBeat(markovChain):
-            visitor.visit(markovChain)
+        case let .standardBeat(model):
+            visitor.visit(model)
 
-        case let .standardWall(markovChain):
-            visitor.visit(markovChain)
+        case let .standardWall(model):
+            visitor.visit(model)
         }
     }
 
@@ -148,38 +148,38 @@ extension Template {
 
     private static func _maximumOrder(of content: Content) -> Int {
         switch content {
-        case let .absoluteBeat(markovChain):
-            markovChain.maximumOrder
+        case let .absoluteBeat(model):
+            model.markovChain.maximumOrder
 
-        case let .absoluteWall(markovChain):
-            markovChain.maximumOrder
+        case let .absoluteWall(model):
+            model.markovChain.maximumOrder
 
-        case let .keyboardBeat(markovChain):
-            markovChain.maximumOrder
+        case let .keyboardBeat(model):
+            model.markovChain.maximumOrder
 
-        case let .keyboardWall(markovChain):
-            markovChain.maximumOrder
+        case let .keyboardWall(model):
+            model.markovChain.maximumOrder
 
-        case let .standardBeat(markovChain):
-            markovChain.maximumOrder
+        case let .standardBeat(model):
+            model.markovChain.maximumOrder
 
-        case let .standardWall(markovChain):
-            markovChain.maximumOrder
+        case let .standardWall(model):
+            model.markovChain.maximumOrder
         }
     }
 
     // MARK: Private Nested Types
 
     private struct _MaximumOrderVisitor: ContentVisitor {
-        func visit(_ markovChain: MarkovChain<NoteEvent<some TimeProtocol, some PitchProtocol>>) -> Int {
-            markovChain.maximumOrder
+        func visit<TimeType>(_ model: Model<TimeType, some Any>) -> Int where TimeType.DurationType: TemplateDuration {
+            model.markovChain.maximumOrder
         }
     }
 
     private struct _MetricsVisitor: ContentVisitor {
-        func visit(_ markovChain: MarkovChain<NoteEvent<some TimeProtocol, some PitchProtocol>>) -> Metrics {
-            let metrics = markovChain.metrics()
-            let order = markovChain.maximumOrder
+        func visit<TimeType>(_ model: Model<TimeType, some Any>) -> Metrics where TimeType.DurationType: TemplateDuration {
+            let metrics = model.markovChain.metrics()
+            let order = model.markovChain.maximumOrder
             let orderMetrics = metrics.orderMetrics[order]
 
             return Metrics(branchingRatio: orderMetrics.branchingRatio,

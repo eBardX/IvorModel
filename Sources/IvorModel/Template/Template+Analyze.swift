@@ -80,7 +80,7 @@ extension Template {
         case let .absoluteBeat(parts, _):
             try .absoluteBeat(_analyzeNoteEvents(in: parts,
                                                  at: index,
-                                                 maximumOrder: options.maximumOrder,
+                                                 options: options,
                                                  aligning: _beatAligning(options.timing),
                                                  grouping: _beatGrouping(options.durations),
                                                  rounding: _frequencyRounding(options.pitches)))
@@ -88,7 +88,7 @@ extension Template {
         case let .absoluteWall(parts):
             try .absoluteWall(_analyzeNoteEvents(in: parts,
                                                  at: index,
-                                                 maximumOrder: options.maximumOrder,
+                                                 options: options,
                                                  aligning: _wallAligning(options.timing),
                                                  grouping: _wallGrouping(options.durations),
                                                  rounding: _frequencyRounding(options.pitches)))
@@ -96,7 +96,7 @@ extension Template {
         case let .keyboardBeat(parts, _):
             try .keyboardBeat(_analyzeNoteEvents(in: parts,
                                                  at: index,
-                                                 maximumOrder: options.maximumOrder,
+                                                 options: options,
                                                  aligning: _beatAligning(options.timing),
                                                  grouping: _beatGrouping(options.durations),
                                                  rounding: _exactRounding(options.pitches)))
@@ -104,7 +104,7 @@ extension Template {
         case let .keyboardWall(parts):
             try .keyboardWall(_analyzeNoteEvents(in: parts,
                                                  at: index,
-                                                 maximumOrder: options.maximumOrder,
+                                                 options: options,
                                                  aligning: _wallAligning(options.timing),
                                                  grouping: _wallGrouping(options.durations),
                                                  rounding: _exactRounding(options.pitches)))
@@ -112,7 +112,7 @@ extension Template {
         case let .standardBeat(parts, _):
             try .standardBeat(_analyzeNoteEvents(in: parts,
                                                  at: index,
-                                                 maximumOrder: options.maximumOrder,
+                                                 options: options,
                                                  aligning: _beatAligning(options.timing),
                                                  grouping: _beatGrouping(options.durations),
                                                  rounding: _exactRounding(options.pitches)))
@@ -120,7 +120,7 @@ extension Template {
         case let .standardWall(parts):
             try .standardWall(_analyzeNoteEvents(in: parts,
                                                  at: index,
-                                                 maximumOrder: options.maximumOrder,
+                                                 options: options,
                                                  aligning: _wallAligning(options.timing),
                                                  grouping: _wallGrouping(options.durations),
                                                  rounding: _exactRounding(options.pitches)))
@@ -130,30 +130,64 @@ extension Template {
     //
     // `aligning` adjusts the part's times before it's sliced; `grouping` maps each duration to its
     // representative (a duration it leaves out stays as it is); and `rounding` maps each pitch to
-    // its representative.
+    // its representative.  The vocabulary records the representatives, and — where a tolerance
+    // grouped them — the members of each; the chain learns states of the representatives.
     //
     private static func _analyzeNoteEvents<T, P>(in parts: [Part<T, P>],
                                                  at index: Int,
-                                                 maximumOrder: Int,
+                                                 options: AnalysisOptions,
                                                  aligning: (NoteTable<T, P>) -> NoteTable<T, P>,
                                                  grouping: ([T.DurationType]) -> [T.DurationType: T.DurationType],
-                                                 rounding: (P) -> P) throws(Error) -> MarkovChain<NoteEvent<T, P>> {
-        guard let markovChain = MarkovChain<NoteEvent<T, P>>(maximumOrder: maximumOrder)
+                                                 rounding: (P) -> P) throws(Error) -> Model<T, P> where T.DurationType: TemplateDuration {
+        guard let markovChain = MarkovChain<State<T, P>>(maximumOrder: options.maximumOrder)
         else { throw Error.invalidMaximumOrder }
 
         let noteEvents = try aligning(_noteTable(in: parts,
                                                  at: index)).extractNoteEvents()
         let representatives = grouping(noteEvents.map(\.duration))
 
-        let tolerated = noteEvents.map { noteEvent in
-            NoteEvent<T, P>(tiedPitches: _rounding(noteEvent.tiedPitches,
-                                                   with: rounding),
-                            duration: representatives[noteEvent.duration] ?? noteEvent.duration)
+        var durationMembers: [T.DurationType: [T.DurationType: Int]] = [:]
+        var durations: [T.DurationType: Int] = [:]
+        var pitchMembers: [P: [P: Int]] = [:]
+        var pitches: [P: Int] = [:]
+        var tolerated: [NoteEvent<T, P>] = []
+
+        for noteEvent in noteEvents {
+            let duration = representatives[noteEvent.duration] ?? noteEvent.duration
+
+            if options.durations != nil {
+                durationMembers[duration, default: [:]][noteEvent.duration, default: 0] += 1
+            }
+
+            if options.pitches != nil {
+                for tiedPitch in noteEvent.tiedPitches {
+                    pitchMembers[rounding(tiedPitch.pitch), default: [:]][tiedPitch.pitch, default: 0] += 1
+                }
+            }
+
+            let toleratedEvent = NoteEvent<T, P>(tiedPitches: _rounding(noteEvent.tiedPitches,
+                                                                        with: rounding),
+                                                 duration: duration)
+
+            durations[duration, default: 0] += 1
+
+            for tiedPitch in toleratedEvent.tiedPitches {
+                pitches[tiedPitch.pitch, default: 0] += 1
+            }
+
+            tolerated.append(toleratedEvent)
         }
 
-        markovChain.analyzer().analyze(sequence: tolerated)
+        var builder = StateBuilder<T, P>(recipe: options.states)
 
-        return markovChain
+        markovChain.analyzer().analyze(sequence: tolerated.map { builder.state(for: $0) })
+
+        return Model(markovChain: markovChain,
+                     vocabulary: Vocabulary(durations: durations,
+                                            pitches: pitches,
+                                            first: tolerated.first,
+                                            durationMembers: durationMembers,
+                                            pitchMembers: pitchMembers))
     }
 
     private static func _beatAligning<P>(_ timing: TimingTolerance?) throws(Error) -> (NoteTable<BeatTime, P>) -> NoteTable<BeatTime, P> {

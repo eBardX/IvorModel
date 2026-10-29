@@ -15,8 +15,8 @@ struct TemplateGenerateTests {
 extension TemplateGenerateTests {
     @Test
     func generateWork_invalidLimit() throws {
-        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let tmpl = Template(name: "Test", content: .standardBeat(mc))
+        let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(markovChain: mc)))
 
         #expect(throws: Template.Error.self) {
             try tmpl.generateWork(name: "Generated",
@@ -27,8 +27,8 @@ extension TemplateGenerateTests {
 
     @Test
     func generateWork_invalidOrder() throws {
-        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>(maximumOrder: 1))
-        let tmpl = Template(name: "Test", content: .standardBeat(mc))
+        let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>(maximumOrder: 1))
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(markovChain: mc)))
 
         #expect(throws: Template.Error.self) {
             try tmpl.generateWork(name: "Generated",
@@ -39,13 +39,13 @@ extension TemplateGenerateTests {
 
     @Test
     func generateWork_success() throws {
-        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>(maximumOrder: 1))
+        let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>(maximumOrder: 1))
         let event = NoteEvent<BeatTime, Pitch>(tiedPitches: [NoteEvent<BeatTime, Pitch>.TiedPitch(pitch: .c4)],
                                                duration: 1)
 
-        mc.analyzer().analyze(sequence: [event, event])
+        mc.analyzer().analyze(sequence: makeExactStates([event, event]))
 
-        let tmpl = Template(name: "Test", content: .standardBeat(mc))
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(markovChain: mc)))
 
         let work = try tmpl.generateWork(name: "Generated",
                                          order: 1,
@@ -70,11 +70,11 @@ extension TemplateGenerateTests {
                                       (3, 3, .e5),
                                       (3, 1, .g5),
                                       (3, 2, .b5)])
-        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>(maximumOrder: 1))
+        let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>(maximumOrder: 1))
 
-        mc.analyzer().analyze(sequence: source.extractNoteEvents())
+        mc.analyzer().analyze(sequence: makeExactStates(source.extractNoteEvents()))
 
-        let tmpl = Template(name: "Test", content: .standardBeat(mc))
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(markovChain: mc)))
         let work = try tmpl.generateWork(name: "Generated",
                                          order: 1,
                                          limit: 100)

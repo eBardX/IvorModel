@@ -30,6 +30,7 @@ extension Template {
         try Work(name: name,
                  content: Self._generateWorkContent(from: content,
                                                     options: options,
+                                                    isRelative: analysisOptions.states.isRelative,
                                                     seed: seed),
                  generation: Work.Generation(templateID: templateID,
                                              templateName: self.name,
@@ -119,14 +120,20 @@ extension Template {
     // sampling generator gets its own seed, drawn in a fixed order from one generator seeded
     // with `seed`, so the whole stack is reproducible.
     //
-    private static func _makeGenerator<T, P>(using markovChain: MarkovChain<NoteEvent<T, P>>,
+    // Constraints test realized note events (see `Realizer`), and so does the range that a
+    // relative recipe keeps to.  When the range rules out every choice, a fallback at the
+    // recipe's order, under the constraints alone, chooses instead, and the realizer brings the
+    // result back into range.
+    //
+    private static func _makeGenerator<T, P>(using markovChain: MarkovChain<State<T, P>>,
                                              options: GenerationOptions<T, P>,
-                                             seed: UInt64) throws -> any MarkovChain<NoteEvent<T, P>>.Generator {
-        typealias Chain = MarkovChain<NoteEvent<T, P>>
+                                             realizer: Realizer<T, P>,
+                                             rng: inout SeededRandomNumberGenerator) throws -> any MarkovChain<State<T, P>>.Generator
+        where T.DurationType: TemplateDuration {
+        typealias Chain = MarkovChain<State<T, P>>
 
-        var rng = SeededRandomNumberGenerator(seed: seed)
-
-        func makeSimple(order: Int) throws -> any Chain.Generator {
+        func makeSimple(order: Int,
+                        rng: inout SeededRandomNumberGenerator) throws -> any Chain.Generator {
             guard let generator = markovChain.generator(order: order,
                                                         startsAtBegin: options.startsAtBegin,
                                                         stopsAtEnd: options.stopsAtEnd,
@@ -136,14 +143,14 @@ extension Template {
             return generator
         }
 
-        func decorate(_ generator: any Chain.Generator) -> any Chain.Generator {
+        func decorate(_ generator: any Chain.Generator,
+                      checkingRange: Bool,
+                      rng: inout SeededRandomNumberGenerator) -> any Chain.Generator {
             var result = generator
 
-            if !options.constraints.isEmpty {
-                let constraints = options.constraints
-
+            if !options.constraints.isEmpty || (checkingRange && realizer.range != nil) {
                 result = Chain.generator(filtering: result,
-                                         where: { constraints.allows($0) },
+                                         where: { realizer.allows($0, checkingRange: checkingRange) },
                                          using: SeededRandomNumberGenerator(seed: rng.next()))
             }
 
@@ -158,28 +165,39 @@ extension Template {
 
         let primary: any Chain.Generator = switch options.mixing {
         case let .blend(otherOrder, weight):
-            try Chain.generator(blending: [(makeSimple(order: options.order), weight: 1 - weight),
-                                           (makeSimple(order: otherOrder), weight: weight)],
+            try Chain.generator(blending: [(makeSimple(order: options.order, rng: &rng), weight: 1 - weight),
+                                           (makeSimple(order: otherOrder, rng: &rng), weight: weight)],
                                 using: SeededRandomNumberGenerator(seed: rng.next()))
 
         case let .morph(otherOrder, steps, curve):
-            try Chain.generator(interpolating: makeSimple(order: options.order),
-                                to: makeSimple(order: otherOrder),
+            try Chain.generator(interpolating: makeSimple(order: options.order, rng: &rng),
+                                to: makeSimple(order: otherOrder, rng: &rng),
                                 over: steps,
                                 along: _CurveInterpolator(curve: curve),
                                 using: SeededRandomNumberGenerator(seed: rng.next()))
 
         case nil:
-            try makeSimple(order: options.order)
+            try makeSimple(order: options.order, rng: &rng)
         }
 
-        var stack = decorate(primary)
+        var stack = decorate(primary,
+                             checkingRange: true,
+                             rng: &rng)
 
         if options.backsOff {
             for order in (0..<options.topOrder).reversed() {
                 stack = try Chain.generator(trying: stack,
-                                            otherwise: decorate(makeSimple(order: order)))
+                                            otherwise: decorate(makeSimple(order: order, rng: &rng),
+                                                                checkingRange: true,
+                                                                rng: &rng))
             }
+        }
+
+        if realizer.range != nil {
+            stack = try Chain.generator(trying: stack,
+                                        otherwise: decorate(makeSimple(order: options.order, rng: &rng),
+                                                            checkingRange: false,
+                                                            rng: &rng))
         }
 
         if options.loops {
@@ -189,19 +207,40 @@ extension Template {
         return stack
     }
 
-    private static func _generateNoteTable<T, P>(using markovChain: MarkovChain<NoteEvent<T, P>>,
+    private static func _generateNoteTable<T, P>(using model: Model<T, P>,
                                                  options: GenerationOptions<T, P>,
-                                                 seed: UInt64) throws -> NoteTable<T, P> {
-        try options.validate(maximumOrder: markovChain.maximumOrder)
+                                                 isRelative: Bool,
+                                                 seed: UInt64) throws -> NoteTable<T, P> where T.DurationType: TemplateDuration {
+        try options.validate(maximumOrder: model.markovChain.maximumOrder)
 
-        var generator = try _makeGenerator(using: markovChain,
+        var rng = SeededRandomNumberGenerator(seed: seed)
+
+        //
+        // Drawn first, but only when it's used, so that the generators' seeds — and so what a
+        // seed generates — don't depend on it otherwise.
+        //
+        let memberSeed = options.samplesMembers ? rng.next() : 0
+
+        let realizer = Realizer(vocabulary: model.vocabulary,
+                                options: options,
+                                isRelative: isRelative,
+                                memberSeed: memberSeed)
+
+        var generator = try _makeGenerator(using: model.markovChain,
                                            options: options,
-                                           seed: seed)
+                                           realizer: realizer,
+                                           rng: &rng)
 
         var noteCount = 0
+        var noteEvents: [NoteEvent<T, P>] = []
         var time: T = .zero
 
-        let noteEvents = generator.generate { noteEvent in
+        _ = generator.generate { state in
+            guard let noteEvent = realizer.advance(with: state)
+            else { return true }
+
+            noteEvents.append(noteEvent)
+
             noteCount += 1
             time = time.moved(by: DirectedDuration(duration: noteEvent.duration,
                                                    direction: .forward)).require()
@@ -223,9 +262,10 @@ extension Template {
         return assembler.assembleNoteTable()
     }
 
-    private static func _generatePart<T, P>(using markovChain: MarkovChain<NoteEvent<T, P>>,
+    private static func _generatePart<T, P>(using model: Model<T, P>,
                                             options: GenerationOptions<T, P>,
-                                            seed: UInt64) throws -> Part<T, P> {
+                                            isRelative: Bool,
+                                            seed: UInt64) throws -> Part<T, P> where T.DurationType: TemplateDuration {
         let partName = switch options.length {
         case let .duration(duration):
             "Generated, order: \(options.order), length: \(duration)"
@@ -235,46 +275,54 @@ extension Template {
         }
 
         return try Part(name: partName,
-                        noteTable: _generateNoteTable(using: markovChain,
+                        noteTable: _generateNoteTable(using: model,
                                                       options: options,
+                                                      isRelative: isRelative,
                                                       seed: seed))
     }
 
     private static func _generateWorkContent(from content: Template.Content,
                                              options: AnyGenerationOptions,
+                                             isRelative: Bool,
                                              seed: UInt64) throws -> Work.Content {
         switch (content, options) {
-        case let (.absoluteBeat(markovChain), .absoluteBeat(options)):
-            try .absoluteBeat([_generatePart(using: markovChain,
+        case let (.absoluteBeat(model), .absoluteBeat(options)):
+            try .absoluteBeat([_generatePart(using: model,
                                              options: options,
+                                             isRelative: isRelative,
                                              seed: seed)],
                               TempoMap())
 
-        case let (.absoluteWall(markovChain), .absoluteWall(options)):
-            try .absoluteWall([_generatePart(using: markovChain,
+        case let (.absoluteWall(model), .absoluteWall(options)):
+            try .absoluteWall([_generatePart(using: model,
                                              options: options,
+                                             isRelative: isRelative,
                                              seed: seed)])
 
-        case let (.keyboardBeat(markovChain), .keyboardBeat(options)):
-            try .keyboardBeat([_generatePart(using: markovChain,
+        case let (.keyboardBeat(model), .keyboardBeat(options)):
+            try .keyboardBeat([_generatePart(using: model,
                                              options: options,
+                                             isRelative: isRelative,
                                              seed: seed)],
                               TempoMap())
 
-        case let (.keyboardWall(markovChain), .keyboardWall(options)):
-            try .keyboardWall([_generatePart(using: markovChain,
+        case let (.keyboardWall(model), .keyboardWall(options)):
+            try .keyboardWall([_generatePart(using: model,
                                              options: options,
+                                             isRelative: isRelative,
                                              seed: seed)])
 
-        case let (.standardBeat(markovChain), .standardBeat(options)):
-            try .standardBeat([_generatePart(using: markovChain,
+        case let (.standardBeat(model), .standardBeat(options)):
+            try .standardBeat([_generatePart(using: model,
                                              options: options,
+                                             isRelative: isRelative,
                                              seed: seed)],
                               TempoMap())
 
-        case let (.standardWall(markovChain), .standardWall(options)):
-            try .standardWall([_generatePart(using: markovChain,
+        case let (.standardWall(model), .standardWall(options)):
+            try .standardWall([_generatePart(using: model,
                                              options: options,
+                                             isRelative: isRelative,
                                              seed: seed)])
 
         default:

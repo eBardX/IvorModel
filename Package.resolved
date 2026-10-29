@@ -1,5 +1,5 @@
 {
-  "originHash" : "058b3f3c60debe97317500a444b9e9e13db847232a2783abea6dfc3bdfee26b0",
+  "originHash" : "6a6680117ffaebe86dfb1090f515109874e5f9520ec0febc4af70e5a1f867f66",
   "pins" : [
     {
       "identity" : "bigint",
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTuning.git",
       "state" : {
-        "revision" : "99c1d6f3f944df6a7c8a5aa1ca959322a02a42ea",
-        "version" : "0.11.0"
+        "revision" : "e5f0fe26a9fab619bb7285df508af0ea7344cfd5",
+        "version" : "0.12.0"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/XestiSexp",
       "state" : {
-        "revision" : "5b40da8ebb648dbde8c1419c38de16209698b05e",
-        "version" : "5.0.5"
+        "revision" : "b381dd54d63921ff314423344455e0bcdb2281d8",
+        "version" : "5.0.6"
       }
     },
     {

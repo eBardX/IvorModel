@@ -40,6 +40,12 @@ extension Template {
         ///                             constraints.
         /// - Parameter mixing:         How to mix ``order`` with another order. Defaults to `nil`.
         /// - Parameter cadence:        A note event on which to end. Defaults to `nil`.
+        /// - Parameter startPitch:     The pitch that relative states start from. Defaults to
+        ///                             `nil`.
+        /// - Parameter startDuration:  The duration that relative states start from. Defaults to
+        ///                             `nil`.
+        /// - Parameter samplesMembers: Whether to draw grouped values from their members.
+        ///                             Defaults to `false`.
         public init(order: Int = 1,
                     length: Length = .noteCount(100),
                     startsAtBegin: Bool = true,
@@ -49,7 +55,10 @@ extension Template {
                     contrast: Double = 1,
                     constraints: Constraints = Constraints(),
                     mixing: Mixing? = nil,
-                    cadence: Cadence? = nil) {
+                    cadence: Cadence? = nil,
+                    startPitch: PitchType? = nil,
+                    startDuration: TimeType.DurationType? = nil,
+                    samplesMembers: Bool = false) {
             self.backsOff = backsOff
             self.cadence = cadence
             self.constraints = constraints
@@ -58,6 +67,9 @@ extension Template {
             self.loops = loops
             self.mixing = mixing
             self.order = order
+            self.samplesMembers = samplesMembers
+            self.startDuration = startDuration
+            self.startPitch = startPitch
             self.startsAtBegin = startsAtBegin
             self.stopsAtEnd = stopsAtEnd
         }
@@ -94,6 +106,22 @@ extension Template {
         /// The Markov order to generate at: the number of preceding note events that choose the
         /// next. Must be between 0 and the template’s maximum order.
         public var order: Int
+
+        /// Whether to replace each pitch and duration that an analysis tolerance grouped with one
+        /// of the values it grouped, drawn in proportion to how often each occurred — keeping the
+        /// source’s nuances while the template works with the groups. Applies only where the
+        /// template records absolute pitches or durations.
+        public var samplesMembers: Bool
+
+        /// The duration that relative durations start from, and the duration of every event when
+        /// the template records none; or `nil` for the source’s first duration (or, when it
+        /// records none, its most common one). Must not be zero.
+        public var startDuration: TimeType.DurationType?
+
+        /// The pitch that intervals and pitch classes start from, and the pitch of every sounding
+        /// event when the template records none; or `nil` for the source’s first bass (or, when it
+        /// records none, its most common pitch).
+        public var startPitch: PitchType?
 
         /// Whether generation begins at the source’s opening. When `false`, the first note
         /// event is chosen by how often it occurs in the source, so generation can start
@@ -150,12 +178,88 @@ extension Template.GenerationOptions {
             guard cadence.minimumLength.isValid
             else { throw .invalidLimit }
         }
+
+        if let startDuration {
+            guard !startDuration.isZero
+            else { throw .invalidLimit }
+        }
     }
 }
 
 // MARK: - Codable
 
 extension Template.GenerationOptions: Codable {
+
+    // MARK: Public Initializers
+
+    /// Creates a generation recipe by decoding from the provided decoder.
+    ///
+    /// A recipe recorded before ``samplesMembers`` existed decodes with it `false`, so that works
+    /// generated then still open.
+    ///
+    /// - Parameter decoder:    The decoder to read from.
+    ///
+    /// - Throws:   `DecodingError` if the encoded data is invalid or corrupted.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        self.backsOff = try container.decode(Bool.self, forKey: .backsOff)
+        self.cadence = try container.decodeIfPresent(Cadence.self, forKey: .cadence)
+        self.constraints = try container.decode(Constraints.self, forKey: .constraints)
+        self.contrast = try container.decode(Double.self, forKey: .contrast)
+        self.length = try container.decode(Length.self, forKey: .length)
+        self.loops = try container.decode(Bool.self, forKey: .loops)
+        self.mixing = try container.decodeIfPresent(Mixing.self, forKey: .mixing)
+        self.order = try container.decode(Int.self, forKey: .order)
+        self.samplesMembers = try container.decodeIfPresent(Bool.self, forKey: .samplesMembers) ?? false
+        self.startDuration = try container.decodeIfPresent(DurationType.self, forKey: .startDuration)
+        self.startPitch = try container.decodeIfPresent(PitchType.self, forKey: .startPitch)
+        self.startsAtBegin = try container.decode(Bool.self, forKey: .startsAtBegin)
+        self.stopsAtEnd = try container.decode(Bool.self, forKey: .stopsAtEnd)
+    }
+
+    // MARK: Public Instance Methods
+
+    /// Encodes this generation recipe into the provided encoder.
+    ///
+    /// - Parameter encoder:    The encoder to write to.
+    ///
+    /// - Throws:   `EncodingError` if the value cannot be encoded.
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encode(backsOff, forKey: .backsOff)
+        try container.encodeIfPresent(cadence, forKey: .cadence)
+        try container.encode(constraints, forKey: .constraints)
+        try container.encode(contrast, forKey: .contrast)
+        try container.encode(length, forKey: .length)
+        try container.encode(loops, forKey: .loops)
+        try container.encodeIfPresent(mixing, forKey: .mixing)
+        try container.encode(order, forKey: .order)
+        try container.encode(samplesMembers, forKey: .samplesMembers)
+        try container.encodeIfPresent(startDuration, forKey: .startDuration)
+        try container.encodeIfPresent(startPitch, forKey: .startPitch)
+        try container.encode(startsAtBegin, forKey: .startsAtBegin)
+        try container.encode(stopsAtEnd, forKey: .stopsAtEnd)
+    }
+
+    // MARK: Private Nested Types
+
+    private enum CodingKeys: String, CodingKey {
+        case backsOff
+        case cadence
+        case constraints
+        case contrast
+        case length
+        case loops
+        case mixing
+        case order
+        case samplesMembers
+        case startDuration
+        case startPitch
+        case startsAtBegin
+        case stopsAtEnd
+    }
 }
 
 // MARK: - Hashable

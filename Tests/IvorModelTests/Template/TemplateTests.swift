@@ -16,34 +16,34 @@ struct TemplateTests {
 extension TemplateTests {
     @Test
     func accept() throws {
-        let absoluteBeat = try #require(MarkovChain<NoteEvent<BeatTime, Frequency>>())
-        let absoluteWall = try #require(MarkovChain<NoteEvent<WallTime, Frequency>>())
-        let keyboardBeat = try #require(MarkovChain<NoteEvent<BeatTime, NoteNumber>>())
-        let keyboardWall = try #require(MarkovChain<NoteEvent<WallTime, NoteNumber>>())
-        let standardBeat = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let standardWall = try #require(MarkovChain<NoteEvent<WallTime, Pitch>>())
+        let absoluteBeat = try #require(MarkovChain<Template.State<BeatTime, Frequency>>())
+        let absoluteWall = try #require(MarkovChain<Template.State<WallTime, Frequency>>())
+        let keyboardBeat = try #require(MarkovChain<Template.State<BeatTime, NoteNumber>>())
+        let keyboardWall = try #require(MarkovChain<Template.State<WallTime, NoteNumber>>())
+        let standardBeat = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let standardWall = try #require(MarkovChain<Template.State<WallTime, Pitch>>())
         let visitor = _TypeNameVisitor()
 
-        #expect(Template(name: "T", content: .absoluteBeat(absoluteBeat)).accept(visitor) == "BeatTime Frequency")
-        #expect(Template(name: "T", content: .absoluteWall(absoluteWall)).accept(visitor) == "WallTime Frequency")
-        #expect(Template(name: "T", content: .keyboardBeat(keyboardBeat)).accept(visitor) == "BeatTime NoteNumber")
-        #expect(Template(name: "T", content: .keyboardWall(keyboardWall)).accept(visitor) == "WallTime NoteNumber")
-        #expect(Template(name: "T", content: .standardBeat(standardBeat)).accept(visitor) == "BeatTime Pitch")
-        #expect(Template(name: "T", content: .standardWall(standardWall)).accept(visitor) == "WallTime Pitch")
+        #expect(Template(name: "T", content: .absoluteBeat(Template.Model(markovChain: absoluteBeat))).accept(visitor) == "BeatTime Frequency")
+        #expect(Template(name: "T", content: .absoluteWall(Template.Model(markovChain: absoluteWall))).accept(visitor) == "WallTime Frequency")
+        #expect(Template(name: "T", content: .keyboardBeat(Template.Model(markovChain: keyboardBeat))).accept(visitor) == "BeatTime NoteNumber")
+        #expect(Template(name: "T", content: .keyboardWall(Template.Model(markovChain: keyboardWall))).accept(visitor) == "WallTime NoteNumber")
+        #expect(Template(name: "T", content: .standardBeat(Template.Model(markovChain: standardBeat))).accept(visitor) == "BeatTime Pitch")
+        #expect(Template(name: "T", content: .standardWall(Template.Model(markovChain: standardWall))).accept(visitor) == "WallTime Pitch")
     }
 
     @Test
     func accept_passesMarkovChain() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<WallTime, NoteNumber>>(maximumOrder: 3))
-        let tmpl = Template(name: "T", content: .keyboardWall(markovChain))
+        let markovChain = try #require(MarkovChain<Template.State<WallTime, NoteNumber>>(maximumOrder: 3))
+        let tmpl = Template(name: "T", content: .keyboardWall(Template.Model(markovChain: markovChain)))
 
         #expect(tmpl.accept(_MaximumOrderVisitor()) == 3)
     }
 
     @Test
     func codable_normalizesName() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let data = try JSONEncoder().encode(Template(name: "T", content: .standardBeat(markovChain)))
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let data = try JSONEncoder().encode(Template(name: "T", content: .standardBeat(Template.Model(markovChain: markovChain))))
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         object["name"] = "  My \n Template "
@@ -56,8 +56,8 @@ extension TemplateTests {
 
     @Test
     func codable_oldVersion_throwsUnsupportedVersion() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let data = try JSONEncoder().encode(Template(name: "T", content: .standardBeat(markovChain)))
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let data = try JSONEncoder().encode(Template(name: "T", content: .standardBeat(Template.Model(markovChain: markovChain))))
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         object["version"] = 1
@@ -71,9 +71,9 @@ extension TemplateTests {
 
     @Test
     func comparable() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let alpha  = Template(name: "Alpha", content: .standardBeat(markovChain))
-        let beta   = Template(name: "Beta", content: .standardBeat(markovChain))
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let alpha  = Template(name: "Alpha", content: .standardBeat(Template.Model(markovChain: markovChain)))
+        let beta   = Template(name: "Beta", content: .standardBeat(Template.Model(markovChain: markovChain)))
 
         #expect(alpha < beta)
         #expect(!(beta < alpha))
@@ -81,37 +81,37 @@ extension TemplateTests {
 
     @Test
     func currentVersion() {
-        #expect(Template.currentVersion == 2)
+        #expect(Template.currentVersion == 3)
     }
 
     @Test
     func equality() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let tmpl = Template(name: "My Template", content: .standardBeat(markovChain))
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let tmpl = Template(name: "My Template", content: .standardBeat(Template.Model(markovChain: markovChain)))
 
         #expect(tmpl == tmpl) // swiftlint:disable:this identical_operands
     }
 
     @Test
     func inequality() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let tmpl1  = Template(name: "My Template", content: .standardBeat(markovChain))
-        let tmpl2  = Template(name: "My Template", content: .standardBeat(markovChain))
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let tmpl1  = Template(name: "My Template", content: .standardBeat(Template.Model(markovChain: markovChain)))
+        let tmpl2  = Template(name: "My Template", content: .standardBeat(Template.Model(markovChain: markovChain)))
 
         #expect(tmpl1 != tmpl2)
     }
 
     @Test
     func init_normalizesName() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
 
-        #expect(Template(name: " My\t Template ", content: .standardBeat(markovChain)).name == "My Template")
+        #expect(Template(name: " My\t Template ", content: .standardBeat(Template.Model(markovChain: markovChain))).name == "My Template")
     }
 
     @Test
     func init_properties() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let tmpl = Template(name: "Fugue", content: .standardBeat(markovChain))
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let tmpl = Template(name: "Fugue", content: .standardBeat(Template.Model(markovChain: markovChain)))
 
         #expect(tmpl.name == "Fugue")
         #expect(tmpl.version == Template.currentVersion)
@@ -119,24 +119,24 @@ extension TemplateTests {
 
     @Test
     func isLocked_default() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let tmpl = Template(name: "Fugue", content: .standardBeat(markovChain))
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let tmpl = Template(name: "Fugue", content: .standardBeat(Template.Model(markovChain: markovChain)))
 
         #expect(!tmpl.isLocked)
     }
 
     @Test
     func maximumOrder() throws {
-        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let tmpl = Template(name: "Test", content: .standardBeat(mc))
+        let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(markovChain: mc)))
 
         #expect(tmpl.maximumOrder >= 0)
     }
 
     @Test
     func metrics_empty() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>(maximumOrder: 2))
-        let metrics = Template(name: "T", content: .standardBeat(markovChain)).metrics
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>(maximumOrder: 2))
+        let metrics = Template(name: "T", content: .standardBeat(Template.Model(markovChain: markovChain))).metrics
 
         #expect(metrics.order == 2)
         #expect(metrics.recommendedOrder == nil)
@@ -157,10 +157,10 @@ extension TemplateTests {
         let work = Work(name: "W", content: .standardBeat([Part(name: "Piano", noteTable: table)], TempoMap()))
         let tmpl = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1)
 
-        guard case let .standardBeat(markovChain) = tmpl.content
+        guard case let .standardBeat(model) = tmpl.content
         else { Issue.record("Unexpected content"); return }
 
-        let expected = markovChain.metrics()
+        let expected = model.markovChain.metrics()
         let metrics = tmpl.metrics
 
         #expect(metrics.order == 1)
@@ -175,32 +175,32 @@ extension TemplateTests {
 
     @Test
     func pitchNotation_absolute() throws {
-        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Frequency>>())
-        let tmpl = Template(name: "Test", content: .absoluteBeat(mc))
+        let mc = try #require(MarkovChain<Template.State<BeatTime, Frequency>>())
+        let tmpl = Template(name: "Test", content: .absoluteBeat(Template.Model(markovChain: mc)))
 
         #expect(tmpl.pitchNotation == .absolute)
     }
 
     @Test
     func pitchNotation_keyboard() throws {
-        let mc = try #require(MarkovChain<NoteEvent<BeatTime, NoteNumber>>())
-        let tmpl = Template(name: "Test", content: .keyboardBeat(mc))
+        let mc = try #require(MarkovChain<Template.State<BeatTime, NoteNumber>>())
+        let tmpl = Template(name: "Test", content: .keyboardBeat(Template.Model(markovChain: mc)))
 
         #expect(tmpl.pitchNotation == .keyboard)
     }
 
     @Test
     func pitchNotation_standard() throws {
-        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let tmpl = Template(name: "Test", content: .standardBeat(mc))
+        let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(markovChain: mc)))
 
         #expect(tmpl.pitchNotation == .standard)
     }
 
     @Test
     func rename() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        var tmpl = Template(name: "Original", content: .standardBeat(markovChain))
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        var tmpl = Template(name: "Original", content: .standardBeat(Template.Model(markovChain: markovChain)))
 
         try tmpl.rename(to: "Renamed")
 
@@ -209,8 +209,8 @@ extension TemplateTests {
 
     @Test
     func rename_locked_throws() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        var tmpl = Template(name: "Original", content: .standardBeat(markovChain))
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        var tmpl = Template(name: "Original", content: .standardBeat(Template.Model(markovChain: markovChain)))
 
         tmpl.isLocked = true
 
@@ -222,8 +222,8 @@ extension TemplateTests {
 
     @Test
     func rename_normalizesName() throws {
-        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        var tmpl = Template(name: "Original", content: .standardBeat(markovChain))
+        let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        var tmpl = Template(name: "Original", content: .standardBeat(Template.Model(markovChain: markovChain)))
 
         try tmpl.rename(to: "  Re  named ")
 
@@ -232,16 +232,16 @@ extension TemplateTests {
 
     @Test
     func timeBasis_beat() throws {
-        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
-        let tmpl = Template(name: "Test", content: .standardBeat(mc))
+        let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(markovChain: mc)))
 
         #expect(tmpl.timeBasis == .beat)
     }
 
     @Test
     func timeBasis_wall() throws {
-        let mc = try #require(MarkovChain<NoteEvent<WallTime, Pitch>>())
-        let tmpl = Template(name: "Test", content: .standardWall(mc))
+        let mc = try #require(MarkovChain<Template.State<WallTime, Pitch>>())
+        let tmpl = Template(name: "Test", content: .standardWall(Template.Model(markovChain: mc)))
 
         #expect(tmpl.timeBasis == .wall)
     }
@@ -251,13 +251,13 @@ extension TemplateTests {
 
 extension TemplateTests {
     private struct _MaximumOrderVisitor: Template.ContentVisitor {
-        func visit(_ markovChain: MarkovChain<NoteEvent<some TimeProtocol, some PitchProtocol>>) -> Int {
-            markovChain.maximumOrder
+        func visit<TimeType>(_ model: Template.Model<TimeType, some Any>) -> Int where TimeType.DurationType: TemplateDuration {
+            model.markovChain.maximumOrder
         }
     }
 
     private struct _TypeNameVisitor: Template.ContentVisitor {
-        func visit<TimeType: TimeProtocol, PitchType: PitchProtocol>(_ markovChain: MarkovChain<NoteEvent<TimeType, PitchType>>) -> String {
+        func visit<TimeType, PitchType>(_ model: Template.Model<TimeType, PitchType>) -> String where TimeType.DurationType: TemplateDuration {
             "\(TimeType.self) \(PitchType.self)"
         }
     }

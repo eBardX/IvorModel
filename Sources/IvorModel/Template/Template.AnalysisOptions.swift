@@ -16,6 +16,8 @@ extension Template {
     /// 2. ``durations`` and ``pitches`` then replace each note event’s duration and pitches with
     ///    a representative value.
     ///
+    /// ``states`` then chooses what the template records of each note event.
+    ///
     /// The defaults analyze exactly, as earlier versions did. The work being analyzed is never
     /// changed.
     public struct AnalysisOptions {
@@ -31,13 +33,17 @@ extension Template {
         ///                             to `nil` (exact durations).
         /// - Parameter pitches:        How to make near-identical pitches the same. Defaults to
         ///                             `nil` (exact pitches).
+        /// - Parameter states:         What the template records of each note event. Defaults to
+        ///                             ``StateRecipe/exact``.
         public init(maximumOrder: Int,
                     timing: TimingTolerance? = nil,
                     durations: DurationTolerance? = nil,
-                    pitches: PitchTolerance? = nil) {
+                    pitches: PitchTolerance? = nil,
+                    states: StateRecipe = .exact) {
             self.durations = durations
             self.maximumOrder = maximumOrder
             self.pitches = pitches
+            self.states = states
             self.timing = timing
         }
 
@@ -51,6 +57,9 @@ extension Template {
 
         /// How to make near-identical pitches the same, or `nil` for exact pitches.
         public var pitches: PitchTolerance?
+
+        /// What the template records of each note event.
+        public var states: StateRecipe
 
         /// How to align attack and release times before slicing, or `nil` for exact times.
         public var timing: TimingTolerance?
@@ -74,6 +83,7 @@ extension Template.AnalysisOptions {
         try timing?.validate()
         try durations?.validate()
         try pitches?.validate()
+        try states.validate()
     }
 }
 

@@ -59,3 +59,40 @@ struct NoteTripleSB: Equatable {
     let duration: BeatDuration
     let pitch: Pitch
 }
+
+//
+// The states the exact recipe makes of `noteEvents`, for training a chain directly.
+//
+func makeExactStates<T, P>(_ noteEvents: [NoteEvent<T, P>]) -> [Template.State<T, P>] where T.DurationType: TemplateDuration {
+    noteEvents.map { noteEvent in
+        Template.State(isRest: noteEvent.tiedPitches.isEmpty,
+                       duration: .absolute(noteEvent.duration),
+                       pitches: noteEvent.tiedPitches.isEmpty ? nil : .absolute(noteEvent.tiedPitches.map {
+                           Template.Tone(value: $0.pitch,
+                                         startsTie: $0.startsTie,
+                                         endsTie: $0.endsTie)
+                       }))
+    }
+}
+
+//
+// The note events that exact `states` record, for checking what a chain learned.
+//
+func makeNoteEvents<T, P>(_ states: [Template.State<T, P>]) -> [NoteEvent<T, P>] where T.DurationType: TemplateDuration {
+    states.compactMap { state in
+        guard case let .absolute(duration) = state.duration
+        else { return nil }
+
+        guard case let .absolute(tones) = state.pitches
+        else { return NoteEvent(tiedPitches: [], duration: duration) }
+
+        let tiedPitches = tones.map {
+            NoteEvent<T, P>.TiedPitch(pitch: $0.value,
+                                      startsTie: $0.startsTie,
+                                      endsTie: $0.endsTie)
+        }
+
+        return NoteEvent(tiedPitches: tiedPitches,
+                         duration: duration)
+    }
+}
