@@ -13,7 +13,7 @@ public struct Work {
     // MARK: Public Initializers
 
     /// Creates a new work with the given name, content, SMPTE start time, descriptive information,
-    /// and realizations.
+    /// realizations and generation record.
     ///
     /// - Parameter name:           The display name of the work. Its whitespace is normalized
     ///                             to a single line. Defaults to an empty string.
@@ -27,16 +27,20 @@ public struct Work {
     ///                             Must be non-empty, with distinct realization IDs. Part tables
     ///                             for parts not in `content` are dropped. Defaults to a single,
     ///                             empty realization named ``defaultRealizationName``.
+    /// - Parameter generation:     How the work was generated from a template, or `nil` if it
+    ///                             wasn’t. Defaults to `nil`.
     public init(name: String = "",
                 content: Content? = nil,
                 smpteStartTime: SMPTETime = Self.defaultSMPTEStartTime,
                 info: Info = Info(),
-                realizations: [Realization] = [Realization(name: Self.defaultRealizationName)]) {
+                realizations: [Realization] = [Realization(name: Self.defaultRealizationName)],
+                generation: Generation? = nil) {
         precondition(Self.firstRealizationError(in: realizations) == nil,
                      "Realizations must be non-empty, with distinct realization IDs.")
 
         self.unsafeContent = content ?? .standardBeat([],
                                                       TempoMap())
+        self.generation = generation
         self.info = info
         self.isLocked = false
         self.name = name.normalizingWhitespace()
@@ -55,6 +59,13 @@ public struct Work {
 
     /// The unique ID of the work.
     public let workID: WorkID
+
+    /// How this work was generated from a template, or `nil` if it wasn’t.
+    ///
+    /// It records how the work began: editing the work leaves it in place, and
+    /// ``duplicated()`` keeps it. Methods that return a work with converted content, such as
+    /// ``warped()``, leave it out, since the recipe no longer reproduces that content.
+    public let generation: Generation?
 
     /// A Boolean value indicating whether this work is locked.
     ///
@@ -271,8 +282,8 @@ extension Work {
 
     // MARK: Public Instance Methods
 
-    /// Returns a copy of this work with the same content, ``smpteStartTime``, ``info``, and
-    /// ``realizations`` but a distinct, freshly minted ``WorkID``.
+    /// Returns a copy of this work with the same content, ``smpteStartTime``, ``info``,
+    /// ``realizations`` and ``generation`` but a distinct, freshly minted ``WorkID``.
     ///
     /// The copy’s parts and realizations keep their IDs, which are unique only within a work.
     public func duplicated() -> Self {
@@ -280,7 +291,8 @@ extension Work {
              content: content,
              smpteStartTime: smpteStartTime,
              info: info,
-             realizations: realizations)
+             realizations: realizations,
+             generation: generation)
     }
 
     /// Edits the descriptive information of this work in place.
@@ -434,6 +446,9 @@ extension Work: Codable {
         self.unsafeContent = try container.decode(Content.self,
                                                   forKey: .content)
 
+        self.generation = try container.decodeIfPresent(Generation.self,
+                                                        forKey: .generation)
+
         self.info = try container.decode(Info.self,
                                          forKey: .info)
 
@@ -491,6 +506,9 @@ extension Work: Codable {
         try container.encode(info,
                              forKey: .info)
 
+        try container.encodeIfPresent(generation,
+                                      forKey: .generation)
+
         try container.encode(realizations,
                              forKey: .realizations)
 
@@ -502,6 +520,7 @@ extension Work: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case content
+        case generation
         case info
         case isLocked
         case name

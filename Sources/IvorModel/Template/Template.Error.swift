@@ -5,11 +5,21 @@ public import XestiTools
 extension Template {
     /// An error thrown by ``Template`` operations.
     public enum Error {
-        /// The generation limit is not a positive integer.
+        /// The generation options don’t match the template’s pitch notation and time basis.
+        case incompatibleOptions
+
+        /// The generation contrast is not positive and finite.
+        case invalidContrast
+
+        /// The generation length, or a cadence’s minimum length, is not positive.
         case invalidLimit
 
         /// The maximum pattern depth is not a positive integer.
         case invalidMaximumOrder
+
+        /// The generation mixing has a blend weight outside 0 to 1 (exclusive), a morph length
+        /// that is not positive, or an invalid morph curve.
+        case invalidMixing
 
         /// The requested pattern depth exceeds the maximum supported depth.
         case invalidOrder(Int)
@@ -36,11 +46,20 @@ extension Template.Error: EnhancedError {
     /// The human-readable message for this error.
     public var message: String {
         switch self {
+        case .incompatibleOptions:
+            "Generation options must match the template’s pitch notation and time basis"
+
+        case .invalidContrast:
+            "Contrast must be positive (> 0)"
+
         case .invalidLimit:
             "Limit must be positive (> 0)"
 
         case .invalidMaximumOrder:
             "Maximum order must be positive (> 0)"
+
+        case .invalidMixing:
+            "Blend weight must be between 0 and 1 (exclusive), and morph length must be positive"
 
         case let .invalidOrder(maxOrder):
             "Order must be between 0 and \(maxOrder) (inclusive)"

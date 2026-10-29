@@ -57,3 +57,33 @@ extension TemplateGenerateTests {
         #expect(work.partCount == 1)
     }
 }
+
+// MARK: - Ties (F1)
+
+extension TemplateGenerateTests {
+    @Test
+    func generateWork_order1_noRepeatedStates_reproducesSource() throws {
+        // Overlapping notes, a chord with staggered releases, and leading and
+        // inner rests. No state repeats, so the order-1 chain is deterministic.
+        let source = makeNoteTableSB([(0.5, 1, .a4),
+                                      (1, 1, .cSharp5),
+                                      (3, 3, .e5),
+                                      (3, 1, .g5),
+                                      (3, 2, .b5)])
+        let mc = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>(maximumOrder: 1))
+
+        mc.analyzer().analyze(sequence: source.extractNoteEvents())
+
+        let tmpl = Template(name: "Test", content: .standardBeat(mc))
+        let work = try tmpl.generateWork(name: "Generated",
+                                         order: 1,
+                                         limit: 100)
+
+        guard case let .standardBeat(parts, _) = work.content
+        else { Issue.record("Unexpected content"); return }
+
+        let generated = try #require(parts.first).noteTable
+
+        #expect(makeNoteTriplesSB(generated) == makeNoteTriplesSB(source))
+    }
+}
