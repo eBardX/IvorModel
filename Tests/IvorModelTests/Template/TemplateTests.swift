@@ -55,6 +55,21 @@ extension TemplateTests {
     }
 
     @Test
+    func codable_oldVersion_throwsUnsupportedVersion() throws {
+        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        let data = try JSONEncoder().encode(Template(name: "T", content: .standardBeat(markovChain)))
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        object["version"] = 1
+        object["analysisOptions"] = nil
+
+        #expect(throws: Template.Error.unsupportedVersion(1)) {
+            try JSONDecoder().decode(Template.self,
+                                     from: JSONSerialization.data(withJSONObject: object))
+        }
+    }
+
+    @Test
     func comparable() throws {
         let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
         let alpha  = Template(name: "Alpha", content: .standardBeat(markovChain))

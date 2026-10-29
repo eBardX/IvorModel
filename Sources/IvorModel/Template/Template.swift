@@ -207,6 +207,16 @@ extension Template: Codable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
+        //
+        // Checked first, so that a template saved in another format fails as unsupported rather
+        // than as a missing or mismatched key — see `Project.load(from:)`, which skips it.
+        //
+        self.version = try container.decode(Int.self,
+                                            forKey: .version)
+
+        guard version == Self.currentVersion
+        else { throw Error.unsupportedVersion(version) }
+
         self.analysisOptions = try container.decode(AnalysisOptions.self,
                                                     forKey: .analysisOptions)
 
@@ -221,12 +231,6 @@ extension Template: Codable {
 
         self.templateID = try container.decode(TemplateID.self,
                                                forKey: .templateID)
-
-        self.version = try container.decode(Int.self,
-                                            forKey: .version)
-
-        guard version == Self.currentVersion
-        else { throw Error.unsupportedVersion(version) }
     }
 
     // MARK: Public Instance Methods

@@ -51,6 +51,9 @@ extension Project {
 
     /// Creates a project by loading from a file wrapper.
     ///
+    /// A template saved in an unsupported format version is left out of the loaded project, so
+    /// that the rest of the project can still be opened; saving the project then drops it.
+    ///
     /// - Parameter file:   The `FileWrapper` containing the serialized project data.
     ///
     /// - Returns:  A ``Project`` loaded from the file.
@@ -201,11 +204,20 @@ extension Project {
                                         from: data)
     }
 
+    //
+    // A template saved in an older format is left out, rather than failing the whole project: a
+    // template can be analyzed again from its work, and the format changes freely before 1.0.  It's
+    // dropped from the project the next time the project is saved.
+    //
     private static func _fetchTemplates(from file: FileWrapper,
                                         in manifest: Manifest) throws -> [Template] {
-        try manifest.templateIDs.map {
-            try _fetchTemplate(from: file,
-                               for: $0)
+        try manifest.templateIDs.compactMap {
+            do {
+                return try _fetchTemplate(from: file,
+                                          for: $0)
+            } catch Template.Error.unsupportedVersion {
+                return nil
+            }
         }
     }
 

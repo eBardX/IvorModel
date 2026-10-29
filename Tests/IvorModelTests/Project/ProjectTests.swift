@@ -1,9 +1,11 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
 import Testing
+import XestiArchive
 import XestiMarkov
 
 struct ProjectTests {
@@ -55,6 +57,43 @@ extension ProjectTests {
 
         #expect(project.templates.isEmpty)
         #expect(project.works.isEmpty)
+    }
+
+    @Test
+    func load_skipsTemplateInOldFormat() throws {
+        let markovChain = try #require(MarkovChain<NoteEvent<BeatTime, Pitch>>())
+        let current = Template(name: "Current", content: .standardBeat(markovChain))
+        let old = Template(name: "Old", content: .standardBeat(markovChain))
+        let work = Work(name: "My Work")
+        var project = Project()
+
+        project.updateTemplate(current)
+        project.updateTemplate(old)
+        project.updateWork(work)
+
+        //
+        // Rewrites `old` as a version-1 template: no analysis options, and the old version.
+        //
+        let root = try project.save().unzip()
+        let templates = try #require(root.fileWrappers?["templates"])
+        let oldFileName = "\(old.templateID.stringValue).sexp"
+        let oldFile = try #require(templates.fileWrappers?[oldFileName])
+        let oldData = try #require(oldFile.regularFileContents)
+        let oldText = try #require(String(bytes: oldData, encoding: .utf8))
+            .replacingOccurrences(of: "(version 2)", with: "(version 1)")
+            .replacingOccurrences(of: " (analysisOptions ((maximumOrder 1)))\n", with: "")
+
+        #expect(!oldText.contains("analysisOptions"))
+
+        templates.removeFileWrapper(oldFile)
+        templates.addRegularFile(withContents: Data(oldText.utf8),
+                                 preferredFilename: oldFileName)
+
+        let loaded = try Project.load(from: root.zip())
+
+        #expect(loaded.fetchTemplate(current.templateID) != nil)
+        #expect(loaded.fetchTemplate(old.templateID) == nil)
+        #expect(loaded.fetchWork(work.workID) != nil)
     }
 
     @Test
