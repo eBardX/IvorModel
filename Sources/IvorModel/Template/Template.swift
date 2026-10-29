@@ -12,13 +12,29 @@ public struct Template {
 
     // MARK: Public Initializers
 
-    /// Creates a new template with the given name and content.
+    /// Creates a new template with the given name and content, recorded as an exact analysis
+    /// at the content’s maximum order.
     ///
     /// - Parameter name:     The display name of the template. Its whitespace is normalized to
     ///                       a single line.
     /// - Parameter content:  The ``Template/Content`` holding the analysis data.
     public init(name: String,
                 content: Content) {
+        self.init(name: name,
+                  content: content,
+                  analysisOptions: AnalysisOptions(maximumOrder: Self._maximumOrder(of: content)))
+    }
+
+    /// Creates a new template with the given name and content, recording how it was analyzed.
+    ///
+    /// - Parameter name:               The display name of the template. Its whitespace is
+    ///                                 normalized to a single line.
+    /// - Parameter content:            The ``Template/Content`` holding the analysis data.
+    /// - Parameter analysisOptions:    The recipe the content was analyzed with.
+    public init(name: String,
+                content: Content,
+                analysisOptions: AnalysisOptions) {
+        self.analysisOptions = analysisOptions
         self.content = content
         self.isLocked = false
         self.name = name.normalizingWhitespace()
@@ -27,6 +43,9 @@ public struct Template {
     }
 
     // MARK: Public Instance Properties
+
+    /// The recipe this template was analyzed with.
+    public let analysisOptions: AnalysisOptions
 
     /// The analysis data stored in this template.
     public let content: Content
@@ -59,7 +78,7 @@ extension Template {
     // MARK: Public Type Properties
 
     /// The current template file format version.
-    public static let currentVersion = 1
+    public static let currentVersion = 2
 
     // MARK: Public Instance Properties
 
@@ -125,6 +144,30 @@ extension Template {
         self.name = name.normalizingWhitespace()
     }
 
+    // MARK: Private Type Methods
+
+    private static func _maximumOrder(of content: Content) -> Int {
+        switch content {
+        case let .absoluteBeat(markovChain):
+            markovChain.maximumOrder
+
+        case let .absoluteWall(markovChain):
+            markovChain.maximumOrder
+
+        case let .keyboardBeat(markovChain):
+            markovChain.maximumOrder
+
+        case let .keyboardWall(markovChain):
+            markovChain.maximumOrder
+
+        case let .standardBeat(markovChain):
+            markovChain.maximumOrder
+
+        case let .standardWall(markovChain):
+            markovChain.maximumOrder
+        }
+    }
+
     // MARK: Private Nested Types
 
     private struct _MaximumOrderVisitor: ContentVisitor {
@@ -163,6 +206,9 @@ extension Template: Codable {
     ///             not supported.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        self.analysisOptions = try container.decode(AnalysisOptions.self,
+                                                    forKey: .analysisOptions)
 
         self.content = try container.decode(Content.self,
                                             forKey: .content)
@@ -208,6 +254,9 @@ extension Template: Codable {
         try container.encode(name,
                              forKey: .name)
 
+        try container.encode(analysisOptions,
+                             forKey: .analysisOptions)
+
         try container.encode(content,
                              forKey: .content)
     }
@@ -215,6 +264,7 @@ extension Template: Codable {
     // MARK: Private Nested Types
 
     private enum CodingKeys: String, CodingKey {
+        case analysisOptions
         case content
         case isLocked
         case name

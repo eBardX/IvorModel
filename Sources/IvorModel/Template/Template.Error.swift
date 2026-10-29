@@ -5,7 +5,8 @@ public import XestiTools
 extension Template {
     /// An error thrown by ``Template`` operations.
     public enum Error {
-        /// The generation options don’t match the template’s pitch notation and time basis.
+        /// The generation options don’t match the template’s pitch notation and time basis, or
+        /// the analysis options don’t match the work’s.
         case incompatibleOptions
 
         /// The generation contrast is not positive and finite.
@@ -23,6 +24,10 @@ extension Template {
 
         /// The requested pattern depth exceeds the maximum supported depth.
         case invalidOrder(Int)
+
+        /// An analysis tolerance is not positive and finite, or a quantization grid has no
+        /// factors or a factor that is not positive.
+        case invalidTolerance
 
         /// No part was found at the requested index.
         case partNotFound(Int)
@@ -47,7 +52,7 @@ extension Template.Error: EnhancedError {
     public var message: String {
         switch self {
         case .incompatibleOptions:
-            "Generation options must match the template’s pitch notation and time basis"
+            "Options must match the pitch notation and time basis"
 
         case .invalidContrast:
             "Contrast must be positive (> 0)"
@@ -63,6 +68,9 @@ extension Template.Error: EnhancedError {
 
         case let .invalidOrder(maxOrder):
             "Order must be between 0 and \(maxOrder) (inclusive)"
+
+        case .invalidTolerance:
+            "Tolerance must be positive (> 0)"
 
         case let .partNotFound(index):
             "Ivor part not found at index \(index)"

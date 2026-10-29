@@ -36,6 +36,11 @@ extension TemplateErrorTests {
     }
 
     @Test
+    func message_invalidTolerance() {
+        #expect(Template.Error.invalidTolerance.message == "Tolerance must be positive (> 0)")
+    }
+
+    @Test
     func message_partNotFound() {
         let msg = Template.Error.partNotFound(3).message
 

@@ -66,7 +66,7 @@ extension TemplateTests {
 
     @Test
     func currentVersion() {
-        #expect(Template.currentVersion == 1)
+        #expect(Template.currentVersion == 2)
     }
 
     @Test
