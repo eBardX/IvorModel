@@ -15,7 +15,11 @@ extension Template {
     /// events, starting at the source’s opening and stopping where it ends.
     ///
     /// The options are applied in this order: ``mixing`` (or ``order`` alone), then
-    /// ``constraints``, then ``contrast``, then ``backsOff``, then ``loops``. Generation stops
+    /// ``constraints``, then ``contrast``, then ``backsOff``, then ``loops``. A template that
+    /// separates pitch and duration generates from its two chains in step: the duration chain
+    /// chooses each event’s duration and whether it is a rest, and the pitch chain chooses the
+    /// pitches of each sounding event. Each chain gets its own stack of generators, so back-off
+    /// and looping apply to each chain on its own, and either chain stopping stops generation. Generation stops
     /// when ``length`` is reached, or at the ``cadence`` once its minimum length is reached,
     /// whichever comes first; it may also stop earlier, at the end of a source sequence or at a
     /// dead end, unless ``stopsAtEnd`` is `false` or ``backsOff`` is `true`.
@@ -46,6 +50,8 @@ extension Template {
         ///                             `nil`.
         /// - Parameter samplesMembers: Whether to draw grouped values from their members.
         ///                             Defaults to `false`.
+        /// - Parameter pitchChain:     How to generate from a separated template’s pitch chain.
+        ///                             Defaults to `nil` (the same as its duration chain).
         public init(order: Int = 1,
                     length: Length = .noteCount(100),
                     startsAtBegin: Bool = true,
@@ -58,7 +64,8 @@ extension Template {
                     cadence: Cadence? = nil,
                     startPitch: PitchType? = nil,
                     startDuration: TimeType.DurationType? = nil,
-                    samplesMembers: Bool = false) {
+                    samplesMembers: Bool = false,
+                    pitchChain: ChainOptions? = nil) {
             self.backsOff = backsOff
             self.cadence = cadence
             self.constraints = constraints
@@ -67,6 +74,7 @@ extension Template {
             self.loops = loops
             self.mixing = mixing
             self.order = order
+            self.pitchChain = pitchChain
             self.samplesMembers = samplesMembers
             self.startDuration = startDuration
             self.startPitch = startPitch
@@ -107,6 +115,11 @@ extension Template {
         /// next. Must be between 0 and the template’s maximum order.
         public var order: Int
 
+        /// How to generate from a separated template’s pitch chain, or `nil` to use ``order``,
+        /// ``mixing`` and ``contrast``, as its duration chain does. Must be `nil` for a template
+        /// with one joint chain.
+        public var pitchChain: ChainOptions?
+
         /// Whether to replace each pitch and duration that an analysis tolerance grouped with one
         /// of the values it grouped, drawn in proportion to how often each occurred — keeping the
         /// source’s nuances while the template works with the groups. Applies only where the
@@ -146,33 +159,31 @@ extension Template.GenerationOptions {
     // MARK: Internal Instance Properties
 
     //
-    // The highest order the recipe generates at, from which back-off descends.
+    // The order, mixing and contrast of a joint template's chain, or a separated template's
+    // duration chain.
     //
-    internal var topOrder: Int {
-        switch mixing {
-        case let .blend(otherOrder, _),
-             let .morph(otherOrder, _, _):
-            max(order, otherOrder)
-
-        case nil:
-            order
-        }
+    internal var mainChain: ChainOptions {
+        ChainOptions(order: order,
+                     mixing: mixing,
+                     contrast: contrast)
     }
 
     // MARK: Internal Instance Methods
 
-    internal func validate(maximumOrder: Int) throws(Template.Error) {
-        guard (0...maximumOrder) ~= order
-        else { throw .invalidOrder(maximumOrder) }
+    //
+    // `isSeparated` is whether the template separates pitch and duration: only then may
+    // `pitchChain` be set.
+    //
+    internal func validate(maximumOrder: Int,
+                           isSeparated: Bool) throws(Template.Error) {
+        guard isSeparated || pitchChain == nil
+        else { throw .incompatibleOptions }
+
+        try mainChain.validate(maximumOrder: maximumOrder)
+        try pitchChain?.validate(maximumOrder: maximumOrder)
 
         guard length.isValid
         else { throw .invalidLimit }
-
-        guard contrast.isFinite,
-              contrast > 0
-        else { throw .invalidContrast }
-
-        try mixing?.validate(maximumOrder: maximumOrder)
 
         if let cadence {
             guard cadence.minimumLength.isValid
@@ -194,9 +205,6 @@ extension Template.GenerationOptions: Codable {
 
     /// Creates a generation recipe by decoding from the provided decoder.
     ///
-    /// A recipe recorded before ``samplesMembers`` existed decodes with it `false`, so that works
-    /// generated then still open.
-    ///
     /// - Parameter decoder:    The decoder to read from.
     ///
     /// - Throws:   `DecodingError` if the encoded data is invalid or corrupted.
@@ -211,7 +219,8 @@ extension Template.GenerationOptions: Codable {
         self.loops = try container.decode(Bool.self, forKey: .loops)
         self.mixing = try container.decodeIfPresent(Mixing.self, forKey: .mixing)
         self.order = try container.decode(Int.self, forKey: .order)
-        self.samplesMembers = try container.decodeIfPresent(Bool.self, forKey: .samplesMembers) ?? false
+        self.pitchChain = try container.decodeIfPresent(ChainOptions.self, forKey: .pitchChain)
+        self.samplesMembers = try container.decode(Bool.self, forKey: .samplesMembers)
         self.startDuration = try container.decodeIfPresent(DurationType.self, forKey: .startDuration)
         self.startPitch = try container.decodeIfPresent(PitchType.self, forKey: .startPitch)
         self.startsAtBegin = try container.decode(Bool.self, forKey: .startsAtBegin)
@@ -236,6 +245,7 @@ extension Template.GenerationOptions: Codable {
         try container.encode(loops, forKey: .loops)
         try container.encodeIfPresent(mixing, forKey: .mixing)
         try container.encode(order, forKey: .order)
+        try container.encodeIfPresent(pitchChain, forKey: .pitchChain)
         try container.encode(samplesMembers, forKey: .samplesMembers)
         try container.encodeIfPresent(startDuration, forKey: .startDuration)
         try container.encodeIfPresent(startPitch, forKey: .startPitch)
@@ -254,6 +264,7 @@ extension Template.GenerationOptions: Codable {
         case loops
         case mixing
         case order
+        case pitchChain
         case samplesMembers
         case startDuration
         case startPitch

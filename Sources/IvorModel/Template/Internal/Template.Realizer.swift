@@ -15,14 +15,19 @@ extension Template {
     // realized since: the previous bass for intervals, the previous pitch for pitch classes, and
     // the previous duration for ratios.
     //
-    // Generation asks it twice about each step: `allows(_:)`, from the generator stack's filter,
-    // while choosing among the candidates; then `advance(with:)`, from `generate(until:)`, for the
-    // chosen state.  XestiMarkov makes those calls in that order, on one thread, so the anchors are
-    // always the previous step's.  They're behind a `Mutex` only because the filter must be
-    // `Sendable`.
+    // Generation asks it twice about each step: `allows(_:as:checkingRange:)`, from the generator
+    // stack's filter, while choosing among the candidates; then `advance(with:)`, from
+    // `generate(until:)`, for the chosen state.  XestiMarkov makes those calls in that order, on
+    // one thread, so the anchors are always the previous step's.  They're behind a `Mutex` only
+    // because the filter must be `Sendable`.
+    //
+    // A separated template's chains each choose half a state, so `allows` tests only that half:
+    // the duration chain's duration and rest flag, or the pitch chain's pitches.  Both halves of a
+    // step are chosen before `advance(with:)` gets them joined, so the pitch chain's filter, like
+    // the duration chain's, sees the previous step's anchors.
     //
     // When `range` is set (for relative recipes: the constraints' range, or else the source's,
-    // moved to the start pitch), `allows(_:)` rejects states that would leave it,
+    // moved to the start pitch), `allows` rejects states that would leave it,
     // and `advance(with:)` brings back any that do — those the fallback generator chooses when
     // nothing else was allowed: an interval is reflected, and then, like a pitch class, moved by
     // octaves until its bass is in range.
@@ -116,28 +121,77 @@ extension Template.Realizer {
     }
 
     //
-    // Whether `state`, realized from the current anchors, stays in `range` (when checked) and meets
-    // the constraints.
+    // Whether `state` — a whole state, or the half that the chain with `role` chooses — realized
+    // from the current anchors, stays in `range` (when checked) and meets the constraints.
     //
     internal func allows(_ state: Template.State<TimeType, PitchType>,
+                         as role: Template.ChainRole,
                          checkingRange: Bool) -> Bool {
         anchors.withLock { anchors in
-            guard let event = _realize(state,
-                                       from: anchors,
-                                       bringingIntoRange: false)
-            else { return false }
+            switch role {
+            case .duration:
+                guard let duration = _duration(of: state,
+                                               from: anchors)
+                else { return false }
 
-            if checkingRange,
-               let range,
-               !event.tiedPitches.allSatisfy({ range.contains($0.pitch) }) {
-                return false
+                return constraints.allowsDuration(duration,
+                                                  isRest: state.isRest)
+
+            case .joint:
+                guard let event = _realize(state,
+                                           from: anchors,
+                                           bringingIntoRange: false)
+                else { return false }
+
+                return _allowsPitches(event.tiedPitches,
+                                      checkingRange: checkingRange)
+                    && constraints.allowsDuration(event.duration,
+                                                  isRest: event.tiedPitches.isEmpty)
+
+            case .pitch:
+                guard let tiedPitches = _tiedPitches(of: state,
+                                                     from: anchors,
+                                                     bringingIntoRange: false)
+                else { return false }
+
+                return _allowsPitches(tiedPitches,
+                                      checkingRange: checkingRange)
             }
-
-            return constraints.allows(event)
         }
     }
 
     // MARK: Private Instance Methods
+
+    private func _allowsPitches(_ tiedPitches: [TiedPitch],
+                                checkingRange: Bool) -> Bool {
+        if checkingRange,
+           let range,
+           !tiedPitches.allSatisfy({ range.contains($0.pitch) }) {
+            return false
+        }
+
+        return constraints.allowsPitches(tiedPitches)
+    }
+
+    private func _duration(of state: Template.State<TimeType, PitchType>,
+                           from anchors: _Anchors) -> DurationType? {
+        let duration: DurationType? = switch state.duration {
+        case let .absolute(duration):
+            duration
+
+        case let .relative(ratio):
+            anchors.duration?.multiplied(by: ratio)
+
+        case nil:
+            defaultDuration
+        }
+
+        guard let duration,
+              !duration.isZero
+        else { return nil }
+
+        return duration
+    }
 
     private func _intervalPitches(bass bassInterval: DirectedInterval<PitchType.IntervalType>,
                                   shape: [Template.Tone<DirectedInterval<PitchType.IntervalType>>],
@@ -249,19 +303,8 @@ extension Template.Realizer {
     private func _realize(_ state: Template.State<TimeType, PitchType>,
                           from anchors: _Anchors,
                           bringingIntoRange: Bool) -> NoteEvent<TimeType, PitchType>? {
-        let duration: DurationType? = switch state.duration {
-        case let .absolute(duration):
-            duration
-
-        case let .relative(ratio):
-            anchors.duration?.multiplied(by: ratio)
-
-        case nil:
-            defaultDuration
-        }
-
-        guard let duration,
-              !duration.isZero
+        guard let duration = _duration(of: state,
+                                       from: anchors)
         else { return nil }
 
         if state.isRest {
@@ -269,31 +312,9 @@ extension Template.Realizer {
                              duration: duration)
         }
 
-        let tiedPitches: [TiedPitch]? = switch state.pitches {
-        case let .absolute(tones):
-            tones.map {
-                TiedPitch(pitch: $0.value,
-                          startsTie: $0.startsTie,
-                          endsTie: $0.endsTie)
-            }
-
-        case let .interval(bass, shape):
-            _intervalPitches(bass: bass,
-                             shape: shape,
-                             from: anchors,
-                             bringingIntoRange: bringingIntoRange)
-
-        case let .pitchClass(tones):
-            _pitchClassPitches(tones,
-                               from: anchors,
-                               bringingIntoRange: bringingIntoRange)
-
-        case nil:
-            defaultPitch.map { [TiedPitch(pitch: $0)] }
-        }
-
-        guard let tiedPitches,
-              !tiedPitches.isEmpty
+        guard let tiedPitches = _tiedPitches(of: state,
+                                             from: anchors,
+                                             bringingIntoRange: bringingIntoRange)
         else { return nil }
 
         return NoteEvent(tiedPitches: tiedPitches,
@@ -330,6 +351,39 @@ extension Template.Realizer {
 
         return NoteEvent(tiedPitches: tiedPitches,
                          duration: duration)
+    }
+
+    private func _tiedPitches(of state: Template.State<TimeType, PitchType>,
+                              from anchors: _Anchors,
+                              bringingIntoRange: Bool) -> [TiedPitch]? {
+        let tiedPitches: [TiedPitch]? = switch state.pitches {
+        case let .absolute(tones):
+            tones.map {
+                TiedPitch(pitch: $0.value,
+                          startsTie: $0.startsTie,
+                          endsTie: $0.endsTie)
+            }
+
+        case let .interval(bass, shape):
+            _intervalPitches(bass: bass,
+                             shape: shape,
+                             from: anchors,
+                             bringingIntoRange: bringingIntoRange)
+
+        case let .pitchClass(tones):
+            _pitchClassPitches(tones,
+                               from: anchors,
+                               bringingIntoRange: bringingIntoRange)
+
+        case nil:
+            defaultPitch.map { [TiedPitch(pitch: $0)] }
+        }
+
+        guard let tiedPitches,
+              !tiedPitches.isEmpty
+        else { return nil }
+
+        return tiedPitches
     }
 
     // MARK: Private Type Methods

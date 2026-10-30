@@ -17,7 +17,7 @@ extension ProjectTests {
     @Test
     func fetchTemplate() throws {
         let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
-        let tmpl = Template(name: "My Template", content: .standardBeat(Template.Model(markovChain: mc)))
+        let tmpl = Template(name: "My Template", content: .standardBeat(Template.Model(chains: .joint(mc))))
         var project = Project()
 
         _ = project.updateTemplate(tmpl)
@@ -62,8 +62,8 @@ extension ProjectTests {
     @Test
     func load_skipsTemplateInOldFormat() throws {
         let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
-        let current = Template(name: "Current", content: .standardBeat(Template.Model(markovChain: markovChain)))
-        let old = Template(name: "Old", content: .standardBeat(Template.Model(markovChain: markovChain)))
+        let current = Template(name: "Current", content: .standardBeat(Template.Model(chains: .joint(markovChain))))
+        let old = Template(name: "Old", content: .standardBeat(Template.Model(chains: .joint(markovChain))))
         let work = Work(name: "My Work")
         var project = Project()
 
@@ -80,9 +80,9 @@ extension ProjectTests {
         let oldFile = try #require(templates.fileWrappers?[oldFileName])
         let oldData = try #require(oldFile.regularFileContents)
         let oldText = try #require(String(bytes: oldData, encoding: .utf8))
-            .replacingOccurrences(of: "(version \(Template.currentVersion))", with: "(version 1)")
+            .replacingOccurrences(of: "(version \(Template.currentVersion))", with: "(version 3)")
 
-        #expect(oldText.contains("(version 1)"))
+        #expect(oldText.contains("(version 3)"))
 
         templates.removeFileWrapper(oldFile)
         templates.addRegularFile(withContents: Data(oldText.utf8),
@@ -98,7 +98,7 @@ extension ProjectTests {
     @Test
     func removeTemplate() throws {
         let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
-        let tmpl = Template(name: "My Template", content: .standardBeat(Template.Model(markovChain: mc)))
+        let tmpl = Template(name: "My Template", content: .standardBeat(Template.Model(chains: .joint(mc))))
         var project = Project()
 
         _ = project.updateTemplate(tmpl)
@@ -111,7 +111,7 @@ extension ProjectTests {
     @Test
     func removeTemplate_locked_throws() throws {
         let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
-        var tmpl = Template(name: "My Template", content: .standardBeat(Template.Model(markovChain: mc)))
+        var tmpl = Template(name: "My Template", content: .standardBeat(Template.Model(chains: .joint(mc))))
         var project = Project()
 
         tmpl.isLocked = true
@@ -178,7 +178,7 @@ extension ProjectTests {
     @Test
     func updateTemplate_existing() throws {
         let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
-        let tmpl = Template(name: "My Template", content: .standardBeat(Template.Model(markovChain: mc)))
+        let tmpl = Template(name: "My Template", content: .standardBeat(Template.Model(chains: .joint(mc))))
         var project = Project()
 
         _ = project.updateTemplate(tmpl)
@@ -191,7 +191,7 @@ extension ProjectTests {
     @Test
     func updateTemplate_new() throws {
         let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
-        let tmpl = Template(name: "My Template", content: .standardBeat(Template.Model(markovChain: mc)))
+        let tmpl = Template(name: "My Template", content: .standardBeat(Template.Model(chains: .joint(mc))))
         var project = Project()
 
         let inserted = project.updateTemplate(tmpl)

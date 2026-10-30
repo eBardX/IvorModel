@@ -139,9 +139,6 @@ extension Template {
                                                  aligning: (NoteTable<T, P>) -> NoteTable<T, P>,
                                                  grouping: ([T.DurationType]) -> [T.DurationType: T.DurationType],
                                                  rounding: (P) -> P) throws(Error) -> Model<T, P> where T.DurationType: TemplateDuration {
-        guard let markovChain = MarkovChain<State<T, P>>(maximumOrder: options.maximumOrder)
-        else { throw Error.invalidMaximumOrder }
-
         let noteEvents = try aligning(_noteTable(in: parts,
                                                  at: index)).extractNoteEvents()
         let representatives = grouping(noteEvents.map(\.duration))
@@ -180,14 +177,15 @@ extension Template {
 
         var builder = StateBuilder<T, P>(recipe: options.states)
 
-        markovChain.analyzer().analyze(sequence: tolerated.map { builder.state(for: $0) })
+        let states = tolerated.map { builder.state(for: $0) }
 
-        return Model(markovChain: markovChain,
-                     vocabulary: Vocabulary(durations: durations,
-                                            pitches: pitches,
-                                            first: tolerated.first,
-                                            durationMembers: durationMembers,
-                                            pitchMembers: pitchMembers))
+        return try Model(chains: _chains(of: states,
+                                         options: options),
+                         vocabulary: Vocabulary(durations: durations,
+                                                pitches: pitches,
+                                                first: tolerated.first,
+                                                durationMembers: durationMembers,
+                                                pitchMembers: pitchMembers))
     }
 
     private static func _beatAligning<P>(_ timing: TimingTolerance?) throws(Error) -> (NoteTable<BeatTime, P>) -> NoteTable<BeatTime, P> {
@@ -223,6 +221,28 @@ extension Template {
         case nil:
             return { _ in [:] }
         }
+    }
+
+    //
+    // One joint chain, or — when the recipe separates them — a duration chain over every event's
+    // duration and rest flag, and a pitch chain over the sounding events' pitches alone.
+    //
+    private static func _chains<T, P>(of states: [State<T, P>],
+                                      options: AnalysisOptions) throws(Error) -> Model<T, P>.Chains where T.DurationType: TemplateDuration {
+        func train(_ sequence: [State<T, P>]) throws(Error) -> MarkovChain<State<T, P>> {
+            guard let markovChain = MarkovChain<State<T, P>>(maximumOrder: options.maximumOrder)
+            else { throw Error.invalidMaximumOrder }
+
+            markovChain.analyzer().analyze(sequence: sequence)
+
+            return markovChain
+        }
+
+        guard options.states.separatesPitchAndDuration
+        else { return try .joint(train(states)) }
+
+        return try .separate(duration: train(states.map(\.durationHalf)),
+                             pitch: train(states.filter { !$0.isRest }.map(\.pitchHalf)))
     }
 
     private static func _exactRounding<P>(_ pitches: PitchTolerance?) throws(Error) -> (P) -> P {

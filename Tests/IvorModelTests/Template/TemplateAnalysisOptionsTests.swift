@@ -219,7 +219,7 @@ private func _absoluteWallStates(of template: Template) throws -> [NoteEvent<Wal
     guard case let .absoluteWall(model) = template.content
     else { throw Template.Error.incompatibleOptions }
 
-    return makeNoteEvents(model.markovChain.states).sorted { $0.duration < $1.duration }
+    return try makeNoteEvents(#require(model.chains.chain(for: .joint)).states).sorted { $0.duration < $1.duration }
 }
 
 private func _absoluteWallWork(_ notes: [(UInt, UInt, [Double])]) throws -> Work {
@@ -261,7 +261,7 @@ private func _states(of template: Template) throws -> [NoteEvent<BeatTime, Pitch
     guard case let .standardBeat(model) = template.content
     else { throw Template.Error.incompatibleOptions }
 
-    return makeNoteEvents(model.markovChain.states)
+    return try makeNoteEvents(#require(model.chains.chain(for: .joint)).states)
 }
 
 private func _time(_ milliseconds: UInt) -> WallTime {
@@ -272,7 +272,7 @@ private func _wallStates(of template: Template) throws -> [NoteEvent<WallTime, P
     guard case let .standardWall(model) = template.content
     else { throw Template.Error.incompatibleOptions }
 
-    return makeNoteEvents(model.markovChain.states).sorted { $0.duration < $1.duration }
+    return try makeNoteEvents(#require(model.chains.chain(for: .joint)).states).sorted { $0.duration < $1.duration }
 }
 
 //

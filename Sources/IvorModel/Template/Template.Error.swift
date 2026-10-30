@@ -25,7 +25,8 @@ extension Template {
         /// The requested pattern depth exceeds the maximum supported depth.
         case invalidOrder(Int)
 
-        /// The state recipe records neither pitch nor duration.
+        /// The state recipe records neither pitch nor duration, or separates pitch and duration
+        /// without recording both.
         case invalidStateRecipe
 
         /// An analysis tolerance is not positive and finite, or a quantization grid has no
@@ -73,7 +74,7 @@ extension Template.Error: EnhancedError {
             "Order must be between 0 and \(maxOrder) (inclusive)"
 
         case .invalidStateRecipe:
-            "A state must record pitch, duration, or both"
+            "A template must learn pitches, durations or both; to learn them separately, it must learn both"
 
         case .invalidTolerance:
             "Tolerance must be positive (> 0)"

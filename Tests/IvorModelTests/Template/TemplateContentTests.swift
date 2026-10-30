@@ -16,7 +16,7 @@ extension TemplateContentTests {
     @Test
     func codable_beat() throws {
         let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
-        let original: Template.Content = .standardBeat(Template.Model(markovChain: mc))
+        let original: Template.Content = .standardBeat(Template.Model(chains: .joint(mc)))
         let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(Template.Content.self,
                                                from: data)
@@ -28,7 +28,7 @@ extension TemplateContentTests {
     @Test
     func codable_wall() throws {
         let mc = try #require(MarkovChain<Template.State<WallTime, Pitch>>())
-        let original: Template.Content = .standardWall(Template.Model(markovChain: mc))
+        let original: Template.Content = .standardWall(Template.Model(chains: .joint(mc)))
         let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(Template.Content.self,
                                                from: data)
@@ -40,7 +40,7 @@ extension TemplateContentTests {
     @Test
     func pitchNotation_absolute() throws {
         let mc = try #require(MarkovChain<Template.State<WallTime, Frequency>>())
-        let content: Template.Content = .absoluteWall(Template.Model(markovChain: mc))
+        let content: Template.Content = .absoluteWall(Template.Model(chains: .joint(mc)))
 
         #expect(content.pitchNotation == .absolute)
     }
@@ -48,7 +48,7 @@ extension TemplateContentTests {
     @Test
     func pitchNotation_keyboard() throws {
         let mc = try #require(MarkovChain<Template.State<WallTime, NoteNumber>>())
-        let content: Template.Content = .keyboardWall(Template.Model(markovChain: mc))
+        let content: Template.Content = .keyboardWall(Template.Model(chains: .joint(mc)))
 
         #expect(content.pitchNotation == .keyboard)
     }
@@ -56,7 +56,7 @@ extension TemplateContentTests {
     @Test
     func pitchNotation_standard() throws {
         let mc = try #require(MarkovChain<Template.State<WallTime, Pitch>>())
-        let content: Template.Content = .standardWall(Template.Model(markovChain: mc))
+        let content: Template.Content = .standardWall(Template.Model(chains: .joint(mc)))
 
         #expect(content.pitchNotation == .standard)
     }
@@ -64,7 +64,7 @@ extension TemplateContentTests {
     @Test
     func timeBasis_beat() throws {
         let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
-        let content: Template.Content = .standardBeat(Template.Model(markovChain: mc))
+        let content: Template.Content = .standardBeat(Template.Model(chains: .joint(mc)))
 
         #expect(content.timeBasis == .beat)
     }
@@ -72,7 +72,7 @@ extension TemplateContentTests {
     @Test
     func timeBasis_wall() throws {
         let mc = try #require(MarkovChain<Template.State<WallTime, Pitch>>())
-        let content: Template.Content = .standardWall(Template.Model(markovChain: mc))
+        let content: Template.Content = .standardWall(Template.Model(chains: .joint(mc)))
 
         #expect(content.timeBasis == .wall)
     }

@@ -66,15 +66,35 @@ extension Template.GenerationOptions.Constraints {
     ///
     /// - Returns:  `true` if every pitch of `noteEvent` and its duration are allowed.
     public func allows(_ noteEvent: NoteEvent<TimeType, PitchType>) -> Bool {
-        if noteEvent.tiedPitches.isEmpty, !allowsRests {
+        allowsDuration(noteEvent.duration,
+                       isRest: noteEvent.tiedPitches.isEmpty)
+            && allowsPitches(noteEvent.tiedPitches)
+    }
+
+    // MARK: Internal Instance Methods
+
+    //
+    // The constraints on an event's duration and whether it is a rest — all that a separated
+    // template's duration chain chooses.
+    //
+    internal func allowsDuration(_ duration: TimeType.DurationType,
+                                 isRest: Bool) -> Bool {
+        if isRest, !allowsRests {
             return false
         }
 
-        if let maximumDuration, noteEvent.duration > maximumDuration {
+        if let maximumDuration, duration > maximumDuration {
             return false
         }
 
-        return noteEvent.tiedPitches.allSatisfy { tiedPitch in
+        return true
+    }
+
+    //
+    // The constraints on an event's pitches — all that a separated template's pitch chain chooses.
+    //
+    internal func allowsPitches(_ tiedPitches: [NoteEvent<TimeType, PitchType>.TiedPitch]) -> Bool {
+        tiedPitches.allSatisfy { tiedPitch in
             (pitchRange?.contains(tiedPitch.pitch) ?? true)
                 && (allowedPitches?.contains(tiedPitch.pitch) ?? true)
         }

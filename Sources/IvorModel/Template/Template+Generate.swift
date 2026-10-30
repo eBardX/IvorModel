@@ -115,22 +115,31 @@ extension Template {
     // MARK: Private Type Methods
 
     //
-    // Builds the generator stack, in the order documented on `GenerationOptions`: mixing (or
-    // the order alone), then constraints, then contrast, then back-off, then looping. Every
-    // sampling generator gets its own seed, drawn in a fixed order from one generator seeded
-    // with `seed`, so the whole stack is reproducible.
+    // Builds the generator stack for the chain with `role`, in the order documented on
+    // `GenerationOptions`: mixing (or the order alone), then constraints, then contrast, then
+    // back-off, then looping. Every sampling generator gets its own seed, drawn in a fixed order
+    // from `rng`, so the whole stack is reproducible.
     //
-    // Constraints test realized note events (see `Realizer`), and so does the range that a
-    // relative recipe keeps to.  When the range rules out every choice, a fallback at the
-    // recipe's order, under the constraints alone, chooses instead, and the realizer brings the
-    // result back into range.
+    // Constraints test realized note events (see `Realizer`) — or, for a separated template's
+    // chains, the half of one that each chooses — and so does the range that a relative recipe
+    // keeps to.  When the range rules out every choice, a fallback at the chain's order, under
+    // the constraints alone, chooses instead, and the realizer brings the result back into range.
+    // The duration chain chooses no pitches, so it has no range to keep to.
+    //
+    // A pitch chain isn't looped here: it's driven by `next(after:)` with a history that only the
+    // caller can reset, so the caller loops it (see `_generateNoteEvents`).
     //
     private static func _makeGenerator<T, P>(using markovChain: MarkovChain<State<T, P>>,
+                                             as role: ChainRole,
+                                             chainOptions: GenerationOptions<T, P>.ChainOptions,
                                              options: GenerationOptions<T, P>,
                                              realizer: Realizer<T, P>,
                                              rng: inout SeededRandomNumberGenerator) throws -> any MarkovChain<State<T, P>>.Generator
         where T.DurationType: TemplateDuration {
         typealias Chain = MarkovChain<State<T, P>>
+
+        let constraints = options.constraints
+        let keepsToRange = role != .duration && realizer.range != nil
 
         func makeSimple(order: Int,
                         rng: inout SeededRandomNumberGenerator) throws -> any Chain.Generator {
@@ -143,41 +152,54 @@ extension Template {
             return generator
         }
 
+        func isConstrained(checkingRange: Bool) -> Bool {
+            switch role {
+            case .duration:
+                constraints.maximumDuration != nil || !constraints.allowsRests
+
+            case .joint:
+                !constraints.isEmpty || (checkingRange && keepsToRange)
+
+            case .pitch:
+                constraints.allowedPitches != nil || constraints.pitchRange != nil || (checkingRange && keepsToRange)
+            }
+        }
+
         func decorate(_ generator: any Chain.Generator,
                       checkingRange: Bool,
                       rng: inout SeededRandomNumberGenerator) -> any Chain.Generator {
             var result = generator
 
-            if !options.constraints.isEmpty || (checkingRange && realizer.range != nil) {
+            if isConstrained(checkingRange: checkingRange) {
                 result = Chain.generator(filtering: result,
-                                         where: { realizer.allows($0, checkingRange: checkingRange) },
+                                         where: { realizer.allows($0, as: role, checkingRange: checkingRange) },
                                          using: SeededRandomNumberGenerator(seed: rng.next()))
             }
 
-            if options.contrast != 1 {
+            if chainOptions.contrast != 1 {
                 result = Chain.generator(contrasting: result,
-                                         by: options.contrast,
+                                         by: chainOptions.contrast,
                                          using: SeededRandomNumberGenerator(seed: rng.next()))
             }
 
             return result
         }
 
-        let primary: any Chain.Generator = switch options.mixing {
+        let primary: any Chain.Generator = switch chainOptions.mixing {
         case let .blend(otherOrder, weight):
-            try Chain.generator(blending: [(makeSimple(order: options.order, rng: &rng), weight: 1 - weight),
+            try Chain.generator(blending: [(makeSimple(order: chainOptions.order, rng: &rng), weight: 1 - weight),
                                            (makeSimple(order: otherOrder, rng: &rng), weight: weight)],
                                 using: SeededRandomNumberGenerator(seed: rng.next()))
 
         case let .morph(otherOrder, steps, curve):
-            try Chain.generator(interpolating: makeSimple(order: options.order, rng: &rng),
+            try Chain.generator(interpolating: makeSimple(order: chainOptions.order, rng: &rng),
                                 to: makeSimple(order: otherOrder, rng: &rng),
                                 over: steps,
                                 along: _CurveInterpolator(curve: curve),
                                 using: SeededRandomNumberGenerator(seed: rng.next()))
 
         case nil:
-            try makeSimple(order: options.order, rng: &rng)
+            try makeSimple(order: chainOptions.order, rng: &rng)
         }
 
         var stack = decorate(primary,
@@ -185,7 +207,7 @@ extension Template {
                              rng: &rng)
 
         if options.backsOff {
-            for order in (0..<options.topOrder).reversed() {
+            for order in (0..<chainOptions.topOrder).reversed() {
                 stack = try Chain.generator(trying: stack,
                                             otherwise: decorate(makeSimple(order: order, rng: &rng),
                                                                 checkingRange: true,
@@ -193,25 +215,99 @@ extension Template {
             }
         }
 
-        if realizer.range != nil {
+        if keepsToRange {
             stack = try Chain.generator(trying: stack,
-                                        otherwise: decorate(makeSimple(order: options.order, rng: &rng),
+                                        otherwise: decorate(makeSimple(order: chainOptions.order, rng: &rng),
                                                             checkingRange: false,
                                                             rng: &rng))
         }
 
-        if options.loops {
+        if options.loops, role != .pitch {
             stack = Chain.generator(looping: stack)
         }
 
         return stack
     }
 
+    //
+    // Generates states until `step` returns `true` for one: from the joint chain alone, or from a
+    // separated template's two chains in step.  For each duration state that isn't a rest, the
+    // pitch chain chooses the next pitch state from those it chose before; the two halves are
+    // joined into the state that `step` gets.  Either chain stopping stops generation — except
+    // that, with `loops`, the pitch chain starts again from the beginning, as `looping` would.
+    //
+    private static func _generateStates<T, P>(using chains: Model<T, P>.Chains,
+                                              options: GenerationOptions<T, P>,
+                                              realizer: Realizer<T, P>,
+                                              rng: inout SeededRandomNumberGenerator,
+                                              until step: (State<T, P>) -> Bool) throws where T.DurationType: TemplateDuration {
+        switch chains {
+        case let .joint(markovChain):
+            var generator = try _makeGenerator(using: markovChain,
+                                               as: .joint,
+                                               chainOptions: options.mainChain,
+                                               options: options,
+                                               realizer: realizer,
+                                               rng: &rng)
+
+            _ = generator.generate(until: step)
+
+        case let .separate(durationChain, pitchChain):
+            var durationGenerator = try _makeGenerator(using: durationChain,
+                                                       as: .duration,
+                                                       chainOptions: options.mainChain,
+                                                       options: options,
+                                                       realizer: realizer,
+                                                       rng: &rng)
+
+            var pitchGenerator = try _makeGenerator(using: pitchChain,
+                                                    as: .pitch,
+                                                    chainOptions: options.pitchChain ?? options.mainChain,
+                                                    options: options,
+                                                    realizer: realizer,
+                                                    rng: &rng)
+
+            let historyLimit = pitchChain.maximumOrder
+            var pitchHistory: [State<T, P>] = []
+
+            func nextPitchHalf() -> State<T, P>? {
+                if let pitchHalf = pitchGenerator.next(after: pitchHistory) {
+                    return pitchHalf
+                }
+
+                guard options.loops
+                else { return nil }
+
+                pitchHistory = []
+
+                return pitchGenerator.next(after: [])
+            }
+
+            _ = durationGenerator.generate { durationHalf in
+                var pitchHalf: State<T, P>?
+
+                if !durationHalf.isRest {
+                    guard let nextHalf = nextPitchHalf()
+                    else { return true }
+
+                    pitchHistory = Array((pitchHistory + [nextHalf]).suffix(historyLimit))
+                    pitchHalf = nextHalf
+                }
+
+                return step(State(durationHalf: durationHalf,
+                                  pitchHalf: pitchHalf))
+            }
+        }
+    }
+
     private static func _generateNoteTable<T, P>(using model: Model<T, P>,
                                                  options: GenerationOptions<T, P>,
                                                  isRelative: Bool,
                                                  seed: UInt64) throws -> NoteTable<T, P> where T.DurationType: TemplateDuration {
-        try options.validate(maximumOrder: model.markovChain.maximumOrder)
+        let isSeparated = if case .separate = model.chains { true } else { false }
+
+        try options.validate(maximumOrder: model.chains.maximumOrder,
+                             isSeparated: isSeparated)
 
         var rng = SeededRandomNumberGenerator(seed: seed)
 
@@ -226,16 +322,14 @@ extension Template {
                                 isRelative: isRelative,
                                 memberSeed: memberSeed)
 
-        var generator = try _makeGenerator(using: model.markovChain,
-                                           options: options,
-                                           realizer: realizer,
-                                           rng: &rng)
-
         var noteCount = 0
         var noteEvents: [NoteEvent<T, P>] = []
         var time: T = .zero
 
-        _ = generator.generate { state in
+        try _generateStates(using: model.chains,
+                            options: options,
+                            realizer: realizer,
+                            rng: &rng) { state in
             guard let noteEvent = realizer.advance(with: state)
             else { return true }
 

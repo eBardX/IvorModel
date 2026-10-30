@@ -311,7 +311,7 @@ private func _makeTemplate(maximumOrder: Int = 1) throws -> Template {
     markovChain.analyzer().analyze(sequence: makeExactStates(makeNoteTableSB(rawNotes).extractNoteEvents()))
 
     return Template(name: "Melody",
-                    content: .standardBeat(Template.Model(markovChain: markovChain)))
+                    content: .standardBeat(Template.Model(chains: .joint(markovChain))))
 }
 
 private func _endTime(of noteEvents: some Sequence<NoteEvent<BeatTime, Pitch>>) -> BeatTime {

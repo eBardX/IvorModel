@@ -78,18 +78,19 @@ extension Template {
     // MARK: Public Type Properties
 
     /// The current template file format version.
-    public static let currentVersion = 3
+    public static let currentVersion = 1
 
     // MARK: Public Instance Properties
 
-    /// The maximum pattern depth supported by this template.
-    public var maximumOrder: Int {
-        accept(_MaximumOrderVisitor())
+    /// The roles of this template’s Markov chains: ``ChainRole/joint`` alone, or
+    /// ``ChainRole/duration`` then ``ChainRole/pitch``.
+    public var chainRoles: [ChainRole] {
+        accept(_ChainRolesVisitor())
     }
 
-    /// Metrics describing how this template’s Markov chain was trained.
-    public var metrics: Metrics {
-        accept(_MetricsVisitor())
+    /// The maximum pattern depth supported by this template.
+    public var maximumOrder: Int {
+        Self._maximumOrder(of: content)
     }
 
     /// The pitch notation used by this template.
@@ -132,6 +133,16 @@ extension Template {
         }
     }
 
+    /// Returns metrics describing how this template’s Markov chain with the given role was
+    /// trained.
+    ///
+    /// - Parameter role:   The role of the chain to describe.
+    ///
+    /// - Returns:  The metrics of the chain with `role`, or `nil` if this template has none.
+    public func metrics(for role: ChainRole) -> Metrics? {
+        accept(_MetricsVisitor(role: role))
+    }
+
     /// Changes the display name of this template.
     ///
     /// - Parameter name:   The new display name. Its whitespace is normalized to a single line.
@@ -149,37 +160,42 @@ extension Template {
     private static func _maximumOrder(of content: Content) -> Int {
         switch content {
         case let .absoluteBeat(model):
-            model.markovChain.maximumOrder
+            model.chains.maximumOrder
 
         case let .absoluteWall(model):
-            model.markovChain.maximumOrder
+            model.chains.maximumOrder
 
         case let .keyboardBeat(model):
-            model.markovChain.maximumOrder
+            model.chains.maximumOrder
 
         case let .keyboardWall(model):
-            model.markovChain.maximumOrder
+            model.chains.maximumOrder
 
         case let .standardBeat(model):
-            model.markovChain.maximumOrder
+            model.chains.maximumOrder
 
         case let .standardWall(model):
-            model.markovChain.maximumOrder
+            model.chains.maximumOrder
         }
     }
 
     // MARK: Private Nested Types
 
-    private struct _MaximumOrderVisitor: ContentVisitor {
-        func visit<TimeType>(_ model: Model<TimeType, some Any>) -> Int where TimeType.DurationType: TemplateDuration {
-            model.markovChain.maximumOrder
+    private struct _ChainRolesVisitor: ContentVisitor {
+        func visit<TimeType>(_ model: Model<TimeType, some Any>) -> [ChainRole] where TimeType.DurationType: TemplateDuration {
+            model.chains.roles
         }
     }
 
     private struct _MetricsVisitor: ContentVisitor {
-        func visit<TimeType>(_ model: Model<TimeType, some Any>) -> Metrics where TimeType.DurationType: TemplateDuration {
-            let metrics = model.markovChain.metrics()
-            let order = model.markovChain.maximumOrder
+        let role: ChainRole
+
+        func visit<TimeType>(_ model: Model<TimeType, some Any>) -> Metrics? where TimeType.DurationType: TemplateDuration {
+            guard let markovChain = model.chains.chain(for: role)
+            else { return nil }
+
+            let metrics = markovChain.metrics()
+            let order = markovChain.maximumOrder
             let orderMetrics = metrics.orderMetrics[order]
 
             return Metrics(branchingRatio: orderMetrics.branchingRatio,

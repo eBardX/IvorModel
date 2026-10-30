@@ -16,7 +16,7 @@ extension TemplateGenerateTests {
     @Test
     func generateWork_invalidLimit() throws {
         let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
-        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(markovChain: mc)))
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(chains: .joint(mc))))
 
         #expect(throws: Template.Error.self) {
             try tmpl.generateWork(name: "Generated",
@@ -28,7 +28,7 @@ extension TemplateGenerateTests {
     @Test
     func generateWork_invalidOrder() throws {
         let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>(maximumOrder: 1))
-        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(markovChain: mc)))
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(chains: .joint(mc))))
 
         #expect(throws: Template.Error.self) {
             try tmpl.generateWork(name: "Generated",
@@ -45,7 +45,7 @@ extension TemplateGenerateTests {
 
         mc.analyzer().analyze(sequence: makeExactStates([event, event]))
 
-        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(markovChain: mc)))
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(chains: .joint(mc))))
 
         let work = try tmpl.generateWork(name: "Generated",
                                          order: 1,
@@ -74,7 +74,7 @@ extension TemplateGenerateTests {
 
         mc.analyzer().analyze(sequence: makeExactStates(source.extractNoteEvents()))
 
-        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(markovChain: mc)))
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(chains: .joint(mc))))
         let work = try tmpl.generateWork(name: "Generated",
                                          order: 1,
                                          limit: 100)

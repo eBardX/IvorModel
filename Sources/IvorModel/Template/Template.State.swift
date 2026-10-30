@@ -44,6 +44,45 @@ extension Template {
     }
 }
 
+// MARK: -
+
+extension Template.State {
+
+    // MARK: Internal Initializers
+
+    //
+    // Joins a separated template's halves: the duration half's duration and rest flag, and — for
+    // a sounding event — the pitch half's pitches.
+    //
+    internal init(durationHalf: Self,
+                  pitchHalf: Self?) {
+        self.init(isRest: durationHalf.isRest,
+                  duration: durationHalf.duration,
+                  pitches: durationHalf.isRest ? nil : pitchHalf?.pitches)
+    }
+
+    // MARK: Internal Instance Properties
+
+    //
+    // What a separated template's duration chain learns of this state: its duration and rest flag.
+    //
+    internal var durationHalf: Self {
+        Self(isRest: isRest,
+             duration: duration,
+             pitches: nil)
+    }
+
+    //
+    // What a separated template's pitch chain learns of this state, for a sounding event: its
+    // pitches.
+    //
+    internal var pitchHalf: Self {
+        Self(isRest: false,
+             duration: nil,
+             pitches: pitches)
+    }
+}
+
 // MARK: - Codable
 
 extension Template.State: Codable {

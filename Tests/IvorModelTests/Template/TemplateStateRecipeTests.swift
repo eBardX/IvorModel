@@ -15,17 +15,16 @@ struct TemplateStateRecipeTests {
 
 extension TemplateStateRecipeTests {
     @Test
-    func generationOptions_decodesWithoutSamplesMembers() throws {
+    func generationOptions_withoutSamplesMembers_failsToDecode() throws {
         let data = try JSONEncoder().encode(Template.GenerationOptions<BeatTime, Pitch>(order: 2))
         var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         object["samplesMembers"] = nil
 
-        let decoded = try JSONDecoder().decode(Template.GenerationOptions<BeatTime, Pitch>.self,
-                                               from: JSONSerialization.data(withJSONObject: object))
-
-        #expect(decoded.order == 2)
-        #expect(!decoded.samplesMembers)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(Template.GenerationOptions<BeatTime, Pitch>.self,
+                                     from: JSONSerialization.data(withJSONObject: object))
+        }
     }
 
     @Test
@@ -240,7 +239,7 @@ private func _states(of template: Template) throws -> [Template.State<BeatTime, 
     guard case let .standardBeat(model) = template.content
     else { throw Template.Error.incompatibleOptions }
 
-    return model.markovChain.states.sorted()
+    return try #require(model.chains.chain(for: .joint)).states.sorted()
 }
 
 //

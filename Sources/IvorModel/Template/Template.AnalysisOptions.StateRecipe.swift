@@ -19,10 +19,14 @@ extension Template.AnalysisOptions {
         ///                         ``PitchFeature/absolute``.
         /// - Parameter duration:   What a state records of an event’s duration. Defaults to
         ///                         ``DurationFeature/absolute``.
+        /// - Parameter separatesPitchAndDuration:  Whether to learn pitches and durations in
+        ///                                         separate chains. Defaults to `false`.
         public init(pitch: PitchFeature = .absolute,
-                    duration: DurationFeature = .absolute) {
+                    duration: DurationFeature = .absolute,
+                    separatesPitchAndDuration: Bool = false) {
             self.duration = duration
             self.pitch = pitch
+            self.separatesPitchAndDuration = separatesPitchAndDuration
         }
 
         // MARK: Public Instance Properties
@@ -32,6 +36,17 @@ extension Template.AnalysisOptions {
 
         /// What a state records of an event’s pitches.
         public var pitch: PitchFeature
+
+        /// Whether to learn pitches and durations in separate chains, instead of one joint
+        /// chain.
+        ///
+        /// When `true`, a duration chain learns every event’s duration and whether it is a rest,
+        /// and a pitch chain learns the pitches of the sounding events alone, so a melody
+        /// interrupted by rests is still one melody. Generation then recombines melodies and
+        /// rhythms freely, and each chain can have its own order (see
+        /// ``Template/GenerationOptions/pitchChain``). Needs both ``pitch`` and ``duration`` to
+        /// record something.
+        public var separatesPitchAndDuration: Bool
     }
 }
 
@@ -57,6 +72,9 @@ extension Template.AnalysisOptions.StateRecipe {
 
     internal func validate() throws(Template.Error) {
         guard pitch != .omitted || duration != .omitted
+        else { throw .invalidStateRecipe }
+
+        guard !separatesPitchAndDuration || (pitch != .omitted && duration != .omitted)
         else { throw .invalidStateRecipe }
     }
 }
