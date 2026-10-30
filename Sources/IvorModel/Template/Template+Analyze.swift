@@ -65,7 +65,55 @@ extension Template {
         return Self(name: name,
                     content: content,
                     analysisOptions: options,
-                    analysisSummary: summary)
+                    analysisSummary: summary,
+                    sources: Source(work: work,
+                                    index: index).map { [$0] } ?? [])
+    }
+
+    // MARK: Public Instance Methods
+
+    /// Returns a new template that has learned a part of a work as well as everything this
+    /// template has.
+    ///
+    /// The part is analyzed with this template’s own ``analysisOptions``, unchanged, and its
+    /// chains are merged with this template’s. Each part keeps its own start and end: merging
+    /// adds sequences, and never joins them. This template is unchanged, and may be locked.
+    ///
+    /// The new template’s vocabulary and ``analysisSummary`` add the two together, and its
+    /// ``sources`` are this template’s with the part appended. Its vocabulary’s first event is
+    /// this template’s, so generation still starts where this template’s source did.
+    ///
+    /// A proportional duration tolerance groups each analysis’s durations on their own, so the
+    /// same duration can be grouped differently in each.
+    ///
+    /// - Parameter index:  The zero-based index of the part to add.
+    /// - Parameter work:   The ``Work`` containing the part.
+    /// - Parameter name:   The display name of the new template. Its whitespace is normalized to
+    ///                     a single line.
+    ///
+    /// - Returns:  A new ``Template``, with a new ID.
+    ///
+    /// - Throws:   ``Template/Error/incompatibleOptions`` if `work`’s pitch notation or time
+    ///             basis isn’t this template’s; otherwise, ``Template/Error/partNotFound(_:)``
+    ///             if no part exists at `index`.
+    public func adding(partAt index: Int,
+                       of work: Work,
+                       name: String) throws(Error) -> Self {
+        guard work.pitchNotation == pitchNotation,
+              work.timeBasis == timeBasis
+        else { throw Error.incompatibleOptions }
+
+        let (added, summary) = try Self._analyzeNoteEvents(in: work.content,
+                                                           at: index,
+                                                           options: analysisOptions)
+
+        return try Self(name: name,
+                        content: Self._merge(content,
+                                             with: added),
+                        analysisOptions: analysisOptions,
+                        analysisSummary: analysisSummary.adding(summary),
+                        sources: sources + (Source(work: work,
+                                                   index: index).map { [$0] } ?? []))
     }
 
     // MARK: Private Type Aliases
@@ -361,6 +409,66 @@ extension Template {
         else { return nil }
 
         return directedInterval
+    }
+
+    //
+    // `model`'s chains, then `other`'s, merged into new chains of the same maximum order, and their
+    // vocabularies added together.  Both come from the same recipe, so their chains are of the
+    // same kind; anything else is `incompatibleOptions`.
+    //
+    private static func _merge<T, P>(_ model: Model<T, P>,
+                                     with other: Model<T, P>) throws(Error) -> Model<T, P> where T.DurationType: TemplateDuration {
+        func merged(_ chains: MarkovChain<State<T, P>>...) throws(Error) -> MarkovChain<State<T, P>> {
+            guard let markovChain = MarkovChain<State<T, P>>(maximumOrder: model.chains.maximumOrder)
+            else { throw Error.invalidMaximumOrder }
+
+            for chain in chains {
+                markovChain.analyzer().merge(chain)
+            }
+
+            return markovChain
+        }
+
+        let chains: Model<T, P>.Chains = switch (model.chains, other.chains) {
+        case let (.joint(lhs), .joint(rhs)):
+            try .joint(merged(lhs, rhs))
+
+        case let (.separate(lhsDuration, lhsPitch), .separate(rhsDuration, rhsPitch)):
+            try .separate(duration: merged(lhsDuration, rhsDuration),
+                          pitch: merged(lhsPitch, rhsPitch))
+
+        default:
+            throw Error.incompatibleOptions
+        }
+
+        return Model(chains: chains,
+                     vocabulary: model.vocabulary.adding(other.vocabulary))
+    }
+
+    private static func _merge(_ content: Content,
+                               with other: Content) throws(Error) -> Content {
+        switch (content, other) {
+        case let (.absoluteBeat(lhs), .absoluteBeat(rhs)):
+            try .absoluteBeat(_merge(lhs, with: rhs))
+
+        case let (.absoluteWall(lhs), .absoluteWall(rhs)):
+            try .absoluteWall(_merge(lhs, with: rhs))
+
+        case let (.keyboardBeat(lhs), .keyboardBeat(rhs)):
+            try .keyboardBeat(_merge(lhs, with: rhs))
+
+        case let (.keyboardWall(lhs), .keyboardWall(rhs)):
+            try .keyboardWall(_merge(lhs, with: rhs))
+
+        case let (.standardBeat(lhs), .standardBeat(rhs)):
+            try .standardBeat(_merge(lhs, with: rhs))
+
+        case let (.standardWall(lhs), .standardWall(rhs)):
+            try .standardWall(_merge(lhs, with: rhs))
+
+        default:
+            throw Error.incompatibleOptions
+        }
     }
 
     private static func _noteDistanceTransposing(_ transposition: AnalysisOptions.Transposition) -> DirectedInterval<NoteDistance>? {

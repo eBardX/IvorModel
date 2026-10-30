@@ -89,6 +89,20 @@ extension Template.Vocabulary {
         Self._commonest(in: pitches)
     }
 
+    // MARK: Internal Instance Methods
+
+    //
+    // Both vocabularies' counts and members added together.  The first event is this one's, so
+    // that generation still starts where this vocabulary's source did.
+    //
+    internal func adding(_ other: Self) -> Self {
+        Self(durations: durations.merging(other.durations, uniquingKeysWith: +),
+             pitches: pitches.merging(other.pitches, uniquingKeysWith: +),
+             first: first ?? other.first,
+             durationMembers: durationMembers.merging(other.durationMembers) { $0.merging($1, uniquingKeysWith: +) },
+             pitchMembers: pitchMembers.merging(other.pitchMembers) { $0.merging($1, uniquingKeysWith: +) })
+    }
+
     // MARK: Private Type Methods
 
     private static func _commonest<Value: Comparable>(in counts: [Value: Int]) -> Value? {

@@ -33,13 +33,16 @@ public struct Template {
     /// - Parameter analysisOptions:    The recipe the content was analyzed with.
     /// - Parameter analysisSummary:    What the analysis made of the recipe’s variants. Defaults
     ///                                 to one sequence, with nothing merged or skipped.
+    /// - Parameter sources:            The parts the template learned from. Defaults to none.
     public init(name: String,
                 content: Content,
                 analysisOptions: AnalysisOptions,
-                analysisSummary: AnalysisSummary = AnalysisSummary()) {
+                analysisSummary: AnalysisSummary = AnalysisSummary(),
+                sources: [Source] = []) {
         self.analysisOptions = analysisOptions
         self.analysisSummary = analysisSummary
         self.content = content
+        self.sources = sources
         self.isLocked = false
         self.name = name.normalizingWhitespace()
         self.templateID = TemplateID()
@@ -56,6 +59,9 @@ public struct Template {
 
     /// The analysis data stored in this template.
     public let content: Content
+
+    /// The parts this template learned from, in the order they were added.
+    public let sources: [Source]
 
     /// The unique ID of this template.
     public let templateID: TemplateID
@@ -255,6 +261,9 @@ extension Template: Codable {
         self.name = try container.decode(String.self,
                                          forKey: .name).normalizingWhitespace()
 
+        self.sources = try container.decode([Source].self,
+                                            forKey: .sources)
+
         self.templateID = try container.decode(TemplateID.self,
                                                forKey: .templateID)
     }
@@ -290,6 +299,9 @@ extension Template: Codable {
         try container.encode(analysisSummary,
                              forKey: .analysisSummary)
 
+        try container.encode(sources,
+                             forKey: .sources)
+
         try container.encode(content,
                              forKey: .content)
     }
@@ -302,6 +314,7 @@ extension Template: Codable {
         case content
         case isLocked
         case name
+        case sources
         case templateID
         case version
     }

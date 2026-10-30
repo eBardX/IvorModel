@@ -41,6 +41,22 @@ extension Template {
     }
 }
 
+// MARK: -
+
+extension Template.AnalysisSummary {
+
+    // MARK: Internal Instance Methods
+
+    //
+    // Both analyses' sequences and merges, and their skipped variants, this one's first.
+    //
+    internal func adding(_ other: Self) -> Self {
+        Self(sequenceCount: sequenceCount + other.sequenceCount,
+             mergedCount: mergedCount + other.mergedCount,
+             skippedVariants: skippedVariants + other.skippedVariants)
+    }
+}
+
 // MARK: - Codable
 
 extension Template.AnalysisSummary: Codable {
