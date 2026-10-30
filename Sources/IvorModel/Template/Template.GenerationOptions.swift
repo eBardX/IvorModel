@@ -52,6 +52,8 @@ extension Template {
         ///                             Defaults to `false`.
         /// - Parameter pitchChain:     How to generate from a separated template’s pitch chain.
         ///                             Defaults to `nil` (the same as its duration chain).
+        /// - Parameter phrase:         A phrase to continue. Defaults to `nil` (generate from
+        ///                             scratch).
         public init(order: Int = 1,
                     length: Length = .noteCount(100),
                     startsAtBegin: Bool = true,
@@ -65,7 +67,8 @@ extension Template {
                     startPitch: PitchType? = nil,
                     startDuration: TimeType.DurationType? = nil,
                     samplesMembers: Bool = false,
-                    pitchChain: ChainOptions? = nil) {
+                    pitchChain: ChainOptions? = nil,
+                    phrase: Phrase? = nil) {
             self.backsOff = backsOff
             self.cadence = cadence
             self.constraints = constraints
@@ -74,6 +77,7 @@ extension Template {
             self.loops = loops
             self.mixing = mixing
             self.order = order
+            self.phrase = phrase
             self.pitchChain = pitchChain
             self.samplesMembers = samplesMembers
             self.startDuration = startDuration
@@ -114,6 +118,11 @@ extension Template {
         /// The Markov order to generate at: the number of preceding note events that choose the
         /// next. Must be between 0 and the template’s maximum order.
         public var order: Int
+
+        /// A phrase to continue, or `nil` to generate from scratch. With a phrase, ``startPitch``
+        /// and ``startDuration`` are ignored, since the continuation starts from the phrase’s end,
+        /// and ``length`` and ``cadence`` count the continuation only.
+        public var phrase: Phrase?
 
         /// How to generate from a separated template’s pitch chain, or `nil` to use ``order``,
         /// ``mixing`` and ``contrast``, as its duration chain does. Must be `nil` for a template
@@ -185,6 +194,11 @@ extension Template.GenerationOptions {
         guard length.isValid
         else { throw .invalidLimit }
 
+        if let phrase {
+            guard !phrase.noteEvents.isEmpty
+            else { throw .invalidPhrase }
+        }
+
         if let cadence {
             guard cadence.minimumLength.isValid
             else { throw .invalidLimit }
@@ -219,6 +233,7 @@ extension Template.GenerationOptions: Codable {
         self.loops = try container.decode(Bool.self, forKey: .loops)
         self.mixing = try container.decodeIfPresent(Mixing.self, forKey: .mixing)
         self.order = try container.decode(Int.self, forKey: .order)
+        self.phrase = try container.decodeIfPresent(Phrase.self, forKey: .phrase)
         self.pitchChain = try container.decodeIfPresent(ChainOptions.self, forKey: .pitchChain)
         self.samplesMembers = try container.decode(Bool.self, forKey: .samplesMembers)
         self.startDuration = try container.decodeIfPresent(DurationType.self, forKey: .startDuration)
@@ -245,6 +260,7 @@ extension Template.GenerationOptions: Codable {
         try container.encode(loops, forKey: .loops)
         try container.encodeIfPresent(mixing, forKey: .mixing)
         try container.encode(order, forKey: .order)
+        try container.encodeIfPresent(phrase, forKey: .phrase)
         try container.encodeIfPresent(pitchChain, forKey: .pitchChain)
         try container.encode(samplesMembers, forKey: .samplesMembers)
         try container.encodeIfPresent(startDuration, forKey: .startDuration)
@@ -264,6 +280,7 @@ extension Template.GenerationOptions: Codable {
         case loops
         case mixing
         case order
+        case phrase
         case pitchChain
         case samplesMembers
         case startDuration

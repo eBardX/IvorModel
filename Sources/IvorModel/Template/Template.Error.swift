@@ -25,6 +25,9 @@ extension Template {
         /// The requested pattern depth exceeds the maximum supported depth.
         case invalidOrder(Int)
 
+        /// The phrase to continue has no note events.
+        case invalidPhrase
+
         /// The state recipe records neither pitch nor duration, or separates pitch and duration
         /// without recording both.
         case invalidStateRecipe
@@ -76,6 +79,9 @@ extension Template.Error: EnhancedError {
 
         case let .invalidOrder(maxOrder):
             "Order must be between 0 and \(maxOrder) (inclusive)"
+
+        case .invalidPhrase:
+            "A phrase to continue must have at least one note or rest"
 
         case .invalidStateRecipe:
             "A template must learn pitches, durations or both; to learn them separately, it must learn both"

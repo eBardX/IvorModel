@@ -1,8 +1,9 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+internal import IvorTiming
+internal import IvorTuning
+
 private import Foundation
-private import IvorTiming
-private import IvorTuning
 private import XestiMarkov
 private import XestiNumbers
 
@@ -116,6 +117,93 @@ extension Template {
                                                    index: index).map { [$0] } ?? []))
     }
 
+    // MARK: Internal Type Methods
+
+    internal static func beatGrouping(_ durations: AnalysisOptions.DurationTolerance?) throws(Error)
+        -> ([BeatDuration]) -> [BeatDuration: BeatDuration] {
+        switch durations {
+        case let .proportional(fraction):
+            return { _proportionalGroups(of: $0, within: fraction) }
+
+        case .step:
+            throw .incompatibleOptions
+
+        case nil:
+            return { _ in [:] }
+        }
+    }
+
+    internal static func exactRounding<P>(_ pitches: AnalysisOptions.PitchTolerance?) throws(Error) -> (P) -> P {
+        guard pitches == nil
+        else { throw .incompatibleOptions }
+
+        return { $0 }
+    }
+
+    //
+    // Each frequency moves to the nearest whole number of `cents` steps from A4 = 440 Hz.
+    //
+    internal static func frequencyRounding(_ pitches: AnalysisOptions.PitchTolerance?) -> (Frequency) -> Frequency {
+        switch pitches {
+        case let .cents(cents):
+            { frequency in
+                let steps = (1_200 * log2(frequency.doubleValue / 440) / cents).rounded()
+                let rounded = 440 * pow(2, steps * cents / 1_200)
+
+                return Frequency(numberValue: Number(floatLiteral: rounded)) ?? frequency
+            }
+
+        case nil:
+            { $0 }
+        }
+    }
+
+    //
+    // Pitches that round to the same pitch become one; the first, in the event's order, keeps
+    // its ties.
+    //
+    internal static func roundedPitches<T, P>(_ tiedPitches: [NoteEvent<T, P>.TiedPitch],
+                                              with rounding: (P) -> P) -> [NoteEvent<T, P>.TiedPitch] {
+        var seen: Set<P> = []
+
+        return tiedPitches.compactMap { tiedPitch in
+            let pitch = rounding(tiedPitch.pitch)
+
+            guard seen.insert(pitch).inserted
+            else { return nil }
+
+            return NoteEvent<T, P>.TiedPitch(pitch: pitch,
+                                             startsTie: tiedPitch.startsTie,
+                                             endsTie: tiedPitch.endsTie)
+        }
+    }
+
+    //
+    // A step rounds each duration to the nearest whole number of steps, but never below one.
+    //
+    internal static func wallGrouping(_ durations: AnalysisOptions.DurationTolerance?) -> ([WallDuration]) -> [WallDuration: WallDuration] {
+        switch durations {
+        case let .proportional(fraction):
+            { _proportionalGroups(of: $0, within: fraction) }
+
+        case let .step(step):
+            { durations in
+                var representatives: [WallDuration: WallDuration] = [:]
+
+                for duration in Set(durations) {
+                    let steps = max(1, (duration.uintValue + step.uintValue / 2) / step.uintValue)
+
+                    representatives[duration] = WallDuration(uintValue: steps * step.uintValue) ?? duration
+                }
+
+                return representatives
+            }
+
+        case nil:
+            { _ in [:] }
+        }
+    }
+
     // MARK: Private Type Aliases
 
     private typealias DurationTolerance = AnalysisOptions.DurationTolerance
@@ -134,8 +222,8 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _beatAligning(options.timing),
-                                                          grouping: _beatGrouping(options.durations),
-                                                          rounding: _frequencyRounding(options.pitches),
+                                                          grouping: beatGrouping(options.durations),
+                                                          rounding: frequencyRounding(options.pitches),
                                                           transposing: _ratioTransposing)
 
             return (.absoluteBeat(model), summary)
@@ -145,8 +233,8 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _wallAligning(options.timing),
-                                                          grouping: _wallGrouping(options.durations),
-                                                          rounding: _frequencyRounding(options.pitches),
+                                                          grouping: wallGrouping(options.durations),
+                                                          rounding: frequencyRounding(options.pitches),
                                                           transposing: _ratioTransposing)
 
             return (.absoluteWall(model), summary)
@@ -156,8 +244,8 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _beatAligning(options.timing),
-                                                          grouping: _beatGrouping(options.durations),
-                                                          rounding: _exactRounding(options.pitches),
+                                                          grouping: beatGrouping(options.durations),
+                                                          rounding: exactRounding(options.pitches),
                                                           transposing: _noteDistanceTransposing)
 
             return (.keyboardBeat(model), summary)
@@ -167,8 +255,8 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _wallAligning(options.timing),
-                                                          grouping: _wallGrouping(options.durations),
-                                                          rounding: _exactRounding(options.pitches),
+                                                          grouping: wallGrouping(options.durations),
+                                                          rounding: exactRounding(options.pitches),
                                                           transposing: _noteDistanceTransposing)
 
             return (.keyboardWall(model), summary)
@@ -178,8 +266,8 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _beatAligning(options.timing),
-                                                          grouping: _beatGrouping(options.durations),
-                                                          rounding: _exactRounding(options.pitches),
+                                                          grouping: beatGrouping(options.durations),
+                                                          rounding: exactRounding(options.pitches),
                                                           transposing: _intervalTransposing)
 
             return (.standardBeat(model), summary)
@@ -189,8 +277,8 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _wallAligning(options.timing),
-                                                          grouping: _wallGrouping(options.durations),
-                                                          rounding: _exactRounding(options.pitches),
+                                                          grouping: wallGrouping(options.durations),
+                                                          rounding: exactRounding(options.pitches),
                                                           transposing: _intervalTransposing)
 
             return (.standardWall(model), summary)
@@ -236,8 +324,8 @@ extension Template {
 
         for noteEvents in forms {
             let tolerated = noteEvents.map {
-                NoteEvent<T, P>(tiedPitches: _rounding($0.tiedPitches,
-                                                       with: rounding),
+                NoteEvent<T, P>(tiedPitches: roundedPitches($0.tiedPitches,
+                                                            with: rounding),
                                 duration: representatives[$0.duration] ?? $0.duration)
             }
 
@@ -311,19 +399,6 @@ extension Template {
         }
     }
 
-    private static func _beatGrouping(_ durations: DurationTolerance?) throws(Error) -> ([BeatDuration]) -> [BeatDuration: BeatDuration] {
-        switch durations {
-        case let .proportional(fraction):
-            return { _proportionalGroups(of: $0, within: fraction) }
-
-        case .step:
-            throw .incompatibleOptions
-
-        case nil:
-            return { _ in [:] }
-        }
-    }
-
     //
     // One joint chain, or — when the recipe separates them — a duration chain over every event's
     // duration and rest flag, and a pitch chain over the sounding events' pitches alone.  Each
@@ -345,31 +420,6 @@ extension Template {
 
         return try .separate(duration: train(sequences.map { $0.map(\.durationHalf) }),
                              pitch: train(sequences.map { $0.filter { !$0.isRest }.map(\.pitchHalf) }))
-    }
-
-    private static func _exactRounding<P>(_ pitches: PitchTolerance?) throws(Error) -> (P) -> P {
-        guard pitches == nil
-        else { throw .incompatibleOptions }
-
-        return { $0 }
-    }
-
-    //
-    // Each frequency moves to the nearest whole number of `cents` steps from A4 = 440 Hz.
-    //
-    private static func _frequencyRounding(_ pitches: PitchTolerance?) -> (Frequency) -> Frequency {
-        switch pitches {
-        case let .cents(cents):
-            { frequency in
-                let steps = (1_200 * log2(frequency.doubleValue / 440) / cents).rounded()
-                let rounded = 440 * pow(2, steps * cents / 1_200)
-
-                return Frequency(numberValue: Number(floatLiteral: rounded)) ?? frequency
-            }
-
-        case nil:
-            { $0 }
-        }
     }
 
     //
@@ -574,26 +624,6 @@ extension Template {
         return directedInterval
     }
 
-    //
-    // Pitches that round to the same pitch become one; the first, in the event's order, keeps
-    // its ties.
-    //
-    private static func _rounding<T, P>(_ tiedPitches: [NoteEvent<T, P>.TiedPitch],
-                                        with rounding: (P) -> P) -> [NoteEvent<T, P>.TiedPitch] {
-        var seen: Set<P> = []
-
-        return tiedPitches.compactMap { tiedPitch in
-            let pitch = rounding(tiedPitch.pitch)
-
-            guard seen.insert(pitch).inserted
-            else { return nil }
-
-            return NoteEvent<T, P>.TiedPitch(pitch: pitch,
-                                             startsTie: tiedPitch.startsTie,
-                                             endsTie: tiedPitch.endsTie)
-        }
-    }
-
     private static func _wallAligning<P>(_ timing: TimingTolerance?) throws(Error) -> (NoteTable<WallTime, P>) -> NoteTable<WallTime, P> {
         switch timing {
         case .grid:
@@ -604,32 +634,6 @@ extension Template {
 
         case nil:
             return { $0 }
-        }
-    }
-
-    //
-    // A step rounds each duration to the nearest whole number of steps, but never below one.
-    //
-    private static func _wallGrouping(_ durations: DurationTolerance?) -> ([WallDuration]) -> [WallDuration: WallDuration] {
-        switch durations {
-        case let .proportional(fraction):
-            { _proportionalGroups(of: $0, within: fraction) }
-
-        case let .step(step):
-            { durations in
-                var representatives: [WallDuration: WallDuration] = [:]
-
-                for duration in Set(durations) {
-                    let steps = max(1, (duration.uintValue + step.uintValue / 2) / step.uintValue)
-
-                    representatives[duration] = WallDuration(uintValue: steps * step.uintValue) ?? duration
-                }
-
-                return representatives
-            }
-
-        case nil:
-            { _ in [:] }
         }
     }
 }

@@ -30,7 +30,7 @@ extension Template {
         try Work(name: name,
                  content: Self._generateWorkContent(from: content,
                                                     options: options,
-                                                    isRelative: analysisOptions.states.isRelative,
+                                                    analysisOptions: analysisOptions,
                                                     seed: seed),
                  generation: Work.Generation(templateID: templateID,
                                              templateName: self.name,
@@ -238,6 +238,7 @@ extension Template {
     //
     private static func _generateStates<T, P>(using chains: Model<T, P>.Chains,
                                               options: GenerationOptions<T, P>,
+                                              continuing phrase: [State<T, P>],
                                               realizer: Realizer<T, P>,
                                               rng: inout SeededRandomNumberGenerator,
                                               until step: (State<T, P>) -> Bool) throws where T.DurationType: TemplateDuration {
@@ -250,7 +251,8 @@ extension Template {
                                                realizer: realizer,
                                                rng: &rng)
 
-            _ = generator.generate(until: step)
+            _ = generator.generate(continuing: phrase,
+                                   until: step)
 
         case let .separate(durationChain, pitchChain):
             var durationGenerator = try _makeGenerator(using: durationChain,
@@ -268,7 +270,7 @@ extension Template {
                                                     rng: &rng)
 
             let historyLimit = pitchChain.maximumOrder
-            var pitchHistory: [State<T, P>] = []
+            var pitchHistory = Array(phrase.filter { !$0.isRest }.map(\.pitchHalf).suffix(historyLimit))
 
             func nextPitchHalf() -> State<T, P>? {
                 if let pitchHalf = pitchGenerator.next(after: pitchHistory) {
@@ -283,7 +285,7 @@ extension Template {
                 return pitchGenerator.next(after: [])
             }
 
-            _ = durationGenerator.generate { durationHalf in
+            _ = durationGenerator.generate(continuing: phrase.map(\.durationHalf)) { durationHalf in
                 var pitchHalf: State<T, P>?
 
                 if !durationHalf.isRest {
@@ -300,9 +302,14 @@ extension Template {
         }
     }
 
+    //
+    // With a phrase, the chains continue its states, the realizer starts from its end, and the
+    // output starts with its own note events (if it includes the phrase).  The length and cadence
+    // count the continuation only.
+    //
     private static func _generateNoteTable<T, P>(using model: Model<T, P>,
                                                  options: GenerationOptions<T, P>,
-                                                 isRelative: Bool,
+                                                 learner: PhraseLearner<T, P>,
                                                  seed: UInt64) throws -> NoteTable<T, P> where T.DurationType: TemplateDuration {
         let isSeparated = if case .separate = model.chains { true } else { false }
 
@@ -317,9 +324,12 @@ extension Template {
         //
         let memberSeed = options.samplesMembers ? rng.next() : 0
 
+        let phrase = learner.learn(options.phrase?.noteEvents ?? [])
+
         let realizer = Realizer(vocabulary: model.vocabulary,
                                 options: options,
-                                isRelative: isRelative,
+                                isRelative: learner.analysisOptions.states.isRelative,
+                                phrase: phrase.noteEvents,
                                 memberSeed: memberSeed)
 
         var noteCount = 0
@@ -328,6 +338,7 @@ extension Template {
 
         try _generateStates(using: model.chains,
                             options: options,
+                            continuing: phrase.states,
                             realizer: realizer,
                             rng: &rng) { state in
             guard let noteEvent = realizer.advance(with: state)
@@ -351,14 +362,18 @@ extension Template {
                                                                                  time: time)
         }
 
-        var assembler = NoteTable<T, P>.Assembler(noteEvents: noteEvents)
+        let leadIn = options.phrase.map { $0.includesPhrase ? $0.noteEvents : [] } ?? []
+
+        var assembler = NoteTable<T, P>.Assembler(noteEvents: leadIn + noteEvents)
 
         return assembler.assembleNoteTable()
     }
 
     private static func _generatePart<T, P>(using model: Model<T, P>,
                                             options: GenerationOptions<T, P>,
-                                            isRelative: Bool,
+                                            analysisOptions: AnalysisOptions,
+                                            grouping: @escaping ([T.DurationType]) -> [T.DurationType: T.DurationType],
+                                            rounding: @escaping (P) -> P,
                                             seed: UInt64) throws -> Part<T, P> where T.DurationType: TemplateDuration {
         let partName = switch options.length {
         case let .duration(duration):
@@ -371,52 +386,73 @@ extension Template {
         return try Part(name: partName,
                         noteTable: _generateNoteTable(using: model,
                                                       options: options,
-                                                      isRelative: isRelative,
+                                                      learner: PhraseLearner(analysisOptions: analysisOptions,
+                                                                             vocabulary: model.vocabulary,
+                                                                             grouping: grouping,
+                                                                             rounding: rounding),
                                                       seed: seed))
     }
 
+    //
+    // The tolerances are the template's own, for a phrase to continue (see `PhraseLearner`).
+    //
     private static func _generateWorkContent(from content: Template.Content,
                                              options: AnyGenerationOptions,
-                                             isRelative: Bool,
+                                             analysisOptions: AnalysisOptions,
                                              seed: UInt64) throws -> Work.Content {
-        switch (content, options) {
+        let durations = analysisOptions.durations
+        let pitches = analysisOptions.pitches
+
+        return switch (content, options) {
         case let (.absoluteBeat(model), .absoluteBeat(options)):
             try .absoluteBeat([_generatePart(using: model,
                                              options: options,
-                                             isRelative: isRelative,
+                                             analysisOptions: analysisOptions,
+                                             grouping: beatGrouping(durations),
+                                             rounding: frequencyRounding(pitches),
                                              seed: seed)],
                               TempoMap())
 
         case let (.absoluteWall(model), .absoluteWall(options)):
             try .absoluteWall([_generatePart(using: model,
                                              options: options,
-                                             isRelative: isRelative,
+                                             analysisOptions: analysisOptions,
+                                             grouping: wallGrouping(durations),
+                                             rounding: frequencyRounding(pitches),
                                              seed: seed)])
 
         case let (.keyboardBeat(model), .keyboardBeat(options)):
             try .keyboardBeat([_generatePart(using: model,
                                              options: options,
-                                             isRelative: isRelative,
+                                             analysisOptions: analysisOptions,
+                                             grouping: beatGrouping(durations),
+                                             rounding: exactRounding(pitches),
                                              seed: seed)],
                               TempoMap())
 
         case let (.keyboardWall(model), .keyboardWall(options)):
             try .keyboardWall([_generatePart(using: model,
                                              options: options,
-                                             isRelative: isRelative,
+                                             analysisOptions: analysisOptions,
+                                             grouping: wallGrouping(durations),
+                                             rounding: exactRounding(pitches),
                                              seed: seed)])
 
         case let (.standardBeat(model), .standardBeat(options)):
             try .standardBeat([_generatePart(using: model,
                                              options: options,
-                                             isRelative: isRelative,
+                                             analysisOptions: analysisOptions,
+                                             grouping: beatGrouping(durations),
+                                             rounding: exactRounding(pitches),
                                              seed: seed)],
                               TempoMap())
 
         case let (.standardWall(model), .standardWall(options)):
             try .standardWall([_generatePart(using: model,
                                              options: options,
-                                             isRelative: isRelative,
+                                             analysisOptions: analysisOptions,
+                                             grouping: wallGrouping(durations),
+                                             rounding: exactRounding(pitches),
                                              seed: seed)])
 
         default:

@@ -39,13 +39,20 @@ extension Template {
 
         // MARK: Internal Initializers
 
+        //
+        // With a phrase to continue — its note events, with the template's tolerances — the anchors
+        // start from its end: its last sounding bass and its last duration.  The start pitch and
+        // duration are ignored, and a relative recipe's range takes in the phrase's pitches.
+        //
         internal init(vocabulary: Vocabulary<TimeType, PitchType>,
                       options: GenerationOptions<TimeType, PitchType>,
                       isRelative: Bool,
+                      phrase: [NoteEvent<TimeType, PitchType>] = [],
                       memberSeed: UInt64) {
-            let startDuration = options.startDuration ?? vocabulary.first?.duration ?? vocabulary.commonestDuration
             let firstBass = vocabulary.first?.tiedPitches.map(\.pitch).min()
-            let startPitch = options.startPitch ?? firstBass ?? vocabulary.commonestPitch
+            let phraseBass = phrase.last { !$0.tiedPitches.isEmpty }?.tiedPitches.map(\.pitch).min()
+            let startDuration = phrase.last?.duration ?? options.startDuration ?? vocabulary.first?.duration ?? vocabulary.commonestDuration
+            let startPitch = phraseBass ?? options.startPitch ?? firstBass ?? vocabulary.commonestPitch
 
             self.anchors = Mutex(_Anchors(bass: startPitch,
                                           duration: startDuration,
@@ -56,7 +63,8 @@ extension Template {
             self.defaultPitch = options.startPitch ?? vocabulary.commonestPitch
             self.range = isRelative ? options.constraints.pitchRange ?? Self._sourceRange(of: vocabulary,
                                                                                           movedFrom: firstBass,
-                                                                                          to: options.startPitch) : nil
+                                                                                          to: phrase.isEmpty ? options.startPitch : nil,
+                                                                                          including: phrase) : nil
             self.samplesMembers = options.samplesMembers
             self.vocabulary = vocabulary
         }
@@ -394,9 +402,19 @@ extension Template.Realizer {
     //
     private static func _sourceRange(of vocabulary: Template.Vocabulary<TimeType, PitchType>,
                                      movedFrom firstBass: PitchType?,
-                                     to startPitch: PitchType?) -> ClosedRange<PitchType>? {
-        guard let range = vocabulary.pitchRange
+                                     to startPitch: PitchType?,
+                                     including phrase: [NoteEvent<TimeType, PitchType>]) -> ClosedRange<PitchType>? {
+        let phrasePitches = phrase.flatMap { $0.tiedPitches.map(\.pitch) }
+        let bounds = (vocabulary.pitchRange.map { [$0.lowerBound, $0.upperBound] } ?? []) + phrasePitches
+
+        guard let lowest = bounds.min(),
+              let highest = bounds.max()
         else { return nil }
+
+        let range = lowest...highest
+
+        guard phrasePitches.isEmpty
+        else { return range }
 
         guard let firstBass,
               let startPitch,
