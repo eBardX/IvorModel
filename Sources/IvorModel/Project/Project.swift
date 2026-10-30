@@ -14,7 +14,9 @@ public struct Project {
     /// Creates a new, empty project.
     public init() {
         self.name = ""
+        self.skippedTemplates = []
         self.templateMap = [:]
+        self.unreadableWorks = []
         self.workMap = [:]
     }
 
@@ -23,17 +25,27 @@ public struct Project {
     /// The display name of this project.
     public private(set) var name: String
 
+    /// The templates left out when this project was loaded, because they couldn’t be read, in the
+    /// order its file lists them. Empty for a new project.
+    public let skippedTemplates: [SkippedTemplate]
+
+    /// The works in this project’s file that couldn’t be read, in the order its file lists them.
+    /// Saving keeps them as they were — see ``UnreadableWork``.
+    public private(set) var unreadableWorks: [UnreadableWork]
+
     // MARK: Private Initializers
 
     private init(from file: FileWrapper) throws {
         let manifest = try Self._fetchManifest(from: file)
-        let templates = try Self._fetchTemplates(from: file,
-                                                 in: manifest)
-        let works = try Self._fetchWorks(from: file,
-                                         in: manifest)
+        let (templates, skippedTemplates) = Self._fetchTemplates(from: file,
+                                                                 in: manifest)
+        let (works, unreadableWorks) = Self._fetchWorks(from: file,
+                                                        in: manifest)
 
         self.name = manifest.name
+        self.skippedTemplates = skippedTemplates
         self.templateMap = Dictionary(uniqueKeysWithValues: templates.map { ($0.templateID, $0) })
+        self.unreadableWorks = unreadableWorks
         self.workMap = Dictionary(uniqueKeysWithValues: works.map { ($0.workID, $0) })
     }
 
@@ -51,8 +63,10 @@ extension Project {
 
     /// Creates a project by loading from a file wrapper.
     ///
-    /// A template saved in an unsupported format version is left out of the loaded project, so
-    /// that the rest of the project can still be opened; saving the project then drops it.
+    /// A template or work that can’t be read — saved in an older format, say — doesn’t stop the
+    /// rest of the project from loading. A template is left out (see ``skippedTemplates``), and
+    /// saving the project drops it, since it can be analyzed again from its work. A work is kept
+    /// unread (see ``unreadableWorks``), and saving the project writes it back as it was.
     ///
     /// - Parameter file:   The `FileWrapper` containing the serialized project data.
     ///
@@ -118,6 +132,20 @@ extension Project {
         else { throw Error.templateIsLocked(templateID) }
 
         return templateMap.removeValue(forKey: templateID)
+    }
+
+    /// Removes the unreadable work with the given ID from this project, so that saving no longer
+    /// keeps it.
+    ///
+    /// - Parameter workID:     The ID of the unreadable work to remove.
+    ///
+    /// - Returns:  The removed ``UnreadableWork``, or `nil` if no unreadable work has that ID.
+    @discardableResult
+    public mutating func removeUnreadableWork(_ workID: WorkID) -> UnreadableWork? {
+        guard let index = unreadableWorks.firstIndex(where: { $0.workID == workID })
+        else { return nil }
+
+        return unreadableWorks.remove(at: index)
     }
 
     /// Removes the work with the given ID from this project.
@@ -195,47 +223,63 @@ extension Project {
                                         from: data)
     }
 
-    private static func _fetchTemplate(from file: FileWrapper,
-                                       for templateID: TemplateID) throws -> Template {
-        let data = try file.findFile([templatesDirectoryName,
-                                      _makeTemplateFileName(for: templateID)]).contentsOfRegularFile()
-
-        return try SexpDecoder().decode(Template.self,
-                                        from: data)
+    private static func _fetchContents(from file: FileWrapper,
+                                       at path: [String]) -> Data? {
+        try? file.findFile(path).contentsOfRegularFile()
     }
 
     //
-    // A template saved in an older format is left out, rather than failing the whole project: a
-    // template can be analyzed again from its work, and the format changes freely before 1.0.  It's
-    // dropped from the project the next time the project is saved.
+    // A template that can't be read is left out, rather than failing the whole project: it can be
+    // analyzed again from its work, and the format changes freely before 1.0.  It's dropped from the
+    // project the next time the project is saved.
     //
     private static func _fetchTemplates(from file: FileWrapper,
-                                        in manifest: Manifest) throws -> [Template] {
-        try manifest.templateIDs.compactMap {
+                                        in manifest: Manifest) -> ([Template], [SkippedTemplate]) {
+        var skippedTemplates: [SkippedTemplate] = []
+        var templates: [Template] = []
+
+        for templateID in manifest.templateIDs {
+            let contents = _fetchContents(from: file,
+                                          at: [templatesDirectoryName, _makeTemplateFileName(for: templateID)])
+
             do {
-                return try _fetchTemplate(from: file,
-                                          for: $0)
-            } catch Template.Error.unsupportedVersion {
-                return nil
+                try templates.append(SexpDecoder().decode(Template.self,
+                                                          from: _require(contents)))
+            } catch {
+                skippedTemplates.append(SkippedTemplate(templateID: templateID,
+                                                        name: _name(in: contents),
+                                                        reason: _reason(for: error)))
             }
         }
+
+        return (templates, skippedTemplates)
     }
 
-    private static func _fetchWork(from file: FileWrapper,
-                                   for workID: WorkID) throws -> Work {
-        let data = try file.findFile([worksDirectoryName,
-                                      _makeWorkFileName(for: workID)]).contentsOfRegularFile()
-
-        return try SexpDecoder().decode(Work.self,
-                                        from: data)
-    }
-
+    //
+    // A work that can't be read is kept unread, with its file as it was, rather than failing the
+    // whole project: unlike a template, it can't be made again.
+    //
     private static func _fetchWorks(from file: FileWrapper,
-                                    in manifest: Manifest) throws -> [Work] {
-        try manifest.workIDs.map {
-            try _fetchWork(from: file,
-                           for: $0)
+                                    in manifest: Manifest) -> ([Work], [UnreadableWork]) {
+        var unreadableWorks: [UnreadableWork] = []
+        var works: [Work] = []
+
+        for workID in manifest.workIDs {
+            let contents = _fetchContents(from: file,
+                                          at: [worksDirectoryName, _makeWorkFileName(for: workID)])
+
+            do {
+                try works.append(SexpDecoder().decode(Work.self,
+                                                      from: _require(contents)))
+            } catch {
+                unreadableWorks.append(UnreadableWork(workID: workID,
+                                                      name: _name(in: contents),
+                                                      reason: _reason(for: error),
+                                                      contents: contents))
+            }
         }
+
+        return (works, unreadableWorks)
     }
 
     private static func _makeTemplateFileName(for templateID: TemplateID) -> String {
@@ -246,6 +290,50 @@ extension Project {
         workID.stringValue + "." + sexpFileExtension
     }
 
+    //
+    // The name in a work's or template's file, if that much of it can be read.
+    //
+    private static func _name(in contents: Data?) -> String? {
+        guard let contents
+        else { return nil }
+
+        return try? SexpDecoder().decode(_NameOnly.self,
+                                         from: contents).name.normalizingWhitespace()
+    }
+
+    //
+    // The model's own errors — an unsupported version, say — explain themselves; anything else
+    // (a decoding error, a missing file) is described by Foundation.
+    //
+    private static func _reason(for error: any Swift.Error) -> String {
+        switch error {
+        case let error as Template.Error:
+            error.message
+
+        case let error as Work.Error:
+            error.message
+
+        default:
+            error.localizedDescription
+        }
+    }
+
+    private static func _require(_ contents: Data?) throws -> Data {
+        guard let contents
+        else { throw CocoaError(.fileNoSuchFile) }
+
+        return contents
+    }
+
+    // MARK: Private Instance Properties
+
+    //
+    // The unreadable works with a file to keep.
+    //
+    private var _keptUnreadableWorks: [UnreadableWork] {
+        unreadableWorks.filter { $0.contents != nil }
+    }
+
     // MARK: Private Instance Methods
 
     private func _prepare() throws -> FileWrapper {
@@ -254,9 +342,12 @@ extension Project {
                                                     Self.worksDirectoryName: _prepareWorks()])
     }
 
+    //
+    // Unreadable works are listed too, so that they're read again next time.
+    //
     private func _prepareManifest() throws -> FileWrapper {
         let manifest = Manifest(name: name,
-                                workIDs: Array(workMap.keys),
+                                workIDs: Array(workMap.keys) + _keptUnreadableWorks.map(\.workID),
                                 templateIDs: Array(templateMap.keys))
         let data = try SexpEncoder().encode(manifest)
         let file = FileWrapper(regularFileWithContents: data)
@@ -299,6 +390,18 @@ extension Project {
             children[name] = file
         }
 
+        for unreadableWork in _keptUnreadableWorks {
+            guard let contents = unreadableWork.contents
+            else { continue }
+
+            let name = Self._makeWorkFileName(for: unreadableWork.workID)
+            let file = FileWrapper(regularFileWithContents: contents)
+
+            file.preferredFilename = name
+
+            children[name] = file
+        }
+
         let file = FileWrapper(directoryWithFileWrappers: children)
 
         file.preferredFilename = Self.worksDirectoryName
@@ -310,4 +413,13 @@ extension Project {
 // MARK: - Sendable
 
 extension Project: Sendable {
+}
+
+// MARK: - Private Types
+
+//
+// Just the name of a work or template, which may be all of it that can be read.
+//
+private struct _NameOnly: Decodable {
+    let name: String
 }
