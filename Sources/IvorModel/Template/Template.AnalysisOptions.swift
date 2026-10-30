@@ -16,7 +16,8 @@ extension Template {
     /// 2. ``durations`` and ``pitches`` then replace each note event’s duration and pitches with
     ///    a representative value.
     ///
-    /// ``states`` then chooses what the template records of each note event.
+    /// ``states`` then chooses what the template records of each note event, and ``variants``
+    /// adds transformed copies of the part to learn from.
     ///
     /// The defaults analyze exactly, as earlier versions did. The work being analyzed is never
     /// changed.
@@ -35,16 +36,20 @@ extension Template {
         ///                             `nil` (exact pitches).
         /// - Parameter states:         What the template records of each note event. Defaults to
         ///                             ``StateRecipe/exact``.
+        /// - Parameter variants:       Transformed copies of the part to learn from too. Defaults
+        ///                             to ``Variants/none``.
         public init(maximumOrder: Int,
                     timing: TimingTolerance? = nil,
                     durations: DurationTolerance? = nil,
                     pitches: PitchTolerance? = nil,
-                    states: StateRecipe = .exact) {
+                    states: StateRecipe = .exact,
+                    variants: Variants = .none) {
             self.durations = durations
             self.maximumOrder = maximumOrder
             self.pitches = pitches
             self.states = states
             self.timing = timing
+            self.variants = variants
         }
 
         // MARK: Public Instance Properties
@@ -63,6 +68,9 @@ extension Template {
 
         /// How to align attack and release times before slicing, or `nil` for exact times.
         public var timing: TimingTolerance?
+
+        /// Transformed copies of the part to learn from too.
+        public var variants: Variants
     }
 }
 
@@ -84,6 +92,7 @@ extension Template.AnalysisOptions {
         try durations?.validate()
         try pitches?.validate()
         try states.validate()
+        try variants.validate()
     }
 }
 

@@ -31,10 +31,14 @@ public struct Template {
     ///                                 normalized to a single line.
     /// - Parameter content:            The ``Template/Content`` holding the analysis data.
     /// - Parameter analysisOptions:    The recipe the content was analyzed with.
+    /// - Parameter analysisSummary:    What the analysis made of the recipe’s variants. Defaults
+    ///                                 to one sequence, with nothing merged or skipped.
     public init(name: String,
                 content: Content,
-                analysisOptions: AnalysisOptions) {
+                analysisOptions: AnalysisOptions,
+                analysisSummary: AnalysisSummary = AnalysisSummary()) {
         self.analysisOptions = analysisOptions
+        self.analysisSummary = analysisSummary
         self.content = content
         self.isLocked = false
         self.name = name.normalizingWhitespace()
@@ -46,6 +50,9 @@ public struct Template {
 
     /// The recipe this template was analyzed with.
     public let analysisOptions: AnalysisOptions
+
+    /// What the analysis made of the recipe’s variants.
+    public let analysisSummary: AnalysisSummary
 
     /// The analysis data stored in this template.
     public let content: Content
@@ -236,6 +243,9 @@ extension Template: Codable {
         self.analysisOptions = try container.decode(AnalysisOptions.self,
                                                     forKey: .analysisOptions)
 
+        self.analysisSummary = try container.decode(AnalysisSummary.self,
+                                                    forKey: .analysisSummary)
+
         self.content = try container.decode(Content.self,
                                             forKey: .content)
 
@@ -277,6 +287,9 @@ extension Template: Codable {
         try container.encode(analysisOptions,
                              forKey: .analysisOptions)
 
+        try container.encode(analysisSummary,
+                             forKey: .analysisSummary)
+
         try container.encode(content,
                              forKey: .content)
     }
@@ -285,6 +298,7 @@ extension Template: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case analysisOptions
+        case analysisSummary
         case content
         case isLocked
         case name

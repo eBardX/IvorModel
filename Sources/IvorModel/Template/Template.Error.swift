@@ -33,6 +33,10 @@ extension Template {
         /// factors or a factor that is not positive.
         case invalidTolerance
 
+        /// An analysis variant has a time factor that isn’t rational, positive and other than 1, or
+        /// a unison transposition, or appears twice.
+        case invalidVariants
+
         /// No part was found at the requested index.
         case partNotFound(Int)
 
@@ -78,6 +82,9 @@ extension Template.Error: EnhancedError {
 
         case .invalidTolerance:
             "Tolerance must be positive (> 0)"
+
+        case .invalidVariants:
+            "Variants must have rational, positive time factors other than 1, transpositions other than a unison, and no duplicates"
 
         case let .partNotFound(index):
             "Ivor part not found at index \(index)"
