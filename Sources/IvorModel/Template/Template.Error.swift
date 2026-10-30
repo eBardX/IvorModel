@@ -9,6 +9,10 @@ extension Template {
         /// the analysis options don’t match the work’s.
         case incompatibleOptions
 
+        /// Templates mixed in generation differ in pitch notation, time basis or state recipe, or
+        /// can’t generate at the recipe’s orders.
+        case incompatibleTemplates
+
         /// The generation contrast is not positive and finite.
         case invalidContrast
 
@@ -46,6 +50,9 @@ extension Template {
         /// The template is locked, so it cannot be modified.
         case templateIsLocked
 
+        /// A template that a generation recipe mixes in wasn’t supplied.
+        case templateNotFound(TemplateID)
+
         /// The template was encoded with an unsupported version number.
         case unsupportedVersion(Int)
     }
@@ -64,6 +71,9 @@ extension Template.Error: EnhancedError {
         switch self {
         case .incompatibleOptions:
             "Options must match the pitch notation and time basis"
+
+        case .incompatibleTemplates:
+            "Templates mixed together must share pitch notation, time basis and what they learn, and support the order"
 
         case .invalidContrast:
             "Contrast must be positive (> 0)"
@@ -97,6 +107,9 @@ extension Template.Error: EnhancedError {
 
         case .templateIsLocked:
             "The template is locked and cannot be modified."
+
+        case let .templateNotFound(templateID):
+            "Template \(templateID) to mix in wasn’t found"
 
         case let .unsupportedVersion(version):
             "Unsupported Ivor template version: \(version)"

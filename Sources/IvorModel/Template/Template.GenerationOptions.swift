@@ -54,6 +54,8 @@ extension Template {
         ///                             Defaults to `nil` (the same as its duration chain).
         /// - Parameter phrase:         A phrase to continue. Defaults to `nil` (generate from
         ///                             scratch).
+        /// - Parameter templateMix:    Other templates to generate from too. Defaults to `nil`
+        ///                             (this template alone).
         public init(order: Int = 1,
                     length: Length = .noteCount(100),
                     startsAtBegin: Bool = true,
@@ -68,7 +70,8 @@ extension Template {
                     startDuration: TimeType.DurationType? = nil,
                     samplesMembers: Bool = false,
                     pitchChain: ChainOptions? = nil,
-                    phrase: Phrase? = nil) {
+                    phrase: Phrase? = nil,
+                    templateMix: TemplateMix? = nil) {
             self.backsOff = backsOff
             self.cadence = cadence
             self.constraints = constraints
@@ -84,6 +87,7 @@ extension Template {
             self.startPitch = startPitch
             self.startsAtBegin = startsAtBegin
             self.stopsAtEnd = stopsAtEnd
+            self.templateMix = templateMix
         }
 
         // MARK: Public Instance Properties
@@ -150,6 +154,10 @@ extension Template {
         /// anywhere.
         public var startsAtBegin: Bool
 
+        /// Other templates to generate from together with this one, or `nil` for this template
+        /// alone. Can’t be combined with ``mixing``.
+        public var templateMix: TemplateMix?
+
         /// Whether generation can stop where a source sequence ends. When `false`, the end is
         /// never chosen, and generation continues until ``length`` (or ``cadence``) stops it.
         public var stopsAtEnd: Bool
@@ -188,6 +196,10 @@ extension Template.GenerationOptions {
         guard isSeparated || pitchChain == nil
         else { throw .incompatibleOptions }
 
+        guard templateMix == nil || (mixing == nil && pitchChain?.mixing == nil)
+        else { throw .incompatibleOptions }
+
+        try templateMix?.validate()
         try mainChain.validate(maximumOrder: maximumOrder)
         try pitchChain?.validate(maximumOrder: maximumOrder)
 
@@ -240,6 +252,7 @@ extension Template.GenerationOptions: Codable {
         self.startPitch = try container.decodeIfPresent(PitchType.self, forKey: .startPitch)
         self.startsAtBegin = try container.decode(Bool.self, forKey: .startsAtBegin)
         self.stopsAtEnd = try container.decode(Bool.self, forKey: .stopsAtEnd)
+        self.templateMix = try container.decodeIfPresent(TemplateMix.self, forKey: .templateMix)
     }
 
     // MARK: Public Instance Methods
@@ -267,6 +280,7 @@ extension Template.GenerationOptions: Codable {
         try container.encodeIfPresent(startPitch, forKey: .startPitch)
         try container.encode(startsAtBegin, forKey: .startsAtBegin)
         try container.encode(stopsAtEnd, forKey: .stopsAtEnd)
+        try container.encodeIfPresent(templateMix, forKey: .templateMix)
     }
 
     // MARK: Private Nested Types
@@ -287,6 +301,7 @@ extension Template.GenerationOptions: Codable {
         case startPitch
         case startsAtBegin
         case stopsAtEnd
+        case templateMix
     }
 }
 

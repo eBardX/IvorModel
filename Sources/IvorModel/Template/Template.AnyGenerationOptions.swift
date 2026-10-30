@@ -67,6 +67,30 @@ extension Template.AnyGenerationOptions {
 
     // MARK: Public Instance Properties
 
+    /// The other templates this recipe mixes in, in order — see
+    /// ``Template/GenerationOptions/templateMix``.
+    public var otherTemplates: [Template.OtherTemplate] {
+        switch self {
+        case let .absoluteBeat(options):
+            options.templateMix?.otherTemplates ?? []
+
+        case let .absoluteWall(options):
+            options.templateMix?.otherTemplates ?? []
+
+        case let .keyboardBeat(options):
+            options.templateMix?.otherTemplates ?? []
+
+        case let .keyboardWall(options):
+            options.templateMix?.otherTemplates ?? []
+
+        case let .standardBeat(options):
+            options.templateMix?.otherTemplates ?? []
+
+        case let .standardWall(options):
+            options.templateMix?.otherTemplates ?? []
+        }
+    }
+
     /// The pitch notation of templates this recipe applies to.
     public var pitchNotation: PitchNotation {
         switch self {
