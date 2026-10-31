@@ -261,6 +261,12 @@ extension ExtraIvorTests {
     }
 
     @Test
+    func midiReleaseVelocity() {
+        #expect(Extra.midiReleaseVelocity.name == "midiReleaseVelocity")
+        #expect(Extra.midiReleaseVelocity.values.isEmpty)
+    }
+
+    @Test
     func midiTempo() {
         #expect(Extra.midiTempo.name == "midiTempo")
         #expect(Extra.midiTempo.values.isEmpty)

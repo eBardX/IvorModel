@@ -94,6 +94,12 @@ extension Extra {
     /// instrument=` directive use. Payload: a single `.int`.
     public static let midiProgram = Self(name: "midiProgram")
 
+    /// The MIDI note-off (release) velocity (1–127) of a ``NoteTable``
+    /// note. It's left out when the note-off velocity was 0 or 64, the
+    /// value MIDI prescribes for a device that doesn't sense release
+    /// velocity. Payload: a single `.int`.
+    public static let midiReleaseVelocity = Self(name: "midiReleaseVelocity")
+
     /// The exact microseconds-per-quarter-note value of a MIDI tempo meta
     /// event, before it’s rounded to an integer BPM for a ``TempoMap``
     /// entry’s ``Tempo`` value. Payload: a single `.int`.
