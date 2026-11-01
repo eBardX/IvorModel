@@ -16,8 +16,9 @@ extension Template {
     /// 2. ``durations`` and ``pitches`` then replace each note event’s duration and pitches with
     ///    a representative value.
     ///
-    /// ``states`` then chooses what the template records of each note event, and ``variants``
-    /// adds transformed copies of the part to learn from.
+    /// ``restSplit`` splits the part at its long rests into separate sequences, ``states`` then
+    /// chooses what the template records of each note event, and ``variants`` adds transformed
+    /// copies of the part to learn from.
     ///
     /// The defaults analyze exactly, as earlier versions did. The work being analyzed is never
     /// changed.
@@ -38,15 +39,19 @@ extension Template {
         ///                             ``StateRecipe/exact``.
         /// - Parameter variants:       Transformed copies of the part to learn from too. Defaults
         ///                             to ``Variants/none``.
+        /// - Parameter restSplit:      How long a rest must be to split the part into separate
+        ///                             sequences. Defaults to `nil` (no splitting).
         public init(maximumOrder: Int,
                     timing: TimingTolerance? = nil,
                     durations: DurationTolerance? = nil,
                     pitches: PitchTolerance? = nil,
                     states: StateRecipe = .exact,
-                    variants: Variants = .none) {
+                    variants: Variants = .none,
+                    restSplit: RestSplit? = nil) {
             self.durations = durations
             self.maximumOrder = maximumOrder
             self.pitches = pitches
+            self.restSplit = restSplit
             self.states = states
             self.timing = timing
             self.variants = variants
@@ -62,6 +67,10 @@ extension Template {
 
         /// How to make near-identical pitches the same, or `nil` for exact pitches.
         public var pitches: PitchTolerance?
+
+        /// How long a rest must be to split the part into separate sequences, or `nil` to learn
+        /// every rest.
+        public var restSplit: RestSplit?
 
         /// What the template records of each note event.
         public var states: StateRecipe
@@ -91,6 +100,7 @@ extension Template.AnalysisOptions {
         try timing?.validate()
         try durations?.validate()
         try pitches?.validate()
+        try restSplit?.validate()
         try states.validate()
         try variants.validate()
     }

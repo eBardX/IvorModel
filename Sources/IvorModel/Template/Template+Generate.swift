@@ -236,7 +236,7 @@ extension Template {
         func isConstrained(checkingRange: Bool) -> Bool {
             switch role {
             case .duration:
-                constraints.maximumDuration != nil || !constraints.allowsRests
+                constraints.maximumDuration != nil || constraints.maximumRestDuration != nil || !constraints.allowsRests
 
             case .joint:
                 !constraints.isEmpty || (checkingRange && keepsToRange)

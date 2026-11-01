@@ -3,7 +3,6 @@
 internal import IvorTiming
 internal import IvorTuning
 
-private import Foundation
 private import XestiMarkov
 private import XestiNumbers
 
@@ -44,10 +43,10 @@ extension Template {
     /// - Returns:  A new ``Template`` capturing the musical character of the specified part.
     ///
     /// - Throws:   ``Template/Error/invalidMaximumOrder`` if the maximum order is not positive;
-    ///             ``Template/Error/invalidTolerance`` if a tolerance’s value is invalid;
-    ///             ``Template/Error/incompatibleOptions`` if a tolerance doesn’t suit the work’s
-    ///             time basis or pitch notation; otherwise, ``Template/Error/partNotFound(_:)``
-    ///             if no part exists at `index`.
+    ///             ``Template/Error/invalidTolerance`` if a tolerance’s value or the rest split’s
+    ///             is invalid; ``Template/Error/incompatibleOptions`` if a tolerance or the rest
+    ///             split doesn’t suit the work’s time basis or pitch notation; otherwise,
+    ///             ``Template/Error/partNotFound(_:)`` if no part exists at `index`.
     public static func analyzeNoteEvents(in work: Work,
                                          at index: Int,
                                          options: AnalysisOptions) throws(Error) -> Self {
@@ -71,6 +70,77 @@ extension Template {
                                     index: index).map { [$0] } ?? [],
                     sourceContext: SourceContext(content: work.content,
                                                  index: index))
+    }
+
+    /// Returns how many sequences analyzing a specific part of a work with the given recipe would
+    /// learn from, without analyzing it.
+    ///
+    /// The count is of every variant that can be made, each split at its long rests (see
+    /// ``AnalysisOptions/restSplit``), before any variant is merged because its states repeat an
+    /// earlier one’s — so it is at least the ``AnalysisSummary/sequenceCount`` an analysis gives.
+    /// Nothing is trained, so it is much cheaper than analyzing.
+    ///
+    /// - Parameter work:       The ``Work`` containing the part.
+    /// - Parameter index:      The zero-based index of the part.
+    /// - Parameter options:    The analysis recipe.
+    ///
+    /// - Returns:  The number of sequences.
+    ///
+    /// - Throws:   The same errors as ``analyzeNoteEvents(in:at:options:)``.
+    public static func sequenceCount(in work: Work,
+                                     at index: Int,
+                                     options: AnalysisOptions) throws(Error) -> Int {
+        try options.validate()
+
+        switch work.content {
+        case let .absoluteBeat(parts, _):
+            return try _splitForms(of: parts,
+                                   at: index,
+                                   options: options,
+                                   aligning: _beatAligning(options.timing),
+                                   splitting: _beatSplitting(options.restSplit),
+                                   transposing: _ratioTransposing).forms.reduce(0) { $0 + $1.count }
+
+        case let .absoluteWall(parts):
+            return try _splitForms(of: parts,
+                                   at: index,
+                                   options: options,
+                                   aligning: _wallAligning(options.timing),
+                                   splitting: _wallSplitting(options.restSplit),
+                                   transposing: _ratioTransposing).forms.reduce(0) { $0 + $1.count }
+
+        case let .keyboardBeat(parts, _):
+            return try _splitForms(of: parts,
+                                   at: index,
+                                   options: options,
+                                   aligning: _beatAligning(options.timing),
+                                   splitting: _beatSplitting(options.restSplit),
+                                   transposing: _noteDistanceTransposing).forms.reduce(0) { $0 + $1.count }
+
+        case let .keyboardWall(parts):
+            return try _splitForms(of: parts,
+                                   at: index,
+                                   options: options,
+                                   aligning: _wallAligning(options.timing),
+                                   splitting: _wallSplitting(options.restSplit),
+                                   transposing: _noteDistanceTransposing).forms.reduce(0) { $0 + $1.count }
+
+        case let .standardBeat(parts, _):
+            return try _splitForms(of: parts,
+                                   at: index,
+                                   options: options,
+                                   aligning: _beatAligning(options.timing),
+                                   splitting: _beatSplitting(options.restSplit),
+                                   transposing: _intervalTransposing).forms.reduce(0) { $0 + $1.count }
+
+        case let .standardWall(parts):
+            return try _splitForms(of: parts,
+                                   at: index,
+                                   options: options,
+                                   aligning: _wallAligning(options.timing),
+                                   splitting: _wallSplitting(options.restSplit),
+                                   transposing: _intervalTransposing).forms.reduce(0) { $0 + $1.count }
+        }
     }
 
     // MARK: Public Instance Methods
@@ -121,98 +191,10 @@ extension Template {
                         sourceContext: sourceContext)
     }
 
-    // MARK: Internal Type Methods
-
-    internal static func beatGrouping(_ durations: AnalysisOptions.DurationTolerance?) throws(Error)
-        -> ([BeatDuration]) -> [BeatDuration: BeatDuration] {
-        switch durations {
-        case let .proportional(fraction):
-            return { _proportionalGroups(of: $0, within: fraction) }
-
-        case .step:
-            throw .incompatibleOptions
-
-        case nil:
-            return { _ in [:] }
-        }
-    }
-
-    internal static func exactRounding<P>(_ pitches: AnalysisOptions.PitchTolerance?) throws(Error) -> (P) -> P {
-        guard pitches == nil
-        else { throw .incompatibleOptions }
-
-        return { $0 }
-    }
-
-    //
-    // Each frequency moves to the nearest whole number of `cents` steps from A4 = 440 Hz.
-    //
-    internal static func frequencyRounding(_ pitches: AnalysisOptions.PitchTolerance?) -> (Frequency) -> Frequency {
-        switch pitches {
-        case let .cents(cents):
-            { frequency in
-                let steps = (1_200 * log2(frequency.doubleValue / 440) / cents).rounded()
-                let rounded = 440 * pow(2, steps * cents / 1_200)
-
-                return Frequency(numberValue: Number(floatLiteral: rounded)) ?? frequency
-            }
-
-        case nil:
-            { $0 }
-        }
-    }
-
-    //
-    // Pitches that round to the same pitch become one; the first, in the event's order, keeps
-    // its ties.
-    //
-    internal static func roundedPitches<T, P>(_ tiedPitches: [NoteEvent<T, P>.TiedPitch],
-                                              with rounding: (P) -> P) -> [NoteEvent<T, P>.TiedPitch] {
-        var seen: Set<P> = []
-
-        return tiedPitches.compactMap { tiedPitch in
-            let pitch = rounding(tiedPitch.pitch)
-
-            guard seen.insert(pitch).inserted
-            else { return nil }
-
-            return NoteEvent<T, P>.TiedPitch(pitch: pitch,
-                                             startsTie: tiedPitch.startsTie,
-                                             endsTie: tiedPitch.endsTie)
-        }
-    }
-
-    //
-    // A step rounds each duration to the nearest whole number of steps, but never below one.
-    //
-    internal static func wallGrouping(_ durations: AnalysisOptions.DurationTolerance?) -> ([WallDuration]) -> [WallDuration: WallDuration] {
-        switch durations {
-        case let .proportional(fraction):
-            { _proportionalGroups(of: $0, within: fraction) }
-
-        case let .step(step):
-            { durations in
-                var representatives: [WallDuration: WallDuration] = [:]
-
-                for duration in Set(durations) {
-                    let steps = max(1, (duration.uintValue + step.uintValue / 2) / step.uintValue)
-
-                    representatives[duration] = WallDuration(uintValue: steps * step.uintValue) ?? duration
-                }
-
-                return representatives
-            }
-
-        case nil:
-            { _ in [:] }
-        }
-    }
-
     // MARK: Private Type Aliases
 
-    private typealias DurationTolerance = AnalysisOptions.DurationTolerance
-    private typealias PitchTolerance    = AnalysisOptions.PitchTolerance
-    private typealias TimingTolerance   = AnalysisOptions.TimingTolerance
+    private typealias SplitForms<T: TimeProtocol, P: PitchProtocol> = (forms: [[[NoteEvent<T, P>]]], skipped: [Variant])
+    private typealias TimingTolerance = AnalysisOptions.TimingTolerance
     private typealias Transposing<I: IntervalProtocol> = (AnalysisOptions.Transposition) -> DirectedInterval<I>?
 
     // MARK: Private Type Methods
@@ -226,6 +208,7 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _beatAligning(options.timing),
+                                                          splitting: _beatSplitting(options.restSplit),
                                                           grouping: beatGrouping(options.durations),
                                                           rounding: frequencyRounding(options.pitches),
                                                           transposing: _ratioTransposing)
@@ -237,6 +220,7 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _wallAligning(options.timing),
+                                                          splitting: _wallSplitting(options.restSplit),
                                                           grouping: wallGrouping(options.durations),
                                                           rounding: frequencyRounding(options.pitches),
                                                           transposing: _ratioTransposing)
@@ -248,6 +232,7 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _beatAligning(options.timing),
+                                                          splitting: _beatSplitting(options.restSplit),
                                                           grouping: beatGrouping(options.durations),
                                                           rounding: exactRounding(options.pitches),
                                                           transposing: _noteDistanceTransposing)
@@ -259,6 +244,7 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _wallAligning(options.timing),
+                                                          splitting: _wallSplitting(options.restSplit),
                                                           grouping: wallGrouping(options.durations),
                                                           rounding: exactRounding(options.pitches),
                                                           transposing: _noteDistanceTransposing)
@@ -270,6 +256,7 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _beatAligning(options.timing),
+                                                          splitting: _beatSplitting(options.restSplit),
                                                           grouping: beatGrouping(options.durations),
                                                           rounding: exactRounding(options.pitches),
                                                           transposing: _intervalTransposing)
@@ -281,6 +268,7 @@ extension Template {
                                                           at: index,
                                                           options: options,
                                                           aligning: _wallAligning(options.timing),
+                                                          splitting: _wallSplitting(options.restSplit),
                                                           grouping: wallGrouping(options.durations),
                                                           rounding: exactRounding(options.pitches),
                                                           transposing: _intervalTransposing)
@@ -297,9 +285,10 @@ extension Template {
     // tolerance grouped them — the members of each; the chain learns states of the
     // representatives.
     //
-    // Each variant is made from the aligned note table and sliced into note events of its own.
-    // Durations are grouped over the events of every variant together, so that a group is the
-    // same in each.  A variant whose states repeat an earlier one's is merged — not trained, and
+    // Each variant is made from the aligned note table and sliced into note events of its own,
+    // then split into sequences at each rest that `splitting` says is long enough — the rest
+    // itself dropped.  Durations are grouped over the events of every variant together, so that a
+    // group is the same in each.  A variant whose states repeat an earlier one's is merged — not trained, and
     // not counted in the vocabulary — and one that can't be made is skipped.  The original is
     // always first, so the vocabulary's first event is the original's.
     //
@@ -307,15 +296,18 @@ extension Template {
                                                  at index: Int,
                                                  options: AnalysisOptions,
                                                  aligning: (NoteTable<T, P>) -> NoteTable<T, P>,
+                                                 splitting: (T.DurationType) -> Bool,
                                                  grouping: ([T.DurationType]) -> [T.DurationType: T.DurationType],
                                                  rounding: (P) -> P,
                                                  transposing: Transposing<P.IntervalType>) throws(Error) -> (Model<T, P>, AnalysisSummary)
         where T.DurationType: TemplateDuration {
-        let (forms, skippedVariants) = try _forms(of: aligning(_noteTable(in: parts,
-                                                                          at: index)),
-                                                  variants: options.variants,
-                                                  transposing: transposing)
-        let representatives = grouping(forms.flatMap { $0.map(\.duration) })
+        let (splitForms, skippedVariants) = try _splitForms(of: parts,
+                                                            at: index,
+                                                            options: options,
+                                                            aligning: aligning,
+                                                            splitting: splitting,
+                                                            transposing: transposing)
+        let representatives = grouping(splitForms.flatMap { $0.flatMap { $0.map(\.duration) } })
 
         var durationMembers: [T.DurationType: [T.DurationType: Int]] = [:]
         var durations: [T.DurationType: Int] = [:]
@@ -323,33 +315,40 @@ extension Template {
         var mergedCount = 0
         var pitchMembers: [P: [P: Int]] = [:]
         var pitches: [P: Int] = [:]
-        var seen: Set<[State<T, P>]> = []
+        var seen: Set<[[State<T, P>]]> = []
         var sequences: [[State<T, P>]] = []
 
-        for noteEvents in forms {
-            let tolerated = noteEvents.map {
-                NoteEvent<T, P>(tiedPitches: roundedPitches($0.tiedPitches,
-                                                            with: rounding),
-                                duration: representatives[$0.duration] ?? $0.duration)
+        for form in splitForms {
+            let tolerated = form.map { noteEvents in
+                noteEvents.map {
+                    NoteEvent<T, P>(tiedPitches: roundedPitches($0.tiedPitches,
+                                                                with: rounding),
+                                    duration: representatives[$0.duration] ?? $0.duration)
+                }
             }
 
-            var builder = StateBuilder<T, P>(recipe: options.states)
+            //
+            // Each sequence starts afresh, as a separate part would.
+            //
+            let formStates = tolerated.map { noteEvents in
+                var builder = StateBuilder<T, P>(recipe: options.states)
 
-            let states = tolerated.map { builder.state(for: $0) }
+                return noteEvents.map { builder.state(for: $0) }
+            }
 
-            guard seen.insert(states).inserted
+            guard seen.insert(formStates).inserted
             else {
                 mergedCount += 1
                 continue
             }
 
-            sequences.append(states)
+            sequences.append(contentsOf: formStates)
 
             if first == nil {
-                first = tolerated.first
+                first = tolerated.first?.first
             }
 
-            for (noteEvent, toleratedEvent) in zip(noteEvents, tolerated) {
+            for (noteEvent, toleratedEvent) in zip(form.joined(), tolerated.joined()) {
                 if options.durations != nil {
                     durationMembers[toleratedEvent.duration, default: [:]][noteEvent.duration, default: 0] += 1
                 }
@@ -400,6 +399,19 @@ extension Template {
 
         case nil:
             return { $0 }
+        }
+    }
+
+    private static func _beatSplitting(_ restSplit: AnalysisOptions.RestSplit?) throws(Error) -> (BeatDuration) -> Bool {
+        switch restSplit {
+        case let .beat(minimum):
+            return { $0 >= minimum }
+
+        case .wall:
+            throw .incompatibleOptions
+
+        case nil:
+            return { _ in false }
         }
     }
 
@@ -578,54 +590,41 @@ extension Template {
         return parts[index].noteTable
     }
 
-    //
-    // Groups the distinct durations, shortest first, so that the longest in each group is at most
-    // `1 + fraction` times the shortest, and maps each to its group's most common duration — the
-    // shortest of those, on a tie.
-    //
-    private static func _proportionalGroups<D: DurationProtocol>(of durations: [D],
-                                                                 within fraction: Double) -> [D: D] {
-        var counts: [D: Int] = [:]
-
-        for duration in durations {
-            counts[duration, default: 0] += 1
-        }
-
-        let ratio = Number(floatLiteral: 1 + fraction)
-        var groups: [[D]] = []
-
-        for duration in counts.keys.sorted() {
-            if let shortest = groups.last?.first,
-               let limit = shortest.multiplied(by: ratio),
-               duration <= limit {
-                groups[groups.count - 1].append(duration)
-            } else {
-                groups.append([duration])
-            }
-        }
-
-        var representatives: [D: D] = [:]
-
-        for group in groups {
-            var best = group[0]
-
-            for duration in group where counts[duration, default: 0] > counts[best, default: 0] {
-                best = duration
-            }
-
-            for duration in group {
-                representatives[duration] = best
-            }
-        }
-
-        return representatives
-    }
-
     private static func _ratioTransposing(_ transposition: AnalysisOptions.Transposition) -> DirectedInterval<Ratio>? {
         guard case let .ratio(directedInterval) = transposition
         else { return nil }
 
         return directedInterval
+    }
+
+    //
+    // `noteEvents` split into sequences at each rest that `isLong` says is long enough, the rest
+    // dropped.  A sequence is never empty, so there are none for a part of nothing but long
+    // rests.
+    //
+    private static func _split<T, P>(_ noteEvents: [NoteEvent<T, P>],
+                                     at isLong: (T.DurationType) -> Bool) -> [[NoteEvent<T, P>]] {
+        noteEvents
+            .split { $0.tiedPitches.isEmpty && isLong($0.duration) }
+            .map(Array.init)
+    }
+
+    //
+    // Each variant that can be made, as its sequences — split at its long rests, which are
+    // dropped — and the variants that can't.
+    //
+    private static func _splitForms<T, P>(of parts: [Part<T, P>],
+                                          at index: Int,
+                                          options: AnalysisOptions,
+                                          aligning: (NoteTable<T, P>) -> NoteTable<T, P>,
+                                          splitting: (T.DurationType) -> Bool,
+                                          transposing: Transposing<P.IntervalType>) throws(Error) -> SplitForms<T, P> {
+        let (forms, skippedVariants) = try _forms(of: aligning(_noteTable(in: parts,
+                                                                          at: index)),
+                                                  variants: options.variants,
+                                                  transposing: transposing)
+
+        return (forms.map { _split($0, at: splitting) }, skippedVariants)
     }
 
     private static func _wallAligning<P>(_ timing: TimingTolerance?) throws(Error) -> (NoteTable<WallTime, P>) -> NoteTable<WallTime, P> {
@@ -638,6 +637,19 @@ extension Template {
 
         case nil:
             return { $0 }
+        }
+    }
+
+    private static func _wallSplitting(_ restSplit: AnalysisOptions.RestSplit?) throws(Error) -> (WallDuration) -> Bool {
+        switch restSplit {
+        case .beat:
+            throw .incompatibleOptions
+
+        case let .wall(minimum):
+            return { $0 >= minimum }
+
+        case nil:
+            return { _ in false }
         }
     }
 }

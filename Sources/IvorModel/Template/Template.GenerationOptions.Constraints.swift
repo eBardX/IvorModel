@@ -21,13 +21,17 @@ extension Template.GenerationOptions {
         /// - Parameter maximumDuration:    The longest duration allowed, or `nil` for any
         ///                                 duration. Defaults to `nil`.
         /// - Parameter allowsRests:        Whether rests are allowed. Defaults to `true`.
+        /// - Parameter maximumRestDuration: The longest rest allowed, or `nil` for any rest
+        ///                                 ``maximumDuration`` allows. Defaults to `nil`.
         public init(pitchRange: ClosedRange<PitchType>? = nil,
                     allowedPitches: Set<PitchType>? = nil,
                     maximumDuration: DurationType? = nil,
-                    allowsRests: Bool = true) {
+                    allowsRests: Bool = true,
+                    maximumRestDuration: DurationType? = nil) {
             self.allowedPitches = allowedPitches
             self.allowsRests = allowsRests
             self.maximumDuration = maximumDuration
+            self.maximumRestDuration = maximumRestDuration
             self.pitchRange = pitchRange
         }
 
@@ -42,6 +46,12 @@ extension Template.GenerationOptions {
         /// The longest duration allowed, or `nil` for any duration.
         public var maximumDuration: DurationType?
 
+        /// The longest rest allowed, or `nil` for any rest ``maximumDuration`` allows.
+        ///
+        /// Unlike ``maximumDuration``, this leaves sounding note events alone, so it can rule out
+        /// a template’s long rests and keep its long notes.
+        public var maximumRestDuration: DurationType?
+
         /// The range every pitch must lie in, or `nil` for any range.
         public var pitchRange: ClosedRange<PitchType>?
     }
@@ -55,7 +65,11 @@ extension Template.GenerationOptions.Constraints {
 
     /// A Boolean value indicating whether these constraints allow every note event.
     public var isEmpty: Bool {
-        allowedPitches == nil && allowsRests && maximumDuration == nil && pitchRange == nil
+        allowedPitches == nil
+            && allowsRests
+            && maximumDuration == nil
+            && maximumRestDuration == nil
+            && pitchRange == nil
     }
 
     // MARK: Public Instance Methods
@@ -80,6 +94,10 @@ extension Template.GenerationOptions.Constraints {
     internal func allowsDuration(_ duration: TimeType.DurationType,
                                  isRest: Bool) -> Bool {
         if isRest, !allowsRests {
+            return false
+        }
+
+        if isRest, let maximumRestDuration, duration > maximumRestDuration {
             return false
         }
 
