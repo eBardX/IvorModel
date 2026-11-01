@@ -12,7 +12,8 @@ extension Template {
     ///
     /// Generating from the same template with the same recipe and seed always gives the same
     /// notes. The new work records the recipe and seed in its ``Work/generation``. It has one
-    /// part; a beat-time work gets a default tempo map.
+    /// part, which starts out in this template’s ``sourceContext``: its dynamic level, instrument
+    /// and pan position, and — in beat time — its tempo.
     ///
     /// - Parameter name:       The name to assign to the generated work.
     /// - Parameter options:    The recipe to generate with. Its pitch notation and time basis must
@@ -64,6 +65,7 @@ extension Template {
                                                                                 among: others).map(\.content),
                                                     options: options,
                                                     analysisOptions: analysisOptions,
+                                                    sourceContext: sourceContext,
                                                     seed: seed),
                  generation: Work.Generation(templateID: templateID,
                                              templateName: self.name,
@@ -482,6 +484,7 @@ extension Template {
                                             analysisOptions: AnalysisOptions,
                                             grouping: @escaping ([T.DurationType]) -> [T.DurationType: T.DurationType],
                                             rounding: @escaping (P) -> P,
+                                            sourceContext: SourceContext,
                                             seed: UInt64) throws -> Part<T, P> where T.DurationType: TemplateDuration {
         let partName = switch options.length {
         case let .duration(duration):
@@ -491,24 +494,26 @@ extension Template {
             "Generated, order: \(options.order), limit: \(count)"
         }
 
-        return try Part(name: partName,
-                        noteTable: _generateNoteTable(using: model,
-                                                      mixingWith: others,
-                                                      options: options,
-                                                      learner: PhraseLearner(analysisOptions: analysisOptions,
-                                                                             vocabulary: model.vocabulary,
-                                                                             grouping: grouping,
-                                                                             rounding: rounding),
-                                                      seed: seed))
+        return try sourceContext.part(name: partName,
+                                      noteTable: _generateNoteTable(using: model,
+                                                                    mixingWith: others,
+                                                                    options: options,
+                                                                    learner: PhraseLearner(analysisOptions: analysisOptions,
+                                                                                           vocabulary: model.vocabulary,
+                                                                                           grouping: grouping,
+                                                                                           rounding: rounding),
+                                                                    seed: seed))
     }
 
     //
-    // The tolerances are the template's own, for a phrase to continue (see `PhraseLearner`).
+    // The tolerances are the template's own, for a phrase to continue (see `PhraseLearner`); the
+    // part and, in beat time, the tempo map start out in `sourceContext`.
     //
     private static func _generateWorkContent(from content: Template.Content,
                                              mixingWith others: [Template.Content],
                                              options: AnyGenerationOptions,
                                              analysisOptions: AnalysisOptions,
+                                             sourceContext: SourceContext,
                                              seed: UInt64) throws -> Work.Content {
         let durations = analysisOptions.durations
         let pitches = analysisOptions.pitches
@@ -521,8 +526,9 @@ extension Template {
                                              analysisOptions: analysisOptions,
                                              grouping: beatGrouping(durations),
                                              rounding: frequencyRounding(pitches),
+                                             sourceContext: sourceContext,
                                              seed: seed)],
-                              TempoMap())
+                              sourceContext.tempoMap())
 
         case let (.absoluteWall(model), .absoluteWall(options)):
             try .absoluteWall([_generatePart(using: model,
@@ -531,6 +537,7 @@ extension Template {
                                              analysisOptions: analysisOptions,
                                              grouping: wallGrouping(durations),
                                              rounding: frequencyRounding(pitches),
+                                             sourceContext: sourceContext,
                                              seed: seed)])
 
         case let (.keyboardBeat(model), .keyboardBeat(options)):
@@ -540,8 +547,9 @@ extension Template {
                                              analysisOptions: analysisOptions,
                                              grouping: beatGrouping(durations),
                                              rounding: exactRounding(pitches),
+                                             sourceContext: sourceContext,
                                              seed: seed)],
-                              TempoMap())
+                              sourceContext.tempoMap())
 
         case let (.keyboardWall(model), .keyboardWall(options)):
             try .keyboardWall([_generatePart(using: model,
@@ -550,6 +558,7 @@ extension Template {
                                              analysisOptions: analysisOptions,
                                              grouping: wallGrouping(durations),
                                              rounding: exactRounding(pitches),
+                                             sourceContext: sourceContext,
                                              seed: seed)])
 
         case let (.standardBeat(model), .standardBeat(options)):
@@ -559,8 +568,9 @@ extension Template {
                                              analysisOptions: analysisOptions,
                                              grouping: beatGrouping(durations),
                                              rounding: exactRounding(pitches),
+                                             sourceContext: sourceContext,
                                              seed: seed)],
-                              TempoMap())
+                              sourceContext.tempoMap())
 
         case let (.standardWall(model), .standardWall(options)):
             try .standardWall([_generatePart(using: model,
@@ -569,6 +579,7 @@ extension Template {
                                              analysisOptions: analysisOptions,
                                              grouping: wallGrouping(durations),
                                              rounding: exactRounding(pitches),
+                                             sourceContext: sourceContext,
                                              seed: seed)])
 
         default:

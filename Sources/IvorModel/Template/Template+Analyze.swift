@@ -68,7 +68,9 @@ extension Template {
                     analysisOptions: options,
                     analysisSummary: summary,
                     sources: Source(work: work,
-                                    index: index).map { [$0] } ?? [])
+                                    index: index).map { [$0] } ?? [],
+                    sourceContext: SourceContext(content: work.content,
+                                                 index: index))
     }
 
     // MARK: Public Instance Methods
@@ -81,8 +83,9 @@ extension Template {
     /// adds sequences, and never joins them. This template is unchanged, and may be locked.
     ///
     /// The new template’s vocabulary and ``analysisSummary`` add the two together, and its
-    /// ``sources`` are this template’s with the part appended. Its vocabulary’s first event is
-    /// this template’s, so generation still starts where this template’s source did.
+    /// ``sources`` are this template’s with the part appended. Its vocabulary’s first event and its
+    /// ``sourceContext`` are this template’s, so generation still starts where, and as, this
+    /// template’s source did.
     ///
     /// A proportional duration tolerance groups each analysis’s durations on their own, so the
     /// same duration can be grouped differently in each.
@@ -114,7 +117,8 @@ extension Template {
                         analysisOptions: analysisOptions,
                         analysisSummary: analysisSummary.adding(summary),
                         sources: sources + (Source(work: work,
-                                                   index: index).map { [$0] } ?? []))
+                                                   index: index).map { [$0] } ?? []),
+                        sourceContext: sourceContext)
     }
 
     // MARK: Internal Type Methods

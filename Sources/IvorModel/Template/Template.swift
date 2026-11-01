@@ -34,14 +34,18 @@ public struct Template {
     /// - Parameter analysisSummary:    What the analysis made of the recipe’s variants. Defaults
     ///                                 to one sequence, with nothing merged or skipped.
     /// - Parameter sources:            The parts the template learned from. Defaults to none.
+    /// - Parameter sourceContext:      The setting the first of `sources` started in. Defaults to
+    ///                                 the setting of empty maps.
     public init(name: String,
                 content: Content,
                 analysisOptions: AnalysisOptions,
                 analysisSummary: AnalysisSummary = AnalysisSummary(),
-                sources: [Source] = []) {
+                sources: [Source] = [],
+                sourceContext: SourceContext = SourceContext()) {
         self.analysisOptions = analysisOptions
         self.analysisSummary = analysisSummary
         self.content = content
+        self.sourceContext = sourceContext
         self.sources = sources
         self.isLocked = false
         self.name = name.normalizingWhitespace()
@@ -59,6 +63,10 @@ public struct Template {
 
     /// The analysis data stored in this template.
     public let content: Content
+
+    /// The setting this template’s first source started in, which a generated work starts in
+    /// too.
+    public let sourceContext: SourceContext
 
     /// The parts this template learned from, in the order they were added.
     public let sources: [Source]
@@ -261,6 +269,9 @@ extension Template: Codable {
         self.name = try container.decode(String.self,
                                          forKey: .name).normalizingWhitespace()
 
+        self.sourceContext = try container.decode(SourceContext.self,
+                                                  forKey: .sourceContext)
+
         self.sources = try container.decode([Source].self,
                                             forKey: .sources)
 
@@ -302,6 +313,9 @@ extension Template: Codable {
         try container.encode(sources,
                              forKey: .sources)
 
+        try container.encode(sourceContext,
+                             forKey: .sourceContext)
+
         try container.encode(content,
                              forKey: .content)
     }
@@ -314,6 +328,7 @@ extension Template: Codable {
         case content
         case isLocked
         case name
+        case sourceContext
         case sources
         case templateID
         case version
