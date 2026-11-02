@@ -23,10 +23,10 @@ extension Work {
     ///                             converting this work’s pitch notation to it is supported.
     /// - Parameter context:        The conversion dependencies. Defaults to `.default`
     ///                             (12-EDO, A4 = 440 Hz, Meredith pitch speller).
-    /// - Parameter dropsOutOfRangeNotes:   Whether to leave out of the new work any note whose
-    ///                                     start or end pitch has no counterpart in
-    ///                                     `pitchNotation`, rather than throwing. Defaults to
-    ///                                     `false`.
+    /// - Parameter dropsUnconvertibleNotes:    Whether to leave out of the new work any note
+    ///                                         whose start or end pitch has no counterpart in
+    ///                                         `pitchNotation`, rather than throwing. Defaults to
+    ///                                         `false`.
     ///
     /// - Returns:  The converted work, or `nil` if this work already has `timeBasis` and
     ///             `pitchNotation`.
@@ -35,15 +35,17 @@ extension Work {
     ///             pitch notation to `pitchNotation` is not supported;
     ///             ``Work/Error/unsupportedStandardConversion`` if the context’s tuning system
     ///             does not support standard pitch notation and the conversion requires it;
-    ///             ``Work/Error/emptyKeyboardMap`` if the context’s keyboard map does not map any
-    ///             MIDI note number and the conversion requires it;
-    ///             ``Work/Error/pitchOutOfRange(partID:)`` if a note’s pitch has no counterpart in
-    ///             `pitchNotation` and `dropsOutOfRangeNotes` is `false`; other ``Work/Error`` cases for other missing context
-    ///             dependencies.
+    ///             ``Work/Error/invalidKeyboardLayout(_:)`` if the context’s keyboard layout can’t
+    ///             be used for the conversion or is invalid in the context’s tuning system;
+    ///             ``Work/Error/missingPitchSpeller`` if the conversion spells pitches and the
+    ///             context has neither a pitch speller nor a pitch-class keyboard layout;
+    ///             ``Work/Error/unconvertiblePitch(partID:)`` if a note’s pitch has no counterpart
+    ///             in `pitchNotation` and `dropsUnconvertibleNotes` is `false`; other
+    ///             ``Work/Error`` cases for other missing context dependencies.
     public func convert(timeBasis: TimeBasis,
                         pitchNotation: PitchNotation,
                         context: ConvertContext = .default,
-                        dropsOutOfRangeNotes: Bool = false) throws(Error) -> Work? {
+                        dropsUnconvertibleNotes: Bool = false) throws(Error) -> Work? {
         guard self.timeBasis != timeBasis
               || self.pitchNotation != pitchNotation
         else { return nil }
@@ -65,7 +67,7 @@ extension Work {
                 newContent = try Self._convertPitchNotation(of: newContent,
                                                             to: pitchNotation,
                                                             with: context,
-                                                            dropsOutOfRangeNotes: dropsOutOfRangeNotes)
+                                                            dropsUnconvertibleNotes: dropsUnconvertibleNotes)
             } catch let error as Error {
                 throw error
             } catch let error as TuningError {
@@ -171,15 +173,43 @@ extension Work {
     private static func _convertPitches<TimeType: TimeProtocol,
                                         FromPitchType: PitchProtocol,
                                         ToPitchType: PitchProtocol>(in noteTable: NoteTable<TimeType, FromPitchType>,
-                                                                    using convert: (FromPitchType) -> ToPitchType?,
-                                                                    dropsOutOfRangeNotes: Bool) -> NoteTable<TimeType, ToPitchType>? {
+                                                                    using convert: ([FromPitchType]) -> [ToPitchType?],
+                                                                    dropsUnconvertibleNotes: Bool) -> NoteTable<TimeType, ToPitchType>? {
+        let oldNotes = noteTable.notes
+
+        // A context-aware pitch speller needs the part’s pitches in performance order: by onset,
+        // then from low to high within a chord. A note with portamento contributes its end pitch
+        // right after its start pitch.
+        let order = oldNotes.indices.sorted {
+            (oldNotes[$0].attack, oldNotes[$0].startPitch) < (oldNotes[$1].attack, oldNotes[$1].startPitch)
+        }
+
+        var pitches: [FromPitchType] = []
+        var positions = Array(repeating: (start: 0, end: 0),
+                              count: oldNotes.count)
+
+        for index in order {
+            let note = oldNotes[index]
+
+            positions[index].start = pitches.count
+
+            pitches.append(note.startPitch)
+
+            if note.endPitch != note.startPitch {
+                pitches.append(note.endPitch)
+            }
+
+            positions[index].end = pitches.count - 1
+        }
+
+        let convertedPitches = convert(pitches)
         var notes: [NoteTable<TimeType, ToPitchType>.StoredNote] = []
 
-        for note in noteTable.notes {
-            guard let startPitch = convert(note.startPitch),
-                  let endPitch = convert(note.endPitch)
+        for (note, position) in zip(oldNotes, positions) {
+            guard let startPitch = convertedPitches[position.start],
+                  let endPitch = convertedPitches[position.end]
             else {
-                if dropsOutOfRangeNotes { continue }
+                if dropsUnconvertibleNotes { continue }
 
                 return nil
             }
@@ -197,12 +227,12 @@ extension Work {
     private static func _convertPitches<TimeType: TimeProtocol,
                                         FromPitchType: PitchProtocol,
                                         ToPitchType: PitchProtocol>(in part: Part<TimeType, FromPitchType>,
-                                                                    using convert: (FromPitchType) -> ToPitchType?,
-                                                                    dropsOutOfRangeNotes: Bool) throws -> Part<TimeType, ToPitchType> {
+                                                                    using convert: ([FromPitchType]) -> [ToPitchType?],
+                                                                    dropsUnconvertibleNotes: Bool) throws -> Part<TimeType, ToPitchType> {
         guard let noteTable = _convertPitches(in: part.noteTable,
                                               using: convert,
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes)
-        else { throw Error.pitchOutOfRange(partID: part.partID) }
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes)
+        else { throw Error.unconvertiblePitch(partID: part.partID) }
 
         return Part(partID: part.partID,
                     name: part.name,
@@ -215,97 +245,97 @@ extension Work {
     private static func _convertPitches<TimeType: TimeProtocol,
                                         FromPitchType: PitchProtocol,
                                         ToPitchType: PitchProtocol>(in parts: [Part<TimeType, FromPitchType>],
-                                                                    using convert: (FromPitchType) -> ToPitchType?,
-                                                                    dropsOutOfRangeNotes: Bool) throws -> [Part<TimeType, ToPitchType>] {
+                                                                    using convert: ([FromPitchType]) -> [ToPitchType?],
+                                                                    dropsUnconvertibleNotes: Bool) throws -> [Part<TimeType, ToPitchType>] {
         try parts.map {
             try _convertPitches(in: $0,
                                 using: convert,
-                                dropsOutOfRangeNotes: dropsOutOfRangeNotes)
+                                dropsUnconvertibleNotes: dropsUnconvertibleNotes)
         }
     }
 
     private static func _convertPitchNotation(of content: Content,
                                               to targetNotation: PitchNotation,
                                               with context: ConvertContext,
-                                              dropsOutOfRangeNotes: Bool) throws -> Content {
+                                              dropsUnconvertibleNotes: Bool) throws -> Content {
         switch (content, targetNotation) {
         case let (.absoluteBeat(parts, tempoMap), .keyboard):
             // Absolute/Beat → Keyboard/Beat
             try .keyboardBeat(_convertPitches(in: parts,
                                               using: _makeAbsoluteToKeyboardPitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes),
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap)
 
         case let (.absoluteBeat(parts, tempoMap), .standard):
             // Absolute/Beat → Standard/Beat
             try .standardBeat(_convertPitches(in: parts,
                                               using: _makeAbsoluteToStandardPitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes),
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap)
 
         case let (.absoluteWall(parts), .keyboard):
             // Absolute/Wall → Keyboard/Wall
             try .keyboardWall(_convertPitches(in: parts,
                                               using: _makeAbsoluteToKeyboardPitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes))
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes))
 
         case let (.absoluteWall(parts), .standard):
             // Absolute/Wall → Standard/Wall
             try .standardWall(_convertPitches(in: parts,
                                               using: _makeAbsoluteToStandardPitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes))
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes))
 
         case let (.keyboardBeat(parts, tempoMap), .absolute):
             // Keyboard/Beat → Absolute/Beat
             try .absoluteBeat(_convertPitches(in: parts,
                                               using: _makeKeyboardToAbsolutePitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes),
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap)
 
         case let (.keyboardBeat(parts, tempoMap), .standard):
             // Keyboard/Beat → Standard/Beat
             try .standardBeat(_convertPitches(in: parts,
                                               using: _makeKeyboardToStandardPitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes),
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap)
 
         case let (.keyboardWall(parts), .absolute):
             // Keyboard/Wall → Absolute/Wall
             try .absoluteWall(_convertPitches(in: parts,
                                               using: _makeKeyboardToAbsolutePitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes))
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes))
 
         case let (.keyboardWall(parts), .standard):
             // Keyboard/Wall → Standard/Wall
             try .standardWall(_convertPitches(in: parts,
                                               using: _makeKeyboardToStandardPitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes))
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes))
 
         case let (.standardBeat(parts, tempoMap), .absolute):
             // Standard/Beat → Absolute/Beat
             try .absoluteBeat(_convertPitches(in: parts,
                                               using: _makeStandardToAbsolutePitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes),
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap)
 
         case let (.standardBeat(parts, tempoMap), .keyboard):
             // Standard/Beat → Keyboard/Beat
             try .keyboardBeat(_convertPitches(in: parts,
                                               using: _makeStandardToKeyboardPitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes),
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap)
 
         case let (.standardWall(parts), .absolute):
             // Standard/Wall → Absolute/Wall
             try .absoluteWall(_convertPitches(in: parts,
                                               using: _makeStandardToAbsolutePitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes))
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes))
 
         case let (.standardWall(parts), .keyboard):
             // Standard/Wall → Keyboard/Wall
             try .keyboardWall(_convertPitches(in: parts,
                                               using: _makeStandardToKeyboardPitchConverter(with: context),
-                                              dropsOutOfRangeNotes: dropsOutOfRangeNotes))
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes))
 
         default:
             content
@@ -436,24 +466,108 @@ extension Work {
                                 entries: entries)
     }
 
-    private static func _makeAbsoluteToKeyboardPitchConverter(with context: ConvertContext) throws -> (Frequency) -> NoteNumber? {
-        guard let keyboardMap = context.keyboardMap
-        else { throw Error.missingKeyboardMap }
+    private static func _isRaw(_ keyboardLayout: KeyboardLayout) -> Bool {
+        switch keyboardLayout.definition {
+        case .degrees,
+             .pitchClasses:
+            false
 
-        let pitchConverter = try AbsoluteToKeyboardPitchConverter(keyboardMap: keyboardMap)
+        case .frequencies,
+             .ratios:
+            true
+        }
+    }
+
+    private static func _keyboardLayout(of context: ConvertContext) throws -> KeyboardLayout {
+        guard let keyboardLayout = context.keyboardLayout
+        else { throw Error.missingKeyboardLayout }
+
+        return keyboardLayout
+    }
+
+    private static func _makeAbsoluteToKeyboardPitchConverter(with context: ConvertContext) throws -> ([Frequency]) -> [NoteNumber?] {
+        let keyboardLayout = try _keyboardLayout(of: context)
+
+        let pitchConverter = if _isRaw(keyboardLayout) {
+            try AbsoluteToKeyboardPitchConverter(keyboardLayout: keyboardLayout,
+                                                 keyMatching: context.keyMatching)
+        } else {
+            try AbsoluteToKeyboardPitchConverter(keyboardLayout: keyboardLayout,
+                                                 tuningSystem: _tuningSystem(of: context),
+                                                 pitchStandard: _pitchStandard(of: context),
+                                                 keyMatching: context.keyMatching)
+        }
 
         return { pitchConverter.convert($0) }
     }
 
-    private static func _makeAbsoluteToStandardPitchConverter(with context: ConvertContext) throws -> (Frequency) -> Pitch? {
-        guard let keyboardMap = context.keyboardMap
-        else { throw Error.missingKeyboardMap }
+    private static func _makeAbsoluteToStandardPitchConverter(with context: ConvertContext) throws -> ([Frequency]) -> [Pitch?] {
+        let keyboardLayout = try _keyboardLayout(of: context)
 
         guard let pitchSpeller = context.pitchSpeller
-        else { throw Error.missingPitchSpeller }
+        else {
+            // Without a speller, a pitch-class layout spells each key itself.
+            guard case .pitchClasses = keyboardLayout.definition
+            else { throw Error.missingPitchSpeller }
 
-        func makePitchConverter(_ pitchSpeller: some PitchSpeller) throws -> (Frequency) -> Pitch? {
-            let pitchConverter = try AbsoluteToStandardPitchConverter(keyboardMap: keyboardMap,
+            let pitchConverter = try AbsoluteToStandardPitchConverter(keyboardLayout: keyboardLayout,
+                                                                      tuningSystem: _tuningSystem(of: context),
+                                                                      pitchStandard: _pitchStandard(of: context),
+                                                                      keyMatching: context.keyMatching)
+
+            return { pitchConverter.convert($0) }
+        }
+
+        func makePitchConverter(_ pitchSpeller: some PitchSpeller) throws -> ([Frequency]) -> [Pitch?] {
+            let pitchConverter = if _isRaw(keyboardLayout) {
+                try AbsoluteToStandardPitchConverter(keyboardLayout: keyboardLayout,
+                                                     pitchSpeller: pitchSpeller,
+                                                     keyMatching: context.keyMatching)
+            } else {
+                try AbsoluteToStandardPitchConverter(keyboardLayout: keyboardLayout,
+                                                     tuningSystem: _tuningSystem(of: context),
+                                                     pitchStandard: _pitchStandard(of: context),
+                                                     pitchSpeller: pitchSpeller,
+                                                     keyMatching: context.keyMatching)
+            }
+
+            return { pitchConverter.convert($0) }
+        }
+
+        return try makePitchConverter(pitchSpeller)
+    }
+
+    private static func _makeKeyboardToAbsolutePitchConverter(with context: ConvertContext) throws -> ([NoteNumber]) -> [Frequency?] {
+        let keyboardLayout = try _keyboardLayout(of: context)
+
+        let pitchConverter = if _isRaw(keyboardLayout) {
+            try KeyboardToAbsolutePitchConverter(keyboardLayout: keyboardLayout)
+        } else {
+            try KeyboardToAbsolutePitchConverter(keyboardLayout: keyboardLayout,
+                                                 tuningSystem: _tuningSystem(of: context),
+                                                 pitchStandard: _pitchStandard(of: context))
+        }
+
+        return { pitchConverter.convert($0) }
+    }
+
+    private static func _makeKeyboardToStandardPitchConverter(with context: ConvertContext) throws -> ([NoteNumber]) -> [Pitch?] {
+        let keyboardLayout = try _keyboardLayout(of: context)
+
+        guard let pitchSpeller = context.pitchSpeller
+        else {
+            // Without a speller, a pitch-class layout spells each key itself.
+            guard case .pitchClasses = keyboardLayout.definition
+            else { throw Error.missingPitchSpeller }
+
+            let pitchConverter = try KeyboardToStandardPitchConverter(keyboardLayout: keyboardLayout,
+                                                                      tuningSystem: _tuningSystem(of: context))
+
+            return { pitchConverter.convert($0) }
+        }
+
+        func makePitchConverter(_ pitchSpeller: some PitchSpeller) throws -> ([NoteNumber]) -> [Pitch?] {
+            let pitchConverter = try KeyboardToStandardPitchConverter(keyboardLayout: keyboardLayout,
                                                                       pitchSpeller: pitchSpeller)
 
             return { pitchConverter.convert($0) }
@@ -462,66 +576,44 @@ extension Work {
         return try makePitchConverter(pitchSpeller)
     }
 
-    private static func _makeKeyboardToAbsolutePitchConverter(with context: ConvertContext) throws -> (NoteNumber) -> Frequency? {
-        guard let keyboardMap = context.keyboardMap
-        else { throw Error.missingKeyboardMap }
-
-        let pitchConverter = try KeyboardToAbsolutePitchConverter(keyboardMap: keyboardMap)
+    private static func _makeStandardToAbsolutePitchConverter(with context: ConvertContext) throws -> ([Pitch]) -> [Frequency?] {
+        let pitchConverter = try StandardToAbsolutePitchConverter(tuningSystem: _tuningSystem(of: context),
+                                                                  pitchStandard: _pitchStandard(of: context))
 
         return { pitchConverter.convert($0) }
     }
 
-    private static func _makeKeyboardToStandardPitchConverter(with context: ConvertContext) throws -> (NoteNumber) -> Pitch? {
-        guard let pitchSpeller = context.pitchSpeller
-        else { throw Error.missingPitchSpeller }
+    private static func _makeStandardToKeyboardPitchConverter(with context: ConvertContext) throws -> ([Pitch]) -> [NoteNumber?] {
+        let tuningSystem = try _tuningSystem(of: context)
+        let pitchStandard = try _pitchStandard(of: context)
+        let keyboardLayout = try _keyboardLayout(of: context)
 
-        func makePitchConverter(_ pitchSpeller: some PitchSpeller) throws -> (NoteNumber) -> Pitch? {
-            let pitchConverter = try KeyboardToStandardPitchConverter(pitchSpeller: pitchSpeller)
-
-            return { pitchConverter.convert($0) }
-        }
-
-        return try makePitchConverter(pitchSpeller)
-    }
-
-    private static func _makeStandardToAbsolutePitchConverter(with context: ConvertContext) throws -> (Pitch) -> Frequency? {
-        guard let tuningSystem = context.tuningSystem
-        else { throw Error.missingTuningSystem }
-
-        guard let pitchStandard = context.pitchStandard
-        else { throw Error.missingPitchStandard }
-
-        let pitchConverter = try StandardToAbsolutePitchConverter(tuningSystem: tuningSystem,
-                                                                  pitchStandard: pitchStandard)
+        let pitchConverter = try StandardToKeyboardPitchConverter(keyboardLayout: keyboardLayout,
+                                                                  tuningSystem: tuningSystem,
+                                                                  pitchStandard: pitchStandard,
+                                                                  keyMatching: context.keyMatching)
 
         return { pitchConverter.convert($0) }
     }
 
-    private static func _makeStandardToKeyboardPitchConverter(with context: ConvertContext) throws -> (Pitch) -> NoteNumber? {
-        guard let tuningSystem = context.tuningSystem
-        else { throw Error.missingTuningSystem }
-
+    private static func _pitchStandard(of context: ConvertContext) throws -> PitchStandard {
         guard let pitchStandard = context.pitchStandard
         else { throw Error.missingPitchStandard }
 
-        guard let keyboardMap = context.keyboardMap
-        else { throw Error.missingKeyboardMap }
+        return pitchStandard
+    }
 
-        func makePitchConverter(_ tuningSystem: some TuningSystem) throws -> (Pitch) -> NoteNumber? {
-            let pitchConverter = try StandardToKeyboardPitchConverter(keyboardMap: keyboardMap,
-                                                                      tuningSystem: tuningSystem,
-                                                                      pitchStandard: pitchStandard)
+    private static func _tuningSystem(of context: ConvertContext) throws -> any TuningSystem {
+        guard let tuningSystem = context.tuningSystem
+        else { throw Error.missingTuningSystem }
 
-            return { pitchConverter.convert($0) }
-        }
-
-        return try makePitchConverter(tuningSystem)
+        return tuningSystem
     }
 
     private static func _workError(for error: TuningError) -> Error {
         switch error {
-        case .emptyKeyboardMap:
-            .emptyKeyboardMap
+        case let .invalidKeyboardLayout(problem):
+            .invalidKeyboardLayout(problem)
 
         case let .unsupportedConversion(from, to):
             .unsupportedPitchConversion(from: from,

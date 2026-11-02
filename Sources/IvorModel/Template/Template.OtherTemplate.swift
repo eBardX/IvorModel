@@ -13,6 +13,14 @@ extension Template {
 
         // MARK: Public Initializers
 
+        /// Creates a new reference to the given template.
+        ///
+        /// - Parameter template:   The template.
+        public init(_ template: Template) {
+            self.init(templateID: template.templateID,
+                      templateName: template.name)
+        }
+
         /// Creates a new reference to another template.
         ///
         /// - Parameter templateID:     The template’s ID.
@@ -21,14 +29,6 @@ extension Template {
                     templateName: String) {
             self.templateID = templateID
             self.templateName = templateName
-        }
-
-        /// Creates a new reference to the given template.
-        ///
-        /// - Parameter template:   The template.
-        public init(_ template: Template) {
-            self.init(templateID: template.templateID,
-                      templateName: template.name)
         }
 
         // MARK: Public Instance Properties

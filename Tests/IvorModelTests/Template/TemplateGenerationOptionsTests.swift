@@ -46,7 +46,7 @@ extension TemplateGenerationOptionsTests {
 
     @Test
     func backsOff_reachesLength() throws {
-        let tmpl = try _makeTemplate(maximumOrder: 2)
+        let tmpl = try makeBranchingTemplate(maximumOrder: 2)
 
         for seed in UInt64(0)..<10 {
             let work = try tmpl.generateWork(name: "G",
@@ -55,13 +55,13 @@ extension TemplateGenerationOptionsTests {
                                                               backsOff: true),
                                              seed: seed)
 
-            #expect(try _noteEvents(of: work).count == 40)
+            #expect(try standardBeatNoteEvents(of: work).count == 40)
         }
     }
 
     @Test
     func cadence_endsOnMatchAfterMinimum() throws {
-        let tmpl = try _makeTemplate()
+        let tmpl = try makeBranchingTemplate()
         let cadence = Options.Cadence(pitches: [.c4],
                                       minimumLength: .noteCount(5))
 
@@ -71,7 +71,7 @@ extension TemplateGenerationOptionsTests {
                                                               stopsAtEnd: false,
                                                               cadence: cadence),
                                              seed: seed)
-            let events = try _noteEvents(of: work)
+            let events = try standardBeatNoteEvents(of: work)
 
             #expect(events.count >= 5)
             #expect(events.count < 200)
@@ -82,7 +82,7 @@ extension TemplateGenerationOptionsTests {
 
     @Test
     func constraints_areRespected() throws {
-        let tmpl = try _makeTemplate()
+        let tmpl = try makeBranchingTemplate()
         let constraints = Options.Constraints(pitchRange: .c4 ... .d4,
                                               allowsRests: false)
 
@@ -93,7 +93,7 @@ extension TemplateGenerationOptionsTests {
                                                               backsOff: true,
                                                               constraints: constraints),
                                              seed: seed)
-            let events = try _noteEvents(of: work)
+            let events = try standardBeatNoteEvents(of: work)
 
             #expect(!events.isEmpty)
             #expect(events.allSatisfy { constraints.allows($0) })
@@ -102,7 +102,7 @@ extension TemplateGenerationOptionsTests {
 
     @Test
     func generation_isRecordedOnWork() throws {
-        let tmpl = try _makeTemplate()
+        let tmpl = try makeBranchingTemplate()
         let options = Options(order: 1,
                               length: .noteCount(12),
                               contrast: 2)
@@ -120,7 +120,7 @@ extension TemplateGenerationOptionsTests {
 
     @Test
     func generation_regenerate_reproducesWork() throws {
-        let tmpl = try _makeTemplate()
+        let tmpl = try makeBranchingTemplate()
         let work = try tmpl.generateWork(name: "G",
                                          order: 1,
                                          limit: 50)
@@ -129,12 +129,12 @@ extension TemplateGenerationOptionsTests {
                                           options: generation.options,
                                           seed: generation.seed)
 
-        #expect(try _notes(of: again) == _notes(of: work))
+        #expect(try standardBeatNoteTriples(of: again) == standardBeatNoteTriples(of: work))
     }
 
     @Test
     func incompatibleOptions_throws() throws {
-        let tmpl = try _makeTemplate()
+        let tmpl = try makeBranchingTemplate()
 
         #expect(throws: Template.Error.incompatibleOptions) {
             try tmpl.generateWork(name: "G",
@@ -151,7 +151,7 @@ extension TemplateGenerationOptionsTests {
 
     @Test
     func invalidOptions_throw() throws {
-        let tmpl = try _makeTemplate(maximumOrder: 2)
+        let tmpl = try makeBranchingTemplate(maximumOrder: 2)
 
         let cases: [(Options, Template.Error)] = [(Options(order: 3), .invalidOrder(2)),
                                                   (Options(length: .noteCount(0)), .invalidLimit),
@@ -175,35 +175,35 @@ extension TemplateGenerationOptionsTests {
 
     @Test
     func length_duration_stopsOnceReached() throws {
-        let tmpl = try _makeTemplate()
+        let tmpl = try makeBranchingTemplate()
 
         for seed in UInt64(0)..<10 {
             let work = try tmpl.generateWork(name: "G",
                                              options: Options(length: .duration(12),
                                                               stopsAtEnd: false),
                                              seed: seed)
-            let events = try _noteEvents(of: work)
+            let events = try standardBeatNoteEvents(of: work)
 
-            #expect(_endTime(of: events) >= 12)
-            #expect(_endTime(of: events.dropLast()) < 12)
+            #expect(endTime(of: events) >= 12)
+            #expect(endTime(of: events.dropLast()) < 12)
         }
     }
 
     @Test
     func loops_reachesLength() throws {
-        let tmpl = try _makeTemplate()
+        let tmpl = try makeBranchingTemplate()
         let work = try tmpl.generateWork(name: "G",
                                          options: Options(order: 1,
                                                           length: .noteCount(60),
                                                           loops: true),
                                          seed: 5)
 
-        #expect(try _noteEvents(of: work).count == 60)
+        #expect(try standardBeatNoteEvents(of: work).count == 60)
     }
 
     @Test
     func mixing_blendAndMorph_generate() throws {
-        let tmpl = try _makeTemplate(maximumOrder: 2)
+        let tmpl = try makeBranchingTemplate(maximumOrder: 2)
 
         for mixing in [Options.Mixing.blend(with: 0, weight: 0.3),
                        .morph(to: 0, over: 10, curve: .cosine),
@@ -219,27 +219,27 @@ extension TemplateGenerationOptionsTests {
             // Back-off means 30 events are generated; a note table can't keep a final rest, so 29
             // come back if the last is one.
             //
-            #expect(try _noteEvents(of: work1).count >= 29)
-            #expect(try _notes(of: work1) == _notes(of: work2))
+            #expect(try standardBeatNoteEvents(of: work1).count >= 29)
+            #expect(try standardBeatNoteTriples(of: work1) == standardBeatNoteTriples(of: work2))
         }
     }
 
     @Test
     func seed_sameSeed_sameNotes_differentSeed_differentNotes() throws {
-        let tmpl = try _makeTemplate()
+        let tmpl = try makeBranchingTemplate()
         let options = Options(length: .noteCount(60),
                               stopsAtEnd: false)
         let work1 = try tmpl.generateWork(name: "G", options: options, seed: 1)
         let work2 = try tmpl.generateWork(name: "G", options: options, seed: 1)
         let work3 = try tmpl.generateWork(name: "G", options: options, seed: 2)
 
-        #expect(try _notes(of: work1) == _notes(of: work2))
-        #expect(try _notes(of: work1) != _notes(of: work3))
+        #expect(try standardBeatNoteTriples(of: work1) == standardBeatNoteTriples(of: work2))
+        #expect(try standardBeatNoteTriples(of: work1) != standardBeatNoteTriples(of: work3))
     }
 
     @Test
     func startsAtBegin_false_variesOpening() throws {
-        let tmpl = try _makeTemplate(maximumOrder: 3)
+        let tmpl = try makeBranchingTemplate(maximumOrder: 3)
         var anchoredOpenings: Set<[NoteEvent<BeatTime, Pitch>]> = []
         var freeOpenings: Set<[NoteEvent<BeatTime, Pitch>]> = []
 
@@ -251,8 +251,8 @@ extension TemplateGenerationOptionsTests {
                                              options: Options(order: 3, length: .noteCount(3), startsAtBegin: false),
                                              seed: seed)
 
-            try anchoredOpenings.insert(_noteEvents(of: anchored))
-            try freeOpenings.insert(_noteEvents(of: free))
+            try anchoredOpenings.insert(standardBeatNoteEvents(of: anchored))
+            try freeOpenings.insert(standardBeatNoteEvents(of: free))
         }
 
         #expect(anchoredOpenings.count == 1)
@@ -261,7 +261,7 @@ extension TemplateGenerationOptionsTests {
 
     @Test
     func stopsAtEnd_false_reachesLength() throws {
-        let tmpl = try _makeTemplate(maximumOrder: 3)
+        let tmpl = try makeBranchingTemplate(maximumOrder: 3)
         let stopping = try tmpl.generateWork(name: "G",
                                              options: Options(order: 3, length: .noteCount(500)),
                                              seed: 0)
@@ -269,13 +269,13 @@ extension TemplateGenerationOptionsTests {
                                             options: Options(order: 3, length: .noteCount(500), stopsAtEnd: false),
                                             seed: 0)
 
-        #expect(try _noteEvents(of: stopping).count < 500)
-        #expect(try _noteEvents(of: endless).count == 500)
+        #expect(try standardBeatNoteEvents(of: stopping).count < 500)
+        #expect(try standardBeatNoteEvents(of: endless).count == 500)
     }
 
     @Test
     func work_codable_withAndWithoutGeneration() throws {
-        let tmpl = try _makeTemplate()
+        let tmpl = try makeBranchingTemplate()
         let generated = try tmpl.generateWork(name: "G",
                                               options: Options(length: .noteCount(8)),
                                               seed: .max)
@@ -289,49 +289,4 @@ extension TemplateGenerationOptionsTests {
         #expect(try JSONDecoder().decode(Work.self, from: plainData).generation == nil)
         #expect(!plainJSON.contains("generation"))
     }
-}
-
-// MARK: - Private Functions
-
-//
-// A melody with repeated notes, so the chain branches, and a rest.
-//
-private func _makeTemplate(maximumOrder: Int = 1) throws -> Template {
-    let pitches: [Pitch?] = [.c4, .d4, .e4, .c4, .e4, nil, .d4, .c4, .d4, .e4, .f4, .e4, .d4, .c4]
-    var rawNotes: [(attack: BeatTime, duration: BeatDuration, pitch: Pitch)] = []
-
-    for (index, pitch) in pitches.enumerated() {
-        if let pitch {
-            rawNotes.append((BeatTime(integerLiteral: Int64(index)), 1, pitch))
-        }
-    }
-
-    let markovChain = try #require(MarkovChain<Template.State<BeatTime, Pitch>>(maximumOrder: maximumOrder))
-
-    markovChain.analyzer().analyze(sequence: makeExactStates(makeNoteTableSB(rawNotes).extractNoteEvents()))
-
-    return Template(name: "Melody",
-                    content: .standardBeat(Template.Model(chains: .joint(markovChain))))
-}
-
-private func _endTime(of noteEvents: some Sequence<NoteEvent<BeatTime, Pitch>>) -> BeatTime {
-    noteEvents.reduce(BeatTime.zero) { time, noteEvent in
-        time.moved(by: DirectedDuration(duration: noteEvent.duration,
-                                        direction: .forward)) ?? time
-    }
-}
-
-private func _noteEvents(of work: Work) throws -> [NoteEvent<BeatTime, Pitch>] {
-    try _noteTable(of: work).extractNoteEvents()
-}
-
-private func _noteTable(of work: Work) throws -> NoteTable<BeatTime, Pitch> {
-    guard case let .standardBeat(parts, _) = work.content
-    else { throw Template.Error.incompatibleOptions }
-
-    return try #require(parts.first).noteTable
-}
-
-private func _notes(of work: Work) throws -> [NoteTripleSB] {
-    try makeNoteTriplesSB(_noteTable(of: work))
 }

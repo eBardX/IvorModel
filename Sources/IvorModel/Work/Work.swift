@@ -54,18 +54,18 @@ public struct Work {
 
     // MARK: Public Instance Properties
 
-    /// The file format version of the work.
-    public let version: Int
-
-    /// The unique ID of the work.
-    public let workID: WorkID
-
     /// How this work was generated from a template, or `nil` if it wasn’t.
     ///
     /// It records how the work began: editing the work leaves it in place, and
     /// ``duplicated()`` keeps it. Methods that return a work with converted content, such as
     /// ``warped()``, leave it out, since the recipe no longer reproduces that content.
     public let generation: Generation?
+
+    /// The file format version of the work.
+    public let version: Int
+
+    /// The unique ID of the work.
+    public let workID: WorkID
 
     /// A Boolean value indicating whether this work is locked.
     ///

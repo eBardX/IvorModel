@@ -19,7 +19,7 @@ extension Template.GenerationOptions {
         ///
         /// - Parameter order:      The Markov order to generate at. Defaults to 1.
         /// - Parameter mixing:     How to mix `order` with another order. Defaults to `nil`.
-        /// - Parameter contrast:   How strongly to favour common paths. Defaults to 1.
+        /// - Parameter contrast:   How strongly to favor common paths. Defaults to 1.
         public init(order: Int = 1,
                     mixing: Mixing? = nil,
                     contrast: Double = 1) {
@@ -30,7 +30,7 @@ extension Template.GenerationOptions {
 
         // MARK: Public Instance Properties
 
-        /// How strongly to favour common paths: above 1 keeps to common paths, below 1 favours
+        /// How strongly to favor common paths: above 1 keeps to common paths, below 1 favors
         /// rare ones, and 1 leaves the chain’s probabilities unchanged. Must be positive and
         /// finite.
         public var contrast: Double

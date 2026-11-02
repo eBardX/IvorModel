@@ -17,7 +17,7 @@ public protocol UniqueID: StringRepresentable {
     /// The regular expression that a valid string value must wholly match.
     static var validPattern: Regex<Substring> { get }
 
-    /// The two-character prefix identifying this type's string values.
+    /// The two-character prefix identifying this type’s string values.
     static var validPrefix: String { get }
 
     // MARK: Public Initializers

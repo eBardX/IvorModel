@@ -30,8 +30,8 @@ extension Template.GenerationOptions {
 
         // MARK: Public Instance Properties
 
-        /// Whether the generated work starts with the phrase itself, followed by the
-        /// continuation; otherwise, the work is the continuation alone.
+        /// A Boolean value indicating whether the generated work starts with the phrase itself,
+        /// followed by the continuation; otherwise, the work is the continuation alone.
         public var includesPhrase: Bool
 
         /// The phrase’s note events, in order.

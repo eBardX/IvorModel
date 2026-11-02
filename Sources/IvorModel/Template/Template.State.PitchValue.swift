@@ -57,13 +57,13 @@ extension Template.State.PitchValue: Comparable {
             return lhs.lexicographicallyPrecedes(rhs)
 
         default:
-            return lhs._rank < rhs._rank
+            return lhs.rank < rhs.rank
         }
     }
 
     // MARK: Private Instance Properties
 
-    private var _rank: Int {
+    private var rank: Int {
         switch self {
         case .absolute:
             0

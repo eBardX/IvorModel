@@ -20,14 +20,6 @@ extension PanFormatStyleTests {
     }
 
     @Test
-    func format_showsBothAngles() {
-        let style = Pan.FormatStyle(locale: Locale(identifier: "en_US"))
-        let result = style.format(Pan(horizontal: -45, vertical: 30))
-
-        #expect(String(result.characters) == "-45°H\u{00A0}30°V")
-    }
-
-    @Test
     func format_omitsZeroVertical() {
         let style = Pan.FormatStyle(locale: Locale(identifier: "en_US"))
         let result = style.format(Pan(horizontal: -45))
@@ -41,6 +33,14 @@ extension PanFormatStyleTests {
         let result = Pan.FormatStyle(locale: Locale(identifier: "en_US")).format(pan)
 
         #expect(Pan(plain: String(result.characters)) == pan)
+    }
+
+    @Test
+    func format_showsBothAngles() {
+        let style = Pan.FormatStyle(locale: Locale(identifier: "en_US"))
+        let result = style.format(Pan(horizontal: -45, vertical: 30))
+
+        #expect(String(result.characters) == "-45°H\u{00A0}30°V")
     }
 
     @Test

@@ -38,30 +38,6 @@ extension TemplateGenerateTests {
     }
 
     @Test
-    func generateWork_success() throws {
-        let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>(maximumOrder: 1))
-        let event = NoteEvent<BeatTime, Pitch>(tiedPitches: [NoteEvent<BeatTime, Pitch>.TiedPitch(pitch: .c4)],
-                                               duration: 1)
-
-        mc.analyzer().analyze(sequence: makeExactStates([event, event]))
-
-        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(chains: .joint(mc))))
-
-        let work = try tmpl.generateWork(name: "Generated",
-                                         order: 1,
-                                         limit: 4)
-
-        #expect(work.name == "Generated")
-        #expect(work.pitchNotation == .standard)
-        #expect(work.timeBasis == .beat)
-        #expect(work.partCount == 1)
-    }
-}
-
-// MARK: - Ties (F1)
-
-extension TemplateGenerateTests {
-    @Test
     func generateWork_order1_noRepeatedStates_reproducesSource() throws {
         // Overlapping notes, a chord with staggered releases, and leading and
         // inner rests. No state repeats, so the order-1 chain is deterministic.
@@ -85,5 +61,25 @@ extension TemplateGenerateTests {
         let generated = try #require(parts.first).noteTable
 
         #expect(makeNoteTriplesSB(generated) == makeNoteTriplesSB(source))
+    }
+
+    @Test
+    func generateWork_success() throws {
+        let mc = try #require(MarkovChain<Template.State<BeatTime, Pitch>>(maximumOrder: 1))
+        let event = NoteEvent<BeatTime, Pitch>(tiedPitches: [NoteEvent<BeatTime, Pitch>.TiedPitch(pitch: .c4)],
+                                               duration: 1)
+
+        mc.analyzer().analyze(sequence: makeExactStates([event, event]))
+
+        let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(chains: .joint(mc))))
+
+        let work = try tmpl.generateWork(name: "Generated",
+                                         order: 1,
+                                         limit: 4)
+
+        #expect(work.name == "Generated")
+        #expect(work.pitchNotation == .standard)
+        #expect(work.timeBasis == .beat)
+        #expect(work.partCount == 1)
     }
 }

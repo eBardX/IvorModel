@@ -49,12 +49,12 @@ extension Template {
         /// The source’s first event, or `nil` if it had none.
         public let first: NoteEvent<TimeType, PitchType>?
 
+        /// Each pitch in the source, with how many times it sounded.
+        public let pitches: [PitchType: Int]
+
         /// For each representative pitch, the pitches a tolerance grouped into it, with how many
         /// times each sounded. Empty when no pitch tolerance was used.
         public let pitchMembers: [PitchType: [PitchType: Int]]
-
-        /// Each pitch in the source, with how many times it sounded.
-        public let pitches: [PitchType: Int]
     }
 }
 
@@ -124,19 +124,19 @@ extension Template.Vocabulary: Codable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        self.durationMembers = try Self._members(container.decode([_Members<TimeType.DurationType>].self,
+        self.durationMembers = try Self._members(container.decode([Members<TimeType.DurationType>].self,
                                                                   forKey: .durationMembers))
 
-        self.durations = try Self._counts(container.decode([_Count<TimeType.DurationType>].self,
+        self.durations = try Self._counts(container.decode([Count<TimeType.DurationType>].self,
                                                            forKey: .durations))
 
         self.first = try container.decodeIfPresent(NoteEvent<TimeType, PitchType>.self,
                                                    forKey: .first)
 
-        self.pitchMembers = try Self._members(container.decode([_Members<PitchType>].self,
+        self.pitchMembers = try Self._members(container.decode([Members<PitchType>].self,
                                                                forKey: .pitchMembers))
 
-        self.pitches = try Self._counts(container.decode([_Count<PitchType>].self,
+        self.pitches = try Self._counts(container.decode([Count<PitchType>].self,
                                                          forKey: .pitches))
     }
 
@@ -176,36 +176,36 @@ extension Template.Vocabulary: Codable {
         case durationMembers
         case durations
         case first
-        case pitchMembers
         case pitches
+        case pitchMembers
     }
 
-    private struct _Count<Value: Codable & Comparable & Hashable>: Codable {
-        let value: Value
-        let count: Int
+    private struct Count<Value: Codable & Comparable & Hashable>: Codable {
+        fileprivate let value: Value
+        fileprivate let count: Int
     }
 
-    private struct _Members<Value: Codable & Comparable & Hashable>: Codable {
-        let value: Value
-        let members: [_Count<Value>]
+    private struct Members<Value: Codable & Comparable & Hashable>: Codable {
+        fileprivate let value: Value
+        fileprivate let members: [Count<Value>]
     }
 
     // MARK: Private Type Methods
 
-    private static func _counts<Value>(_ entries: [_Count<Value>]) -> [Value: Int] {
+    private static func _counts<Value>(_ entries: [Count<Value>]) -> [Value: Int] {
         Dictionary(entries.map { ($0.value, $0.count) },
                    uniquingKeysWith: +)
     }
 
-    private static func _entries<Value>(_ counts: [Value: Int]) -> [_Count<Value>] {
-        counts.keys.sorted().map { _Count(value: $0, count: counts[$0, default: 0]) }
+    private static func _entries<Value>(_ counts: [Value: Int]) -> [Count<Value>] {
+        counts.keys.sorted().map { Count(value: $0, count: counts[$0, default: 0]) }
     }
 
-    private static func _entries<Value>(_ members: [Value: [Value: Int]]) -> [_Members<Value>] {
-        members.keys.sorted().map { _Members(value: $0, members: _entries(members[$0, default: [:]])) }
+    private static func _entries<Value>(_ members: [Value: [Value: Int]]) -> [Members<Value>] {
+        members.keys.sorted().map { Members(value: $0, members: _entries(members[$0, default: [:]])) }
     }
 
-    private static func _members<Value>(_ entries: [_Members<Value>]) -> [Value: [Value: Int]] {
+    private static func _members<Value>(_ entries: [Members<Value>]) -> [Value: [Value: Int]] {
         Dictionary(entries.map { ($0.value, _counts($0.members)) }) { lhs, _ in lhs }
     }
 }

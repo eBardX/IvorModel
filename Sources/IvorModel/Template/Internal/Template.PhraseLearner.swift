@@ -20,6 +20,10 @@ extension Template {
     //
     internal struct PhraseLearner<TimeType: TimeProtocol, PitchType: TemplatePitch> where TimeType.DurationType: TemplateDuration {
 
+        // MARK: Internal Type Aliases
+
+        internal typealias DurationType = TimeType.DurationType
+
         // MARK: Internal Initializers
 
         internal init(analysisOptions: AnalysisOptions,
@@ -35,10 +39,6 @@ extension Template {
         // MARK: Internal Instance Properties
 
         internal let analysisOptions: AnalysisOptions
-
-        // MARK: Internal Type Aliases
-
-        internal typealias DurationType = TimeType.DurationType
 
         // MARK: Private Instance Properties
 

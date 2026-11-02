@@ -35,11 +35,6 @@ public struct Dynamic {
 
     /// The numeric value of this dynamic level, in the range `[0, 1]`.
     public let numberValue: Number
-
-    /// The plain string representation of this dynamic level.
-    public var plain: String {
-        Self.plainFormatStyle.format(numberValue)
-    }
 }
 
 // MARK: -
@@ -87,6 +82,13 @@ extension Dynamic {
     /// - Returns:  `true` if `numberValue` is rational and in the range `[0, 1]`; otherwise, `false`.
     public static func isValid(_ numberValue: Number) -> Bool {
         numberValue.isRational && (0...1) ~= numberValue
+    }
+
+    // MARK: Public Instance Properties
+
+    /// The plain string representation of this dynamic level.
+    public var plain: String {
+        Self.plainFormatStyle.format(numberValue)
     }
 
     // MARK: Private Type Properties

@@ -106,7 +106,7 @@ extension Template {
     /// The roles of this template’s Markov chains: ``ChainRole/joint`` alone, or
     /// ``ChainRole/duration`` then ``ChainRole/pitch``.
     public var chainRoles: [ChainRole] {
-        accept(_ChainRolesVisitor())
+        accept(ChainRolesVisitor())
     }
 
     /// The maximum pattern depth supported by this template.
@@ -161,7 +161,7 @@ extension Template {
     ///
     /// - Returns:  The metrics of the chain with `role`, or `nil` if this template has none.
     public func metrics(for role: ChainRole) -> Metrics? {
-        accept(_MetricsVisitor(role: role))
+        accept(MetricsVisitor(role: role))
     }
 
     /// Changes the display name of this template.
@@ -174,6 +174,33 @@ extension Template {
         else { throw Error.templateIsLocked }
 
         self.name = name.normalizingWhitespace()
+    }
+
+    // MARK: Private Nested Types
+
+    private struct ChainRolesVisitor: ContentVisitor {
+        fileprivate func visit<TimeType>(_ model: Model<TimeType, some Any>) -> [ChainRole] where TimeType.DurationType: TemplateDuration {
+            model.chains.roles
+        }
+    }
+
+    private struct MetricsVisitor: ContentVisitor {
+        fileprivate let role: ChainRole
+
+        fileprivate func visit<TimeType>(_ model: Model<TimeType, some Any>) -> Metrics? where TimeType.DurationType: TemplateDuration {
+            guard let markovChain = model.chains.chain(for: role)
+            else { return nil }
+
+            let metrics = markovChain.metrics()
+            let order = markovChain.maximumOrder
+            let orderMetrics = metrics.orderMetrics[order]
+
+            return Metrics(branchingRatio: orderMetrics.branchingRatio,
+                           order: order,
+                           recommendedOrder: metrics.recommendedOrder,
+                           stateCount: metrics.distinctStates,
+                           transitionCount: orderMetrics.totalTransitions)
+        }
     }
 
     // MARK: Private Type Methods
@@ -197,33 +224,6 @@ extension Template {
 
         case let .standardWall(model):
             model.chains.maximumOrder
-        }
-    }
-
-    // MARK: Private Nested Types
-
-    private struct _ChainRolesVisitor: ContentVisitor {
-        func visit<TimeType>(_ model: Model<TimeType, some Any>) -> [ChainRole] where TimeType.DurationType: TemplateDuration {
-            model.chains.roles
-        }
-    }
-
-    private struct _MetricsVisitor: ContentVisitor {
-        let role: ChainRole
-
-        func visit<TimeType>(_ model: Model<TimeType, some Any>) -> Metrics? where TimeType.DurationType: TemplateDuration {
-            guard let markovChain = model.chains.chain(for: role)
-            else { return nil }
-
-            let metrics = markovChain.metrics()
-            let order = markovChain.maximumOrder
-            let orderMetrics = metrics.orderMetrics[order]
-
-            return Metrics(branchingRatio: orderMetrics.branchingRatio,
-                           order: order,
-                           recommendedOrder: metrics.recommendedOrder,
-                           stateCount: metrics.distinctStates,
-                           transitionCount: orderMetrics.totalTransitions)
         }
     }
 }

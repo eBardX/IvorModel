@@ -4,7 +4,7 @@ private import XestiTools
 
 /// A copyright or other rights notice.
 ///
-/// A public-domain statement or a licence (e.g. `"CC BY 4.0"`) is also a rights notice.
+/// A public-domain statement or a license (e.g. `"CC BY 4.0"`) is also a rights notice.
 public struct RightsNotice {
 
     // MARK: Public Initializers

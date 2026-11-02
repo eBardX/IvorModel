@@ -27,7 +27,7 @@ internal import XestiTools
 ///
 /// A top-level, non-generic type — not nested inside `NoteTable<TimeType, PitchType>`
 /// — so a single `NoteID` (and a single `Set<NoteID>`) can be shared across
-/// differently-`PitchType`d parts, e.g. by `Work`'s whole-work transform methods,
+/// differently-`PitchType`d parts, e.g. by `Work`’s whole-work transform methods,
 /// which operate across all three beat-time `Content` cases in one function body.
 public struct NoteID {
 

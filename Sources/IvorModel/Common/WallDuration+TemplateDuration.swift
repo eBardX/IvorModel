@@ -5,6 +5,8 @@ public import XestiNumbers
 
 private import Foundation
 
+// MARK: - TemplateDuration
+
 extension WallDuration: TemplateDuration {
 
     // MARK: Public Instance Methods

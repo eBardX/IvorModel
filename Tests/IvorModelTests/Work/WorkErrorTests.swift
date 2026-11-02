@@ -26,8 +26,16 @@ extension WorkErrorTests {
     }
 
     @Test
-    func message_emptyKeyboardMap() {
-        #expect(!Work.Error.emptyKeyboardMap.message.isEmpty)
+    func message_invalidKeyboardLayout() {
+        let msg = Work.Error.invalidKeyboardLayout(.slotOutsidePeriod(index: 2)).message
+
+        #expect(msg == TuningError.invalidKeyboardLayout(.slotOutsidePeriod(index: 2)).message)
+        #expect(msg.contains("2"))
+    }
+
+    @Test
+    func message_missingKeyboardLayout() {
+        #expect(!Work.Error.missingKeyboardLayout.message.isEmpty)
     }
 
     @Test
@@ -36,9 +44,9 @@ extension WorkErrorTests {
     }
 
     @Test
-    func message_pitchOutOfRange() {
+    func message_unconvertiblePitch() {
         let partID = PartID()
-        let msg = Work.Error.pitchOutOfRange(partID: partID).message
+        let msg = Work.Error.unconvertiblePitch(partID: partID).message
 
         #expect(msg.contains(partID.stringValue))
     }

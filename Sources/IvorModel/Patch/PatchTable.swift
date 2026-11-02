@@ -45,10 +45,10 @@ extension PatchTable {
         assignments.isEmpty
     }
 
-    // MARK: Public Subscripts
+    // MARK: Public Instance Subscripts
 
-    /// The patch assignment for the given instrument, or `nil` if it has none. Setting it to
-    /// `nil` removes the instrument’s assignment.
+    /// Accesses the patch assignment for the given instrument, or `nil` if it has none. Setting it
+    /// to `nil` removes the instrument’s assignment.
     ///
     /// - Parameter instrument: The instrument.
     public subscript(instrument: Instrument) -> Assignment? {

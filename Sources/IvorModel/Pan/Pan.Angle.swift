@@ -55,11 +55,6 @@ extension Pan {
 
         /// The number of degrees in this angle, in the range `(-180, 180]`.
         public let numberValue: Number
-
-        /// The plain string representation of this angle.
-        public var plain: String {
-            Self.plainFormatStyle.format(numberValue)
-        }
     }
 }
 
@@ -110,6 +105,13 @@ extension Pan.Angle {
     public static func - (lhs: Self,
                           rhs: Self) -> Self {
         Self(lhs.numberValue - rhs.numberValue)
+    }
+
+    // MARK: Public Instance Properties
+
+    /// The plain string representation of this angle.
+    public var plain: String {
+        Self.plainFormatStyle.format(numberValue)
     }
 
     // MARK: Private Type Properties

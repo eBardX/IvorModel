@@ -3,6 +3,7 @@
 @testable import IvorModel
 import IvorTuning
 import Testing
+import XestiNumbers
 
 struct WorkConvertContextTests {
 }
@@ -19,7 +20,7 @@ extension WorkConvertContextTests {
             .pitchStandard(expectedPitchStandard)
             .tuningSystem(expectedTuningSystem)
 
-        #expect(cc.keyboardMap == nil)
+        #expect(cc.keyboardLayout == nil)
         #expect(cc.pitchSpeller == nil)
         #expect(cc.pitchStandard != nil)
         #expect(cc.tuningSystem != nil)
@@ -29,7 +30,8 @@ extension WorkConvertContextTests {
     func `default`() {
         let cc = Work.ConvertContext.default
 
-        #expect(cc.keyboardMap != nil)
+        #expect(cc.keyboardLayout == .piano)
+        #expect(cc.keyMatching == .nearest)
         #expect(cc.pitchSpeller != nil)
         #expect(cc.pitchStandard != nil)
         #expect(cc.tuningSystem != nil)
@@ -39,19 +41,32 @@ extension WorkConvertContextTests {
     func `init`() {
         let cc = Work.ConvertContext()
 
-        #expect(cc.keyboardMap == nil)
+        #expect(cc.keyboardLayout == nil)
+        #expect(cc.keyMatching == .nearest)
         #expect(cc.pitchSpeller == nil)
         #expect(cc.pitchStandard == nil)
         #expect(cc.tuningSystem == nil)
     }
 
     @Test
-    func keyboardMap() throws {
-        let expectedKeyboardMap = try #require(Work.ConvertContext.default.keyboardMap)
+    func keyboardLayout() {
+        let cc = Work.ConvertContext().keyboardLayout(.bohlenPierce)
 
-        let cc = Work.ConvertContext().keyboardMap(expectedKeyboardMap)
+        #expect(cc.keyboardLayout == .bohlenPierce)
+        #expect(cc.keyMatching == .nearest)
+        #expect(cc.pitchSpeller == nil)
+        #expect(cc.pitchStandard == nil)
+        #expect(cc.tuningSystem == nil)
+    }
 
-        #expect(cc.keyboardMap != nil)
+    @Test
+    func keyMatching() {
+        let cc = Work.ConvertContext()
+            .keyboardLayout(.piano)
+            .keyMatching(.within(Ratio(cents: 5)))
+
+        #expect(cc.keyboardLayout == .piano)
+        #expect(cc.keyMatching == .within(Ratio(cents: 5)))
         #expect(cc.pitchSpeller == nil)
         #expect(cc.pitchStandard == nil)
         #expect(cc.tuningSystem == nil)
@@ -63,7 +78,7 @@ extension WorkConvertContextTests {
 
         let cc = Work.ConvertContext().pitchSpeller(expectedPitchSpeller)
 
-        #expect(cc.keyboardMap == nil)
+        #expect(cc.keyboardLayout == nil)
         #expect(cc.pitchSpeller != nil)
         #expect(cc.pitchStandard == nil)
         #expect(cc.tuningSystem == nil)
@@ -75,7 +90,7 @@ extension WorkConvertContextTests {
 
         let cc = Work.ConvertContext().pitchStandard(expectedPitchStandard)
 
-        #expect(cc.keyboardMap == nil)
+        #expect(cc.keyboardLayout == nil)
         #expect(cc.pitchSpeller == nil)
         #expect(cc.pitchStandard != nil)
         #expect(cc.tuningSystem == nil)
@@ -87,7 +102,7 @@ extension WorkConvertContextTests {
 
         let cc = Work.ConvertContext().tuningSystem(expectedTuningSystem)
 
-        #expect(cc.keyboardMap == nil)
+        #expect(cc.keyboardLayout == nil)
         #expect(cc.pitchSpeller == nil)
         #expect(cc.pitchStandard == nil)
         #expect(cc.tuningSystem != nil)

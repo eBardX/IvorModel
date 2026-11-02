@@ -40,7 +40,7 @@ extension Template.GenerationOptions {
         /// The pitches allowed, or `nil` for any pitch.
         public var allowedPitches: Set<PitchType>?
 
-        /// Whether rests are allowed.
+        /// A Boolean value indicating whether rests are allowed.
         public var allowsRests: Bool
 
         /// The longest duration allowed, or `nil` for any duration.

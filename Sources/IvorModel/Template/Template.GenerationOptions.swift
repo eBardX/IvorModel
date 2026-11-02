@@ -39,7 +39,7 @@ extension Template {
         ///                             Defaults to `false`.
         /// - Parameter loops:          Whether to restart when generation would stop early.
         ///                             Defaults to `false`.
-        /// - Parameter contrast:       How strongly to favour common paths. Defaults to 1.
+        /// - Parameter contrast:       How strongly to favor common paths. Defaults to 1.
         /// - Parameter constraints:    Which note events may be generated. Defaults to no
         ///                             constraints.
         /// - Parameter mixing:         How to mix ``order`` with another order. Defaults to `nil`.
@@ -92,10 +92,10 @@ extension Template {
 
         // MARK: Public Instance Properties
 
-        /// Whether to fall back to successively lower orders, down to order 0, when generation
-        /// at the current order can’t continue — at a dead end, or when the end of a source
-        /// sequence is chosen. Order 0 never ends, so with this set, only ``length`` or
-        /// ``cadence`` stop generation.
+        /// A Boolean value indicating whether to fall back to successively lower orders, down to
+        /// order 0, when generation at the current order can’t continue — at a dead end, or when
+        /// the end of a source sequence is chosen. Order 0 never ends, so with this set, only
+        /// ``length`` or ``cadence`` stop generation.
         public var backsOff: Bool
 
         /// A note event on which to end, once a minimum length has been generated, or `nil`.
@@ -104,7 +104,7 @@ extension Template {
         /// Which note events may be generated.
         public var constraints: Constraints
 
-        /// How strongly to favour common paths: above 1 keeps to common paths, below 1 favours
+        /// How strongly to favor common paths: above 1 keeps to common paths, below 1 favors
         /// rare ones, and 1 leaves the template’s probabilities unchanged. Must be positive and
         /// finite.
         public var contrast: Double
@@ -112,8 +112,9 @@ extension Template {
         /// When to stop generating.
         public var length: Length
 
-        /// Whether to restart from the beginning (or, if ``startsAtBegin`` is `false`, from
-        /// anywhere) whenever generation would otherwise stop before ``length``.
+        /// A Boolean value indicating whether to restart from the beginning (or, if
+        /// ``startsAtBegin`` is `false`, from anywhere) whenever generation would otherwise stop
+        /// before ``length``.
         public var loops: Bool
 
         /// How to mix ``order`` with another order, or `nil` to generate at ``order`` alone.
@@ -133,10 +134,10 @@ extension Template {
         /// with one joint chain.
         public var pitchChain: ChainOptions?
 
-        /// Whether to replace each pitch and duration that an analysis tolerance grouped with one
-        /// of the values it grouped, drawn in proportion to how often each occurred — keeping the
-        /// source’s nuances while the template works with the groups. Applies only where the
-        /// template records absolute pitches or durations.
+        /// A Boolean value indicating whether to replace each pitch and duration that an analysis
+        /// tolerance grouped with one of the values it grouped, drawn in proportion to how often
+        /// each occurred — keeping the source’s nuances while the template works with the groups.
+        /// Applies only where the template records absolute pitches or durations.
         public var samplesMembers: Bool
 
         /// The duration that relative durations start from, and the duration of every event when
@@ -149,18 +150,19 @@ extension Template {
         /// records none, its most common pitch).
         public var startPitch: PitchType?
 
-        /// Whether generation begins at the source’s opening. When `false`, the first note
-        /// event is chosen by how often it occurs in the source, so generation can start
-        /// anywhere.
+        /// A Boolean value indicating whether generation begins at the source’s opening. When
+        /// `false`, the first note event is chosen by how often it occurs in the source, so
+        /// generation can start anywhere.
         public var startsAtBegin: Bool
+
+        /// A Boolean value indicating whether generation can stop where a source sequence ends.
+        /// When `false`, the end is never chosen, and generation continues until ``length`` (or
+        /// ``cadence``) stops it.
+        public var stopsAtEnd: Bool
 
         /// Other templates to generate from together with this one, or `nil` for this template
         /// alone. Can’t be combined with ``mixing``.
         public var templateMix: TemplateMix?
-
-        /// Whether generation can stop where a source sequence ends. When `false`, the end is
-        /// never chosen, and generation continues until ``length`` (or ``cadence``) stops it.
-        public var stopsAtEnd: Bool
     }
 }
 

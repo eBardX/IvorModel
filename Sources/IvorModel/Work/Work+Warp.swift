@@ -8,10 +8,10 @@ extension Work {
 
     // MARK: Public Instance Methods
 
-    /// Returns a new work with beat-time content converted to wall time, using this work's own
+    /// Returns a new work with beat-time content converted to wall time, using this work’s own
     /// tempo map — a fixed-media export at the tempo curve currently in effect. `nil` for
     /// wall-time content, which has no tempo map to convert with. The new work keeps this
-    /// work's ``Work/smpteStartTime``, ``Work/info``, and ``Work/realizations``, and its parts
+    /// work’s ``Work/smpteStartTime``, ``Work/info``, and ``Work/realizations``, and its parts
     /// keep their IDs.
     ///
     /// Always succeeds, even on a locked work: this returns an independent, unlocked copy rather
@@ -71,16 +71,16 @@ extension Work {
     /// Returns a new work with wall-time content converted to beat time using the given tempo
     /// map — re-deriving editable beat-time content from a wall-time recording, e.g. a tapped-in
     /// or detected tempo map. `nil` for beat-time content, which is already beat time. The new
-    /// work keeps this work's ``Work/smpteStartTime``, ``Work/info``, and ``Work/realizations``,
+    /// work keeps this work’s ``Work/smpteStartTime``, ``Work/info``, and ``Work/realizations``,
     /// and its parts keep their IDs.
     ///
-    /// Unlike ``Work/convert(timeBasis:pitchNotation:context:)``'s own wall-to-beat conversion,
-    /// which always produces content backed by a fresh, empty tempo map, the beat-time content
-    /// this method returns carries `tempoMap` itself forward as its own tempo map — the point of
-    /// this method is to hand back editable beat-time content that stays coherent with the very
-    /// tempo curve used to derive its beat positions.
+    /// Unlike ``Work/convert(timeBasis:pitchNotation:context:dropsUnconvertibleNotes:)``’s own
+    /// wall-to-beat conversion, which always produces content backed by a fresh, empty tempo map,
+    /// the beat-time content this method returns carries `tempoMap` itself forward as its own tempo
+    /// map — the point of this method is to hand back editable beat-time content that stays
+    /// coherent with the very tempo curve used to derive its beat positions.
     ///
-    /// Always succeeds, even on a locked work — see ``warped()``'s doc comment for why.
+    /// Always succeeds, even on a locked work — see ``warped()``’s doc comment for why.
     ///
     /// - Parameter tempoMap:   The tempo map to convert wall times to beat times with.
     public func unwarped(using tempoMap: TempoMap) -> Work? {
@@ -136,10 +136,10 @@ extension Work {
     // MARK: Public Instance Methods
 
     /// Returns a new work with beat-time, absolute-pitch content converted to wall time, using
-    /// this work's own tempo map, with note pitches varispeed-shifted to reflect the tempo in
-    /// effect at each note's attack and release. `nil` for any content other than `.absoluteBeat`
+    /// this work’s own tempo map, with note pitches varispeed-shifted to reflect the tempo in
+    /// effect at each note’s attack and release. `nil` for any content other than `.absoluteBeat`
     /// — no other pitch notation has an exact representation for a continuous pitch shift (see
-    /// ``NoteTable/varispeeded(using:normalTempo:)``). The new work keeps this work's
+    /// ``NoteTable/varispeeded(using:normalTempo:)``). The new work keeps this work’s
     /// ``Work/smpteStartTime``, ``Work/info``, and ``Work/realizations``, and its parts keep their
     /// IDs.
     ///
@@ -147,7 +147,7 @@ extension Work {
     /// conversion ``warped()`` uses — none of them carries a pitch axis, so none is
     /// varispeed-shifted; only note pitches are.
     ///
-    /// Works even on a locked work — see ``warped()``'s doc comment for why.
+    /// Works even on a locked work — see ``warped()``’s doc comment for why.
     ///
     /// - Parameter normalTempo:   The reference tempo used for pitch shifting. Defaults to
     ///                            `.default`.

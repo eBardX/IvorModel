@@ -42,10 +42,10 @@ extension Template.AnalysisOptions {
 
         // MARK: Public Instance Properties
 
-        /// Whether to add inverted forms.
+        /// A Boolean value indicating whether to add inverted forms.
         public var inverts: Bool
 
-        /// Whether to add forms in retrograde.
+        /// A Boolean value indicating whether to add forms in retrograde.
         public var retrogrades: Bool
 
         /// The time factors to add, besides ×1. A factor above 1 augments, and one below 1

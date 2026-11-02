@@ -50,6 +50,26 @@ extension Template.StateBuilder {
                               pitches: isRest ? nil : _pitchValue(of: noteEvent.tiedPitches))
     }
 
+    // MARK: Private Type Methods
+
+    //
+    // Lowest first, each class once: an octave doubling keeps the lower pitch's ties.
+    //
+    private static func _pitchClassTones(of tiedPitches: [TiedPitch]) -> [Template.Tone<PitchType.PitchClassType>] {
+        var seen: Set<PitchType.PitchClassType> = []
+
+        return tiedPitches.sorted { $0.pitch < $1.pitch }.compactMap { tiedPitch in
+            let pitchClass = tiedPitch.pitch.pitchClass
+
+            guard seen.insert(pitchClass).inserted
+            else { return nil }
+
+            return Template.Tone(value: pitchClass,
+                                 startsTie: tiedPitch.startsTie,
+                                 endsTie: tiedPitch.endsTie)
+        }
+    }
+
     // MARK: Private Instance Methods
 
     private mutating func _durationValue(of duration: TimeType.DurationType) -> Template.State<TimeType, PitchType>.DurationValue? {
@@ -109,26 +129,6 @@ extension Template.StateBuilder {
 
         case .pitchClass:
             .pitchClass(Self._pitchClassTones(of: tiedPitches))
-        }
-    }
-
-    // MARK: Private Type Methods
-
-    //
-    // Lowest first, each class once: an octave doubling keeps the lower pitch's ties.
-    //
-    private static func _pitchClassTones(of tiedPitches: [TiedPitch]) -> [Template.Tone<PitchType.PitchClassType>] {
-        var seen: Set<PitchType.PitchClassType> = []
-
-        return tiedPitches.sorted { $0.pitch < $1.pitch }.compactMap { tiedPitch in
-            let pitchClass = tiedPitch.pitch.pitchClass
-
-            guard seen.insert(pitchClass).inserted
-            else { return nil }
-
-            return Template.Tone(value: pitchClass,
-                                 startsTie: tiedPitch.startsTie,
-                                 endsTie: tiedPitch.endsTie)
         }
     }
 }

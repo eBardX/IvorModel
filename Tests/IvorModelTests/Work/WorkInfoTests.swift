@@ -11,18 +11,14 @@ struct WorkInfoTests {
 
 extension WorkInfoTests {
     @Test
-    func assignment_normalizesTitles() {
-        var info = Work.Info()
+    func append_blankSubtitle_isNoOp() {
+        var info = Work.Info(subtitles: ["Op. 1"])
 
-        info.title = "  Aubade \n"
-        info.parentWorkTitle = "Suite  No. 1"
-        info.subtitles = [" for  piano ", "   "]
-        info.alternateTitles = ["Dawn\tSong"]
+        info.subtitles.append("  ")
+        info.alternateTitles.append("\t")
 
-        #expect(info.title == "Aubade")
-        #expect(info.parentWorkTitle == "Suite No. 1")
-        #expect(info.subtitles == ["for piano"])
-        #expect(info.alternateTitles == ["Dawn Song"])
+        #expect(info.subtitles == ["Op. 1"])
+        #expect(info.alternateTitles.isEmpty)
     }
 
     @Test
@@ -32,15 +28,6 @@ extension WorkInfoTests {
         info.dedication = " \n\t "
 
         #expect(info.dedication == nil)
-    }
-
-    @Test
-    func assignment_dedication_keepsLineBreaks() {
-        var info = Work.Info()
-
-        info.dedication = "  To my  teacher \n in memory  "
-
-        #expect(info.dedication == "To my teacher\nin memory")
     }
 
     @Test
@@ -55,14 +42,27 @@ extension WorkInfoTests {
     }
 
     @Test
-    func append_blankSubtitle_isNoOp() {
-        var info = Work.Info(subtitles: ["Op. 1"])
+    func assignment_dedication_keepsLineBreaks() {
+        var info = Work.Info()
 
-        info.subtitles.append("  ")
-        info.alternateTitles.append("\t")
+        info.dedication = "  To my  teacher \n in memory  "
 
-        #expect(info.subtitles == ["Op. 1"])
-        #expect(info.alternateTitles.isEmpty)
+        #expect(info.dedication == "To my teacher\nin memory")
+    }
+
+    @Test
+    func assignment_normalizesTitles() {
+        var info = Work.Info()
+
+        info.title = "  Aubade \n"
+        info.parentWorkTitle = "Suite  No. 1"
+        info.subtitles = [" for  piano ", "   "]
+        info.alternateTitles = ["Dawn\tSong"]
+
+        #expect(info.title == "Aubade")
+        #expect(info.parentWorkTitle == "Suite No. 1")
+        #expect(info.subtitles == ["for piano"])
+        #expect(info.alternateTitles == ["Dawn Song"])
     }
 
     @Test
@@ -88,6 +88,17 @@ extension WorkInfoTests {
     }
 
     @Test
+    func codable_normalizesDedication() throws {
+        let json = #"""
+            {"dedication":" To  my\n teacher ","subtitles":[],"alternateTitles":[],
+             "credits":[],"rights":[],"remarks":[]}
+            """#
+        let decoded = try JSONDecoder().decode(Work.Info.self, from: Data(json.utf8))
+
+        #expect(decoded.dedication == "To my\nteacher")
+    }
+
+    @Test
     func codable_normalizesTitles() throws {
         let json = #"""
             {"title":"  Aubade ","subtitles":[" a  b ",""],"alternateTitles":["  "],
@@ -99,17 +110,6 @@ extension WorkInfoTests {
         #expect(decoded.subtitles == ["a b"])
         #expect(decoded.alternateTitles.isEmpty)
         #expect(decoded.parentWorkTitle == nil)
-    }
-
-    @Test
-    func codable_normalizesDedication() throws {
-        let json = #"""
-            {"dedication":" To  my\n teacher ","subtitles":[],"alternateTitles":[],
-             "credits":[],"rights":[],"remarks":[]}
-            """#
-        let decoded = try JSONDecoder().decode(Work.Info.self, from: Data(json.utf8))
-
-        #expect(decoded.dedication == "To my\nteacher")
     }
 
     @Test

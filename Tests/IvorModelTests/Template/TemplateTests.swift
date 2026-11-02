@@ -22,7 +22,7 @@ extension TemplateTests {
         let keyboardWall = try #require(MarkovChain<Template.State<WallTime, NoteNumber>>())
         let standardBeat = try #require(MarkovChain<Template.State<BeatTime, Pitch>>())
         let standardWall = try #require(MarkovChain<Template.State<WallTime, Pitch>>())
-        let visitor = _TypeNameVisitor()
+        let visitor = TypeNameVisitor()
 
         #expect(Template(name: "T", content: .absoluteBeat(Template.Model(chains: .joint(absoluteBeat)))).accept(visitor) == "BeatTime Frequency")
         #expect(Template(name: "T", content: .absoluteWall(Template.Model(chains: .joint(absoluteWall)))).accept(visitor) == "WallTime Frequency")
@@ -37,7 +37,7 @@ extension TemplateTests {
         let markovChain = try #require(MarkovChain<Template.State<WallTime, NoteNumber>>(maximumOrder: 3))
         let tmpl = Template(name: "T", content: .keyboardWall(Template.Model(chains: .joint(markovChain))))
 
-        #expect(tmpl.accept(_MaximumOrderVisitor()) == 3)
+        #expect(tmpl.accept(MaximumOrderVisitor()) == 3)
     }
 
     @Test
@@ -244,21 +244,5 @@ extension TemplateTests {
         let tmpl = Template(name: "Test", content: .standardWall(Template.Model(chains: .joint(mc))))
 
         #expect(tmpl.timeBasis == .wall)
-    }
-}
-
-// MARK: -
-
-extension TemplateTests {
-    private struct _MaximumOrderVisitor: Template.ContentVisitor {
-        func visit<TimeType>(_ model: Template.Model<TimeType, some Any>) -> Int where TimeType.DurationType: TemplateDuration {
-            model.chains.maximumOrder
-        }
-    }
-
-    private struct _TypeNameVisitor: Template.ContentVisitor {
-        func visit<TimeType, PitchType>(_ model: Template.Model<TimeType, PitchType>) -> String where TimeType.DurationType: TemplateDuration {
-            "\(TimeType.self) \(PitchType.self)"
-        }
     }
 }

@@ -33,21 +33,6 @@ public struct Realization {
                   partTables: partTables)
     }
 
-    // MARK: Internal Initializers
-
-    internal init(realizationID: RealizationID,
-                  name: String,
-                  defaults: PatchTable,
-                  partTables: [PartID: PatchTable]) {
-        self.defaults = defaults
-        //
-        // `didSet` doesn't run during initialization, so normalize here too:
-        //
-        self.name = name.normalizingWhitespace()
-        self.partTables = partTables.filter { !$0.value.isEmpty }
-        self.realizationID = realizationID
-    }
-
     // MARK: Public Instance Properties
 
     /// The unique ID of this realization.
@@ -65,16 +50,31 @@ public struct Realization {
     ///
     /// To change a part’s table, use ``subscript(_:)``.
     public private(set) var partTables: [PartID: PatchTable]
+
+    // MARK: Internal Initializers
+
+    internal init(realizationID: RealizationID,
+                  name: String,
+                  defaults: PatchTable,
+                  partTables: [PartID: PatchTable]) {
+        self.defaults = defaults
+        //
+        // `didSet` doesn't run during initialization, so normalize here too:
+        //
+        self.name = name.normalizingWhitespace()
+        self.partTables = partTables.filter { !$0.value.isEmpty }
+        self.realizationID = realizationID
+    }
 }
 
 // MARK: -
 
 extension Realization {
 
-    // MARK: Public Subscripts
+    // MARK: Public Instance Subscripts
 
-    /// The patch table for the part with the given ID, or an empty patch table if it has none.
-    /// Setting it to an empty patch table removes the part’s table.
+    /// Accesses the patch table for the part with the given ID, or an empty patch table if it has
+    /// none. Setting it to an empty patch table removes the part’s table.
     ///
     /// - Parameter partID: The ID of the part.
     public subscript(_ partID: PartID) -> PatchTable {

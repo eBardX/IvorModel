@@ -5,14 +5,16 @@ public import IvorTuning
 private import Foundation
 private import XestiNumbers
 
+// MARK: - TemplatePitch
+
 extension Frequency: TemplatePitch {
 
     // MARK: Public Instance Properties
 
-    /// This frequency’s position within its octave, in whole cents above A (A4 = 440 Hz), from 0
-    /// to 1199.
+    /// The position of this frequency within its octave, in whole cents above A (A4 = 440 Hz), from
+    /// 0 to 1199.
     public var pitchClass: Int {
-        let cents = Int(_centsFromA4.rounded())
+        let cents = Int(centsFromA4.rounded())
 
         return ((cents % 1_200) + 1_200) % 1_200
     }
@@ -25,7 +27,7 @@ extension Frequency: TemplatePitch {
     ///
     /// - Returns:  The nearest frequency of that class, or `nil` if it is out of range.
     public func nearest(_ pitchClass: Int) -> Self? {
-        let octaves = ((_centsFromA4 - Double(pitchClass)) / 1_200).rounded()
+        let octaves = ((centsFromA4 - Double(pitchClass)) / 1_200).rounded()
 
         return Self._fromCentsFromA4(Double(pitchClass) + octaves * 1_200)
     }
@@ -63,7 +65,7 @@ extension Frequency: TemplatePitch {
 
     // MARK: Private Instance Properties
 
-    private var _centsFromA4: Double {
+    private var centsFromA4: Double {
         1_200 * log2(doubleValue / 440)
     }
 }

@@ -143,6 +143,15 @@ extension PanTests {
     }
 
     @Test
+    func stereo_elevated() {
+        #expect(Pan.above.stereo == 0)
+        #expect(Pan.below.stereo == 0)
+
+        // (90, 60) lies 30° off the median plane: sin(90°)·cos(60°) = sin(30°).
+        #expect(abs(Pan(horizontal: 90, vertical: 60).stereo.doubleValue - 1.0 / 3.0) < 1e-9)
+    }
+
+    @Test
     func stereo_level() {
         #expect(Pan.left.stereo == -1)
         #expect(Pan.center.stereo == 0)
@@ -152,14 +161,5 @@ extension PanTests {
         #expect(Pan(horizontal: -135).stereo == Number(numerator: -1, denominator: 2))
         #expect(Pan.behind.stereo == 0)
         #expect(Pan(horizontal: 0, vertical: 180).stereo == 0)
-    }
-
-    @Test
-    func stereo_elevated() {
-        #expect(Pan.above.stereo == 0)
-        #expect(Pan.below.stereo == 0)
-
-        // (90, 60) lies 30° off the median plane: sin(90°)·cos(60°) = sin(30°).
-        #expect(abs(Pan(horizontal: 90, vertical: 60).stereo.doubleValue - 1.0 / 3.0) < 1e-9)
     }
 }

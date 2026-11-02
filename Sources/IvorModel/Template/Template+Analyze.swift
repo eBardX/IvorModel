@@ -477,6 +477,32 @@ extension Template {
         return directedInterval
     }
 
+    private static func _merge(_ content: Content,
+                               with other: Content) throws(Error) -> Content {
+        switch (content, other) {
+        case let (.absoluteBeat(lhs), .absoluteBeat(rhs)):
+            try .absoluteBeat(_merge(lhs, with: rhs))
+
+        case let (.absoluteWall(lhs), .absoluteWall(rhs)):
+            try .absoluteWall(_merge(lhs, with: rhs))
+
+        case let (.keyboardBeat(lhs), .keyboardBeat(rhs)):
+            try .keyboardBeat(_merge(lhs, with: rhs))
+
+        case let (.keyboardWall(lhs), .keyboardWall(rhs)):
+            try .keyboardWall(_merge(lhs, with: rhs))
+
+        case let (.standardBeat(lhs), .standardBeat(rhs)):
+            try .standardBeat(_merge(lhs, with: rhs))
+
+        case let (.standardWall(lhs), .standardWall(rhs)):
+            try .standardWall(_merge(lhs, with: rhs))
+
+        default:
+            throw Error.incompatibleOptions
+        }
+    }
+
     //
     // `model`'s chains, then `other`'s, merged into new chains of the same maximum order, and their
     // vocabularies added together.  Both come from the same recipe, so their chains are of the
@@ -509,32 +535,6 @@ extension Template {
 
         return Model(chains: chains,
                      vocabulary: model.vocabulary.adding(other.vocabulary))
-    }
-
-    private static func _merge(_ content: Content,
-                               with other: Content) throws(Error) -> Content {
-        switch (content, other) {
-        case let (.absoluteBeat(lhs), .absoluteBeat(rhs)):
-            try .absoluteBeat(_merge(lhs, with: rhs))
-
-        case let (.absoluteWall(lhs), .absoluteWall(rhs)):
-            try .absoluteWall(_merge(lhs, with: rhs))
-
-        case let (.keyboardBeat(lhs), .keyboardBeat(rhs)):
-            try .keyboardBeat(_merge(lhs, with: rhs))
-
-        case let (.keyboardWall(lhs), .keyboardWall(rhs)):
-            try .keyboardWall(_merge(lhs, with: rhs))
-
-        case let (.standardBeat(lhs), .standardBeat(rhs)):
-            try .standardBeat(_merge(lhs, with: rhs))
-
-        case let (.standardWall(lhs), .standardWall(rhs)):
-            try .standardWall(_merge(lhs, with: rhs))
-
-        default:
-            throw Error.incompatibleOptions
-        }
     }
 
     private static func _noteDistanceTransposing(_ transposition: AnalysisOptions.Transposition) -> DirectedInterval<NoteDistance>? {

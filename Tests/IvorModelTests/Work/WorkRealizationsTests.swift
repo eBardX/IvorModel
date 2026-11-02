@@ -39,7 +39,7 @@ extension WorkRealizationsTests {
     @Test
     func codable_rejectsTableForUnknownPart() throws {
         let part = Part<WallTime, Pitch>(name: "Cello")
-        let realization = try Realization(partTables: [part.partID: Self._table()])
+        let realization = try Realization(partTables: [part.partID: makeOrganPatchTable()])
         let withPart = try JSONEncoder().encode(Work(content: .standardWall([part]),
                                                      realizations: [realization]))
         var object = try #require(JSONSerialization.jsonObject(with: withPart) as? [String: Any])
@@ -58,7 +58,7 @@ extension WorkRealizationsTests {
     func codable_roundTripsPartIDsAndRealizations() throws {
         let part = Part<WallTime, Pitch>(name: "Cello")
         let realization = try Realization(name: "My studio",
-                                          partTables: [part.partID: Self._table()])
+                                          partTables: [part.partID: makeOrganPatchTable()])
         let work = Work(content: .standardWall([part]),
                         realizations: [Realization(name: "General MIDI"), realization])
         let decoded = try JSONDecoder().decode(Work.self, from: JSONEncoder().encode(work))
@@ -70,7 +70,7 @@ extension WorkRealizationsTests {
     @Test
     func convert_keepsPartIDsAndRealizations() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        let realization = try Realization(partTables: [part.partID: Self._table()])
+        let realization = try Realization(partTables: [part.partID: makeOrganPatchTable()])
         let work = Work(content: .standardBeat([part], TempoMap()),
                         realizations: [realization])
 
@@ -82,10 +82,17 @@ extension WorkRealizationsTests {
     }
 
     @Test
+    func duplicated_keepsRealizations() {
+        let work = Work(realizations: [Realization(name: "General MIDI"), Realization(name: "My studio")])
+
+        #expect(work.duplicated().realizations == work.realizations)
+    }
+
+    @Test
     func duplicatePart_copiesTables() throws {
         var work = Work(content: .standardWall([]))
         let partID = try work.addPart(name: "Cello")
-        let table = try Self._table()
+        let table = try makeOrganPatchTable()
         let realizationID = try #require(work.realizations.first?.realizationID)
 
         work.modifyRealization(realizationID) { $0[partID] = table }
@@ -93,13 +100,6 @@ extension WorkRealizationsTests {
         let duplicateID = try #require(try work.duplicatePart(partID))
 
         #expect(work.realizations.first?[duplicateID] == table)
-    }
-
-    @Test
-    func duplicated_keepsRealizations() {
-        let work = Work(realizations: [Realization(name: "General MIDI"), Realization(name: "My studio")])
-
-        #expect(work.duplicated().realizations == work.realizations)
     }
 
     @Test
@@ -112,7 +112,7 @@ extension WorkRealizationsTests {
 
     @Test
     func init_dropsTablesForUnknownParts() throws {
-        let work = try Work(realizations: [Realization(partTables: [PartID(): Self._table()])])
+        let work = try Work(realizations: [Realization(partTables: [PartID(): makeOrganPatchTable()])])
 
         #expect(work.realizations.first?.partTables.isEmpty == true)
     }
@@ -121,7 +121,7 @@ extension WorkRealizationsTests {
     func modifyRealization_dropsTablesForUnknownParts() throws {
         var work = Work()
         let realizationID = try #require(work.realizations.first?.realizationID)
-        let table = try Self._table()
+        let table = try makeOrganPatchTable()
 
         let result = work.modifyRealization(realizationID) { realization in
             realization[PartID()] = table
@@ -168,7 +168,7 @@ extension WorkRealizationsTests {
         var work = Work(content: .standardWall([]))
         let partID = try work.addPart(name: "Cello")
         let realizationID = try #require(work.realizations.first?.realizationID)
-        let table = try Self._table()
+        let table = try makeOrganPatchTable()
 
         work.modifyRealization(realizationID) { $0[partID] = table }
 
@@ -181,7 +181,7 @@ extension WorkRealizationsTests {
     func replaceContent_dropsTablesForRemovedParts() throws {
         let part = Part<WallTime, Pitch>(name: "Cello")
         var work = try Work(content: .standardWall([part]),
-                            realizations: [Realization(partTables: [part.partID: Self._table()])])
+                            realizations: [Realization(partTables: [part.partID: makeOrganPatchTable()])])
 
         try work.replaceContent(with: .standardWall([]))
 
@@ -232,7 +232,7 @@ extension WorkRealizationsTests {
     @Test
     func warped_keepsPartIDsAndRealizations() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        let realization = try Realization(partTables: [part.partID: Self._table()])
+        let realization = try Realization(partTables: [part.partID: makeOrganPatchTable()])
         let work = Work(content: .standardBeat([part], TempoMap()),
                         realizations: [realization])
 
@@ -240,16 +240,5 @@ extension WorkRealizationsTests {
 
         #expect(result.partIDs == [part.partID])
         #expect(result.realizations == [realization])
-    }
-}
-
-// MARK: -
-
-extension WorkRealizationsTests {
-    fileprivate static func _table() throws -> PatchTable {
-        let patch = try #require(Patch(.generalMIDI1(program: 20)))
-        let assignment = try #require(PatchTable.Assignment(patch: patch))
-
-        return PatchTable([.vanilla: assignment])
     }
 }

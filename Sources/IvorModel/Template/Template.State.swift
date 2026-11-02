@@ -35,7 +35,8 @@ extension Template {
         /// What the state records of the event’s duration, or `nil` if it records nothing.
         public let duration: DurationValue?
 
-        /// Whether the event is a rest. Recorded even when the state records nothing of pitch.
+        /// A Boolean value indicating whether the event is a rest. Recorded even when the state
+        /// records nothing of pitch.
         public let isRest: Bool
 
         /// What the state records of the event’s pitches, or `nil` if it records nothing or the

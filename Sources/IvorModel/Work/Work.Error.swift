@@ -7,18 +7,15 @@ public import XestiTools
 extension Work {
     /// An error thrown by ``Work`` operations.
     public enum Error {
-        /// A failure that occurred in a part’s dynamic map while carrying it along with a
-        /// transform.
-        case dynamicMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
-
         /// Two parts share a part ID.
         case duplicatePartID(PartID)
 
         /// Two realizations share a realization ID.
         case duplicateRealizationID(RealizationID)
 
-        /// The conversion context’s keyboard map does not map any MIDI note number.
-        case emptyKeyboardMap
+        /// A failure that occurred in a part’s dynamic map while carrying it along with a
+        /// transform.
+        case dynamicMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
 
         /// The quantization factors array is empty.
         case emptyQuantizationFactors
@@ -27,11 +24,15 @@ extension Work {
         /// transform.
         case instrumentMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
 
+        /// The conversion context’s keyboard layout is invalid for the conversion or for the
+        /// context’s tuning system.
+        case invalidKeyboardLayout(KeyboardLayout.Problem)
+
         /// A quantization factor that is not a positive integer.
         case invalidQuantizationFactor(Int)
 
-        /// The conversion context is missing a keyboard map.
-        case missingKeyboardMap
+        /// The conversion context is missing a keyboard layout.
+        case missingKeyboardLayout
 
         /// The conversion context is missing a pitch speller.
         case missingPitchSpeller
@@ -52,9 +53,6 @@ extension Work {
         /// work’s own.
         case pitchNotationMismatch(expected: PitchNotation)
 
-        /// A note in the part has a pitch with no counterpart in the target pitch notation.
-        case pitchOutOfRange(partID: PartID)
-
         /// A failure that occurred in the work’s tempo map while carrying it along with a
         /// whole-work transform.
         case tempoMapTransformFailure(kind: TransformKind, detail: String)
@@ -65,6 +63,9 @@ extension Work {
 
         /// A failure that occurred in a part’s note table while applying a transform.
         case transformFailure(kind: TransformKind, partID: PartID, detail: String)
+
+        /// A note in the part has a pitch with no counterpart in the target pitch notation.
+        case unconvertiblePitch(partID: PartID)
 
         /// Converting pitches between the two notations is not supported.
         case unsupportedPitchConversion(from: PitchNotation, to: PitchNotation)
@@ -91,17 +92,14 @@ extension Work.Error: EnhancedError {
     /// The human-readable message for this error.
     public var message: String {
         switch self {
-        case let .dynamicMapTransformFailure(kind, partID, detail):
-            "Dynamic map failure during \(kind) of part \(partID.stringValue): \(detail)"
-
         case let .duplicatePartID(partID):
             "Duplicate part ID: \(partID.stringValue)"
 
         case let .duplicateRealizationID(realizationID):
             "Duplicate realization ID: \(realizationID.stringValue)"
 
-        case .emptyKeyboardMap:
-            "The keyboard map does not map any MIDI note number."
+        case let .dynamicMapTransformFailure(kind, partID, detail):
+            "Dynamic map failure during \(kind) of part \(partID.stringValue): \(detail)"
 
         case .emptyQuantizationFactors:
             "Invalid quantization factors: empty"
@@ -109,11 +107,14 @@ extension Work.Error: EnhancedError {
         case let .instrumentMapTransformFailure(kind, partID, detail):
             "Instrument map failure during \(kind) of part \(partID.stringValue): \(detail)"
 
+        case let .invalidKeyboardLayout(problem):
+            TuningError.invalidKeyboardLayout(problem).message
+
         case let .invalidQuantizationFactor(factor):
             "Invalid quantization factor: \(factor)"
 
-        case .missingKeyboardMap:
-            "A keyboard map is required for this conversion."
+        case .missingKeyboardLayout:
+            "A keyboard layout is required for this conversion."
 
         case .missingPitchSpeller:
             "A pitch speller is required for this conversion."
@@ -133,9 +134,6 @@ extension Work.Error: EnhancedError {
         case let .pitchNotationMismatch(expected):
             "This transform requires \(expected) pitch notation."
 
-        case let .pitchOutOfRange(partID):
-            "Part \(partID.stringValue) has a pitch with no counterpart in the target pitch notation."
-
         case let .tempoMapTransformFailure(kind, detail):
             "Tempo map failure during \(kind): \(detail)"
 
@@ -144,6 +142,9 @@ extension Work.Error: EnhancedError {
 
         case let .transformFailure(kind, partID, detail):
             "Note table failure during \(kind) of part \(partID.stringValue): \(detail)"
+
+        case let .unconvertiblePitch(partID):
+            "Part \(partID.stringValue) has a pitch with no counterpart in the target pitch notation."
 
         case let .unsupportedPitchConversion(from, to):
             "Conversion from \(from) pitch notation to \(to) pitch notation is not supported."

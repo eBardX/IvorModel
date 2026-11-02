@@ -43,6 +43,28 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
                   panMap: panMap)
     }
 
+    // MARK: Public Instance Properties
+
+    /// The stable identity of this part, kept across saving and reopening.
+    public let partID: PartID
+
+    /// The dynamic map for this part.
+    public var dynamicMap: DynamicMap<TimeType>
+
+    /// The instrument map for this part.
+    public var instrumentMap: InstrumentMap<TimeType>
+
+    /// The display name of this part, with whitespace normalized to a single line.
+    public var name: String {
+        didSet { name = name.normalizingWhitespace() }
+    }
+
+    /// The note table for this part.
+    public var noteTable: NoteTable<TimeType, PitchType>
+
+    /// The pan map for this part.
+    public var panMap: PanMap<TimeType>
+
     // MARK: Internal Initializers
 
     //
@@ -66,28 +88,6 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
         self.panMap = panMap ?? PanMap()
         self.partID = partID
     }
-
-    // MARK: Public Instance Properties
-
-    /// The stable identity of this part, kept across saving and reopening.
-    public let partID: PartID
-
-    /// The dynamic map for this part.
-    public var dynamicMap: DynamicMap<TimeType>
-
-    /// The instrument map for this part.
-    public var instrumentMap: InstrumentMap<TimeType>
-
-    /// The display name of this part, with whitespace normalized to a single line.
-    public var name: String {
-        didSet { name = name.normalizingWhitespace() }
-    }
-
-    /// The note table for this part.
-    public var noteTable: NoteTable<TimeType, PitchType>
-
-    /// The pan map for this part.
-    public var panMap: PanMap<TimeType>
 }
 
 // MARK: -

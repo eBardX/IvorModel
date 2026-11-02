@@ -37,8 +37,8 @@ extension Template.AnalysisOptions {
         /// What a state records of an event’s pitches.
         public var pitch: PitchFeature
 
-        /// Whether to learn pitches and durations in separate chains, instead of one joint
-        /// chain.
+        /// A Boolean value indicating whether to learn pitches and durations in separate chains,
+        /// instead of one joint chain.
         ///
         /// When `true`, a duration chain learns every event’s duration and whether it is a rest,
         /// and a pitch chain learns the pitches of the sounding events alone, so a melody

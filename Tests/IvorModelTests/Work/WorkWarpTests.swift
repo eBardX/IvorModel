@@ -88,6 +88,15 @@ extension WorkWarpTests {
     }
 
     @Test
+    func unwarped_keepsSMPTEStartTime() throws {
+        let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps24))
+        let work = Work(content: .standardWall([]),
+                        smpteStartTime: startTime)
+
+        #expect(work.unwarped(using: TempoMap())?.smpteStartTime == startTime)
+    }
+
+    @Test
     func unwarped_keyboardWall() {
         var table = NoteTable<WallTime, NoteNumber>()
 
@@ -108,15 +117,6 @@ extension WorkWarpTests {
         let result = try #require(work.unwarped(using: TempoMap()))
 
         #expect(result.isLocked == false)
-    }
-
-    @Test
-    func unwarped_keepsSMPTEStartTime() throws {
-        let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps24))
-        let work = Work(content: .standardWall([]),
-                        smpteStartTime: startTime)
-
-        #expect(work.unwarped(using: TempoMap())?.smpteStartTime == startTime)
     }
 
     @Test

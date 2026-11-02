@@ -15,6 +15,45 @@ struct WorkConvertTests {
 
 extension WorkConvertTests {
     @Test
+    func absoluteToKeyboard_default() throws {
+        let work = makeWallWork(frequencies: [440, 220])
+
+        let pitches = try keyboardWallPitches(of: work.convert(timeBasis: .wall,
+                                                               pitchNotation: .keyboard))
+
+        #expect(pitches == [69, 57])
+    }
+
+    @Test
+    func absoluteToKeyboard_keyMatchingWithin_rejectsDistantPitch() throws {
+        let work = makeWallWork(frequencies: [440, 450])
+        let context = Work.ConvertContext.default.keyMatching(.within(Ratio(cents: 5)))
+
+        #expect(throws: try Work.Error.unconvertiblePitch(partID: firstAbsolutePartID(of: work))) {
+            try work.convert(timeBasis: .wall,
+                             pitchNotation: .keyboard,
+                             context: context)
+        }
+
+        let pitches = try keyboardWallPitches(of: work.convert(timeBasis: .wall,
+                                                               pitchNotation: .keyboard,
+                                                               context: context,
+                                                               dropsUnconvertibleNotes: true))
+
+        #expect(pitches == [69])
+    }
+
+    @Test
+    func absoluteToStandard_spellsInContext() throws {
+        let work = makeWallWork(frequencies: Fixtures.eMajorKeys.map(pianoFrequency(of:)))
+
+        let pitches = try standardWallPitches(of: work.convert(timeBasis: .wall,
+                                                               pitchNotation: .standard))
+
+        #expect(pitches[6] == "D#5")
+    }
+
+    @Test
     func convert_beatToWall_keepsInfo() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         let work = Work(content: .standardBeat([part], TempoMap()),
@@ -73,29 +112,7 @@ extension WorkConvertTests {
     }
 
     @Test
-    func convert_emptyKeyboardMap() {
-        var table = NoteTable<BeatTime, Pitch>()
-
-        table.insert(attack: 0, duration: 1, pitch: .a4)
-
-        let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
-        let work = Work(content: .standardBeat([part], TempoMap()))
-        let kmap = KeyboardMap(referenceNote: 69,
-                               referenceFrequency: 440,
-                               middleNote: 69,
-                               equivalenceRatio: .octave,
-                               ratios: [nil, nil] as [Ratio?])
-        let context = Work.ConvertContext.default.keyboardMap(kmap)
-
-        #expect(throws: Work.Error.emptyKeyboardMap) {
-            try work.convert(timeBasis: .beat,
-                             pitchNotation: .keyboard,
-                             context: context)
-        }
-    }
-
-    @Test
-    func convert_missingKeyboardMap() {
+    func convert_missingKeyboardLayout() {
         var table = NoteTable<BeatTime, Pitch>()
 
         table.insert(attack: 0, duration: 1, pitch: .a4)
@@ -106,7 +123,7 @@ extension WorkConvertTests {
             .pitchStandard(.a440)
             .tuningSystem(EqualTemperament.edo12)
 
-        #expect(throws: Work.Error.missingKeyboardMap) {
+        #expect(throws: Work.Error.missingKeyboardLayout) {
             try work.convert(timeBasis: .beat,
                              pitchNotation: .keyboard,
                              context: context)
@@ -228,23 +245,7 @@ extension WorkConvertTests {
     }
 
     @Test
-    func convert_standardToKeyboard_pitchOutOfRange() {
-        var table = NoteTable<WallTime, Pitch>()
-
-        table.insert(attack: 0, duration: 1, pitch: .a4)
-        table.insert(attack: 1, duration: 1, pitch: "G#9")
-
-        let part = Part<WallTime, Pitch>(name: "Piano", noteTable: table)
-        let work = Work(content: .standardWall([part]))
-
-        #expect(throws: Work.Error.pitchOutOfRange(partID: part.partID)) {
-            try work.convert(timeBasis: .wall,
-                             pitchNotation: .keyboard)
-        }
-    }
-
-    @Test
-    func convert_standardToKeyboard_dropsOutOfRangeNotes() throws {
+    func convert_standardToKeyboard_dropsUnconvertibleNotes() throws {
         var table = NoteTable<WallTime, Pitch>()
 
         table.insert(attack: 0, duration: 1, pitch: .a4)
@@ -256,7 +257,7 @@ extension WorkConvertTests {
 
         let result = try #require(try work.convert(timeBasis: .wall,
                                                    pitchNotation: .keyboard,
-                                                   dropsOutOfRangeNotes: true))
+                                                   dropsUnconvertibleNotes: true))
 
         guard case let .keyboardWall(parts) = result.content
         else {
@@ -266,6 +267,22 @@ extension WorkConvertTests {
 
         #expect(parts.first?.noteTable.count == 1)
         #expect(parts.first?.noteTable.first?.startPitch == NoteNumber(uintValue: 69))
+    }
+
+    @Test
+    func convert_standardToKeyboard_unconvertiblePitch() {
+        var table = NoteTable<WallTime, Pitch>()
+
+        table.insert(attack: 0, duration: 1, pitch: .a4)
+        table.insert(attack: 1, duration: 1, pitch: "G#9")
+
+        let part = Part<WallTime, Pitch>(name: "Piano", noteTable: table)
+        let work = Work(content: .standardWall([part]))
+
+        #expect(throws: Work.Error.unconvertiblePitch(partID: part.partID)) {
+            try work.convert(timeBasis: .wall,
+                             pitchNotation: .keyboard)
+        }
     }
 
     @Test
@@ -321,22 +338,6 @@ extension WorkConvertTests {
         #expect(result.partCount == 1)
     }
 
-    @Test(arguments: [(PitchNotation.absolute, PitchNotation.keyboard),
-                      (.absolute, .standard),
-                      (.keyboard, .absolute),
-                      (.keyboard, .standard)])
-    func convert_unsupportedPitchConversion(source: PitchNotation,
-                                            target: PitchNotation) {
-        let work = Work(content: .empty(timeBasis: .beat,
-                                        pitchNotation: source))
-
-        #expect(throws: Work.Error.unsupportedPitchConversion(from: source,
-                                                              to: target)) {
-            try work.convert(timeBasis: .beat,
-                             pitchNotation: target)
-        }
-    }
-
     @Test
     func convert_wallToBeat_keepsInfo() throws {
         let part = Part<WallTime, Pitch>(name: "Violin")
@@ -350,5 +351,113 @@ extension WorkConvertTests {
         else { Issue.record("Expected .standardBeat content."); return }
 
         #expect(result.info == work.info)
+    }
+
+    @Test
+    func keyboardToAbsolute_default() throws {
+        let work = makeWallWork(noteNumbers: [69, 81])
+
+        let pitches = try absoluteWallPitches(of: work.convert(timeBasis: .wall,
+                                                               pitchNotation: .absolute))
+
+        #expect(pitches == [440, 880])
+    }
+
+    @Test
+    func keyboardToAbsolute_degreeLayout_requiresTuningSystem() throws {
+        let work = makeWallWork(noteNumbers: [69])
+        let context = Work.ConvertContext().keyboardLayout(.piano)
+
+        #expect(throws: Work.Error.missingTuningSystem) {
+            try work.convert(timeBasis: .wall,
+                             pitchNotation: .absolute,
+                             context: context)
+        }
+    }
+
+    @Test
+    func keyboardToAbsolute_portamento_convertsBothPitches() throws {
+        var table = NoteTable<WallTime, NoteNumber>()
+
+        table.insert(attack: 0, duration: 1, startPitch: 57, endPitch: 69)
+
+        let work = Work(content: .keyboardWall([Part(name: "Synth", noteTable: table)]))
+
+        let result = try #require(try work.convert(timeBasis: .wall,
+                                                   pitchNotation: .absolute))
+
+        guard case let .absoluteWall(parts) = result.content
+        else { Issue.record("Expected absolute-wall content"); return }
+
+        let note = try #require(parts.first?.noteTable.first)
+
+        #expect(note.startPitch == 220)
+        #expect(note.endPitch == 440)
+    }
+
+    @Test
+    func keyboardToAbsolute_rawLayout_needsNoTuningSystem() throws {
+        let layout = try KeyboardLayout(ratios: (0..<12).map { Ratio(cents: Number($0) * 100) },
+                                        equivalenceRatio: .octave,
+                                        referenceFrequency: 415)
+        let work = makeWallWork(noteNumbers: [69])
+        let context = Work.ConvertContext().keyboardLayout(layout)
+
+        let pitches = try absoluteWallPitches(of: work.convert(timeBasis: .wall,
+                                                               pitchNotation: .absolute,
+                                                               context: context))
+
+        #expect(pitches == [415])
+    }
+
+    @Test
+    func keyboardToStandard_degreeLayoutWithoutSpeller_throws() {
+        let work = makeWallWork(noteNumbers: [60])
+        let context = Work.ConvertContext()
+            .keyboardLayout(.bohlenPierce)
+            .tuningSystem(EqualTemperament.edo12)
+
+        #expect(throws: Work.Error.missingPitchSpeller) {
+            try work.convert(timeBasis: .wall,
+                             pitchNotation: .standard,
+                             context: context)
+        }
+    }
+
+    @Test
+    func keyboardToStandard_pitchClassLayoutWithoutSpeller_usesLayoutSpelling() throws {
+        let work = makeWallWork(noteNumbers: Fixtures.eMajorKeys)
+        let context = Work.ConvertContext()
+            .keyboardLayout(.piano)
+            .tuningSystem(EqualTemperament.edo12)
+
+        let pitches = try standardWallPitches(of: work.convert(timeBasis: .wall,
+                                                               pitchNotation: .standard,
+                                                               context: context))
+
+        #expect(pitches[6] == "Eb5")
+    }
+
+    @Test
+    func keyboardToStandard_spellsInContext() throws {
+        let work = makeWallWork(noteNumbers: Fixtures.eMajorKeys)
+
+        let pitches = try standardWallPitches(of: work.convert(timeBasis: .wall,
+                                                               pitchNotation: .standard))
+
+        #expect(pitches[6] == "D#5")
+    }
+
+    @Test
+    func standardToKeyboard_invalidKeyboardLayout() throws {
+        let layout = try KeyboardLayout(pitchClasses: [.c, .d, .cSharp])
+        let work = Work(content: .standardWall([Part<WallTime, Pitch>(name: "Piano")]))
+        let context = Work.ConvertContext.default.keyboardLayout(layout)
+
+        #expect(throws: Work.Error.invalidKeyboardLayout(.slotOutsidePeriod(index: 2))) {
+            try work.convert(timeBasis: .wall,
+                             pitchNotation: .keyboard,
+                             context: context)
+        }
     }
 }

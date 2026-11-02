@@ -2,11 +2,13 @@
 
 public import IvorTuning
 
+// MARK: - TemplatePitch
+
 extension NoteNumber: TemplatePitch {
 
     // MARK: Public Instance Properties
 
-    /// This note number’s position within its octave, from 0 (C) to 11 (B).
+    /// The position of this note number within its octave, from 0 (C) to 11 (B).
     public var pitchClass: Int {
         Int(uintValue % 12)
     }

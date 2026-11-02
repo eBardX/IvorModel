@@ -10,6 +10,20 @@ extension Template {
     /// ``AnalysisOptions/Variants``.
     public struct Variant {
 
+        // MARK: Public Instance Properties
+
+        /// A Boolean value indicating whether the form is inverted.
+        public let isInverted: Bool
+
+        /// A Boolean value indicating whether the form is in retrograde.
+        public let isRetrograde: Bool
+
+        /// The form’s time factor, or `nil` for ×1.
+        public let timeFactor: Number?
+
+        /// The form’s transposition, or `nil` for none.
+        public let transposition: AnalysisOptions.Transposition?
+
         // MARK: Internal Initializers
 
         internal init(isInverted: Bool,
@@ -21,20 +35,6 @@ extension Template {
             self.timeFactor = timeFactor
             self.transposition = transposition
         }
-
-        // MARK: Public Instance Properties
-
-        /// Whether the form is inverted.
-        public let isInverted: Bool
-
-        /// Whether the form is in retrograde.
-        public let isRetrograde: Bool
-
-        /// The form’s time factor, or `nil` for ×1.
-        public let timeFactor: Number?
-
-        /// The form’s transposition, or `nil` for none.
-        public let transposition: AnalysisOptions.Transposition?
     }
 }
 

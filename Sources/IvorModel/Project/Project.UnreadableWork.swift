@@ -13,6 +13,17 @@ extension Project {
     /// read it gets the work back. Only ``Project/removeUnreadableWork(_:)`` lets it go.
     public struct UnreadableWork {
 
+        // MARK: Public Instance Properties
+
+        /// The work’s name, if it could be read on its own; otherwise, `nil`.
+        public let name: String?
+
+        /// Why the work couldn’t be read.
+        public let reason: String
+
+        /// The work’s ID.
+        public let workID: WorkID
+
         // MARK: Internal Initializers
 
         internal init(workID: WorkID,
@@ -24,17 +35,6 @@ extension Project {
             self.reason = reason
             self.workID = workID
         }
-
-        // MARK: Public Instance Properties
-
-        /// The work’s name, if it could be read on its own; otherwise, `nil`.
-        public let name: String?
-
-        /// Why the work couldn’t be read.
-        public let reason: String
-
-        /// The work’s ID.
-        public let workID: WorkID
 
         // MARK: Internal Instance Properties
 

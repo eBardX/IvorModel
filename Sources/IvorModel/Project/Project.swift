@@ -216,16 +216,16 @@ extension Project {
 
     // MARK: Private Type Methods
 
+    private static func _fetchContents(from file: FileWrapper,
+                                       at path: [String]) -> Data? {
+        try? file.findFile(path).contentsOfRegularFile()
+    }
+
     private static func _fetchManifest(from file: FileWrapper) throws -> Manifest {
         let data = try file.findFile(Self.manifestFileName).contentsOfRegularFile()
 
         return try SexpDecoder().decode(Manifest.self,
                                         from: data)
-    }
-
-    private static func _fetchContents(from file: FileWrapper,
-                                       at path: [String]) -> Data? {
-        try? file.findFile(path).contentsOfRegularFile()
     }
 
     //
@@ -297,7 +297,7 @@ extension Project {
         guard let contents
         else { return nil }
 
-        return try? SexpDecoder().decode(_NameOnly.self,
+        return try? SexpDecoder().decode(NameOnly.self,
                                          from: contents).name.normalizingWhitespace()
     }
 
@@ -330,7 +330,7 @@ extension Project {
     //
     // The unreadable works with a file to keep.
     //
-    private var _keptUnreadableWorks: [UnreadableWork] {
+    private var keptUnreadableWorks: [UnreadableWork] {
         unreadableWorks.filter { $0.contents != nil }
     }
 
@@ -347,7 +347,7 @@ extension Project {
     //
     private func _prepareManifest() throws -> FileWrapper {
         let manifest = Manifest(name: name,
-                                workIDs: Array(workMap.keys) + _keptUnreadableWorks.map(\.workID),
+                                workIDs: Array(workMap.keys) + keptUnreadableWorks.map(\.workID),
                                 templateIDs: Array(templateMap.keys))
         let data = try SexpEncoder().encode(manifest)
         let file = FileWrapper(regularFileWithContents: data)
@@ -390,7 +390,7 @@ extension Project {
             children[name] = file
         }
 
-        for unreadableWork in _keptUnreadableWorks {
+        for unreadableWork in keptUnreadableWorks {
             guard let contents = unreadableWork.contents
             else { continue }
 
@@ -420,6 +420,11 @@ extension Project: Sendable {
 //
 // Just the name of a work or template, which may be all of it that can be read.
 //
-private struct _NameOnly: Decodable {
-    let name: String
+private struct NameOnly {
+    fileprivate let name: String
+}
+
+// MARK: - Decodable
+
+extension NameOnly: Decodable {
 }

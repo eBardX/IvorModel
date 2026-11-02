@@ -30,6 +30,11 @@ extension PatchTests {
         #expect(decoded == original)
     }
 
+    @Test(arguments: [0, 16_383])
+    func init_acceptsCustomBankBounds(bank: Int) {
+        #expect(Patch(.custom(program: 1, bank: bank, name: nil)) != nil)
+    }
+
     @Test
     func init_normalizesCustomName() throws {
         let blank = try #require(Patch(.custom(program: 1, bank: nil, name: "  ")))
@@ -37,11 +42,6 @@ extension PatchTests {
 
         #expect(blank.kind == .custom(program: 1, bank: nil, name: nil))
         #expect(spaced.kind == .custom(program: 1, bank: nil, name: "Warm Pad"))
-    }
-
-    @Test(arguments: [0, 16_383])
-    func init_acceptsCustomBankBounds(bank: Int) {
-        #expect(Patch(.custom(program: 1, bank: bank, name: nil)) != nil)
     }
 
     @Test(arguments: [Patch.Kind.custom(program: 129, bank: nil, name: nil),

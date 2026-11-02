@@ -35,6 +35,18 @@ extension WorkPartEditingTests {
     }
 
     @Test
+    func addPart_lockedWork_throws() {
+        var work = Work(content: .standardBeat([], TempoMap()))
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.addPart(name: "Violin")
+        }
+        #expect(work.partCount == 0)
+    }
+
+    @Test
     func addPart_normalizesName() throws {
         var work = Work(content: .standardBeat([], TempoMap()))
 
@@ -54,6 +66,19 @@ extension WorkPartEditingTests {
         #expect(work.partCount == 3)
         #expect(work.partIDs == [part1.partID, duplicateID, part2.partID])
         #expect(work.partName(at: 1) == "Violin")
+    }
+
+    @Test
+    func duplicatePart_lockedWork_throws() {
+        let part = Part<BeatTime, Pitch>(name: "Violin")
+        var work = Work(content: .standardBeat([part], TempoMap()))
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.duplicatePart(part.partID)
+        }
+        #expect(work.partIDs == [part.partID])
     }
 
     @Test
@@ -93,6 +118,19 @@ extension WorkPartEditingTests {
     }
 
     @Test
+    func removePart_lockedWork_throws() {
+        let part = Part<BeatTime, Pitch>(name: "Violin")
+        var work = Work(content: .standardBeat([part], TempoMap()))
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.removePart(part.partID)
+        }
+        #expect(work.partIDs == [part.partID])
+    }
+
+    @Test
     func removePart_missingID_isNoOp() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         var work = Work(content: .standardBeat([part], TempoMap()))
@@ -123,6 +161,20 @@ extension WorkPartEditingTests {
 
         #expect(work.partCount == 0)
         #expect(work.partIDs.isEmpty)
+    }
+
+    @Test
+    func renamePart_lockedWork_throws() {
+        let part = Part<BeatTime, Pitch>(name: "Violin")
+        var work = Work(content: .standardBeat([part], TempoMap()))
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.renamePart(part.partID,
+                                to: "Cello")
+        }
+        #expect(work.partName(at: 0) == "Violin")
     }
 
     @Test
@@ -172,6 +224,21 @@ extension WorkPartEditingTests {
     }
 
     @Test
+    func shiftPart_lockedWork_throws() {
+        let part1 = Part<BeatTime, Pitch>(name: "Violin")
+        let part2 = Part<BeatTime, Pitch>(name: "Cello")
+        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.shiftPart(part2.partID,
+                               to: 0)
+        }
+        #expect(work.partIDs == [part1.partID, part2.partID])
+    }
+
+    @Test
     func shiftPart_missingID_isNoOp() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         var work = Work(content: .standardBeat([part], TempoMap()))
@@ -204,73 +271,6 @@ extension WorkPartEditingTests {
         try work.shiftPart(part1.partID,
                            to: -1)
 
-        #expect(work.partIDs == [part1.partID, part2.partID])
-    }
-
-    @Test
-    func addPart_lockedWork_throws() {
-        var work = Work(content: .standardBeat([], TempoMap()))
-
-        work.isLocked = true
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.addPart(name: "Violin")
-        }
-        #expect(work.partCount == 0)
-    }
-
-    @Test
-    func duplicatePart_lockedWork_throws() {
-        let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
-
-        work.isLocked = true
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.duplicatePart(part.partID)
-        }
-        #expect(work.partIDs == [part.partID])
-    }
-
-    @Test
-    func removePart_lockedWork_throws() {
-        let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
-
-        work.isLocked = true
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.removePart(part.partID)
-        }
-        #expect(work.partIDs == [part.partID])
-    }
-
-    @Test
-    func renamePart_lockedWork_throws() {
-        let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
-
-        work.isLocked = true
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.renamePart(part.partID,
-                                to: "Cello")
-        }
-        #expect(work.partName(at: 0) == "Violin")
-    }
-
-    @Test
-    func shiftPart_lockedWork_throws() {
-        let part1 = Part<BeatTime, Pitch>(name: "Violin")
-        let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
-
-        work.isLocked = true
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.shiftPart(part2.partID,
-                               to: 0)
-        }
         #expect(work.partIDs == [part1.partID, part2.partID])
     }
 }

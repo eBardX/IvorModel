@@ -376,7 +376,7 @@ extension Part where TimeType == BeatTime {
     ///
     /// Unlike ``quantize(to:noteIDs:applyTo:)-(_,_,_)``, this never throws — an already-built
     /// ``BeatQuantizer`` has already had its factors validated, so there is nothing left for this
-    /// call to fail on. This is the overload ``Work``'s whole-work and targeted quantize variants
+    /// call to fail on. This is the overload ``Work``’s whole-work and targeted quantize variants
     /// (`Work+Quantize.swift`) call, so a single `BeatQuantizer` can be validated once and reused
     /// across every part without re-validating per part.
     ///

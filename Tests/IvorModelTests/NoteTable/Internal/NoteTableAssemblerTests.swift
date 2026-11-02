@@ -24,8 +24,8 @@ extension NoteTableAssemblerTests {
                       NoteEventSB(tiedPitches: [TiedPitchSB(pitch: .e5)],
                                   duration: 1)]
 
-        #expect(makeNoteTriplesSB(_assemble(events)) == makeNoteTriplesSB(makeNoteTableSB([(0, 1, .a4),
-                                                                                           (1, 1, .e5)])))
+        #expect(makeNoteTriplesSB(assembleNoteTable(events)) == makeNoteTriplesSB(makeNoteTableSB([(0, 1, .a4),
+                                                                                                   (1, 1, .e5)])))
     }
 
     @Test
@@ -36,8 +36,8 @@ extension NoteTableAssemblerTests {
                       NoteEventSB(tiedPitches: [TiedPitchSB(pitch: .e5)],
                                   duration: 1)]
 
-        #expect(makeNoteTriplesSB(_assemble(events)) == makeNoteTriplesSB(makeNoteTableSB([(0, 1, .a4),
-                                                                                           (1, 1, .e5)])))
+        #expect(makeNoteTriplesSB(assembleNoteTable(events)) == makeNoteTriplesSB(makeNoteTableSB([(0, 1, .a4),
+                                                                                                   (1, 1, .e5)])))
     }
 
     @Test
@@ -50,8 +50,8 @@ extension NoteTableAssemblerTests {
                                                             endsTie: true)],
                                   duration: 1)]
 
-        #expect(makeNoteTriplesSB(_assemble(events)) == makeNoteTriplesSB(makeNoteTableSB([(0, 1, .a4),
-                                                                                           (3, 1, .a4)])))
+        #expect(makeNoteTriplesSB(assembleNoteTable(events)) == makeNoteTriplesSB(makeNoteTableSB([(0, 1, .a4),
+                                                                                                   (3, 1, .a4)])))
     }
 
     @Test
@@ -62,13 +62,29 @@ extension NoteTableAssemblerTests {
                                                             startsTie: true)],
                                   duration: 2)]
 
-        #expect(makeNoteTriplesSB(_assemble(events)) == makeNoteTriplesSB(makeNoteTableSB([(0, 1, .a4),
-                                                                                           (1, 2, .e5)])))
+        #expect(makeNoteTriplesSB(assembleNoteTable(events)) == makeNoteTriplesSB(makeNoteTableSB([(0, 1, .a4),
+                                                                                                   (1, 2, .e5)])))
     }
 
     @Test
     func assemble_empty() {
-        #expect(_assemble([]).notes.isEmpty)
+        #expect(assembleNoteTable([]).notes.isEmpty)
+    }
+
+    @Test(arguments: [// Monophonic
+        [(0, 1, .a4), (1, 1, .cSharp5), (2, 1, .e5), (3, 1, .g5)],
+                      // Overlapping
+        [(0, 1, .a4), (0.5, 1, .cSharp5), (1, 1, .e5), (1.5, 1, .g5)],
+                      // Chord with staggered releases
+        [(0, 1, .a4), (0, 2, .cSharp5), (0, 3, .e5), (3, 1, .a4)],
+                      // Leading and inner rests
+        [(1, 1, .a4), (3, 0.5, .e5), (3, 1, .a4)],
+                      // Unison doubling
+        [(0, 2, .a4), (1, 2, .a4)]] as [[(attack: BeatTime, duration: BeatDuration, pitch: Pitch)]])
+    func assemble_roundTrip(_ rawNotes: [(attack: BeatTime, duration: BeatDuration, pitch: Pitch)]) {
+        let ntab = makeNoteTableSB(rawNotes)
+
+        #expect(makeNoteTriplesSB(assembleNoteTable(ntab.extractNoteEvents())) == makeNoteTriplesSB(ntab))
     }
 
     @Test
@@ -85,31 +101,7 @@ extension NoteTableAssemblerTests {
                                                             endsTie: true)],
                                   duration: 1)]
 
-        #expect(makeNoteTriplesSB(_assemble(events)) == makeNoteTriplesSB(makeNoteTableSB([(0, 2, .a4),
-                                                                                           (0.5, 0.5, .e5)])))
+        #expect(makeNoteTriplesSB(assembleNoteTable(events)) == makeNoteTriplesSB(makeNoteTableSB([(0, 2, .a4),
+                                                                                                   (0.5, 0.5, .e5)])))
     }
-
-    @Test(arguments: [// Monophonic
-        [(0, 1, .a4), (1, 1, .cSharp5), (2, 1, .e5), (3, 1, .g5)],
-                      // Overlapping
-        [(0, 1, .a4), (0.5, 1, .cSharp5), (1, 1, .e5), (1.5, 1, .g5)],
-                      // Chord with staggered releases
-        [(0, 1, .a4), (0, 2, .cSharp5), (0, 3, .e5), (3, 1, .a4)],
-                      // Leading and inner rests
-        [(1, 1, .a4), (3, 0.5, .e5), (3, 1, .a4)],
-                      // Unison doubling
-        [(0, 2, .a4), (1, 2, .a4)]] as [[(attack: BeatTime, duration: BeatDuration, pitch: Pitch)]])
-    func assemble_roundTrip(_ rawNotes: [(attack: BeatTime, duration: BeatDuration, pitch: Pitch)]) {
-        let ntab = makeNoteTableSB(rawNotes)
-
-        #expect(makeNoteTriplesSB(_assemble(ntab.extractNoteEvents())) == makeNoteTriplesSB(ntab))
-    }
-}
-
-// MARK: - Private Functions
-
-private func _assemble(_ noteEvents: [NoteEvent<BeatTime, Pitch>]) -> NoteTable<BeatTime, Pitch> {
-    var assembler = NoteTable<BeatTime, Pitch>.Assembler(noteEvents: noteEvents)
-
-    return assembler.assembleNoteTable()
 }

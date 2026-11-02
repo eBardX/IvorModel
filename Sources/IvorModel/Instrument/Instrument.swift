@@ -30,11 +30,6 @@ public struct Instrument {
 
     /// The string value designating this instrument.
     public let stringValue: String
-
-    /// The plain string representation of this instrument.
-    public var plain: String {
-        description
-    }
 }
 
 // MARK: -
@@ -45,6 +40,13 @@ extension Instrument {
 
     /// The default instrument.
     public static let vanilla = Self("Vanilla")
+
+    // MARK: Public Instance Properties
+
+    /// The plain string representation of this instrument.
+    public var plain: String {
+        description
+    }
 }
 
 // MARK: - StringRepresentable

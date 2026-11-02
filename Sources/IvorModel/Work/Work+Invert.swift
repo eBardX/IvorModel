@@ -19,7 +19,7 @@ extension Work {
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             absolute (frequency) pitch notation; otherwise,
-    ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
+    ///             ``Work/Error/transformFailure(kind:partID:detail:)`` naming the part that failed.
     public mutating func invert(around pitchRange: ClosedRange<Frequency>? = nil,
                                 partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
@@ -67,7 +67,7 @@ extension Work {
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             keyboard (MIDI note number) pitch notation; otherwise,
-    ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
+    ///             ``Work/Error/transformFailure(kind:partID:detail:)`` naming the part that failed.
     public mutating func invert(around pitchRange: ClosedRange<NoteNumber>? = nil,
                                 partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
@@ -115,7 +115,7 @@ extension Work {
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
     ///             standard (staff) pitch notation; otherwise,
-    ///             ``Work/Error/transformFailure(_:partID:detail:)`` naming the part that failed.
+    ///             ``Work/Error/transformFailure(kind:partID:detail:)`` naming the part that failed.
     public mutating func invert(around pitchRange: ClosedRange<Pitch>? = nil,
                                 partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()

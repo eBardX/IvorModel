@@ -3,6 +3,8 @@
 public import IvorTiming
 public import XestiNumbers
 
+// MARK: - TemplateDuration
+
 extension BeatDuration: TemplateDuration {
 
     // MARK: Public Instance Methods

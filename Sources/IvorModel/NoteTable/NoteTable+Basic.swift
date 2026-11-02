@@ -237,13 +237,13 @@ extension NoteTable {
     /// duration, and pitches unchanged.
     ///
     /// Unlike ``moveAttack(noteID:to:)`` and its siblings, this never reorders the table — a
-    /// note's position depends only on its attack, duration, and pitches (see
+    /// note’s position depends only on its attack, duration, and pitches (see
     /// ``insertionIndex(for:duration:startPitch:endPitch:)``), which extras play no part in — so
     /// this replaces the note in place at its existing index rather than removing and
     /// reinserting it. That distinction matters when two notes tie on every
     /// position-determining field: reinserting one of them would always land it after the other
-    /// (see `insertionIndex`'s doc comment), silently swapping their relative order even though
-    /// neither note's own position actually changed.
+    /// (see `insertionIndex`’s doc comment), silently swapping their relative order even though
+    /// neither note’s own position actually changed.
     ///
     /// - Parameter noteID:  The identity of the note to update.
     /// - Parameter extras:  The new extras for the note.

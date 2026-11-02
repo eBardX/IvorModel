@@ -229,13 +229,6 @@ extension PanMapTests {
     }
 
     @Test
-    func subscript_empty() {
-        let map = PanMap<BeatTime>()
-
-        #expect(map[BeatTime(1)] == .center)
-    }
-
-    @Test
     func subscript_atEntryTime_isExact() {
         var map = PanMap<BeatTime>()
 
@@ -243,6 +236,23 @@ extension PanMapTests {
         map.insert(time: 3, pan: .right)
 
         #expect(map[BeatTime(1)] == Pan(horizontal: 30, vertical: 10))
+    }
+
+    @Test
+    func subscript_empty() {
+        let map = PanMap<BeatTime>()
+
+        #expect(map[BeatTime(1)] == .center)
+    }
+
+    @Test
+    func subscript_halfTurnRotatesClockwise() {
+        var map = PanMap<BeatTime>()
+
+        map.insert(time: 0, pan: .center)
+        map.insert(time: 2, pan: .behind)
+
+        #expect(abs(map[BeatTime(1)].horizontal.doubleValue - 90) < 1e-9)
     }
 
     @Test
@@ -298,16 +308,6 @@ extension PanMapTests {
 
         #expect(abs(map[BeatTime(1)].horizontal.doubleValue - 180) < 1e-9)
         #expect(abs(map[BeatTime(Number(numerator: 3, denominator: 2))].horizontal.doubleValue - -175) < 1e-9)
-    }
-
-    @Test
-    func subscript_halfTurnRotatesClockwise() {
-        var map = PanMap<BeatTime>()
-
-        map.insert(time: 0, pan: .center)
-        map.insert(time: 2, pan: .behind)
-
-        #expect(abs(map[BeatTime(1)].horizontal.doubleValue - 90) < 1e-9)
     }
 
     @Test

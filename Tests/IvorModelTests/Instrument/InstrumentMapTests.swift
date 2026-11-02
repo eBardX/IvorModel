@@ -151,11 +151,6 @@ extension InstrumentMapTests {
     }
 
     @Test
-    func instruments_empty_isDefaultInstrument() {
-        #expect(InstrumentMap<BeatTime>(defaultInstrument: piano).instruments == [piano])
-    }
-
-    @Test
     func instruments_eachOnceInOrderOfFirstUse() {
         var map = InstrumentMap<BeatTime>(defaultInstrument: .vanilla)
 
@@ -169,6 +164,11 @@ extension InstrumentMapTests {
                    instrument: guitar)
 
         #expect(map.instruments == [piano, guitar])
+    }
+
+    @Test
+    func instruments_empty_isDefaultInstrument() {
+        #expect(InstrumentMap<BeatTime>(defaultInstrument: piano).instruments == [piano])
     }
 
     @Test

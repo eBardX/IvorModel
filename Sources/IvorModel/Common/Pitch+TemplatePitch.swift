@@ -2,6 +2,8 @@
 
 public import IvorTuning
 
+// MARK: - TemplatePitch
+
 extension Pitch: TemplatePitch {
 
     // MARK: Public Instance Methods
@@ -13,12 +15,12 @@ extension Pitch: TemplatePitch {
     ///
     /// - Returns:  The nearest pitch of that class, or `nil` if there is none in range.
     public func nearest(_ pitchClass: PitchClass) -> Self? {
-        let semitones = _semitones
+        let semitones = semitones
 
         return (-1...1)
             .compactMap { Octave(intValue: octave.intValue + $0) }
             .map { Self(pitchClass: pitchClass, octave: $0) }
-            .min { abs($0._semitones - semitones) < abs($1._semitones - semitones) }
+            .min { abs($0.semitones - semitones) < abs($1.semitones - semitones) }
     }
 
     /// Returns this pitch moved by a number of octaves.
@@ -39,7 +41,7 @@ extension Pitch: TemplatePitch {
     // Semitones above C in octave 0, in equal temperament, so that B♯3 and C4 are the same — for
     // finding the nearest pitch of a class, not for ordering pitches.
     //
-    private var _semitones: Int {
+    private var semitones: Int {
         let letterSemitones = [0, 2, 4, 5, 7, 9, 11]
 
         return 12 * octave.intValue + letterSemitones[letter.order - 1] + accidental.order

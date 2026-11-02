@@ -178,15 +178,15 @@ extension Pan {
 
     // MARK: Private Type Methods
 
+    private static func _isLabel(_ char: Character) -> Bool {
+        "HVhv".contains(char)
+    }
+
     private static func _lateralDegrees(horizontal: Double,
                                         vertical: Double) -> Number {
         let lateral = sin(horizontal * .pi / 180) * cos(vertical * .pi / 180)
 
         return Number(asin(min(max(lateral, -1), 1)) * 180 / .pi)
-    }
-
-    private static func _isLabel(_ char: Character) -> Bool {
-        "HVhv".contains(char)
     }
 
     private static func _parse(_ plain: String) -> (horizontal: Angle?, vertical: Angle?)? {

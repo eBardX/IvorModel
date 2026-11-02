@@ -35,7 +35,7 @@ extension Template {
     // With `samplesMembers`, an absolute pitch or duration that a tolerance grouped is replaced, in
     // the output only, by one of its members, drawn by count.
     //
-    internal final class Realizer<TimeType: TimeProtocol, PitchType: TemplatePitch>: Sendable where TimeType.DurationType: TemplateDuration {
+    internal final class Realizer<TimeType: TimeProtocol, PitchType: TemplatePitch> where TimeType.DurationType: TemplateDuration {
 
         // MARK: Internal Initializers
 
@@ -54,10 +54,10 @@ extension Template {
             let startDuration = phrase.last?.duration ?? options.startDuration ?? vocabulary.first?.duration ?? vocabulary.commonestDuration
             let startPitch = phraseBass ?? options.startPitch ?? firstBass ?? vocabulary.commonestPitch
 
-            self.anchors = Mutex(_Anchors(bass: startPitch,
-                                          duration: startDuration,
-                                          pitch: startPitch,
-                                          rng: SeededRandomNumberGenerator(seed: memberSeed)))
+            self.anchors = Mutex(Anchors(bass: startPitch,
+                                         duration: startDuration,
+                                         pitch: startPitch,
+                                         rng: SeededRandomNumberGenerator(seed: memberSeed)))
             self.constraints = options.constraints
             self.defaultDuration = options.startDuration ?? vocabulary.commonestDuration
             self.defaultPitch = options.startPitch ?? vocabulary.commonestPitch
@@ -81,16 +81,16 @@ extension Template {
 
         // MARK: Private Nested Types
 
-        private struct _Anchors {
-            var bass: PitchType?
-            var duration: DurationType?
-            var pitch: PitchType?
-            var rng: SeededRandomNumberGenerator
+        private struct Anchors {
+            fileprivate var bass: PitchType?
+            fileprivate var duration: DurationType?
+            fileprivate var pitch: PitchType?
+            fileprivate var rng: SeededRandomNumberGenerator
         }
 
         // MARK: Private Instance Properties
 
-        private let anchors: Mutex<_Anchors>
+        private let anchors: Mutex<Anchors>
         private let constraints: GenerationOptions<TimeType, PitchType>.Constraints
         private let defaultDuration: DurationType?
         private let defaultPitch: PitchType?
@@ -168,6 +168,63 @@ extension Template.Realizer {
         }
     }
 
+    // MARK: Private Type Methods
+
+    //
+    // A member drawn in proportion to its count, from the members in sorted order, so that a seed
+    // always draws the same one.
+    //
+    private static func _draw<Value: Comparable>(from members: [Value: Int],
+                                                 using rng: inout SeededRandomNumberGenerator) -> Value? {
+        let total = members.values.reduce(0, +)
+
+        guard total > 0
+        else { return nil }
+
+        var remaining = Int(rng.next() % UInt64(total))
+
+        for value in members.keys.sorted() {
+            remaining -= members[value, default: 0]
+
+            if remaining < 0 {
+                return value
+            }
+        }
+
+        return nil
+    }
+
+    //
+    // The source's range — moved by the interval from the source's first bass to the start pitch,
+    // when one is given, so that a template started elsewhere keeps the same span around it.
+    //
+    private static func _sourceRange(of vocabulary: Template.Vocabulary<TimeType, PitchType>,
+                                     movedFrom firstBass: PitchType?,
+                                     to startPitch: PitchType?,
+                                     including phrase: [NoteEvent<TimeType, PitchType>]) -> ClosedRange<PitchType>? {
+        let phrasePitches = phrase.flatMap { $0.tiedPitches.map(\.pitch) }
+        let bounds = (vocabulary.pitchRange.map { [$0.lowerBound, $0.upperBound] } ?? []) + phrasePitches
+
+        guard let lowest = bounds.min(),
+              let highest = bounds.max()
+        else { return nil }
+
+        let range = lowest...highest
+
+        guard phrasePitches.isEmpty
+        else { return range }
+
+        guard let firstBass,
+              let startPitch,
+              let interval = firstBass.templateInterval(to: startPitch),
+              let lowest = range.lowerBound.transposed(by: interval),
+              let highest = range.upperBound.transposed(by: interval),
+              lowest <= highest
+        else { return range }
+
+        return lowest...highest
+    }
+
     // MARK: Private Instance Methods
 
     private func _allowsPitches(_ tiedPitches: [TiedPitch],
@@ -182,7 +239,7 @@ extension Template.Realizer {
     }
 
     private func _duration(of state: Template.State<TimeType, PitchType>,
-                           from anchors: _Anchors) -> DurationType? {
+                           from anchors: Anchors) -> DurationType? {
         let duration: DurationType? = switch state.duration {
         case let .absolute(duration):
             duration
@@ -203,7 +260,7 @@ extension Template.Realizer {
 
     private func _intervalPitches(bass bassInterval: DirectedInterval<PitchType.IntervalType>,
                                   shape: [Template.Tone<DirectedInterval<PitchType.IntervalType>>],
-                                  from anchors: _Anchors,
+                                  from anchors: Anchors,
                                   bringingIntoRange: Bool) -> [TiedPitch]? {
         guard let previousBass = anchors.bass,
               var bass = previousBass.transposed(by: bassInterval)
@@ -260,12 +317,17 @@ extension Template.Realizer {
         return nil
     }
 
+    private func _octaves(from pitch: PitchType,
+                          to other: PitchType) -> Int? {
+        (-10...10).first { pitch.shifted(octaves: $0) == other }
+    }
+
     //
     // The lowest class nearest the previous pitch; each further class at the nearest pitch above
     // the one before, so a chord comes out in close position.  Brought into range as a whole.
     //
     private func _pitchClassPitches(_ tones: [Template.Tone<PitchType.PitchClassType>],
-                                    from anchors: _Anchors,
+                                    from anchors: Anchors,
                                     bringingIntoRange: Bool) -> [TiedPitch]? {
         guard var previous = anchors.pitch
         else { return nil }
@@ -303,13 +365,8 @@ extension Template.Realizer {
         }
     }
 
-    private func _octaves(from pitch: PitchType,
-                          to other: PitchType) -> Int? {
-        (-10...10).first { pitch.shifted(octaves: $0) == other }
-    }
-
     private func _realize(_ state: Template.State<TimeType, PitchType>,
-                          from anchors: _Anchors,
+                          from anchors: Anchors,
                           bringingIntoRange: Bool) -> NoteEvent<TimeType, PitchType>? {
         guard let duration = _duration(of: state,
                                        from: anchors)
@@ -362,7 +419,7 @@ extension Template.Realizer {
     }
 
     private func _tiedPitches(of state: Template.State<TimeType, PitchType>,
-                              from anchors: _Anchors,
+                              from anchors: Anchors,
                               bringingIntoRange: Bool) -> [TiedPitch]? {
         let tiedPitches: [TiedPitch]? = switch state.pitches {
         case let .absolute(tones):
@@ -393,61 +450,9 @@ extension Template.Realizer {
 
         return tiedPitches
     }
+}
 
-    // MARK: Private Type Methods
+// MARK: - Sendable
 
-    //
-    // The source's range — moved by the interval from the source's first bass to the start pitch,
-    // when one is given, so that a template started elsewhere keeps the same span around it.
-    //
-    private static func _sourceRange(of vocabulary: Template.Vocabulary<TimeType, PitchType>,
-                                     movedFrom firstBass: PitchType?,
-                                     to startPitch: PitchType?,
-                                     including phrase: [NoteEvent<TimeType, PitchType>]) -> ClosedRange<PitchType>? {
-        let phrasePitches = phrase.flatMap { $0.tiedPitches.map(\.pitch) }
-        let bounds = (vocabulary.pitchRange.map { [$0.lowerBound, $0.upperBound] } ?? []) + phrasePitches
-
-        guard let lowest = bounds.min(),
-              let highest = bounds.max()
-        else { return nil }
-
-        let range = lowest...highest
-
-        guard phrasePitches.isEmpty
-        else { return range }
-
-        guard let firstBass,
-              let startPitch,
-              let interval = firstBass.templateInterval(to: startPitch),
-              let lowest = range.lowerBound.transposed(by: interval),
-              let highest = range.upperBound.transposed(by: interval),
-              lowest <= highest
-        else { return range }
-
-        return lowest...highest
-    }
-
-    //
-    // A member drawn in proportion to its count, from the members in sorted order, so that a seed
-    // always draws the same one.
-    //
-    private static func _draw<Value: Comparable>(from members: [Value: Int],
-                                                 using rng: inout SeededRandomNumberGenerator) -> Value? {
-        let total = members.values.reduce(0, +)
-
-        guard total > 0
-        else { return nil }
-
-        var remaining = Int(rng.next() % UInt64(total))
-
-        for value in members.keys.sorted() {
-            remaining -= members[value, default: 0]
-
-            if remaining < 0 {
-                return value
-            }
-        }
-
-        return nil
-    }
+extension Template.Realizer: Sendable {
 }

@@ -11,16 +11,6 @@ extension Project {
     /// it.
     public struct SkippedTemplate {
 
-        // MARK: Internal Initializers
-
-        internal init(templateID: TemplateID,
-                      name: String?,
-                      reason: String) {
-            self.name = name
-            self.reason = reason
-            self.templateID = templateID
-        }
-
         // MARK: Public Instance Properties
 
         /// The template’s name, if it could be read on its own; otherwise, `nil`.
@@ -31,6 +21,16 @@ extension Project {
 
         /// The template’s ID.
         public let templateID: TemplateID
+
+        // MARK: Internal Initializers
+
+        internal init(templateID: TemplateID,
+                      name: String?,
+                      reason: String) {
+            self.name = name
+            self.reason = reason
+            self.templateID = templateID
+        }
     }
 }
 

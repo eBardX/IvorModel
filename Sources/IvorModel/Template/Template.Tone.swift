@@ -24,10 +24,10 @@ extension Template {
 
         // MARK: Public Instance Properties
 
-        /// Whether the pitch is tied from the previous event.
+        /// A Boolean value indicating whether the pitch is tied from the previous event.
         public let endsTie: Bool
 
-        /// Whether the pitch is tied to the next event.
+        /// A Boolean value indicating whether the pitch is tied to the next event.
         public let startsTie: Bool
 
         /// The pitch, pitch class or interval.

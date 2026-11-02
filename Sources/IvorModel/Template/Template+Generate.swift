@@ -34,6 +34,32 @@ extension Template {
                          mixingWith: [])
     }
 
+    /// Returns a new work generated from this template with the given typed recipe and seed.
+    ///
+    /// This is equivalent to calling `generateWork(name:options:seed:)`
+    /// with the recipe wrapped in ``Template/AnyGenerationOptions``.
+    ///
+    /// - Parameter name:       The name to assign to the generated work.
+    /// - Parameter options:    The recipe to generate with. Its time and pitch types must match
+    ///                         this template’s.
+    /// - Parameter seed:       The seed for the random choices made during generation.
+    ///
+    /// - Returns:  A new ``Work`` containing the generated note content.
+    ///
+    /// - Throws:   ``Template/Error/incompatibleOptions`` if `options` doesn’t match this
+    ///             template’s pitch notation and time basis; otherwise, a
+    ///             ``Template/Error`` describing the first invalid option.
+    public func generateWork(name: String,
+                             options: GenerationOptions<some Any, some Any>,
+                             seed: UInt64) throws -> Work {
+        guard let anyOptions = AnyGenerationOptions(options)
+        else { throw Error.incompatibleOptions }
+
+        return try generateWork(name: name,
+                                options: anyOptions,
+                                seed: seed)
+    }
+
     /// Returns a new work generated from this template and the other templates its recipe mixes
     /// in, with the given recipe and seed.
     ///
@@ -73,32 +99,6 @@ extension Template {
                                              seed: seed))
     }
 
-    /// Returns a new work generated from this template with the given typed recipe and seed.
-    ///
-    /// This is equivalent to calling `generateWork(name:options:seed:)`
-    /// with the recipe wrapped in ``Template/AnyGenerationOptions``.
-    ///
-    /// - Parameter name:       The name to assign to the generated work.
-    /// - Parameter options:    The recipe to generate with. Its time and pitch types must match
-    ///                         this template’s.
-    /// - Parameter seed:       The seed for the random choices made during generation.
-    ///
-    /// - Returns:  A new ``Work`` containing the generated note content.
-    ///
-    /// - Throws:   ``Template/Error/incompatibleOptions`` if `options` doesn’t match this
-    ///             template’s pitch notation and time basis; otherwise, a
-    ///             ``Template/Error`` describing the first invalid option.
-    public func generateWork(name: String,
-                             options: GenerationOptions<some Any, some Any>,
-                             seed: UInt64) throws -> Work {
-        guard let anyOptions = AnyGenerationOptions(options)
-        else { throw Error.incompatibleOptions }
-
-        return try generateWork(name: name,
-                                options: anyOptions,
-                                seed: seed)
-    }
-
     /// Returns a new work generated from this template at the given order, with a random seed.
     ///
     /// This is equivalent to calling `generateWork(name:options:seed:)`
@@ -127,10 +127,10 @@ extension Template {
     //
     // Lets a `MorphCurve`, which is `Codable` without depending on XestiTools, drive a morph.
     //
-    private struct _CurveInterpolator: Interpolator {
-        let curve: MorphCurve
+    private struct CurveInterpolator: Interpolator {
+        fileprivate let curve: MorphCurve
 
-        func interpolate(_ value: Double) -> Double {
+        fileprivate func interpolate(_ value: Double) -> Double {
             switch curve {
             case .cosine:
                 CosineInterpolator().interpolate(value)
@@ -150,246 +150,6 @@ extension Template {
     // MARK: Private Type Methods
 
     //
-    // Builds the generator stack for the chain with `role`, in the order documented on
-    // `GenerationOptions`: mixing (or the order alone), then constraints, then contrast, then
-    // back-off, then looping. Every sampling generator gets its own seed, drawn in a fixed order
-    // from `rng`, so the whole stack is reproducible.
-    //
-    // Constraints test realized note events (see `Realizer`) — or, for a separated template's
-    // chains, the half of one that each chooses — and so does the range that a relative recipe
-    // keeps to.  When the range rules out every choice, a fallback at the chain's order, under
-    // the constraints alone, chooses instead, and the realizer brings the result back into range.
-    // The duration chain chooses no pitches, so it has no range to keep to.
-    //
-    // A pitch chain isn't looped here: it's driven by `next(after:)` with a history that only the
-    // caller can reset, so the caller loops it (see `_generateNoteEvents`).
-    //
-    //
-    // The models of `others`, each of which must be of the case `model` picks out.
-    //
-    private static func _models<T, P>(_ others: [Template.Content],
-                                      _ model: (Template.Content) -> Model<T, P>?) throws -> [Model<T, P>] where T.DurationType: TemplateDuration {
-        try others.map { content in
-            guard let model = model(content)
-            else { throw Error.incompatibleTemplates }
-
-            return model
-        }
-    }
-
-    //
-    // `chains` are this template's chain with `role`, then those of the templates the recipe mixes
-    // in, in the mix's order.  Each gives a generator at an order, which the mix (if any) blends or
-    // morphs; back-off builds the same mix at each lower order.
-    //
-    private static func _makeGenerator<T, P>(using chains: [MarkovChain<State<T, P>>],
-                                             as role: ChainRole,
-                                             chainOptions: GenerationOptions<T, P>.ChainOptions,
-                                             options: GenerationOptions<T, P>,
-                                             realizer: Realizer<T, P>,
-                                             rng: inout SeededRandomNumberGenerator) throws -> any MarkovChain<State<T, P>>.Generator
-        where T.DurationType: TemplateDuration {
-        typealias Chain = MarkovChain<State<T, P>>
-
-        let constraints = options.constraints
-        let keepsToRange = role != .duration && realizer.range != nil
-
-        func makeSimple(_ markovChain: Chain,
-                        order: Int,
-                        rng: inout SeededRandomNumberGenerator) throws -> any Chain.Generator {
-            guard let generator = markovChain.generator(order: order,
-                                                        startsAtBegin: options.startsAtBegin,
-                                                        stopsAtEnd: options.stopsAtEnd,
-                                                        using: SeededRandomNumberGenerator(seed: rng.next()))
-            else { throw Error.invalidOrder(markovChain.maximumOrder) }
-
-            return generator
-        }
-
-        func makeMixed(order: Int,
-                       rng: inout SeededRandomNumberGenerator) throws -> any Chain.Generator {
-            switch options.templateMix {
-            case let .blend(shares):
-                var sources = try [(generator: makeSimple(chains[0], order: order, rng: &rng),
-                                    weight: 1 - shares.reduce(0) { $0 + $1.weight })]
-
-                for (chain, share) in zip(chains.dropFirst(), shares) {
-                    try sources.append((generator: makeSimple(chain, order: order, rng: &rng),
-                                        weight: share.weight))
-                }
-
-                return Chain.generator(blending: sources,
-                                       using: SeededRandomNumberGenerator(seed: rng.next()))
-
-            case let .morph(_, steps, curve):
-                return try Chain.generator(interpolating: makeSimple(chains[0], order: order, rng: &rng),
-                                           to: makeSimple(chains[1], order: order, rng: &rng),
-                                           over: steps,
-                                           along: _CurveInterpolator(curve: curve),
-                                           using: SeededRandomNumberGenerator(seed: rng.next()))
-
-            case nil:
-                return try makeSimple(chains[0], order: order, rng: &rng)
-            }
-        }
-
-        func isConstrained(checkingRange: Bool) -> Bool {
-            switch role {
-            case .duration:
-                constraints.maximumDuration != nil || constraints.maximumRestDuration != nil || !constraints.allowsRests
-
-            case .joint:
-                !constraints.isEmpty || (checkingRange && keepsToRange)
-
-            case .pitch:
-                constraints.allowedPitches != nil || constraints.pitchRange != nil || (checkingRange && keepsToRange)
-            }
-        }
-
-        func decorate(_ generator: any Chain.Generator,
-                      checkingRange: Bool,
-                      rng: inout SeededRandomNumberGenerator) -> any Chain.Generator {
-            var result = generator
-
-            if isConstrained(checkingRange: checkingRange) {
-                result = Chain.generator(filtering: result,
-                                         where: { realizer.allows($0, as: role, checkingRange: checkingRange) },
-                                         using: SeededRandomNumberGenerator(seed: rng.next()))
-            }
-
-            if chainOptions.contrast != 1 {
-                result = Chain.generator(contrasting: result,
-                                         by: chainOptions.contrast,
-                                         using: SeededRandomNumberGenerator(seed: rng.next()))
-            }
-
-            return result
-        }
-
-        let primary: any Chain.Generator = switch chainOptions.mixing {
-        case let .blend(otherOrder, weight):
-            try Chain.generator(blending: [(makeSimple(chains[0], order: chainOptions.order, rng: &rng), weight: 1 - weight),
-                                           (makeSimple(chains[0], order: otherOrder, rng: &rng), weight: weight)],
-                                using: SeededRandomNumberGenerator(seed: rng.next()))
-
-        case let .morph(otherOrder, steps, curve):
-            try Chain.generator(interpolating: makeSimple(chains[0], order: chainOptions.order, rng: &rng),
-                                to: makeSimple(chains[0], order: otherOrder, rng: &rng),
-                                over: steps,
-                                along: _CurveInterpolator(curve: curve),
-                                using: SeededRandomNumberGenerator(seed: rng.next()))
-
-        case nil:
-            try makeMixed(order: chainOptions.order, rng: &rng)
-        }
-
-        var stack = decorate(primary,
-                             checkingRange: true,
-                             rng: &rng)
-
-        if options.backsOff {
-            for order in (0..<chainOptions.topOrder).reversed() {
-                stack = try Chain.generator(trying: stack,
-                                            otherwise: decorate(makeMixed(order: order, rng: &rng),
-                                                                checkingRange: true,
-                                                                rng: &rng))
-            }
-        }
-
-        if keepsToRange {
-            stack = try Chain.generator(trying: stack,
-                                        otherwise: decorate(makeMixed(order: chainOptions.order, rng: &rng),
-                                                            checkingRange: false,
-                                                            rng: &rng))
-        }
-
-        if options.loops, role != .pitch {
-            stack = Chain.generator(looping: stack)
-        }
-
-        return stack
-    }
-
-    //
-    // Generates states until `step` returns `true` for one: from the joint chain alone, or from a
-    // separated template's two chains in step.  For each duration state that isn't a rest, the
-    // pitch chain chooses the next pitch state from those it chose before; the two halves are
-    // joined into the state that `step` gets.  Either chain stopping stops generation — except
-    // that, with `loops`, the pitch chain starts again from the beginning, as `looping` would.
-    //
-    private static func _generateStates<T, P>(using chains: Model<T, P>.Chains,
-                                              mixingWith others: [Model<T, P>.Chains],
-                                              options: GenerationOptions<T, P>,
-                                              continuing phrase: [State<T, P>],
-                                              realizer: Realizer<T, P>,
-                                              rng: inout SeededRandomNumberGenerator,
-                                              until step: (State<T, P>) -> Bool) throws where T.DurationType: TemplateDuration {
-        switch chains {
-        case let .joint(markovChain):
-            var generator = try _makeGenerator(using: _chains(markovChain, others, .joint),
-                                               as: .joint,
-                                               chainOptions: options.mainChain,
-                                               options: options,
-                                               realizer: realizer,
-                                               rng: &rng)
-
-            _ = generator.generate(continuing: phrase,
-                                   until: step)
-
-        case let .separate(durationChain, pitchChain):
-            var durationGenerator = try _makeGenerator(using: _chains(durationChain, others, .duration),
-                                                       as: .duration,
-                                                       chainOptions: options.mainChain,
-                                                       options: options,
-                                                       realizer: realizer,
-                                                       rng: &rng)
-
-            var pitchGenerator = try _makeGenerator(using: _chains(pitchChain, others, .pitch),
-                                                    as: .pitch,
-                                                    chainOptions: options.pitchChain ?? options.mainChain,
-                                                    options: options,
-                                                    realizer: realizer,
-                                                    rng: &rng)
-
-            let historyLimit = pitchChain.maximumOrder
-            var pitchHistory = Array(phrase.filter { !$0.isRest }.map(\.pitchHalf).suffix(historyLimit))
-
-            func nextPitchHalf() -> State<T, P>? {
-                if let pitchHalf = pitchGenerator.next(after: pitchHistory) {
-                    return pitchHalf
-                }
-
-                guard options.loops
-                else { return nil }
-
-                pitchHistory = []
-
-                return pitchGenerator.next(after: [])
-            }
-
-            _ = durationGenerator.generate(continuing: phrase.map(\.durationHalf)) { durationHalf in
-                var pitchHalf: State<T, P>?
-
-                if !durationHalf.isRest {
-                    guard let nextHalf = nextPitchHalf()
-                    else { return true }
-
-                    pitchHistory = Array((pitchHistory + [nextHalf]).suffix(historyLimit))
-                    pitchHalf = nextHalf
-                }
-
-                return step(State(durationHalf: durationHalf,
-                                  pitchHalf: pitchHalf))
-            }
-        }
-    }
-
-    //
-    // With a phrase, the chains continue its states, the realizer starts from its end, and the
-    // output starts with its own note events (if it includes the phrase).  The length and cadence
-    // count the continuation only.
-    //
-    //
     // This template's chain with `role`, then each other's.  The others share this template's state
     // recipe, so they have the same roles.
     //
@@ -408,6 +168,11 @@ extension Template {
         return chains
     }
 
+    //
+    // With a phrase, the chains continue its states, the realizer starts from its end, and the
+    // output starts with its own note events (if it includes the phrase).  The length and cadence
+    // count the continuation only.
+    //
     private static func _generateNoteTable<T, P>(using model: Model<T, P>,
                                                  mixingWith others: [Model<T, P>],
                                                  options: GenerationOptions<T, P>,
@@ -506,6 +271,80 @@ extension Template {
     }
 
     //
+    // Generates states until `step` returns `true` for one: from the joint chain alone, or from a
+    // separated template's two chains in step.  For each duration state that isn't a rest, the
+    // pitch chain chooses the next pitch state from those it chose before; the two halves are
+    // joined into the state that `step` gets.  Either chain stopping stops generation — except
+    // that, with `loops`, the pitch chain starts again from the beginning, as `looping` would.
+    //
+    private static func _generateStates<T, P>(using chains: Model<T, P>.Chains,
+                                              mixingWith others: [Model<T, P>.Chains],
+                                              options: GenerationOptions<T, P>,
+                                              continuing phrase: [State<T, P>],
+                                              realizer: Realizer<T, P>,
+                                              rng: inout SeededRandomNumberGenerator,
+                                              until step: (State<T, P>) -> Bool) throws where T.DurationType: TemplateDuration {
+        switch chains {
+        case let .joint(markovChain):
+            var generator = try _makeGenerator(using: _chains(markovChain, others, .joint),
+                                               as: .joint,
+                                               chainOptions: options.mainChain,
+                                               options: options,
+                                               realizer: realizer,
+                                               rng: &rng)
+
+            _ = generator.generate(continuing: phrase,
+                                   until: step)
+
+        case let .separate(durationChain, pitchChain):
+            var durationGenerator = try _makeGenerator(using: _chains(durationChain, others, .duration),
+                                                       as: .duration,
+                                                       chainOptions: options.mainChain,
+                                                       options: options,
+                                                       realizer: realizer,
+                                                       rng: &rng)
+
+            var pitchGenerator = try _makeGenerator(using: _chains(pitchChain, others, .pitch),
+                                                    as: .pitch,
+                                                    chainOptions: options.pitchChain ?? options.mainChain,
+                                                    options: options,
+                                                    realizer: realizer,
+                                                    rng: &rng)
+
+            let historyLimit = pitchChain.maximumOrder
+            var pitchHistory = Array(phrase.filter { !$0.isRest }.map(\.pitchHalf).suffix(historyLimit))
+
+            func nextPitchHalf() -> State<T, P>? {
+                if let pitchHalf = pitchGenerator.next(after: pitchHistory) {
+                    return pitchHalf
+                }
+
+                guard options.loops
+                else { return nil }
+
+                pitchHistory = []
+
+                return pitchGenerator.next(after: [])
+            }
+
+            _ = durationGenerator.generate(continuing: phrase.map(\.durationHalf)) { durationHalf in
+                var pitchHalf: State<T, P>?
+
+                if !durationHalf.isRest {
+                    guard let nextHalf = nextPitchHalf()
+                    else { return true }
+
+                    pitchHistory = Array((pitchHistory + [nextHalf]).suffix(historyLimit))
+                    pitchHalf = nextHalf
+                }
+
+                return step(State(durationHalf: durationHalf,
+                                  pitchHalf: pitchHalf))
+            }
+        }
+    }
+
+    //
     // The tolerances are the template's own, for a phrase to continue (see `PhraseLearner`); the
     // part and, in beat time, the tempo map start out in `sourceContext`.
     //
@@ -587,30 +426,168 @@ extension Template {
         }
     }
 
-    // MARK: Private Instance Methods
-
     //
-    // The templates `options` mixes in, in the mix's order, from among `others`.  Each must share
-    // this template's pitch notation, time basis and state recipe.
+    // Builds the generator stack for the chain with `role`, in the order documented on
+    // `GenerationOptions`: mixing (or the order alone), then constraints, then contrast, then
+    // back-off, then looping. Every sampling generator gets its own seed, drawn in a fixed order
+    // from `rng`, so the whole stack is reproducible.
     //
-    private func _mixedTemplates(for options: AnyGenerationOptions,
-                                 among others: [Template]) throws(Error) -> [Template] {
-        var result: [Template] = []
+    // Constraints test realized note events (see `Realizer`) — or, for a separated template's
+    // chains, the half of one that each chooses — and so does the range that a relative recipe
+    // keeps to.  When the range rules out every choice, a fallback at the chain's order, under
+    // the constraints alone, chooses instead, and the realizer brings the result back into range.
+    // The duration chain chooses no pitches, so it has no range to keep to.
+    //
+    // A pitch chain isn't looped here: it's driven by `next(after:)` with a history that only the
+    // caller can reset, so the caller loops it (see `_generateNoteEvents`).
+    //
+    //
+    // `chains` are this template's chain with `role`, then those of the templates the recipe mixes
+    // in, in the mix's order.  Each gives a generator at an order, which the mix (if any) blends or
+    // morphs; back-off builds the same mix at each lower order.
+    //
+    private static func _makeGenerator<T, P>(using chains: [MarkovChain<State<T, P>>],
+                                             as role: ChainRole,
+                                             chainOptions: GenerationOptions<T, P>.ChainOptions,
+                                             options: GenerationOptions<T, P>,
+                                             realizer: Realizer<T, P>,
+                                             rng: inout SeededRandomNumberGenerator) throws -> any MarkovChain<State<T, P>>.Generator
+        where T.DurationType: TemplateDuration {
+        typealias Chain = MarkovChain<State<T, P>>
 
-        for templateID in options.otherTemplates.map(\.templateID) {
-            guard let other = others.first(where: { $0.templateID == templateID })
-            else { throw Error.templateNotFound(templateID) }
+        let constraints = options.constraints
+        let keepsToRange = role != .duration && realizer.range != nil
 
-            guard other.pitchNotation == pitchNotation,
-                  other.timeBasis == timeBasis,
-                  other.analysisOptions.states == analysisOptions.states
-            else { throw Error.incompatibleTemplates }
+        func makeSimple(_ markovChain: Chain,
+                        order: Int,
+                        rng: inout SeededRandomNumberGenerator) throws -> any Chain.Generator {
+            guard let generator = markovChain.generator(order: order,
+                                                        startsAtBegin: options.startsAtBegin,
+                                                        stopsAtEnd: options.stopsAtEnd,
+                                                        using: SeededRandomNumberGenerator(seed: rng.next()))
+            else { throw Error.invalidOrder(markovChain.maximumOrder) }
 
-            result.append(other)
+            return generator
         }
 
-        return result
+        func makeMixed(order: Int,
+                       rng: inout SeededRandomNumberGenerator) throws -> any Chain.Generator {
+            switch options.templateMix {
+            case let .blend(shares):
+                var sources = try [(generator: makeSimple(chains[0], order: order, rng: &rng),
+                                    weight: 1 - shares.reduce(0) { $0 + $1.weight })]
+
+                for (chain, share) in zip(chains.dropFirst(), shares) {
+                    try sources.append((generator: makeSimple(chain, order: order, rng: &rng),
+                                        weight: share.weight))
+                }
+
+                return Chain.generator(blending: sources,
+                                       using: SeededRandomNumberGenerator(seed: rng.next()))
+
+            case let .morph(_, steps, curve):
+                return try Chain.generator(interpolating: makeSimple(chains[0], order: order, rng: &rng),
+                                           to: makeSimple(chains[1], order: order, rng: &rng),
+                                           over: steps,
+                                           along: CurveInterpolator(curve: curve),
+                                           using: SeededRandomNumberGenerator(seed: rng.next()))
+
+            case nil:
+                return try makeSimple(chains[0], order: order, rng: &rng)
+            }
+        }
+
+        func isConstrained(checkingRange: Bool) -> Bool {
+            switch role {
+            case .duration:
+                constraints.maximumDuration != nil || constraints.maximumRestDuration != nil || !constraints.allowsRests
+
+            case .joint:
+                !constraints.isEmpty || (checkingRange && keepsToRange)
+
+            case .pitch:
+                constraints.allowedPitches != nil || constraints.pitchRange != nil || (checkingRange && keepsToRange)
+            }
+        }
+
+        func decorate(_ generator: any Chain.Generator,
+                      checkingRange: Bool,
+                      rng: inout SeededRandomNumberGenerator) -> any Chain.Generator {
+            var result = generator
+
+            if isConstrained(checkingRange: checkingRange) {
+                result = Chain.generator(filtering: result,
+                                         where: { realizer.allows($0, as: role, checkingRange: checkingRange) },
+                                         using: SeededRandomNumberGenerator(seed: rng.next()))
+            }
+
+            if chainOptions.contrast != 1 {
+                result = Chain.generator(contrasting: result,
+                                         by: chainOptions.contrast,
+                                         using: SeededRandomNumberGenerator(seed: rng.next()))
+            }
+
+            return result
+        }
+
+        let primary: any Chain.Generator = switch chainOptions.mixing {
+        case let .blend(otherOrder, weight):
+            try Chain.generator(blending: [(makeSimple(chains[0], order: chainOptions.order, rng: &rng), weight: 1 - weight),
+                                           (makeSimple(chains[0], order: otherOrder, rng: &rng), weight: weight)],
+                                using: SeededRandomNumberGenerator(seed: rng.next()))
+
+        case let .morph(otherOrder, steps, curve):
+            try Chain.generator(interpolating: makeSimple(chains[0], order: chainOptions.order, rng: &rng),
+                                to: makeSimple(chains[0], order: otherOrder, rng: &rng),
+                                over: steps,
+                                along: CurveInterpolator(curve: curve),
+                                using: SeededRandomNumberGenerator(seed: rng.next()))
+
+        case nil:
+            try makeMixed(order: chainOptions.order, rng: &rng)
+        }
+
+        var stack = decorate(primary,
+                             checkingRange: true,
+                             rng: &rng)
+
+        if options.backsOff {
+            for order in (0..<chainOptions.topOrder).reversed() {
+                stack = try Chain.generator(trying: stack,
+                                            otherwise: decorate(makeMixed(order: order, rng: &rng),
+                                                                checkingRange: true,
+                                                                rng: &rng))
+            }
+        }
+
+        if keepsToRange {
+            stack = try Chain.generator(trying: stack,
+                                        otherwise: decorate(makeMixed(order: chainOptions.order, rng: &rng),
+                                                            checkingRange: false,
+                                                            rng: &rng))
+        }
+
+        if options.loops, role != .pitch {
+            stack = Chain.generator(looping: stack)
+        }
+
+        return stack
     }
+
+    //
+    // The models of `others`, each of which must be of the case `model` picks out.
+    //
+    private static func _models<T, P>(_ others: [Template.Content],
+                                      _ model: (Template.Content) -> Model<T, P>?) throws -> [Model<T, P>] where T.DurationType: TemplateDuration {
+        try others.map { content in
+            guard let model = model(content)
+            else { throw Error.incompatibleTemplates }
+
+            return model
+        }
+    }
+
+    // MARK: Private Instance Methods
 
     private func _defaultOptions(order: Int,
                                  limit: Int) -> AnyGenerationOptions {
@@ -639,5 +616,28 @@ extension Template {
             .standardWall(GenerationOptions(order: order,
                                             length: .noteCount(limit)))
         }
+    }
+
+    //
+    // The templates `options` mixes in, in the mix's order, from among `others`.  Each must share
+    // this template's pitch notation, time basis and state recipe.
+    //
+    private func _mixedTemplates(for options: AnyGenerationOptions,
+                                 among others: [Template]) throws(Error) -> [Template] {
+        var result: [Template] = []
+
+        for templateID in options.otherTemplates.map(\.templateID) {
+            guard let other = others.first(where: { $0.templateID == templateID })
+            else { throw Error.templateNotFound(templateID) }
+
+            guard other.pitchNotation == pitchNotation,
+                  other.timeBasis == timeBasis,
+                  other.analysisOptions.states == analysisOptions.states
+            else { throw Error.incompatibleTemplates }
+
+            result.append(other)
+        }
+
+        return result
     }
 }
