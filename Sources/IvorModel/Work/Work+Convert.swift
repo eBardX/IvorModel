@@ -615,10 +615,6 @@ extension Work {
         case let .invalidKeyboardLayout(problem):
             .invalidKeyboardLayout(problem)
 
-        case let .unsupportedConversion(from, to):
-            .unsupportedPitchConversion(from: from,
-                                        to: to)
-
         case .unsupportedStandardConversion:
             .unsupportedStandardConversion
         }
