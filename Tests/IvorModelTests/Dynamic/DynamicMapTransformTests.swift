@@ -299,6 +299,38 @@ extension DynamicMapTransformTests {
     }
 
     @Test
+    func reverse_stepPairReversesWithItsSegments() throws {
+        //
+        // A step is two entries at the same time: the old value, then the new one
+        // (the last entry at a time wins). Reversing .pp 0–4, .ff 4–8 must give
+        // .ff 0–4, .pp 4–8: the pair at 4 swaps order, and both segments stay flat
+        // rather than turning into glides.
+        //
+        var map = DynamicMapSB()
+
+        map.insert(time: 0, dynamic: .pp)
+        map.insert(time: 4, dynamic: .pp)
+        map.insert(time: 4, dynamic: .ff)
+        map.insert(time: 8, dynamic: .ff)
+
+        try map.reverse()
+
+        var times: [BeatTime] = []
+        var values: [Dynamic] = []
+
+        for entry in map {
+            times.append(entry.time)
+            values.append(entry.dynamic)
+        }
+
+        #expect(times == [0, 4, 4, 8])
+        #expect(values == [.ff, .ff, .pp, .pp])
+        #expect(map[2] == .ff)
+        #expect(map[4] == .pp)
+        #expect(map[6] == .pp)
+    }
+
+    @Test
     func reverse_validAnchorDoesNotThrow() throws {
         var map = DynamicMapSB()
 

@@ -155,6 +155,8 @@ extension NoteTable {
         }
 
         notes.sort()
+
+        self.pitchRange = Self.pitchRange(in: notes)
     }
 
     /// Moves note attack times by a directed duration.
@@ -225,10 +227,12 @@ extension NoteTable {
                                     duration: note.duration,
                                     startPitch: note.endPitch,
                                     endPitch: note.startPitch,
-                                    extras: note.extras)
+                                    extras: Self._reversedExtras(note.extras))
         }
 
         notes.sort()
+
+        self.timeRange = Self.timeRange(in: notes)
     }
 
     /// Transposes note pitches by a directed interval.
@@ -283,6 +287,43 @@ extension NoteTable {
         else { return timeRange }
 
         return Self.timeRange(in: notes.filter { noteIDs.contains($0.noteID) })
+    }
+
+    // MARK: Private Type Methods
+
+    //
+    // A slur runs the other way once its notes are reversed, so the note that ended it now
+    // starts it. Each marker keeps its payload (the slur id, where the format has one), so a
+    // note that ends one slur and starts another swaps both and the ids still pair up.
+    //
+    private static func _reversedExtras(_ extras: Extras?) -> Extras? {
+        guard let extras
+        else { return nil }
+
+        var newExtras = extras
+        let elements = extras.elements
+        let oldSlurEnd = elements.first { $0.name == Extra.slurEnd.name }
+        let oldSlurStart = elements.first { $0.name == Extra.slurStart.name }
+
+        if let oldSlurEnd {
+            newExtras.remove(oldSlurEnd)
+        }
+
+        if let oldSlurStart {
+            newExtras.remove(oldSlurStart)
+        }
+
+        if let oldSlurEnd {
+            newExtras.insert(Extra(name: Extra.slurStart.name,
+                                   values: oldSlurEnd.values))
+        }
+
+        if let oldSlurStart {
+            newExtras.insert(Extra(name: Extra.slurEnd.name,
+                                   values: oldSlurStart.values))
+        }
+
+        return newExtras
     }
 
     // MARK: Private Instance Methods

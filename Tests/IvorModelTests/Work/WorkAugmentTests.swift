@@ -5,6 +5,7 @@ import IvorTiming
 import IvorTuning
 import Testing
 import XestiNumbers
+import XestiTools
 
 struct WorkAugmentTests {
 }
@@ -38,6 +39,32 @@ extension WorkAugmentTests {
     }
 
     @Test
+    func augment_leadingRestScales() throws {
+        //
+        // The tempo and dynamic are set at 0 and the first note attacks at 1. The default anchor
+        // covers every layer that moves, so it's 0, and the beat of rest scales with the notes.
+        //
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.dynamicMap.insert(time: 0, dynamic: .mf)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: .default)
+
+        var work = Work(content: .standardBeat([part], tempoMap))
+
+        try work.augment(by: Number(2), anchor: nil as BeatTime?)
+
+        let augmented = try #require(work.part(part.partID, as: Part<BeatTime, Pitch>.self))
+
+        #expect(augmented.noteTable.map(\.attack) == [2])
+        #expect(augmented.dynamicMap.map(\.time) == [0])
+        #expect(work.tempoMap?.map(\.beatTime) == [0])
+    }
+
+    @Test
     func augment_lockedWork_throwsAndLeavesWorkUnchanged() {
         var (work, partID) = makeLockedWorkSB()
         let beatTimeRange = work.beatTimeRange
@@ -52,6 +79,28 @@ extension WorkAugmentTests {
 
         #expect(work.beatTimeRange == beatTimeRange)
         #expect(work.pitchRange?.lowerBound as? Pitch == .c4)
+    }
+
+    @Test
+    func augment_mapEntryBeforeFirstNote_doesNotThrow() throws {
+        //
+        // The work opens with a beat of rest: the tempo and the part's dynamic are set at 0,
+        // the first note attacks at 1. With no explicit anchor, the work resolves one from the
+        // notes alone (1), which every map then rejects as later than its own first entry (0).
+        //
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.dynamicMap.insert(time: 0, dynamic: .mf)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: .default)
+
+        var work = Work(content: .standardBeat([part], tempoMap))
+
+        try work.augment(by: Number(2), anchor: nil as BeatTime?)
     }
 
     @Test
@@ -75,6 +124,42 @@ extension WorkAugmentTests {
 
         #expect(work.partName(at: 0) == "Violin")
         #expect(work.beatTimeRange == BeatTime(0)...BeatTime(6))
+    }
+
+    @Test
+    func augment_scalesRampDuration() throws {
+        //
+        // `rampDuration` is in beats. Augmenting a 4-beat ramp by 2 makes it 8 beats long.
+        //
+        let t60 = try #require(Tempo(uintValue: 60))
+        let t120 = try #require(Tempo(uintValue: 120))
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0,
+                        tempo: t60,
+                        extras: Extras(elements: [Extra(name: Extra.rampStartTempo.name, values: [.double(60)]),
+                                                  Extra(name: Extra.rampEndTempo.name, values: [.double(120)]),
+                                                  Extra(name: Extra.rampDuration.name, values: [.double(4)])]))
+        tempoMap.insert(beatTime: 4, tempo: t120)
+
+        var work = Work(content: .standardBeat([part], tempoMap))
+
+        try work.augment(by: Number(2), anchor: nil as BeatTime?)
+
+        let entries = Array(work.tempoMap ?? TempoMap())
+
+        #expect(entries.map(\.beatTime) == [0, 8])
+
+        withKnownIssue("""
+            KNOWN_BUGS.md: Tempo ramp extras and time transforms — \
+            augment scales the ramp's beat times but not its rampDuration extra
+            """) {
+            #expect(extraValues(.rampDuration, in: entries.first?.extras) == [.double(8)])
+        }
     }
 
     @Test
@@ -189,6 +274,35 @@ extension WorkAugmentTests {
         let tempoTimes = work.tempoMap?.map(\.beatTime) ?? []
 
         #expect(tempoTimes.sorted() == [0, 2])
+    }
+
+    @Test
+    func augment_wholeWorkBeat_applyToWithoutTempo_leavesTempoMapUntouched() throws {
+        //
+        // Only `.tempo` carries the tempo map, however many other maps `applyTo` names. Its
+        // entries then don't widen the default anchor either: the notes start at 1, so they
+        // scale from there.
+        //
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: .default)
+        tempoMap.insert(beatTime: 2, tempo: .default)
+
+        var work = Work(content: .standardBeat([part], tempoMap))
+
+        try work.augment(by: Number(2),
+                         anchor: nil as BeatTime?,
+                         applyTo: [.dynamic, .instrument, .pan])
+
+        let augmented = try #require(work.part(part.partID, as: Part<BeatTime, Pitch>.self))
+
+        #expect(work.tempoMap?.map(\.beatTime) == [0, 2])
+        #expect(augmented.noteTable.map(\.attack) == [1])
+        #expect(augmented.timeRange == 1...3)
     }
 
     @Test

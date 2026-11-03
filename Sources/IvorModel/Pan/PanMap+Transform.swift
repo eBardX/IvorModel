@@ -171,6 +171,19 @@ extension PanMap {
                                        extras: entry.extras)
         }
 
+        //
+        // Mirroring reverses the selected entries' order in time, so reverse their order in the
+        // array too. Entries that share a time (a step: the old value, then the new) must swap
+        // as well, or the step comes out backwards. The stable sort then merges them back in
+        // among any unselected entries.
+        //
+        let selectedIndices = entries.indices.filter { entryIDs?.contains(entries[$0].entryID) ?? true }
+        let reversedEntries = selectedIndices.reversed().map { entries[$0] }
+
+        for (idx, entry) in zip(selectedIndices, reversedEntries) {
+            entries[idx] = entry
+        }
+
         entries.sort()
     }
 

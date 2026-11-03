@@ -299,6 +299,38 @@ extension PanMapTransformTests {
     }
 
     @Test
+    func reverse_stepPairReversesWithItsSegments() throws {
+        //
+        // A step is two entries at the same time: the old value, then the new one
+        // (the last entry at a time wins). Reversing .left 0–4, .right 4–8 must give
+        // .right 0–4, .left 4–8: the pair at 4 swaps order, and both segments stay flat
+        // rather than turning into glides.
+        //
+        var map = PanMapSB()
+
+        map.insert(time: 0, pan: .left)
+        map.insert(time: 4, pan: .left)
+        map.insert(time: 4, pan: .right)
+        map.insert(time: 8, pan: .right)
+
+        try map.reverse()
+
+        var times: [BeatTime] = []
+        var values: [Pan] = []
+
+        for entry in map {
+            times.append(entry.time)
+            values.append(entry.pan)
+        }
+
+        #expect(times == [0, 4, 4, 8])
+        #expect(values == [.right, .right, .left, .left])
+        #expect(map[2] == .right)
+        #expect(map[4] == .left)
+        #expect(map[6] == .left)
+    }
+
+    @Test
     func reverse_validAnchorDoesNotThrow() throws {
         var map = PanMapSB()
 

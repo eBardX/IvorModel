@@ -5,6 +5,7 @@ import IvorTiming
 import IvorTuning
 import Testing
 import XestiNumbers
+import XestiTools
 
 struct NoteTableStandardTests {
 }
@@ -127,6 +128,25 @@ extension NoteTableStandardTests {
     }
 
     @Test
+    func invert_aroundWiderRange_updatesPitchRange() throws {
+        //
+        // Inverted around C4...G4, wider than the table's own C4...E4, the notes move up to end
+        // at G4, and the table's pitch range must follow them.
+        //
+        var table = NoteTableSB()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+        table.insert(attack: 1, duration: 1, pitch: .e4)
+
+        try table.invert(around: Pitch.c4...Pitch.g4)
+
+        let pitches = table.map(\.startPitch)
+
+        #expect(table.pitchRange?.upperBound == .g4)
+        #expect(table.pitchRange == pitches.min().flatMap { lo in pitches.max().map { lo...$0 } })
+    }
+
+    @Test
     func invert_invalidAnchorThrows() {
         var table = NoteTableSB()
 
@@ -223,6 +243,21 @@ extension NoteTableStandardTests {
     }
 
     @Test
+    func reverse_withinWiderRange_updatesTimeRange() throws {
+        //
+        // Reversed within 0...4, wider than the table's own 0...1, the note lands at 3–4, and the
+        // table's time range must follow it.
+        //
+        var table = NoteTableSB()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+
+        try table.reverse(within: BeatTime(0)...4)
+
+        #expect(table.timeRange == BeatTime(3)...4)
+    }
+
+    @Test
     func reverse_invalidAnchorThrows() {
         var table = NoteTableSB()
 
@@ -263,6 +298,67 @@ extension NoteTableStandardTests {
         // The notes outside the selection are untouched:
         //
         #expect(table.timeRange == BeatTime(0)...21)
+    }
+
+    @Test
+    func reverse_mirrorsEachNoteBySpan() throws {
+        var table = NoteTableSB()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+        table.insert(attack: 1, duration: 3, pitch: .e4)
+
+        try table.reverse()
+
+        var spans: [(pitch: Pitch, attack: BeatTime, release: BeatTime)] = []
+
+        for note in table {
+            spans.append((note.startPitch, note.attack, note.release))
+        }
+
+        //
+        // Within 0...4, C4 (0–1) lands at 3–4 and E4 (1–4) at 0–3: each note is mirrored by
+        // its release, not its attack, so durations are kept and no notes overlap.
+        //
+        #expect(spans.count == 2)
+        #expect(spans.first { $0.pitch == .e4 }.map { [$0.attack, $0.release] } == [0, 3])
+        #expect(spans.first { $0.pitch == .c4 }.map { [$0.attack, $0.release] } == [3, 4])
+    }
+
+    @Test
+    func reverse_swapsSlurStartAndEnd() throws {
+        //
+        // A slur from C4 to E4 must, once reversed, run from E4 (now first) to C4.
+        //
+        var table = NoteTableSB()
+
+        table.insert(attack: 0,
+                     duration: 1,
+                     startPitch: .c4,
+                     endPitch: .c4,
+                     extras: Extras(elements: [.slurStart]))
+        table.insert(attack: 1,
+                     duration: 1,
+                     startPitch: .e4,
+                     endPitch: .e4,
+                     extras: Extras(elements: [.slurEnd]))
+
+        try table.reverse()
+
+        var slurStartPitches: [Pitch] = []
+        var slurEndPitches: [Pitch] = []
+
+        for note in table {
+            if note.extras?.elements.contains(.slurStart) ?? false {
+                slurStartPitches.append(note.startPitch)
+            }
+
+            if note.extras?.elements.contains(.slurEnd) ?? false {
+                slurEndPitches.append(note.startPitch)
+            }
+        }
+
+        #expect(slurStartPitches == [.e4])
+        #expect(slurEndPitches == [.c4])
     }
 
     @Test

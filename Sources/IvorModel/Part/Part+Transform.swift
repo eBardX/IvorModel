@@ -14,8 +14,9 @@ extension Part {
     /// - Parameter factor:     A rational number ≥ 1 by which to stretch the selected note
     ///                         timings.
     /// - Parameter anchor:     The low time bound to stretch attack times relative to. `nil`
-    ///                         resolves to the note table’s own range, or — when `noteIDs` is
-    ///                         non-`nil` — the selected notes’ own range.
+    ///                         resolves to the start of everything being augmented: the notes
+    ///                         and the entries of every map `applyTo` selects, or — when
+    ///                         `noteIDs` is non-`nil` — the selected notes’ own range.
     /// - Parameter noteIDs:    The identities of the notes to augment, or `nil` to augment every
     ///                         note in the note table. Also narrows which entries of any map
     ///                         selected by `applyTo` are carried along, to those falling within
@@ -29,11 +30,17 @@ extension Part {
                                  anchor: TimeType? = nil,
                                  noteIDs: Set<NoteID>? = nil,
                                  applyTo: MapTargets = .all) throws(Error) {
+        //
+        // Resolve the default once, so the note table and every map scale about the same anchor.
+        //
+        let resolvedAnchor = anchor ?? transformTimeRange(noteIDs: noteIDs,
+                                                          applyTo: applyTo)?.lowerBound
+
         var newNoteTable = noteTable
 
         do {
             try newNoteTable.augment(by: factor,
-                                     anchor: anchor,
+                                     anchor: resolvedAnchor,
                                      noteIDs: noteIDs)
         } catch {
             throw Error.noteTableFailure(error)
@@ -46,7 +53,7 @@ extension Part {
         if applyTo.contains(.dynamic) {
             do {
                 try newDynamicMap.augment(by: factor,
-                                          anchor: anchor,
+                                          anchor: resolvedAnchor,
                                           entryIDs: _dynamicEntryIDs(forNoteIDs: noteIDs))
             } catch {
                 throw Error.dynamicMapFailure(error)
@@ -56,7 +63,7 @@ extension Part {
         if applyTo.contains(.instrument) {
             do {
                 try newInstrumentMap.augment(by: factor,
-                                             anchor: anchor,
+                                             anchor: resolvedAnchor,
                                              entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
             } catch {
                 throw Error.instrumentMapFailure(error)
@@ -66,7 +73,7 @@ extension Part {
         if applyTo.contains(.pan) {
             do {
                 try newPanMap.augment(by: factor,
-                                      anchor: anchor,
+                                      anchor: resolvedAnchor,
                                       entryIDs: _panEntryIDs(forNoteIDs: noteIDs))
             } catch {
                 throw Error.panMapFailure(error)
@@ -85,8 +92,9 @@ extension Part {
     /// - Parameter factor:     A rational number ≥ 1 by which to compress the selected note
     ///                         timings.
     /// - Parameter anchor:     The low time bound to compress attack times relative to. `nil`
-    ///                         resolves to the note table’s own range, or — when `noteIDs` is
-    ///                         non-`nil` — the selected notes’ own range.
+    ///                         resolves to the start of everything being diminished: the notes
+    ///                         and the entries of every map `applyTo` selects, or — when
+    ///                         `noteIDs` is non-`nil` — the selected notes’ own range.
     /// - Parameter noteIDs:    The identities of the notes to diminish, or `nil` to diminish
     ///                         every note in the note table. Also narrows which entries of any
     ///                         map selected by `applyTo` are carried along, to those falling
@@ -100,11 +108,17 @@ extension Part {
                                   anchor: TimeType? = nil,
                                   noteIDs: Set<NoteID>? = nil,
                                   applyTo: MapTargets = .all) throws(Error) {
+        //
+        // Resolve the default once, so the note table and every map scale about the same anchor.
+        //
+        let resolvedAnchor = anchor ?? transformTimeRange(noteIDs: noteIDs,
+                                                          applyTo: applyTo)?.lowerBound
+
         var newNoteTable = noteTable
 
         do {
             try newNoteTable.diminish(by: factor,
-                                      anchor: anchor,
+                                      anchor: resolvedAnchor,
                                       noteIDs: noteIDs)
         } catch {
             throw Error.noteTableFailure(error)
@@ -117,7 +131,7 @@ extension Part {
         if applyTo.contains(.dynamic) {
             do {
                 try newDynamicMap.diminish(by: factor,
-                                           anchor: anchor,
+                                           anchor: resolvedAnchor,
                                            entryIDs: _dynamicEntryIDs(forNoteIDs: noteIDs))
             } catch {
                 throw Error.dynamicMapFailure(error)
@@ -127,7 +141,7 @@ extension Part {
         if applyTo.contains(.instrument) {
             do {
                 try newInstrumentMap.diminish(by: factor,
-                                              anchor: anchor,
+                                              anchor: resolvedAnchor,
                                               entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
             } catch {
                 throw Error.instrumentMapFailure(error)
@@ -137,7 +151,7 @@ extension Part {
         if applyTo.contains(.pan) {
             do {
                 try newPanMap.diminish(by: factor,
-                                       anchor: anchor,
+                                       anchor: resolvedAnchor,
                                        entryIDs: _panEntryIDs(forNoteIDs: noteIDs))
             } catch {
                 throw Error.panMapFailure(error)
@@ -243,8 +257,9 @@ extension Part {
     /// by `applyTo`.
     ///
     /// - Parameter timeRange:   The time range to mirror attack times around. `nil` resolves to
-    ///                          the note table’s own time range, or — when `noteIDs` is
-    ///                          non-`nil` — the selected notes’ own time range.
+    ///                          the span of everything being reversed: the notes and the entries
+    ///                          of every map `applyTo` selects, or — when `noteIDs` is non-`nil`
+    ///                          — the selected notes’ own time range.
     /// - Parameter noteIDs:     The identities of the notes to reverse, or `nil` to reverse every
     ///                          note in the note table. Also narrows which entries of any map
     ///                          selected by `applyTo` are carried along, to those falling within
@@ -257,10 +272,16 @@ extension Part {
     public mutating func reverse(within timeRange: ClosedRange<TimeType>? = nil,
                                  noteIDs: Set<NoteID>? = nil,
                                  applyTo: MapTargets = .all) throws(Error) {
+        //
+        // Resolve the default once, so the note table and every map mirror about the same axis.
+        //
+        let resolvedRange = timeRange ?? transformTimeRange(noteIDs: noteIDs,
+                                                            applyTo: applyTo)
+
         var newNoteTable = noteTable
 
         do {
-            try newNoteTable.reverse(within: timeRange,
+            try newNoteTable.reverse(within: resolvedRange,
                                      noteIDs: noteIDs)
         } catch {
             throw Error.noteTableFailure(error)
@@ -272,7 +293,7 @@ extension Part {
 
         if applyTo.contains(.dynamic) {
             do {
-                try newDynamicMap.reverse(within: timeRange,
+                try newDynamicMap.reverse(within: resolvedRange,
                                           entryIDs: _dynamicEntryIDs(forNoteIDs: noteIDs))
             } catch {
                 throw Error.dynamicMapFailure(error)
@@ -281,7 +302,7 @@ extension Part {
 
         if applyTo.contains(.instrument) {
             do {
-                try newInstrumentMap.reverse(within: timeRange,
+                try newInstrumentMap.reverse(within: resolvedRange,
                                              entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
             } catch {
                 throw Error.instrumentMapFailure(error)
@@ -290,7 +311,7 @@ extension Part {
 
         if applyTo.contains(.pan) {
             do {
-                try newPanMap.reverse(within: timeRange,
+                try newPanMap.reverse(within: resolvedRange,
                                       entryIDs: _panEntryIDs(forNoteIDs: noteIDs))
             } catch {
                 throw Error.panMapFailure(error)
@@ -413,6 +434,53 @@ extension Part where TimeType == BeatTime {
 // MARK: -
 
 extension Part {
+
+    // MARK: Internal Instance Methods
+
+    //
+    // The one range a time transform's default resolves from, shared by the note table and every
+    // map it carries, so they all scale or mirror about the same point. A `noteIDs` selection
+    // resolves to the selected notes' own range, since the carried map entries are those inside
+    // it. A whole part resolves to the span of its notes together with the entries of every map
+    // `applyTo` selects: only the layers that move. Module-internal so `Work` can widen it across
+    // the targeted parts and the tempo map.
+    //
+    internal func transformTimeRange(noteIDs: Set<NoteID>?,
+                                     applyTo: MapTargets) -> ClosedRange<TimeType>? {
+        if let noteIDs {
+            return noteTable.selectedTimeRange(noteIDs: noteIDs)
+        }
+
+        var bounds: [TimeType] = []
+
+        if let noteRange = noteTable.timeRange {
+            bounds += [noteRange.lowerBound, noteRange.upperBound]
+        }
+
+        if applyTo.contains(.dynamic),
+           let first = dynamicMap.first,
+           let last = dynamicMap.last {
+            bounds += [first.time, last.time]
+        }
+
+        if applyTo.contains(.instrument),
+           let first = instrumentMap.first,
+           let last = instrumentMap.last {
+            bounds += [first.time, last.time]
+        }
+
+        if applyTo.contains(.pan),
+           let first = panMap.first,
+           let last = panMap.last {
+            bounds += [first.time, last.time]
+        }
+
+        guard let lowerBound = bounds.min(),
+              let upperBound = bounds.max()
+        else { return nil }
+
+        return lowerBound...upperBound
+    }
 
     // MARK: Private Instance Methods
 

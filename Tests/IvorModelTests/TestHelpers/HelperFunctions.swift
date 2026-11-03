@@ -170,6 +170,11 @@ func endTime(of noteEvents: some Sequence<NoteEvent<BeatTime, Pitch>>) -> BeatTi
 //
 // The contents of the file at `path` in a saved project's unzipped `root`.
 //
+func extraValues(_ extra: Extra,
+                 in extras: Extras?) -> [Extra.AssociatedValue]? {
+    extras?.elements.first { $0.name == extra.name }?.values
+}
+
 func fileContents(of root: FileWrapper,
                   _ path: [String]) throws -> Data {
     let directory = try #require(root.fileWrappers?[path[0]])

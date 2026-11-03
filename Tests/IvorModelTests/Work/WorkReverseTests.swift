@@ -5,6 +5,7 @@ import IvorTiming
 import IvorTuning
 import Testing
 import XestiNumbers
+import XestiTools
 
 struct WorkReverseTests {
 }
@@ -12,6 +13,105 @@ struct WorkReverseTests {
 // MARK: -
 
 extension WorkReverseTests {
+    @Test
+    func reverse_keepsMIDITimeCodeAtBeatZero() throws {
+        //
+        // `midiTimeCode` describes the whole file, but it rides on the tempo entry at beat zero,
+        // and the MIDI exporter looks for it only there. Reversing moves that entry to the end.
+        //
+        let t60 = try #require(Tempo(uintValue: 60))
+        let t120 = try #require(Tempo(uintValue: 120))
+
+        withKnownIssue("""
+            KNOWN_BUGS.md: MIDI time code and reverse — \
+            the beat-zero tempo entry carrying midiTimeCode is mirrored to the end
+            """) {
+            var part = Part<BeatTime, Pitch>(name: "Violin")
+
+            part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+
+            var tempoMap = TempoMap()
+
+            tempoMap.insert(beatTime: 0,
+                            tempo: t60,
+                            extras: Extras(elements: [Extra(name: Extra.midiTimeCode.name,
+                                                            values: [.string("25"), .int(40)])]))
+            tempoMap.insert(beatTime: 4, tempo: t120)
+
+            var work = Work(content: .standardBeat([part], tempoMap))
+
+            try work.reverse(within: nil as ClosedRange<BeatTime>?)
+
+            let atZero = work.tempoMap?.filter { $0.beatTime == .zero } ?? []
+
+            #expect(atZero.contains { extraValues(.midiTimeCode, in: $0.extras) == [.string("25"), .int(40)] })
+        }
+    }
+
+    @Test
+    func reverse_keepsMIDITimeCodeAtTimeZeroInWallWork() throws {
+        //
+        // In a wall-time work, `midiTimeCode` rides on each part's instrument entry at time
+        // zero, and the MIDI exporter looks for it only there.
+        //
+        let flute = try #require(Instrument(stringValue: "Flute"))
+        let piccolo = try #require(Instrument(stringValue: "Piccolo"))
+
+        withKnownIssue("""
+            KNOWN_BUGS.md: MIDI time code and reverse — \
+            the time-zero instrument entry carrying midiTimeCode is mirrored away from zero
+            """) {
+            var part = Part<WallTime, Pitch>(name: "Flute")
+
+            part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+            part.instrumentMap.insert(time: 0,
+                                      instrument: flute,
+                                      extras: Extras(elements: [Extra(name: Extra.midiTimeCode.name,
+                                                                      values: [.string("25"), .int(40)])]))
+            part.instrumentMap.insert(time: 2, instrument: piccolo)
+
+            var work = Work(content: .standardWall([part]))
+
+            try work.reverse(within: nil as ClosedRange<WallTime>?)
+
+            let reversed = try #require(work.part(part.partID, as: Part<WallTime, Pitch>.self))
+            let atZero = reversed.instrumentMap.filter { $0.time == .zero }
+
+            #expect(atZero.contains { extraValues(.midiTimeCode, in: $0.extras) == [.string("25"), .int(40)] })
+        }
+    }
+
+    @Test
+    func reverse_leadingRestMovesToEnd() throws {
+        //
+        // A beat of rest, then notes from 1 to 3; mf at 0 crescendos to f at 2. The default
+        // range covers every layer that moves, 0...3, so the whole timeline is mirrored: the
+        // notes land at 0–2 with the rest after them, and the dynamics become f at 1 and mf at 3,
+        // a diminuendo.
+        //
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.dynamicMap.insert(time: 0, dynamic: .mf)
+        part.dynamicMap.insert(time: 2, dynamic: .f)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: .default)
+
+        var work = Work(content: .standardBeat([part], tempoMap))
+
+        try work.reverse(within: nil as ClosedRange<BeatTime>?)
+
+        let reversed = try #require(work.part(part.partID, as: Part<BeatTime, Pitch>.self))
+
+        #expect(reversed.timeRange == 0...2)
+        #expect(reversed.dynamicMap.map(\.time) == [1, 3])
+        #expect(reversed.dynamicMap.map(\.dynamic) == [.f, .mf])
+        #expect(work.tempoMap?.map(\.beatTime) == [3])
+    }
+
     @Test
     func reverse_lockedWork_throwsAndLeavesWorkUnchanged() {
         var (work, partID) = makeLockedWorkSB()
@@ -27,6 +127,189 @@ extension WorkReverseTests {
 
         #expect(work.beatTimeRange == beatTimeRange)
         #expect(work.pitchRange?.lowerBound as? Pitch == .c4)
+    }
+
+    @Test
+    func reverse_mapEntryBeforeFirstNote_doesNotThrow() throws {
+        //
+        // The work opens with a beat of rest: the tempo (and the part's dynamic) is set at 0,
+        // the first note attacks at 1. Reversing the whole work must not reject the map
+        // entries that lie outside the notes' own span.
+        //
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.dynamicMap.insert(time: 0, dynamic: .mf)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: .default)
+
+        var work = Work(content: .standardBeat([part], tempoMap))
+
+        try work.reverse(within: nil as ClosedRange<BeatTime>?)
+    }
+
+    @Test
+    func reverse_movesRampExtrasToNewRampStart() throws {
+        //
+        // The JohnnySonic ramp extras sit on the entry where the ramp starts, and the exporter
+        // trusts them over the map. A 60→120 ramp over 0–4, reversed, is a 120→60 ramp that
+        // still starts at 0: the extras must stay at 0 with start and end swapped.
+        //
+        let t60 = try #require(Tempo(uintValue: 60))
+        let t120 = try #require(Tempo(uintValue: 120))
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0,
+                        tempo: t60,
+                        extras: Extras(elements: [Extra(name: Extra.rampStartTempo.name, values: [.double(60)]),
+                                                  Extra(name: Extra.rampEndTempo.name, values: [.double(120)]),
+                                                  Extra(name: Extra.rampDuration.name, values: [.double(4)])]))
+        tempoMap.insert(beatTime: 4, tempo: t120)
+
+        var work = Work(content: .standardBeat([part], tempoMap))
+
+        try work.reverse(within: nil as ClosedRange<BeatTime>?)
+
+        let entries = Array(work.tempoMap ?? TempoMap())
+
+        withKnownIssue("""
+            KNOWN_BUGS.md: Tempo ramp extras and time transforms — \
+            reverse leaves the ramp extras on the entry that now ends the ramp, unswapped
+            """) {
+            #expect(entries.map(\.beatTime) == [0, 4])
+            #expect(extraValues(.rampStartTempo, in: entries.first?.extras) == [.double(120)])
+            #expect(extraValues(.rampEndTempo, in: entries.first?.extras) == [.double(60)])
+            #expect(extraValues(.rampDuration, in: entries.first?.extras) == [.double(4)])
+            #expect(extraValues(.rampStartTempo, in: entries.last?.extras) == nil)
+        }
+    }
+
+    @Test
+    func reverse_movesTempoTextToSectionStart() throws {
+        //
+        // `tempoText` labels the section that starts at its entry. Andante (60) for 0–4 then
+        // Allegro (120) for 4–8, reversed, is Allegro for 0–4 then Andante for 4–8, so each
+        // label must move to its section's new start. The ABC exporter writes the label at
+        // beat zero into the header.
+        //
+        let t60 = try #require(Tempo(uintValue: 60))
+        let t120 = try #require(Tempo(uintValue: 120))
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 0, duration: 8, pitch: .c4)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0,
+                        tempo: t60,
+                        extras: Extras(elements: [Extra(name: Extra.tempoText.name, values: [.string("Andante")])]))
+        tempoMap.insert(beatTime: 4, tempo: t60)
+        tempoMap.insert(beatTime: 4,
+                        tempo: t120,
+                        extras: Extras(elements: [Extra(name: Extra.tempoText.name, values: [.string("Allegro")])]))
+        tempoMap.insert(beatTime: 8, tempo: t120)
+
+        var work = Work(content: .standardBeat([part], tempoMap))
+
+        try work.reverse(within: nil as ClosedRange<BeatTime>?)
+
+        let labels = (work.tempoMap ?? TempoMap()).compactMap { entry in
+            extraValues(.tempoText, in: entry.extras).map { (entry.beatTime, entry.tempo, $0) }
+        }
+
+        #expect(labels.count == 2)
+        #expect(labels.first?.0 == 0)
+        #expect(labels.first?.1 == t120)
+        #expect(labels.first?.2 == [.string("Allegro")])
+        #expect(labels.last?.0 == 4)
+        #expect(labels.last?.1 == t60)
+        #expect(labels.last?.2 == [.string("Andante")])
+    }
+
+    @Test
+    func reverse_movesTempoTextToSectionStart_insertsEntryAtRangeStart() throws {
+        //
+        // Allegro (120) labels 4–8 and nothing sits at 8, so once reversed its section starts
+        // at 0, where there's no entry either. One is inserted there holding the tempo the map
+        // already reads at 0, so playback doesn't change.
+        //
+        let t60 = try #require(Tempo(uintValue: 60))
+        let t120 = try #require(Tempo(uintValue: 120))
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 0, duration: 8, pitch: .c4)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: t60)
+        tempoMap.insert(beatTime: 4, tempo: t60)
+        tempoMap.insert(beatTime: 4,
+                        tempo: t120,
+                        extras: Extras(elements: [Extra(name: Extra.tempoText.name, values: [.string("Allegro")])]))
+
+        var work = Work(content: .standardBeat([part], tempoMap))
+
+        try work.reverse(within: nil as ClosedRange<BeatTime>?)
+
+        let reversed = try #require(work.tempoMap)
+        let labeled = reversed.filter { extraValues(.tempoText, in: $0.extras) != nil }
+
+        #expect(reversed.map(\.beatTime) == [0, 4, 4, 8])
+        #expect(labeled.map(\.beatTime) == [0])
+        #expect(labeled.first?.tempo == t120)
+        #expect(reversed[2] == t120)
+        #expect(reversed[6] == t60)
+    }
+
+    @Test
+    func reverse_movesTempoTextToSectionStart_spansUnlabeledChanges() throws {
+        //
+        // A label holds until the next label, across unlabeled changes. Allegro labels 0–8
+        // (120, then an unlabeled step to 100 at 4) and Andante labels 8–12 (60). Reversed,
+        // Andante labels 0–4 and Allegro 4–12, still covering both of its tempos.
+        //
+        let t60 = try #require(Tempo(uintValue: 60))
+        let t100 = try #require(Tempo(uintValue: 100))
+        let t120 = try #require(Tempo(uintValue: 120))
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 0, duration: 12, pitch: .c4)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0,
+                        tempo: t120,
+                        extras: Extras(elements: [Extra(name: Extra.tempoText.name, values: [.string("Allegro")])]))
+        tempoMap.insert(beatTime: 4, tempo: t120)
+        tempoMap.insert(beatTime: 4, tempo: t100)
+        tempoMap.insert(beatTime: 8, tempo: t100)
+        tempoMap.insert(beatTime: 8,
+                        tempo: t60,
+                        extras: Extras(elements: [Extra(name: Extra.tempoText.name, values: [.string("Andante")])]))
+        tempoMap.insert(beatTime: 12, tempo: t60)
+
+        var work = Work(content: .standardBeat([part], tempoMap))
+
+        try work.reverse(within: nil as ClosedRange<BeatTime>?)
+
+        let labels = (work.tempoMap ?? TempoMap()).compactMap { entry in
+            extraValues(.tempoText, in: entry.extras).map { (entry.beatTime, entry.tempo, $0) }
+        }
+
+        #expect(labels.count == 2)
+        #expect(labels.first?.0 == 0)
+        #expect(labels.first?.1 == t60)
+        #expect(labels.first?.2 == [.string("Andante")])
+        #expect(labels.last?.0 == 4)
+        #expect(labels.last?.1 == t100)
+        #expect(labels.last?.2 == [.string("Allegro")])
     }
 
     @Test
@@ -54,6 +337,26 @@ extension WorkReverseTests {
         //
         #expect(work.tempoMap?.map(\.beatTime) == [1, 3])
         #expect(work.part(cello.partID, as: Part<BeatTime, Pitch>.self)?.timeRange == 5...6)
+    }
+
+    @Test
+    func reverse_wholeWorkBeat_applyToWithoutTempo_leavesTempoMapUntouched() throws {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: .default)
+        tempoMap.insert(beatTime: 2, tempo: .default)
+
+        var work = Work(content: .standardBeat([part], tempoMap))
+
+        try work.reverse(within: nil as ClosedRange<BeatTime>?,
+                         applyTo: [.dynamic, .instrument, .pan])
+
+        #expect(work.tempoMap?.map(\.beatTime) == [0, 2])
     }
 
     @Test

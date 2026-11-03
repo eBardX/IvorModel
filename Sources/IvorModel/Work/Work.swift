@@ -396,13 +396,53 @@ extension Work {
     }
 
     //
-    // Visibility is internal (not private) so `Work+Transform.swift` can reuse it to compute a
-    // shared anchor over a targeted subset of parts, rather than recomputing this reduction
-    // independently.
+    // The time range spanned by the notes of `parts`: what `beatTimeRange` and `wallTimeRange`
+    // report.
     //
     internal static func aggregateTimeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>]) -> ClosedRange<TimeType>? {
         parts.reduce(nil) { acc, part in
             guard let partRange = part.timeRange
+            else { return acc }
+
+            guard let acc
+            else { return partRange }
+
+            return min(acc.lowerBound, partRange.lowerBound)...max(acc.upperBound, partRange.upperBound)
+        }
+    }
+
+    //
+    // The one range a beat-time work's augment, diminish or reverse resolves its default from:
+    // the targeted parts' own transform ranges (notes, plus every map `applyTo` selects), widened
+    // by the tempo map's entries when `applyTo` carries it. Everything that moves then scales or
+    // mirrors about the same point.
+    //
+    internal static func transformTimeRange(of parts: [Part<BeatTime, some PitchProtocol>],
+                                            tempoMap: TempoMap,
+                                            applyTo: MapTargets) -> ClosedRange<BeatTime>? {
+        let partsRange = transformTimeRange(of: parts,
+                                            applyTo: applyTo)
+
+        guard applyTo.contains(.tempo),
+              let first = tempoMap.first,
+              let last = tempoMap.last
+        else { return partsRange }
+
+        guard let partsRange
+        else { return first.beatTime...last.beatTime }
+
+        return min(partsRange.lowerBound, first.beatTime)...max(partsRange.upperBound, last.beatTime)
+    }
+
+    //
+    // The targeted parts' own transform ranges (notes, plus every map `applyTo` selects), joined.
+    // A wall-time work has no tempo map, so this is its whole default.
+    //
+    internal static func transformTimeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>],
+                                                                    applyTo: MapTargets) -> ClosedRange<TimeType>? {
+        parts.reduce(nil) { acc, part in
+            guard let partRange = part.transformTimeRange(noteIDs: nil,
+                                                          applyTo: applyTo)
             else { return acc }
 
             guard let acc

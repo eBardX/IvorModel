@@ -5,6 +5,7 @@ import IvorTiming
 import IvorTuning
 import Testing
 import XestiNumbers
+import XestiTools
 
 struct PartTransformTests {
 }
@@ -455,6 +456,43 @@ extension PartTransformTests {
     }
 
     @Test
+    func reverse_keepsExactVelocitiesWithTheirNotes() throws {
+        //
+        // An importer keeps each note's exact key velocity on a dynamic entry at the note's
+        // attack, and the MIDI exporter matches it to notes by attack time. C4 (0–1, velocity
+        // 100) and E4 (2–3, velocity 50), reversed within 0...3, are E4 at 0 and C4 at 2: each
+        // velocity must still be found at its own note's attack.
+        //
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.dynamicMap.insert(time: 0,
+                               dynamic: .f,
+                               extras: Extras(elements: [Extra(name: Extra.velocity.name, values: [.int(100)])]))
+        part.dynamicMap.insert(time: 2,
+                               dynamic: .p,
+                               extras: Extras(elements: [Extra(name: Extra.velocity.name, values: [.int(50)])]))
+
+        try part.reverse(within: 0...3)
+
+        func velocity(at time: BeatTime) -> [Extra.AssociatedValue]? {
+            part.dynamicMap.lazy.compactMap { $0.time == time ? extraValues(.velocity, in: $0.extras) : nil }.first
+        }
+
+        let c4Attack = try #require(part.noteTable.first { $0.startPitch == .c4 }?.attack)
+        let e4Attack = try #require(part.noteTable.first { $0.startPitch == .e4 }?.attack)
+
+        withKnownIssue("""
+            KNOWN_BUGS.md: Exact velocities and reverse — \
+            dynamic entries are mirrored onto each note's release, so velocities leave their attacks
+            """) {
+            #expect(velocity(at: c4Attack) == [.int(100)])
+            #expect(velocity(at: e4Attack) == [.int(50)])
+        }
+    }
+
+    @Test
     func reverse_mirrorsNoteTableAndDefaultMaps() throws {
         var part = PartSB(name: "Test")
 
@@ -471,7 +509,30 @@ extension PartTransformTests {
             dynamicTimes.append(entry.time)
         }
 
-        #expect(dynamicTimes.sorted() == [0, 2])
+        //
+        // The notes and the map share one range, 0...3. C4 (0–1) lands at 2–3 and D4 (2–3) at
+        // 0–1, so each dynamic lands on its own note's release: mp (C4's) at 3, ff (D4's) at 1.
+        //
+        #expect(dynamicTimes.sorted() == [1, 3])
+    }
+
+    @Test
+    func reverse_rangeCountsOnlyTransformedMaps() throws {
+        //
+        // The dynamic at 0 lies outside the notes (1–3). Left out of `applyTo`, it neither moves
+        // nor widens the default range, so the notes mirror within their own 1...3.
+        //
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.noteTable.insert(attack: 2, duration: 1, pitch: .d4)
+        part.dynamicMap.insert(time: 0, dynamic: .mp)
+
+        try part.reverse(applyTo: [])
+
+        #expect(part.timeRange == 1...3)
+        #expect(part.noteTable.first { $0.startPitch == .d4 }?.attack == 1)
+        #expect(part.dynamicMap.map(\.time) == [0])
     }
 
     @Test

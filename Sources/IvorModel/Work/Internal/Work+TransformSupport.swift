@@ -17,15 +17,15 @@ extension Work {
 
     //
     // `applyTo` also governs whether a beat-time transform carries the work's own `tempoMap`
-    // along (§7a's Key Concepts) — an empty `applyTo` leaves it untouched, exactly as it leaves
-    // every per-part map untouched. Which parts are targeted makes no difference: the tempo map
-    // is work-wide.
+    // along: only when it contains `.tempo`, just as each per-part map moves only when `applyTo`
+    // names it. Which parts are targeted makes no difference here. The tempo map is work-wide, so
+    // the app clears `.tempo` by default when the user targets only some parts.
     //
     internal static func carried(tempoMap: TempoMap,
                                  applyTo: MapTargets,
                                  kind: TransformKind,
                                  transform: (inout TempoMap) throws(TempoMap.Error) -> Void) throws(Error) -> TempoMap {
-        guard !applyTo.isEmpty
+        guard applyTo.contains(.tempo)
         else { return tempoMap }
 
         var newTempoMap = tempoMap
