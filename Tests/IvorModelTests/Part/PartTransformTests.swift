@@ -98,6 +98,37 @@ extension PartTransformTests {
     }
 
     @Test
+    func augment_noAnchor_keepsMapAlignedWithNotes() throws {
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.dynamicMap.insert(time: 0, dynamic: .mp)
+
+        let entryID = part.dynamicMap.insert(time: 2, dynamic: .ff).entryID
+
+        try part.augment(by: Number(2))
+
+        #expect(dynamicTime(of: entryID, in: part) == firstNoteSB(.e4, in: part)?.attack)
+    }
+
+    @Test
+    func augment_noteIDsNoAnchor_keepsMapAlignedWithNotes() throws {
+        var part = PartSB(name: "Test")
+
+        let noteID1 = part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        let noteID2 = part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+
+        part.noteTable.insert(attack: 5, duration: 1, pitch: .g4)
+
+        let entryID = part.dynamicMap.insert(time: 2, dynamic: .ff).entryID
+
+        try part.augment(by: Number(2), noteIDs: [noteID1, noteID2])
+
+        #expect(dynamicTime(of: entryID, in: part) == firstNoteSB(.e4, in: part)?.attack)
+    }
+
+    @Test
     func augment_noteIDsRestrictsCarriedMapEntries() throws {
         var part = PartSB(name: "Test")
 
@@ -214,6 +245,37 @@ extension PartTransformTests {
         //
         #expect(lowTime == 0)
         #expect(middleTime == 20)
+    }
+
+    @Test
+    func diminish_noAnchor_keepsMapAlignedWithNotes() throws {
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.noteTable.insert(attack: 3, duration: 1, pitch: .e4)
+        part.dynamicMap.insert(time: 0, dynamic: .mp)
+
+        let entryID = part.dynamicMap.insert(time: 3, dynamic: .ff).entryID
+
+        try part.diminish(by: Number(2))
+
+        #expect(dynamicTime(of: entryID, in: part) == firstNoteSB(.e4, in: part)?.attack)
+    }
+
+    @Test
+    func diminish_noteIDsNoAnchor_keepsMapAlignedWithNotes() throws {
+        var part = PartSB(name: "Test")
+
+        let noteID1 = part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        let noteID2 = part.noteTable.insert(attack: 3, duration: 1, pitch: .e4)
+
+        part.noteTable.insert(attack: 6, duration: 1, pitch: .g4)
+
+        let entryID = part.dynamicMap.insert(time: 3, dynamic: .ff).entryID
+
+        try part.diminish(by: Number(2), noteIDs: [noteID1, noteID2])
+
+        #expect(dynamicTime(of: entryID, in: part) == firstNoteSB(.e4, in: part)?.attack)
     }
 
     @Test
@@ -458,38 +520,32 @@ extension PartTransformTests {
     @Test
     func reverse_keepsExactVelocitiesWithTheirNotes() throws {
         //
-        // An importer keeps each note's exact key velocity on a dynamic entry at the note's
-        // attack, and the MIDI exporter matches it to notes by attack time. C4 (0–1, velocity
-        // 100) and E4 (2–3, velocity 50), reversed within 0...3, are E4 at 0 and C4 at 2: each
-        // velocity must still be found at its own note's attack.
+        // Each note's exact key velocity is a note extra, so it travels with the note. C4 (0–1,
+        // velocity 100) and E4 (2–3, velocity 50), reversed within 0...3, are E4 at 0 and C4 at
+        // 2, each still carrying its own velocity.
         //
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
-        part.dynamicMap.insert(time: 0,
-                               dynamic: .f,
-                               extras: Extras(elements: [Extra(name: Extra.velocity.name, values: [.int(100)])]))
-        part.dynamicMap.insert(time: 2,
-                               dynamic: .p,
-                               extras: Extras(elements: [Extra(name: Extra.velocity.name, values: [.int(50)])]))
+        part.noteTable.insert(attack: 0,
+                              duration: 1,
+                              pitch: .c4,
+                              extras: Extras(elements: [Extra(name: Extra.velocity.name, values: [.int(100)])]))
+        part.noteTable.insert(attack: 2,
+                              duration: 1,
+                              pitch: .e4,
+                              extras: Extras(elements: [Extra(name: Extra.velocity.name, values: [.int(50)])]))
+        part.dynamicMap.insert(time: 0, dynamic: .f)
+        part.dynamicMap.insert(time: 2, dynamic: .p)
 
         try part.reverse(within: 0...3)
 
-        func velocity(at time: BeatTime) -> [Extra.AssociatedValue]? {
-            part.dynamicMap.lazy.compactMap { $0.time == time ? extraValues(.velocity, in: $0.extras) : nil }.first
-        }
+        let c4 = try #require(part.noteTable.first { $0.startPitch == .c4 })
+        let e4 = try #require(part.noteTable.first { $0.startPitch == .e4 })
 
-        let c4Attack = try #require(part.noteTable.first { $0.startPitch == .c4 }?.attack)
-        let e4Attack = try #require(part.noteTable.first { $0.startPitch == .e4 }?.attack)
-
-        withKnownIssue("""
-            KNOWN_BUGS.md: Exact velocities and reverse — \
-            dynamic entries are mirrored onto each note's release, so velocities leave their attacks
-            """) {
-            #expect(velocity(at: c4Attack) == [.int(100)])
-            #expect(velocity(at: e4Attack) == [.int(50)])
-        }
+        #expect(c4.attack == 2)
+        #expect(e4.attack == 0)
+        #expect(extraValues(.velocity, in: c4.extras) == [.int(100)])
+        #expect(extraValues(.velocity, in: e4.extras) == [.int(50)])
     }
 
     @Test
@@ -514,6 +570,37 @@ extension PartTransformTests {
         // 0–1, so each dynamic lands on its own note's release: mp (C4's) at 3, ff (D4's) at 1.
         //
         #expect(dynamicTimes.sorted() == [1, 3])
+    }
+
+    @Test
+    func reverse_noRange_keepsMapAlignedWithNotes() throws {
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.dynamicMap.insert(time: 0, dynamic: .mp)
+
+        let entryID = part.dynamicMap.insert(time: 1, dynamic: .ff).entryID
+
+        try part.reverse()
+
+        #expect(dynamicTime(of: entryID, in: part) == firstNoteSB(.c4, in: part)?.release)
+    }
+
+    @Test
+    func reverse_noteIDsNoRange_keepsMapAlignedWithNotes() throws {
+        var part = PartSB(name: "Test")
+
+        let noteID1 = part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        let noteID2 = part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+
+        part.noteTable.insert(attack: 5, duration: 1, pitch: .g4)
+
+        let entryID = part.dynamicMap.insert(time: 1, dynamic: .ff).entryID
+
+        try part.reverse(noteIDs: [noteID1, noteID2])
+
+        #expect(dynamicTime(of: entryID, in: part) == firstNoteSB(.c4, in: part)?.release)
     }
 
     @Test

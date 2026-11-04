@@ -136,6 +136,16 @@ extension InstrumentMap {
 
     /// Reverses the order of entries within a time range.
     ///
+    /// Each entry is a step: its instrument holds until the next entry. So reversing mirrors the
+    /// stretch each selected entry governs — up to the next selected entry, or to the range’s
+    /// upper bound — and moves the entry to that stretch’s new start. Flute at 0 and piccolo at
+    /// 4, reversed within 0…8, gives piccolo at 0 and flute at 4. The stretch before the first
+    /// selected entry, which holds the instrument in effect before it (``defaultInstrument``
+    /// unless an unselected entry precedes it), moves to the end of the range, and a new entry
+    /// begins it there. Entries that share a time swap order, so a step keeps its order. The
+    /// instrument after the range isn’t restored, just as the interpolating maps don’t restore
+    /// their values after it.
+    ///
     /// - Parameter timeRange:   The time range to mirror entry times around. `nil` resolves to the
     ///                          map’s own time range, or — when `entryIDs` is non-`nil` — the
     ///                          selected entries’ own time range.
@@ -154,24 +164,73 @@ extension InstrumentMap {
         else { return }
 
         let anchorRange = try _resolvedRange(timeRange, containing: selectedRange)
-        let hiTime = anchorRange.upperBound
-        let loTime = anchorRange.lowerBound
+        let selectedIndices = entries.indices.filter { entryIDs?.contains(entries[$0].entryID) ?? true }
 
-        for (idx, entry) in entries.enumerated() {
-            guard entryIDs?.contains(entry.entryID) ?? true
-            else { continue }
+        guard let firstIndex = selectedIndices.first
+        else { return }
 
-            guard let dirDur = entry.time.duration(to: hiTime),
-                  let newTime = loTime.moved(by: dirDur)
+        var newEntries = entries
+
+        for (pos, idx) in selectedIndices.enumerated() {
+            let entry = entries[idx]
+            let stretchEnd = pos + 1 < selectedIndices.count ? entries[selectedIndices[pos + 1]].time : anchorRange.upperBound
+
+            guard let newTime = Self._mirrored(stretchEnd, within: anchorRange)
             else { throw Error.reverseFailure(entry.time) }
 
-            entries[idx] = StoredEntry(entryID: entry.entryID,
-                                       time: newTime,
-                                       instrument: entry.instrument,
-                                       extras: entry.extras)
+            newEntries[idx] = StoredEntry(entryID: entry.entryID,
+                                          time: newTime,
+                                          instrument: entry.instrument,
+                                          extras: entry.extras)
         }
 
-        entries.sort()
+        //
+        // Mirroring reverses the selected entries' order in time, so reverse their order in the
+        // array too, so that entries sharing a time swap as well. The stable sort then merges
+        // them back in among any unselected entries.
+        //
+        let reversedEntries = selectedIndices.reversed().map { newEntries[$0] }
+
+        for (idx, entry) in zip(selectedIndices, reversedEntries) {
+            newEntries[idx] = entry
+        }
+
+        //
+        // The stretch before the first selected entry ends up last in the range. Appended before
+        // the stable sort, its new entry follows any others at its time, so it takes effect.
+        //
+        let firstTime = entries[firstIndex].time
+
+        if firstTime > anchorRange.lowerBound {
+            let leading = entries[..<firstIndex].last?.instrument ?? defaultInstrument
+
+            guard let newTime = Self._mirrored(firstTime, within: anchorRange)
+            else { throw Error.reverseFailure(firstTime) }
+
+            if !newEntries.contains(where: { $0.time == newTime && $0.instrument == leading && $0.extras == nil }) {
+                newEntries.append(StoredEntry(time: newTime,
+                                              instrument: leading,
+                                              extras: nil))
+            }
+        }
+
+        newEntries.sort()
+
+        entries = newEntries
+    }
+
+    // MARK: Private Type Methods
+
+    //
+    // `time` mirrored within `range`: as far after its lower bound as `time` is before its
+    // upper bound.
+    //
+    private static func _mirrored(_ time: TimeType,
+                                  within range: ClosedRange<TimeType>) -> TimeType? {
+        guard let dirDur = time.duration(to: range.upperBound)
+        else { return nil }
+
+        return range.lowerBound.moved(by: dirDur)
     }
 
     // MARK: Private Instance Methods

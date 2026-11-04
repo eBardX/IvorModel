@@ -11,8 +11,8 @@ extension Work {
     /// notation, or `nil` if this work already has both, so there is nothing to convert.
     ///
     /// Like ``warped()``, the new work has a fresh ``Work/workID``, is unlocked, and keeps this
-    /// work’s ``Work/name``, ``Work/smpteStartTime``, ``Work/info``, and ``Work/realizations``;
-    /// its parts keep their IDs.
+    /// work’s ``Work/name``, ``Work/smpteStartTime``, ``Work/info``, ``Work/extras``, and
+    /// ``Work/realizations``; its parts keep their IDs and extras.
     ///
     /// Always permitted, even on a locked work: this returns an independent copy rather than
     /// mutating `self`, so ``Work/isLocked`` does not apply.
@@ -83,6 +83,7 @@ extension Work {
                     content: newContent,
                     smpteStartTime: smpteStartTime,
                     info: info,
+                    extras: extras,
                     realizations: realizations)
     }
 
@@ -135,7 +136,8 @@ extension Work {
              instrumentMap: convertBeatTimes(in: part.instrumentMap,
                                              using: timeConverter),
              panMap: convertBeatTimes(in: part.panMap,
-                                      using: timeConverter))
+                                      using: timeConverter),
+             extras: part.extras)
     }
 
     internal static func convertWallTimes<PitchType: PitchProtocol>(in part: Part<WallTime, PitchType>,
@@ -149,7 +151,8 @@ extension Work {
              instrumentMap: _convertWallTimes(in: part.instrumentMap,
                                               using: timeConverter),
              panMap: _convertWallTimes(in: part.panMap,
-                                       using: timeConverter))
+                                       using: timeConverter),
+             extras: part.extras)
     }
 
     // MARK: Private Type Methods
@@ -239,7 +242,8 @@ extension Work {
                     noteTable: noteTable,
                     dynamicMap: part.dynamicMap,
                     instrumentMap: part.instrumentMap,
-                    panMap: part.panMap)
+                    panMap: part.panMap,
+                    extras: part.extras)
     }
 
     private static func _convertPitches<TimeType: TimeProtocol,

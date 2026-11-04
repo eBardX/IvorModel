@@ -6,8 +6,8 @@ extension Template.AnalysisOptions {
 
     /// A way of making near-identical pitches the same.
     public enum PitchTolerance {
-        /// Rounds each frequency to the nearest step of the given number of cents, counted from
-        /// A4 = 440 Hz. For example, 1 rounds to the nearest cent, and 100 to the nearest
+        /// A rounding of each frequency to the nearest step of the given number of cents, counted
+        /// from A4 = 440 Hz. For example, 1 rounds to the nearest cent, and 100 to the nearest
         /// equal-tempered semitone. `cents` must be positive and finite. For absolute-pitch works
         /// only; keyboard and standard pitches are already exact steps.
         case cents(Double)

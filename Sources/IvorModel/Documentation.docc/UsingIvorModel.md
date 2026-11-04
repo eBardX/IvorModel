@@ -49,6 +49,9 @@ span. It also has:
   (``Credit``), rights notices (``RightsNotice``), and remarks (``Remark``),
   edited with ``Work/modifyInfo(_:)``;
 - an SMPTE start time, the timecode at which its wall time zero falls;
+- ``Work/extras``: format-specific data about the work as a whole, such as the
+  ``Extra/midiTimeCode`` of the Standard MIDI File it came from, edited with
+  ``Work/modifyExtras(_:)``;
 - its ``Work/realizations``; and
 - a ``Work/Generation`` record, if it was generated from a template.
 
@@ -66,8 +69,9 @@ always be set.
 
 ## Parts
 
-A ``Part`` is a named line of music: a note table and three parameter maps. A
-work’s parts all share its time and pitch types, so reading or editing one
+A ``Part`` is a named line of music: a note table and three parameter maps,
+plus ``Part/extras`` for format-specific data about the part as a whole, such as
+the ``Extra/midiChannel`` it came from. A work’s parts all share its time and pitch types, so reading or editing one
 means naming its concrete type:
 
 ```swift

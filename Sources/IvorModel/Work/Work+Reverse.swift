@@ -3,6 +3,7 @@
 public import IvorTiming
 
 internal import IvorTuning
+internal import XestiNumbers
 internal import XestiTools
 
 extension Work {
@@ -51,6 +52,9 @@ extension Work {
 
                 try tempo.reverse(within: resolvedRange)
 
+                Self._moveRampExtras(in: &tempo,
+                                     reversedFrom: original,
+                                     within: resolvedRange)
                 Self._moveTempoText(in: &tempo,
                                     reversedFrom: original,
                                     within: resolvedRange)
@@ -77,6 +81,9 @@ extension Work {
 
                 try tempo.reverse(within: resolvedRange)
 
+                Self._moveRampExtras(in: &tempo,
+                                     reversedFrom: original,
+                                     within: resolvedRange)
                 Self._moveTempoText(in: &tempo,
                                     reversedFrom: original,
                                     within: resolvedRange)
@@ -103,6 +110,9 @@ extension Work {
 
                 try tempo.reverse(within: resolvedRange)
 
+                Self._moveRampExtras(in: &tempo,
+                                     reversedFrom: original,
+                                     within: resolvedRange)
                 Self._moveTempoText(in: &tempo,
                                     reversedFrom: original,
                                     within: resolvedRange)
@@ -186,6 +196,71 @@ extension Work {
     // MARK: Private Type Methods
 
     //
+    // The JohnnySonic ramp extras (`rampStartTempo`, `rampEndTempo` and `rampDuration`) describe
+    // a ramp that starts at their entry and runs `rampDuration` beats, and the exporter trusts
+    // them over the map. Reversing mirrors entry times, which leaves them where the ramp now
+    // *ends*, still running the old way. `TempoMap.reverse` only accepts a range that holds every
+    // entry, so every ramp starts within it. A ramp that also ends within it is mirrored whole:
+    // its extras move to the last entry at its new start, with the start and end tempos swapped,
+    // inserting an entry that holds the tempo already in effect if there's none there. A ramp
+    // that runs past the range's end is only partly reversed, so no extras can describe it: drop
+    // them, and the exporter rebuilds the ramp from the map. Incomplete ramp extras, which the
+    // exporter ignores, are left alone.
+    //
+    private static func _moveRampExtras(in tempoMap: inout TempoMap,
+                                        reversedFrom original: TempoMap,
+                                        within timeRange: ClosedRange<BeatTime>?) {
+        guard let first = original.first,
+              let last = original.last
+        else { return }
+
+        let range = timeRange ?? first.beatTime...last.beatTime
+        let mirrorSum = range.lowerBound.numberValue + range.upperBound.numberValue
+        var moves: [(entryID: TempoMap.EntryID, ramp: [Extra], newStart: BeatTime?)] = []
+
+        for entry in original {
+            guard let ramp = _rampExtras(in: entry.extras),
+                  case let .double(duration)? = ramp[2].values.first
+            else { continue }
+
+            let end = entry.beatTime.numberValue + Number(duration)
+            let newStart = end <= range.upperBound.numberValue ? BeatTime(numberValue: mirrorSum - end) : nil
+
+            moves.append((entry.entryID, ramp, newStart))
+        }
+
+        for move in moves {
+            guard let entry = tempoMap.first(where: { $0.entryID == move.entryID })
+            else { continue }
+
+            let extras = move.ramp.reduce(entry.extras ?? Extras()) { $0.removing($1) }
+
+            tempoMap.update(entryID: move.entryID,
+                            tempo: entry.tempo,
+                            extras: extras.isEmpty ? nil : extras)
+        }
+
+        for move in moves {
+            guard let newStart = move.newStart
+            else { continue }
+
+            let newRamp = [Extra(name: Extra.rampStartTempo.name, values: move.ramp[1].values),
+                           Extra(name: Extra.rampEndTempo.name, values: move.ramp[0].values),
+                           move.ramp[2]]
+
+            if let target = tempoMap.last(where: { $0.beatTime == newStart }) {
+                tempoMap.update(entryID: target.entryID,
+                                tempo: target.tempo,
+                                extras: newRamp.reduce(target.extras ?? Extras()) { $0.inserting($1) })
+            } else {
+                tempoMap.insert(beatTime: newStart,
+                                tempo: tempoMap[newStart],
+                                extras: Extras(elements: newRamp))
+            }
+        }
+    }
+
+    //
     // `tempoText` labels the section that starts at its entry and runs to the next labeled
     // entry, or to the end of the range. Reversing mirrors entry times, which leaves each label
     // where its section now *ends*, so move each one to its section's new start: the last entry
@@ -243,5 +318,16 @@ extension Work {
                                 extras: Extras(elements: [move.label]))
             }
         }
+    }
+
+    //
+    // The three ramp extras on an entry, in start, end, duration order, or `nil` unless all three
+    // are present.
+    //
+    private static func _rampExtras(in extras: Extras?) -> [Extra]? {
+        let names = [Extra.rampStartTempo.name, Extra.rampEndTempo.name, Extra.rampDuration.name]
+        let ramp = names.compactMap { name in extras?.elements.first { $0.name == name } }
+
+        return ramp.count == names.count ? ramp : nil
     }
 }

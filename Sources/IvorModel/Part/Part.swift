@@ -2,8 +2,7 @@
 
 public import IvorTiming
 public import IvorTuning
-
-private import XestiTools
+public import XestiTools
 
 /// A named musical part containing a note table and its parameter maps.
 public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
@@ -18,7 +17,7 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     // MARK: Public Initializers
 
-    /// Creates a part with the given name and optional note/map data.
+    /// Creates a part with the given name and optional note/map data and extras.
     ///
     /// - Parameter name:           The display name of the part. Its whitespace is
     ///                             normalized to a single line.
@@ -30,17 +29,21 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
     ///                             an empty instrument map.
     /// - Parameter panMap:         The pan map for the part. Defaults to an
     ///                             empty pan map.
+    /// - Parameter extras:         Format-specific data about the part as a whole. Empty
+    ///                             extras are stored as `nil`. Defaults to `nil`.
     public init(name: String,
                 noteTable: NoteTable<TimeType, PitchType>? = nil,
                 dynamicMap: DynamicMap<TimeType>? = nil,
                 instrumentMap: InstrumentMap<TimeType>? = nil,
-                panMap: PanMap<TimeType>? = nil) {
+                panMap: PanMap<TimeType>? = nil,
+                extras: Extras? = nil) {
         self.init(partID: PartID(),
                   name: name,
                   noteTable: noteTable,
                   dynamicMap: dynamicMap,
                   instrumentMap: instrumentMap,
-                  panMap: panMap)
+                  panMap: panMap,
+                  extras: extras)
     }
 
     // MARK: Public Instance Properties
@@ -50,6 +53,15 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     /// The dynamic map for this part.
     public var dynamicMap: DynamicMap<TimeType>
+
+    /// Format-specific data about this part as a whole, or `nil` if there is none, such as the
+    /// ``Extra/midiChannel`` its notes were imported from.
+    ///
+    /// It describes the whole part rather than any moment in it, so no transform moves or
+    /// changes it. Empty extras are stored as `nil`.
+    public var extras: Extras? {
+        didSet { extras = Self._normalized(extras) }
+    }
 
     /// The instrument map for this part.
     public var instrumentMap: InstrumentMap<TimeType>
@@ -77,8 +89,10 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
                   noteTable: NoteTable<TimeType, PitchType>? = nil,
                   dynamicMap: DynamicMap<TimeType>? = nil,
                   instrumentMap: InstrumentMap<TimeType>? = nil,
-                  panMap: PanMap<TimeType>? = nil) {
+                  panMap: PanMap<TimeType>? = nil,
+                  extras: Extras? = nil) {
         self.dynamicMap = dynamicMap ?? DynamicMap()
+        self.extras = Self._normalized(extras)
         self.instrumentMap = instrumentMap ?? InstrumentMap()
         //
         // `didSet` doesn't run during initialization, so normalize here too:
@@ -123,14 +137,15 @@ extension Part {
         noteTable.attackingIn(range)
     }
 
-    /// Returns a copy of this part with the same content but a distinct, freshly
+    /// Returns a copy of this part with the same content and ``extras`` but a distinct, freshly
     /// minted ``PartID``.
     public func duplicated() -> Self {
         Self(name: name,
              noteTable: noteTable,
              dynamicMap: dynamicMap,
              instrumentMap: instrumentMap,
-             panMap: panMap)
+             panMap: panMap,
+             extras: extras)
     }
 
     /// Returns the identities of the notes in this part whose pitch — start, end, or anything a
@@ -155,6 +170,12 @@ extension Part {
     public func soundingIn(_ range: ClosedRange<TimeType>) -> Set<NoteID> {
         noteTable.soundingIn(range)
     }
+
+    // MARK: Private Type Methods
+
+    private static func _normalized(_ extras: Extras?) -> Extras? {
+        extras?.isEmpty ?? true ? nil : extras
+    }
 }
 
 // MARK: - Codable
@@ -173,6 +194,9 @@ extension Part: Codable {
 
         let dynamicMap = try container.decode(DynamicMap<TimeType>.self,
                                               forKey: .dynamicMap)
+
+        let extras = try container.decodeIfPresent(Extras.self,
+                                                   forKey: .extras)
 
         let instrumentMap = try container.decode(InstrumentMap<TimeType>.self,
                                                  forKey: .instrumentMap)
@@ -194,7 +218,8 @@ extension Part: Codable {
                   noteTable: noteTable,
                   dynamicMap: dynamicMap,
                   instrumentMap: instrumentMap,
-                  panMap: panMap)
+                  panMap: panMap,
+                  extras: extras)
     }
 
     // MARK: Public Instance Methods
@@ -227,12 +252,16 @@ extension Part: Codable {
 
         try container.encode(panMap,
                              forKey: .panMap)
+
+        try container.encodeIfPresent(extras,
+                                      forKey: .extras)
     }
 
     // MARK: Private Nested Types
 
     private enum CodingKeys: String, CodingKey {
         case dynamicMap
+        case extras
         case instrumentMap
         case name
         case noteTable

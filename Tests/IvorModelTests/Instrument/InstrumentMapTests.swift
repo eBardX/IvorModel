@@ -163,12 +163,27 @@ extension InstrumentMapTests {
         map.insert(time: 12,
                    instrument: guitar)
 
-        #expect(map.instruments == [piano, guitar])
+        //
+        // The first entry is at 1, so the default instrument is in effect before it:
+        //
+        #expect(map.instruments == [.vanilla, piano, guitar])
     }
 
     @Test
     func instruments_empty_isDefaultInstrument() {
         #expect(InstrumentMap<BeatTime>(defaultInstrument: piano).instruments == [piano])
+    }
+
+    @Test
+    func instruments_firstEntryAtZero_omitsDefaultInstrument() {
+        var map = InstrumentMap<BeatTime>(defaultInstrument: .vanilla)
+
+        map.insert(time: 0,
+                   instrument: piano)
+        map.insert(time: 4,
+                   instrument: guitar)
+
+        #expect(map.instruments == [piano, guitar])
     }
 
     @Test
@@ -292,11 +307,23 @@ extension InstrumentMapTests {
         map.insert(time: 5,
                    instrument: piano)
 
-        #expect(map[BeatTime(1)] == guitar)
+        #expect(map[BeatTime(1)] == .vanilla)
         #expect(map[BeatTime(2)] == guitar)
         #expect(map[BeatTime(3)] == guitar)
         #expect(map[BeatTime(5)] == piano)
         #expect(map[BeatTime(7)] == piano)
+    }
+
+    @Test
+    func subscript_beforeFirstEntry_isDefaultInstrument() {
+        var map = InstrumentMap<BeatTime>(defaultInstrument: piano)
+
+        map.insert(time: 2,
+                   instrument: guitar)
+
+        #expect(map[BeatTime(0)] == piano)
+        #expect(map[BeatTime(1)] == piano)
+        #expect(map[BeatTime(2)] == guitar)
     }
 
     @Test

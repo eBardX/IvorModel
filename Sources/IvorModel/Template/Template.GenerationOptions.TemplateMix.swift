@@ -11,13 +11,13 @@ extension Template.GenerationOptions {
     /// no states in common don’t mix: generation stays in whichever one knows the current context.
     /// A mix can’t be combined with ``Template/GenerationOptions/mixing``, which mixes orders.
     public enum TemplateMix {
-        /// Blends the other templates with this one at fixed weights. Each share is another
+        /// A blend of the other templates with this one at fixed weights. Each share is another
         /// template’s weight; this template gets what’s left. For example, a share of 0.4 is 60%
         /// this template and 40% the other.
         case blend([Share])
 
-        /// Morphs from this template to another over the given number of note events, following
-        /// the given curve.
+        /// A morph from this template to another over the given number of note events,
+        /// following the given curve.
         case morph(to: Template.OtherTemplate, over: Int, curve: Template.MorphCurve)
     }
 }

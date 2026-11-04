@@ -41,14 +41,14 @@ extension Template.State.DurationValue: Comparable {
         case let (.absolute(lhs), .absolute(rhs)):
             lhs < rhs
 
-        case let (.relative(lhs), .relative(rhs)):
-            lhs < rhs
-
         case (.absolute, .relative):
             true
 
         case (.relative, .absolute):
             false
+
+        case let (.relative(lhs), .relative(rhs)):
+            lhs < rhs
         }
     }
 }

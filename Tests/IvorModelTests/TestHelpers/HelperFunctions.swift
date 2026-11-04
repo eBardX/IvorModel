@@ -144,6 +144,11 @@ func descending(_ semitones: UInt) -> Template.AnalysisOptions.Transposition {
                                    direction: .descending))
 }
 
+func dynamicTime(of entryID: EntryID,
+                 in part: Part<BeatTime, Pitch>) -> BeatTime? {
+    part.dynamicMap.first { $0.entryID == entryID }?.time
+}
+
 func endCount(of template: Template,
               _ role: Template.ChainRole) throws -> UInt {
     var count: UInt = 0
@@ -188,6 +193,11 @@ func firstAbsolutePartID(of work: Work) throws -> PartID {
     else { Issue.record("Expected absolute-wall content"); return PartID() }
 
     return try #require(parts.first).partID
+}
+
+func firstNoteSB(_ pitch: Pitch,
+                 in part: Part<BeatTime, Pitch>) -> NoteTable<BeatTime, Pitch>.Note? {
+    part.noteTable.first { $0.startPitch == pitch }
 }
 
 func hasJointState(in template: Template,
@@ -278,6 +288,11 @@ func makeC4WallWork(_ notes: [(UInt, UInt)]) -> Work {
 //
 // The states the exact recipe makes of `noteEvents`, for training a chain directly.
 //
+func makeChannelExtras(_ channel: Int) -> Extras {
+    Extras(elements: [Extra(name: Extra.midiChannel.name,
+                            values: [.int(channel)])])
+}
+
 func makeExactStates<T, P>(_ noteEvents: [NoteEvent<T, P>]) -> [Template.State<T, P>] where T.DurationType: TemplateDuration {
     noteEvents.map { noteEvent in
         Template.State(isRest: noteEvent.tiedPitches.isEmpty,
@@ -483,6 +498,11 @@ func makeStandardBeatWork(_ notes: [(Number, Number, Pitch)]) -> Work {
     }
 
     return Work(content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap()))
+}
+
+func makeTimeCodeExtras() -> Extras {
+    Extras(elements: [Extra(name: Extra.midiTimeCode.name,
+                            values: [.string("25"), .int(40)])])
 }
 
 func makeWallWork(frequencies: [Frequency]) -> Work {

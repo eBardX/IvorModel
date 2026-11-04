@@ -99,6 +99,11 @@ extension Work {
 
             return result
 
+        case .absoluteWall,
+             .keyboardWall,
+             .standardWall:
+            return nil
+
         case .keyboardBeat(let parts, var tempoMap):
             let result = body(&tempoMap)
 
@@ -112,11 +117,6 @@ extension Work {
             content = .standardBeat(parts, tempoMap)
 
             return result
-
-        case .absoluteWall,
-             .keyboardWall,
-             .standardWall:
-            return nil
         }
     }
 

@@ -64,18 +64,6 @@ extension Pan.Angle {
 
     // MARK: Public Type Methods
 
-    /// Returns a Boolean value indicating whether the given number is a valid
-    /// angle.
-    ///
-    /// - Parameter numberValue:    The number to validate.
-    ///
-    /// - Returns:  `true` if `numberValue` is rational (that is, finite);
-    ///             otherwise, `false`. Values outside `(-180, 180]` are valid
-    ///             and are wrapped on creation.
-    public static func isValid(_ numberValue: Number) -> Bool {
-        numberValue.isRational
-    }
-
     /// Returns the sum of two angles, wrapped into the range `(-180, 180]`.
     ///
     /// - Parameter lhs:    The first angle.
@@ -105,6 +93,18 @@ extension Pan.Angle {
     public static func - (lhs: Self,
                           rhs: Self) -> Self {
         Self(lhs.numberValue - rhs.numberValue)
+    }
+
+    /// Returns a Boolean value indicating whether the given number is a valid
+    /// angle.
+    ///
+    /// - Parameter numberValue:    The number to validate.
+    ///
+    /// - Returns:  `true` if `numberValue` is rational (that is, finite);
+    ///             otherwise, `false`. Values outside `(-180, 180]` are valid
+    ///             and are wrapped on creation.
+    public static func isValid(_ numberValue: Number) -> Bool {
+        numberValue.isRational
     }
 
     // MARK: Public Instance Properties

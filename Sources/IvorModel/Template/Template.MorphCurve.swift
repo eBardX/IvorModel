@@ -6,17 +6,19 @@ extension Template {
 
     /// The rate at which a morph moves from one order to another.
     public enum MorphCurve {
-        /// Slow at both ends and fastest in the middle, following half a cosine wave.
+        /// A curve that is slow at both ends and fastest in the middle, following half a cosine
+        /// wave.
         case cosine
 
         /// A steady rate.
         case linear
 
-        /// Slow at both ends and fast in the middle, following a logistic (S-shaped) curve.
+        /// A curve that is slow at both ends and fast in the middle, following a logistic
+        /// (S-shaped) curve.
         /// Higher steepness makes the middle faster. Must be positive and finite.
         case logistic(steepness: Double)
 
-        /// Proportional to a power of the progress: above 1 starts slow and ends fast, below 1
+        /// A curve proportional to a power of the progress: above 1 starts slow and ends fast, below 1
         /// starts fast and ends slow. Must be positive and finite.
         case power(Double)
     }

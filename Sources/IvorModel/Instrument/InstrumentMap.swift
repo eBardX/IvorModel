@@ -4,13 +4,17 @@ public import IvorTiming
 public import XestiTools
 
 /// A time-indexed map of instrument designations with a configurable default.
+///
+/// Each entry is a step: its instrument holds from its time until the next entry’s. Before
+/// the first entry, ``defaultInstrument`` is in effect.
 public struct InstrumentMap<TimeType: TimeProtocol> {
 
     // MARK: Public Initializers
 
     /// Creates a new, empty instrument map with the given default instrument.
     ///
-    /// - Parameter defaultInstrument:  The instrument returned when the
+    /// - Parameter defaultInstrument:  The instrument in effect before the
+    ///                                 first entry, or throughout if the
     ///                                 instrument map is empty. Defaults to
     ///                                 `.vanilla`.
     public init(defaultInstrument: Instrument = .vanilla) {
@@ -20,7 +24,8 @@ public struct InstrumentMap<TimeType: TimeProtocol> {
 
     // MARK: Public Instance Properties
 
-    /// The instrument returned when this instrument map contains no entries.
+    /// The instrument in effect before this instrument map’s first entry, or
+    /// throughout if it contains no entries.
     public let defaultInstrument: Instrument
 
     /// A Boolean value indicating whether any entry in this instrument map
@@ -50,13 +55,13 @@ extension InstrumentMap {
     /// Every instrument this instrument map designates, each once, in the
     /// order they first take effect.
     ///
-    /// The array is just ``defaultInstrument`` if this instrument map is
-    /// empty.
+    /// The array starts with ``defaultInstrument`` if this instrument map is
+    /// empty or its first entry comes after time zero.
     public var instruments: [Instrument] {
-        guard !entries.isEmpty
+        guard let first = entries.first
         else { return [defaultInstrument] }
 
-        var result: [Instrument] = []
+        var result: [Instrument] = first.time > .zero ? [defaultInstrument] : []
 
         for entry in entries where !result.contains(entry.instrument) {
             result.append(entry.instrument)
@@ -71,17 +76,14 @@ extension InstrumentMap {
     ///
     /// - Parameter time:   The time at which to query the instrument.
     ///
-    /// - Returns:  The ``Instrument`` value in effect at `time`, or
-    ///             ``defaultInstrument`` if this instrument map is empty.
+    /// - Returns:  The ``Instrument`` value of the last entry at or before
+    ///             `time`, or ``defaultInstrument`` if there is none.
     public subscript(_ time: TimeType) -> Instrument {
-        guard !entries.isEmpty
-        else { return defaultInstrument }
-
         guard let idx = entries.firstIndex(where: { time < $0.time })
-        else { return entries[entries.endIndex - 1].instrument }
+        else { return entries.last?.instrument ?? defaultInstrument }
 
         guard idx > 0
-        else { return entries[0].instrument }
+        else { return defaultInstrument }
 
         return entries[idx - 1].instrument
     }

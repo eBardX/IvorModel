@@ -2,6 +2,8 @@
 
 internal import IvorTiming
 internal import IvorTuning
+internal import XestiNumbers
+internal import XestiTools
 
 extension Work {
 
@@ -107,6 +109,10 @@ extension Work {
 
         newTempoMap.quantize(using: quantizer)
 
+        _snapRampDurations(in: &newTempoMap,
+                           quantizedFrom: tempoMap,
+                           using: quantizer)
+
         return newTempoMap
     }
 
@@ -121,6 +127,32 @@ extension Work {
             case let .invalidFactor(factor):
                 throw Error.invalidQuantizationFactor(factor)
             }
+        }
+    }
+
+    //
+    // The JohnnySonic `rampDuration` extra runs in beats from its entry, and the exporter
+    // trusts it over the map. Quantizing snaps the entry but not the duration, so snap the
+    // ramp's end too, as a note's release is snapped with its attack, and set the duration to
+    // the distance between the snapped ends.
+    //
+    private static func _snapRampDurations(in tempoMap: inout TempoMap,
+                                           quantizedFrom original: TempoMap,
+                                           using quantizer: BeatQuantizer) {
+        for entry in original {
+            guard let ramp = entry.extras?.elements.first(where: { $0.name == Extra.rampDuration.name }),
+                  case let .double(duration)? = ramp.values.first,
+                  let end = BeatTime(numberValue: entry.beatTime.numberValue + Number(duration)),
+                  let newEntry = tempoMap.first(where: { $0.entryID == entry.entryID }),
+                  let newExtras = newEntry.extras
+            else { continue }
+
+            let newDuration = quantizer.quantize(end).numberValue - newEntry.beatTime.numberValue
+
+            tempoMap.update(entryID: newEntry.entryID,
+                            tempo: newEntry.tempo,
+                            extras: newExtras.inserting(Extra(name: ramp.name,
+                                                              values: [.double(newDuration.doubleValue)])))
         }
     }
 }

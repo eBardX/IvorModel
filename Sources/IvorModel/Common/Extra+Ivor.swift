@@ -2,9 +2,9 @@
 
 public import XestiTools
 
-// The names of every `Extra` Ivor attaches to a model entry — a note, or a
-// dynamic, instrument, pan, or tempo map entry — gathered in one place so
-// that a name is never claimed twice. Each one’s documentation says which
+// The names of every `Extra` Ivor attaches to the model — a note, a
+// dynamic, instrument, pan, or tempo map entry, a part, or the work
+// itself — gathered in one place so that a name is never claimed twice. Each one’s documentation says which
 // entries it’s attached to, and what its payload holds.
 extension Extra {
 
@@ -74,8 +74,9 @@ extension Extra {
     /// export.) Payload: a single `.int`.
     public static let midiBank = Self(name: "midiBank")
 
-    /// The MIDI channel (1–16) in effect for an ``InstrumentMap`` entry.
-    /// Payload: a single `.int`.
+    /// The MIDI channel (1–16) a part plays on. Every format Ivor reads
+    /// gives a part one channel, so it’s attached to the part itself, in
+    /// ``Part/extras``. Payload: a single `.int`.
     public static let midiChannel = Self(name: "midiChannel")
 
     /// The MIDI Polyphonic Key Pressure (Control Change-adjacent channel
@@ -106,12 +107,11 @@ extension Extra {
     public static let midiTempo = Self(name: "midiTempo")
 
     /// The SMPTE time division of a Standard MIDI File whose event times are
-    /// measured in frames rather than beats. In a beat-time work it’s attached
-    /// to the ``TempoMap`` entry at beat zero; in a wall-time work, which has
-    /// no tempo map, to each part’s ``InstrumentMap`` entry at time zero.
-    /// Payload: a `.string` holding the frame rate (a `SMPTEFrameRate`
-    /// description, such as `"25"` or `"29.97DF"`), then an `.int` holding
-    /// the number of ticks per frame.
+    /// measured in frames rather than beats. It describes the whole file, so
+    /// it’s attached to the work itself, in ``Work/extras``, whatever the
+    /// work’s time basis. Payload: a `.string` holding the frame rate (a
+    /// `SMPTEFrameRate` description, such as `"25"` or `"29.97DF"`), then an
+    /// `.int` holding the number of ticks per frame.
     public static let midiTimeCode = Self(name: "midiTimeCode")
 
     /// The MIDI note number (1–128, MusicXML’s 1-based convention) an
@@ -183,8 +183,12 @@ extension Extra {
     /// payload.
     public static let upBow = Self(name: "upBow")
 
-    /// The pre-quantization velocity (0–127, MIDI-style scale) a
-    /// ``DynamicMap`` entry’s ``Dynamic`` level was derived from. Payload: a
-    /// single `.int`.
+    /// The exact key velocity (0–127, MIDI-style scale) a ``NoteTable`` note
+    /// is attacked with, as its source recorded it: a MIDI note-on velocity,
+    /// a MusicXML note’s `dynamics` attribute, or a JohnnySonic note’s
+    /// volume. It belongs to the note, so it travels with it through every
+    /// transform; playback and export use it in place of the velocity
+    /// derived from the ``DynamicMap`` level at the attack. Payload: a single
+    /// `.int`.
     public static let velocity = Self(name: "velocity")
 }

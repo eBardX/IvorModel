@@ -161,6 +161,36 @@ extension WorkQuantizeTests {
     }
 
     @Test
+    func quantize_snapsRampEndWithItsStart() throws {
+        //
+        // `rampDuration` is in beats from the ramp's start entry. A 60→120 ramp over 0.25–1.75,
+        // quantized to whole beats, runs 0–2: both ends snap, as a note's attack and release do,
+        // so the duration becomes 2.
+        //
+        let t60 = try #require(Tempo(uintValue: 60))
+        let t120 = try #require(Tempo(uintValue: 120))
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: BeatTime(0.25),
+                        tempo: t60,
+                        extras: Extras(elements: [Extra(name: Extra.rampStartTempo.name, values: [.double(60)]),
+                                                  Extra(name: Extra.rampEndTempo.name, values: [.double(120)]),
+                                                  Extra(name: Extra.rampDuration.name, values: [.double(1.5)])]))
+        tempoMap.insert(beatTime: BeatTime(1.75), tempo: t120)
+
+        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap))
+
+        try work.quantize(to: [1], applyTo: .tempo)
+
+        let entries = Array(work.tempoMap ?? TempoMap())
+
+        #expect(entries.map(\.beatTime) == [0, 2])
+        #expect(extraValues(.rampStartTempo, in: entries.first?.extras) == [.double(60)])
+        #expect(extraValues(.rampEndTempo, in: entries.first?.extras) == [.double(120)])
+        #expect(extraValues(.rampDuration, in: entries.first?.extras) == [.double(2)])
+    }
+
+    @Test
     func quantize_wholeWork_absoluteBeat_snapsEveryPart() throws {
         var part = Part<BeatTime, Frequency>(name: "Violin")
 

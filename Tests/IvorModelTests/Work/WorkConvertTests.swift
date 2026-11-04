@@ -54,6 +54,19 @@ extension WorkConvertTests {
     }
 
     @Test
+    func convert_beatToWall_keepsExtras() throws {
+        let part = Part<BeatTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
+        let work = Work(content: .standardBeat([part], TempoMap()),
+                        extras: makeTimeCodeExtras())
+
+        let result = try #require(try work.convert(timeBasis: .wall,
+                                                   pitchNotation: .standard))
+
+        #expect(result.extras == work.extras)
+        #expect(result.part(part.partID, as: Part<WallTime, Pitch>.self)?.extras == part.extras)
+    }
+
+    @Test
     func convert_beatToWall_keepsInfo() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         let work = Work(content: .standardBeat([part], TempoMap()),
@@ -80,6 +93,17 @@ extension WorkConvertTests {
 
         #expect(result.name == "My Work")
         #expect(result.smpteStartTime == startTime)
+    }
+
+    @Test
+    func convert_keepsPartExtrasAcrossPitchNotations() throws {
+        let part = Part<BeatTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
+        let work = Work(content: .standardBeat([part], TempoMap()))
+
+        let result = try #require(try work.convert(timeBasis: .beat,
+                                                   pitchNotation: .absolute))
+
+        #expect(result.part(part.partID, as: Part<BeatTime, Frequency>.self)?.extras == part.extras)
     }
 
     @Test

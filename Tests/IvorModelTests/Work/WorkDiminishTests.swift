@@ -80,12 +80,7 @@ extension WorkDiminishTests {
 
         #expect(entries.map(\.beatTime) == [0, 2])
 
-        withKnownIssue("""
-            KNOWN_BUGS.md: Tempo ramp extras and time transforms — \
-            diminish scales the ramp's beat times but not its rampDuration extra
-            """) {
-            #expect(extraValues(.rampDuration, in: entries.first?.extras) == [.double(2)])
-        }
+        #expect(extraValues(.rampDuration, in: entries.first?.extras) == [.double(2)])
     }
 
     @Test

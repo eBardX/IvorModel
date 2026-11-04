@@ -67,14 +67,14 @@ extension Patch {
     /// keys each play a different sound.
     public var isPercussion: Bool {
         switch kind {
-        case .generalMIDI1Percussion,
-             .generalMIDI2DrumSet:
-            true
-
         case .custom,
              .generalMIDI1,
              .generalMIDI2:
             false
+
+        case .generalMIDI1Percussion,
+             .generalMIDI2DrumSet:
+            true
         }
     }
 

@@ -14,10 +14,10 @@ extension Template.AnalysisOptions {
     /// each phrase’s ending as an ending and its opening as an opening, and never learns the rest
     /// itself. Shorter rests are learned as usual.
     public enum RestSplit {
-        /// Splits at each rest lasting at least this many beats. For beat-time works only.
+        /// A split at each rest lasting at least this many beats. For beat-time works only.
         case beat(BeatDuration)
 
-        /// Splits at each rest lasting at least this long. For wall-time works only.
+        /// A split at each rest lasting at least this long. For wall-time works only.
         case wall(WallDuration)
     }
 }

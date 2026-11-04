@@ -74,6 +74,18 @@ extension WorkWarpTests {
     }
 
     @Test
+    func unwarped_keepsExtras() throws {
+        let part = Part<WallTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
+        let work = Work(content: .standardWall([part]),
+                        extras: makeTimeCodeExtras())
+
+        let result = try #require(work.unwarped(using: TempoMap()))
+
+        #expect(result.extras == work.extras)
+        #expect(result.part(part.partID, as: Part<BeatTime, Pitch>.self)?.extras == part.extras)
+    }
+
+    @Test
     func unwarped_keepsInfo() throws {
         let part = Part<WallTime, Pitch>(name: "Violin")
         let work = Work(content: .standardWall([part]),
@@ -175,6 +187,18 @@ extension WorkWarpTests {
         #expect(parts[0].instrumentMap.entries.first?.instrument == Instrument(stringValue: "Piano").require())
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.pan == .center)
+    }
+
+    @Test
+    func varispeeded_keepsExtras() throws {
+        let part = Part<BeatTime, Frequency>(name: "Violin", extras: makeChannelExtras(3))
+        let work = Work(content: .absoluteBeat([part], TempoMap()),
+                        extras: makeTimeCodeExtras())
+
+        let result = try #require(try work.varispeeded())
+
+        #expect(result.extras == work.extras)
+        #expect(result.part(part.partID, as: Part<WallTime, Frequency>.self)?.extras == part.extras)
     }
 
     @Test

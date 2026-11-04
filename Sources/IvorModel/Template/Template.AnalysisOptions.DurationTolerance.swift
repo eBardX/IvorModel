@@ -8,13 +8,14 @@ extension Template.AnalysisOptions {
 
     /// A way of making near-identical note event durations the same.
     public enum DurationTolerance {
-        /// Groups durations, shortest first, so that the longest in each group is at most
-        /// `1 + fraction` times the shortest, and replaces each with its group’s most common
+        /// A grouping of durations, shortest first, so that the longest in each group is at most
+        /// `1 + fraction` times the shortest, with each replaced by its group’s most common
         /// duration (the shortest of those, on a tie). For example, 0.05 groups durations within
         /// 5% of each other. `fraction` must be positive and finite. For either time basis.
         case proportional(Double)
 
-        /// Rounds each duration to the nearest multiple of the step, but never below one step.
+        /// A rounding of each duration to the nearest multiple of the step, but never below one
+        /// step.
         /// For wall-time works only.
         case step(WallDuration)
     }

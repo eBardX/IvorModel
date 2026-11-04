@@ -6,6 +6,7 @@ import IvorSMPTE
 import IvorTiming
 import IvorTuning
 import Testing
+import XestiTools
 
 struct WorkTests {
 }
@@ -13,6 +14,14 @@ struct WorkTests {
 // MARK: -
 
 extension WorkTests {
+    @Test
+    func codable_extrasRoundTrip() throws {
+        let work = Work(name: "Cue", extras: makeTimeCodeExtras())
+        let decoded = try JSONDecoder().decode(Work.self, from: JSONEncoder().encode(work))
+
+        #expect(decoded.extras == work.extras)
+    }
+
     @Test
     func codable_infoRoundTrips() throws {
         let work = Work(name: "Aubade", info: makeWorkInfo())
@@ -35,6 +44,15 @@ extension WorkTests {
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(Work.self, from: badData)
         }
+    }
+
+    @Test
+    func codable_noExtrasOmitsKey() throws {
+        let data = try JSONEncoder().encode(Work(name: "Cue"))
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        #expect(object["extras"] == nil)
+        #expect(try JSONDecoder().decode(Work.self, from: data).extras == nil)
     }
 
     @Test
@@ -77,6 +95,13 @@ extension WorkTests {
     }
 
     @Test
+    func duplicated_keepsExtras() {
+        let original = Work(name: "Cue", extras: makeTimeCodeExtras())
+
+        #expect(original.duplicated().extras == original.extras)
+    }
+
+    @Test
     func duplicated_keepsInfo() {
         let original = Work(name: "Aubade", info: makeWorkInfo())
 
@@ -97,6 +122,16 @@ extension WorkTests {
         let work = Work(name: "My Work")
 
         #expect(work == work)   // swiftlint:disable:this identical_operands
+    }
+
+    @Test
+    func equality_ignoresExtras() throws {
+        var work = Work(name: "Cue")
+        let original = work
+
+        try work.modifyExtras { $0 = makeTimeCodeExtras() }
+
+        #expect(work == original)
     }
 
     @Test
@@ -123,6 +158,21 @@ extension WorkTests {
 
         #expect(work.name.isEmpty)
         #expect(work.version == Work.currentVersion)
+    }
+
+    @Test
+    func init_emptyExtrasBecomeNil() {
+        #expect(Work(extras: Extras()).extras == nil)
+    }
+
+    @Test
+    func init_extras() {
+        #expect(Work(name: "Cue", extras: makeTimeCodeExtras()).extras == makeTimeCodeExtras())
+    }
+
+    @Test
+    func init_extrasDefaultToNil() {
+        #expect(Work().extras == nil)
     }
 
     @Test
@@ -169,6 +219,41 @@ extension WorkTests {
         try work.replaceContent(with: .standardWall([part]))
 
         #expect(work.partCount == 1)
+    }
+
+    @Test
+    func modifyExtras() throws {
+        var work = Work(name: "Cue")
+
+        let result = try work.modifyExtras { extras in
+            extras = makeTimeCodeExtras()
+
+            return 42
+        }
+
+        #expect(result == 42)
+        #expect(work.extras == makeTimeCodeExtras())
+    }
+
+    @Test
+    func modifyExtras_emptyExtrasBecomeNil() throws {
+        var work = Work(name: "Cue", extras: makeTimeCodeExtras())
+
+        try work.modifyExtras { $0 = Extras() }
+
+        #expect(work.extras == nil)
+    }
+
+    @Test
+    func modifyExtras_lockedWork_throws() {
+        var work = Work(name: "Cue")
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.modifyExtras { $0 = makeTimeCodeExtras() }
+        }
+        #expect(work.extras == nil)
     }
 
     @Test

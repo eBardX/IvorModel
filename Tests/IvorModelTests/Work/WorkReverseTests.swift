@@ -14,71 +14,81 @@ struct WorkReverseTests {
 
 extension WorkReverseTests {
     @Test
-    func reverse_keepsMIDITimeCodeAtBeatZero() throws {
+    func reverse_dropsRampExtrasWhenRampRunsPastRange() throws {
         //
-        // `midiTimeCode` describes the whole file, but it rides on the tempo entry at beat zero,
-        // and the MIDI exporter looks for it only there. Reversing moves that entry to the end.
+        // A 60→120 ramp from 0 lasting 4 beats, with tempo entries only at 0 and 2, reversed
+        // within 0–2: the ramp's start entry moves to 2, but its end, at 4, is outside the range.
+        // No ramp extras can describe that, so they're dropped, and the exporter rebuilds the
+        // ramp from the map.
         //
         let t60 = try #require(Tempo(uintValue: 60))
-        let t120 = try #require(Tempo(uintValue: 120))
+        let t90 = try #require(Tempo(uintValue: 90))
+        var tempoMap = TempoMap()
 
-        withKnownIssue("""
-            KNOWN_BUGS.md: MIDI time code and reverse — \
-            the beat-zero tempo entry carrying midiTimeCode is mirrored to the end
-            """) {
-            var part = Part<BeatTime, Pitch>(name: "Violin")
+        tempoMap.insert(beatTime: 0,
+                        tempo: t60,
+                        extras: Extras(elements: [Extra(name: Extra.rampStartTempo.name, values: [.double(60)]),
+                                                  Extra(name: Extra.rampEndTempo.name, values: [.double(120)]),
+                                                  Extra(name: Extra.rampDuration.name, values: [.double(4)])]))
+        tempoMap.insert(beatTime: 2, tempo: t90)
 
-            part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap))
 
-            var tempoMap = TempoMap()
+        try work.reverse(within: BeatTime(0)...BeatTime(2))
 
-            tempoMap.insert(beatTime: 0,
-                            tempo: t60,
-                            extras: Extras(elements: [Extra(name: Extra.midiTimeCode.name,
-                                                            values: [.string("25"), .int(40)])]))
-            tempoMap.insert(beatTime: 4, tempo: t120)
+        let entries = Array(work.tempoMap ?? TempoMap())
 
-            var work = Work(content: .standardBeat([part], tempoMap))
-
-            try work.reverse(within: nil as ClosedRange<BeatTime>?)
-
-            let atZero = work.tempoMap?.filter { $0.beatTime == .zero } ?? []
-
-            #expect(atZero.contains { extraValues(.midiTimeCode, in: $0.extras) == [.string("25"), .int(40)] })
-        }
+        #expect(entries.map(\.beatTime) == [0, 2])
+        #expect(entries.allSatisfy { extraValues(.rampStartTempo, in: $0.extras) == nil })
+        #expect(entries.allSatisfy { extraValues(.rampEndTempo, in: $0.extras) == nil })
+        #expect(entries.allSatisfy { extraValues(.rampDuration, in: $0.extras) == nil })
     }
 
     @Test
-    func reverse_keepsMIDITimeCodeAtTimeZeroInWallWork() throws {
+    func reverse_keepsWorkExtrasInBeatWork() throws {
         //
-        // In a wall-time work, `midiTimeCode` rides on each part's instrument entry at time
-        // zero, and the MIDI exporter looks for it only there.
+        // `midiTimeCode` describes the whole file, so it lives on the work, where reversing the
+        // tempo map can't move it away from beat zero.
+        //
+        let t60 = try #require(Tempo(uintValue: 60))
+        let t120 = try #require(Tempo(uintValue: 120))
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: t60)
+        tempoMap.insert(beatTime: 4, tempo: t120)
+
+        var work = Work(content: .standardBeat([part], tempoMap),
+                        extras: makeTimeCodeExtras())
+
+        try work.reverse(within: nil as ClosedRange<BeatTime>?)
+
+        #expect(work.extras == makeTimeCodeExtras())
+    }
+
+    @Test
+    func reverse_keepsWorkExtrasInWallWork() throws {
+        //
+        // `midiTimeCode` describes the whole file, so it lives on the work, where reversing an
+        // instrument map can't move it away from time zero.
         //
         let flute = try #require(Instrument(stringValue: "Flute"))
         let piccolo = try #require(Instrument(stringValue: "Piccolo"))
+        var part = Part<WallTime, Pitch>(name: "Flute")
 
-        withKnownIssue("""
-            KNOWN_BUGS.md: MIDI time code and reverse — \
-            the time-zero instrument entry carrying midiTimeCode is mirrored away from zero
-            """) {
-            var part = Part<WallTime, Pitch>(name: "Flute")
+        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+        part.instrumentMap.insert(time: 0, instrument: flute)
+        part.instrumentMap.insert(time: 2, instrument: piccolo)
 
-            part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
-            part.instrumentMap.insert(time: 0,
-                                      instrument: flute,
-                                      extras: Extras(elements: [Extra(name: Extra.midiTimeCode.name,
-                                                                      values: [.string("25"), .int(40)])]))
-            part.instrumentMap.insert(time: 2, instrument: piccolo)
+        var work = Work(content: .standardWall([part]),
+                        extras: makeTimeCodeExtras())
 
-            var work = Work(content: .standardWall([part]))
+        try work.reverse(within: nil as ClosedRange<WallTime>?)
 
-            try work.reverse(within: nil as ClosedRange<WallTime>?)
-
-            let reversed = try #require(work.part(part.partID, as: Part<WallTime, Pitch>.self))
-            let atZero = reversed.instrumentMap.filter { $0.time == .zero }
-
-            #expect(atZero.contains { extraValues(.midiTimeCode, in: $0.extras) == [.string("25"), .int(40)] })
-        }
+        #expect(work.extras == makeTimeCodeExtras())
     }
 
     @Test
@@ -179,16 +189,44 @@ extension WorkReverseTests {
 
         let entries = Array(work.tempoMap ?? TempoMap())
 
-        withKnownIssue("""
-            KNOWN_BUGS.md: Tempo ramp extras and time transforms — \
-            reverse leaves the ramp extras on the entry that now ends the ramp, unswapped
-            """) {
-            #expect(entries.map(\.beatTime) == [0, 4])
-            #expect(extraValues(.rampStartTempo, in: entries.first?.extras) == [.double(120)])
-            #expect(extraValues(.rampEndTempo, in: entries.first?.extras) == [.double(60)])
-            #expect(extraValues(.rampDuration, in: entries.first?.extras) == [.double(4)])
-            #expect(extraValues(.rampStartTempo, in: entries.last?.extras) == nil)
-        }
+        #expect(entries.map(\.beatTime) == [0, 4])
+        #expect(extraValues(.rampStartTempo, in: entries.first?.extras) == [.double(120)])
+        #expect(extraValues(.rampEndTempo, in: entries.first?.extras) == [.double(60)])
+        #expect(extraValues(.rampDuration, in: entries.first?.extras) == [.double(4)])
+        #expect(extraValues(.rampStartTempo, in: entries.last?.extras) == nil)
+    }
+
+    @Test
+    func reverse_movesRampExtrasToNewRampStart_insertsEntry() throws {
+        //
+        // A 60→120 ramp over 0–3, then 120 from 4, reversed within 0–4, is a 120→60 ramp over
+        // 1–4. No entry lands at 1, so one is inserted there, holding the tempo already in
+        // effect, to carry the extras.
+        //
+        let t60 = try #require(Tempo(uintValue: 60))
+        let t120 = try #require(Tempo(uintValue: 120))
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0,
+                        tempo: t60,
+                        extras: Extras(elements: [Extra(name: Extra.rampStartTempo.name, values: [.double(60)]),
+                                                  Extra(name: Extra.rampEndTempo.name, values: [.double(120)]),
+                                                  Extra(name: Extra.rampDuration.name, values: [.double(3)])]))
+        tempoMap.insert(beatTime: 4, tempo: t120)
+
+        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap))
+
+        try work.reverse(within: BeatTime(0)...BeatTime(4))
+
+        let entries = Array(work.tempoMap ?? TempoMap())
+        let inserted = entries.first { $0.beatTime == 1 }
+
+        #expect(entries.map(\.beatTime) == [0, 1, 4])
+        #expect(inserted?.tempo == work.tempoMap?[BeatTime(1)])
+        #expect(extraValues(.rampStartTempo, in: inserted?.extras) == [.double(120)])
+        #expect(extraValues(.rampEndTempo, in: inserted?.extras) == [.double(60)])
+        #expect(extraValues(.rampDuration, in: inserted?.extras) == [.double(3)])
+        #expect(entries.filter { extraValues(.rampDuration, in: $0.extras) != nil }.count == 1)
     }
 
     @Test

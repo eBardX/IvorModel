@@ -6,6 +6,7 @@ import IvorTiming
 import IvorTuning
 import Testing
 import XestiNumbers
+import XestiTools
 
 struct PartTests {
 }
@@ -51,12 +52,29 @@ extension PartTests {
     }
 
     @Test
+    func codable_extrasRoundTrip() throws {
+        let part = Part<BeatTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
+        let decoded = try JSONDecoder().decode(Part<BeatTime, Pitch>.self, from: JSONEncoder().encode(part))
+
+        #expect(decoded.extras == part.extras)
+    }
+
+    @Test
     func codable_keepsPartID() throws {
         let original = Part<BeatTime, Pitch>(name: "Violin")
         let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(Part<BeatTime, Pitch>.self, from: data)
 
         #expect(decoded.partID == original.partID)
+    }
+
+    @Test
+    func codable_noExtrasOmitsKey() throws {
+        let data = try JSONEncoder().encode(Part<BeatTime, Pitch>(name: "Violin"))
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        #expect(object["extras"] == nil)
+        #expect(try JSONDecoder().decode(Part<BeatTime, Pitch>.self, from: data).extras == nil)
     }
 
     @Test
@@ -85,6 +103,22 @@ extension PartTests {
     }
 
     @Test
+    func duplicated_keepsExtras() {
+        let part = Part<BeatTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
+
+        #expect(part.duplicated().extras == part.extras)
+    }
+
+    @Test
+    func extras_emptyAssignmentBecomesNil() {
+        var part = Part<BeatTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
+
+        part.extras = Extras()
+
+        #expect(part.extras == nil)
+    }
+
+    @Test
     func init_defaults() {
         let part = Part<BeatTime, Pitch>(name: "Piano")
 
@@ -93,6 +127,16 @@ extension PartTests {
         #expect(part.dynamicMap.isEmpty)
         #expect(part.instrumentMap.isEmpty)
         #expect(part.panMap.isEmpty)
+    }
+
+    @Test
+    func init_emptyExtrasBecomeNil() {
+        #expect(Part<BeatTime, Pitch>(name: "Violin", extras: Extras()).extras == nil)
+    }
+
+    @Test
+    func init_extras() {
+        #expect(Part<BeatTime, Pitch>(name: "Violin", extras: makeChannelExtras(3)).extras == makeChannelExtras(3))
     }
 
     @Test

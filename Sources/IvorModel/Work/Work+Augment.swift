@@ -54,6 +54,9 @@ extension Work {
                                                kind: .augment) { (tempo: inout TempoMap) throws(TempoMap.Error) in
                 try tempo.augment(by: factor,
                                   anchor: resolvedAnchor)
+
+                Self.scaleRampDurations(in: &tempo,
+                                        by: factor.doubleValue)
             }
 
             content = .absoluteBeat(newParts, newTempoMap)
@@ -76,6 +79,9 @@ extension Work {
                                                kind: .augment) { (tempo: inout TempoMap) throws(TempoMap.Error) in
                 try tempo.augment(by: factor,
                                   anchor: resolvedAnchor)
+
+                Self.scaleRampDurations(in: &tempo,
+                                        by: factor.doubleValue)
             }
 
             content = .keyboardBeat(newParts, newTempoMap)
@@ -98,6 +104,9 @@ extension Work {
                                                kind: .augment) { (tempo: inout TempoMap) throws(TempoMap.Error) in
                 try tempo.augment(by: factor,
                                   anchor: resolvedAnchor)
+
+                Self.scaleRampDurations(in: &tempo,
+                                        by: factor.doubleValue)
             }
 
             content = .standardBeat(newParts, newTempoMap)

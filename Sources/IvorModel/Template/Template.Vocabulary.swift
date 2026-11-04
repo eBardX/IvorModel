@@ -181,13 +181,13 @@ extension Template.Vocabulary: Codable {
     }
 
     private struct Count<Value: Codable & Comparable & Hashable>: Codable {
-        fileprivate let value: Value
         fileprivate let count: Int
+        fileprivate let value: Value
     }
 
     private struct Members<Value: Codable & Comparable & Hashable>: Codable {
-        fileprivate let value: Value
         fileprivate let members: [Count<Value>]
+        fileprivate let value: Value
     }
 
     // MARK: Private Type Methods
@@ -198,11 +198,11 @@ extension Template.Vocabulary: Codable {
     }
 
     private static func _entries<Value>(_ counts: [Value: Int]) -> [Count<Value>] {
-        counts.keys.sorted().map { Count(value: $0, count: counts[$0, default: 0]) }
+        counts.keys.sorted().map { Count(count: counts[$0, default: 0], value: $0) }
     }
 
     private static func _entries<Value>(_ members: [Value: [Value: Int]]) -> [Members<Value>] {
-        members.keys.sorted().map { Members(value: $0, members: _entries(members[$0, default: [:]])) }
+        members.keys.sorted().map { Members(members: _entries(members[$0, default: [:]]), value: $0) }
     }
 
     private static func _members<Value>(_ entries: [Members<Value>]) -> [Value: [Value: Int]] {

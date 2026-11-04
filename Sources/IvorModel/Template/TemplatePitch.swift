@@ -15,7 +15,7 @@ public protocol TemplatePitch: PitchProtocol {
 
     // MARK: Public Instance Properties
 
-    /// This pitch’s class.
+    /// The pitch class of this pitch.
     var pitchClass: PitchClassType { get }
 
     // MARK: Public Instance Methods

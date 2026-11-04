@@ -8,12 +8,12 @@ extension Template.AnalysisOptions {
 
     /// A way of aligning a part’s attack and release times before it is sliced into note events.
     public enum TimingTolerance {
-        /// Quantizes attack and release times to the nearest subdivision given by `factors`, as
-        /// ``NoteTable/quantize(to:noteIDs:)`` does. For beat-time works only.
+        /// A quantization of attack and release times to the nearest subdivision given by
+        /// `factors`, as ``NoteTable/quantize(to:noteIDs:)`` does. For beat-time works only.
         case grid(factors: [Int])
 
-        /// Merges attack and release times that lie within the given window of the first time in
-        /// their group: each moves to that first time. A note that would then have no length
+        /// A merging of attack and release times that lie within the given window of the first
+        /// time in their group: each moves to that first time. A note that would then have no length
         /// keeps one window’s length. For wall-time works only.
         case window(WallDuration)
     }

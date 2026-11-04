@@ -2,16 +2,9 @@
 
 internal import IvorTiming
 internal import IvorTuning
+internal import XestiTools
 
 extension Work {
-
-    // MARK: Internal Type Aliases
-
-    //
-    // Shorthand for a per-part transform closure, used only to keep `transformed(...)`'s own
-    // signature below a manageable line length.
-    //
-    internal typealias PartTransform<T: TimeProtocol, P: PitchProtocol> = (inout Part<T, P>) throws(Part<T, P>.Error) -> Void
 
     // MARK: Internal Type Methods
 
@@ -38,6 +31,26 @@ extension Work {
         }
 
         return newTempoMap
+    }
+
+    //
+    // `rampDuration` is in beats, but `TempoMap`'s own transforms don't know about it, so
+    // augment and diminish scale it here, after the map itself has been scaled: by the factor
+    // for augment, by its reciprocal for diminish.
+    //
+    internal static func scaleRampDurations(in tempoMap: inout TempoMap,
+                                            by scale: Double) {
+        for entry in Array(tempoMap) {
+            guard let extras = entry.extras,
+                  let ramp = extras.elements.first(where: { $0.name == Extra.rampDuration.name }),
+                  case let .double(duration)? = ramp.values.first
+            else { continue }
+
+            tempoMap.update(entryID: entry.entryID,
+                            tempo: entry.tempo,
+                            extras: extras.inserting(Extra(name: ramp.name,
+                                                           values: [.double(duration * scale)])))
+        }
     }
 
     //

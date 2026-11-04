@@ -3,9 +3,9 @@
 public import IvorSMPTE
 public import IvorTiming
 public import IvorTuning
+public import XestiTools
 
 private import Foundation
-private import XestiTools
 
 /// A musical work containing parts and associated data.
 public struct Work {
@@ -13,7 +13,7 @@ public struct Work {
     // MARK: Public Initializers
 
     /// Creates a new work with the given name, content, SMPTE start time, descriptive information,
-    /// realizations and generation record.
+    /// extras, realizations and generation record.
     ///
     /// - Parameter name:           The display name of the work. Its whitespace is normalized
     ///                             to a single line. Defaults to an empty string.
@@ -23,6 +23,8 @@ public struct Work {
     ///                             Defaults to ``defaultSMPTEStartTime``.
     /// - Parameter info:           The descriptive ``Work/Info`` of the work. Defaults to
     ///                             empty information.
+    /// - Parameter extras:         Format-specific data about the work as a whole. Empty extras
+    ///                             are stored as `nil`. Defaults to `nil`.
     /// - Parameter realizations:   The ways the work can be realized when it plays, in order.
     ///                             Must be non-empty, with distinct realization IDs. Part tables
     ///                             for parts not in `content` are dropped. Defaults to a single,
@@ -33,6 +35,7 @@ public struct Work {
                 content: Content? = nil,
                 smpteStartTime: SMPTETime = Self.defaultSMPTEStartTime,
                 info: Info = Info(),
+                extras: Extras? = nil,
                 realizations: [Realization] = [Realization(name: Self.defaultRealizationName)],
                 generation: Generation? = nil) {
         precondition(Self.firstRealizationError(in: realizations) == nil,
@@ -40,6 +43,7 @@ public struct Work {
 
         self.unsafeContent = content ?? .standardBeat([],
                                                       TempoMap())
+        self.extras = Self._normalized(extras)
         self.generation = generation
         self.info = info
         self.isLocked = false
@@ -70,12 +74,19 @@ public struct Work {
     /// A Boolean value indicating whether this work is locked.
     ///
     /// A locked work cannot be modified until it is unlocked. Every method that would change its
-    /// ``content``, ``info``, ``name`` or ``smpteStartTime`` throws ``Work/Error/workIsLocked`` instead,
+    /// ``content``, ``extras``, ``info``, ``name`` or ``smpteStartTime`` throws ``Work/Error/workIsLocked`` instead,
     /// and ``Project/removeWork(_:)`` refuses to remove it. The lock protects the music only: a
     /// locked work’s ``realizations`` can still be changed. Methods that return a new work, such
     /// as ``duplicated()`` or ``warped()``, leave this work untouched and so are always permitted.
     /// Setting `isLocked` itself is always permitted, so a locked work can always be unlocked.
     public var isLocked: Bool
+
+    /// Format-specific data about the work as a whole, or `nil` if there is none, such as the
+    /// ``Extra/midiTimeCode`` of the Standard MIDI File it was imported from.
+    ///
+    /// It describes the whole work rather than any moment in it, so no transform moves or changes
+    /// it. Empty extras are stored as `nil`. To change it, use ``modifyExtras(_:)``.
+    public internal(set) var extras: Extras?
 
     /// Descriptive information about this work.
     ///
@@ -283,7 +294,7 @@ extension Work {
     // MARK: Public Instance Methods
 
     /// Returns a copy of this work with the same content, ``smpteStartTime``, ``info``,
-    /// ``realizations`` and ``generation`` but a distinct, freshly minted ``WorkID``.
+    /// ``extras``, ``realizations`` and ``generation`` but a distinct, freshly minted ``WorkID``.
     ///
     /// The copy’s parts and realizations keep their IDs, which are unique only within a work.
     public func duplicated() -> Self {
@@ -291,8 +302,28 @@ extension Work {
              content: content,
              smpteStartTime: smpteStartTime,
              info: info,
+             extras: extras,
              realizations: realizations,
              generation: generation)
+    }
+
+    /// Edits the extras of this work in place.
+    ///
+    /// Empty extras left by `body` are stored as `nil`.
+    ///
+    /// - Parameter body:   A closure that edits the extras it is passed.
+    ///
+    /// - Returns:  The value returned by `body`.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
+    public mutating func modifyExtras<R>(_ body: (inout Extras?) -> R) throws(Error) -> R {
+        try ensureUnlocked()
+
+        let result = body(&extras)
+
+        extras = Self._normalized(extras)
+
+        return result
     }
 
     /// Edits the descriptive information of this work in place.
@@ -412,6 +443,24 @@ extension Work {
     }
 
     //
+    // The targeted parts' own transform ranges (notes, plus every map `applyTo` selects), joined.
+    // A wall-time work has no tempo map, so this is its whole default.
+    //
+    internal static func transformTimeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>],
+                                                                    applyTo: MapTargets) -> ClosedRange<TimeType>? {
+        parts.reduce(nil) { acc, part in
+            guard let partRange = part.transformTimeRange(noteIDs: nil,
+                                                          applyTo: applyTo)
+            else { return acc }
+
+            guard let acc
+            else { return partRange }
+
+            return min(acc.lowerBound, partRange.lowerBound)...max(acc.upperBound, partRange.upperBound)
+        }
+    }
+
+    //
     // The one range a beat-time work's augment, diminish or reverse resolves its default from:
     // the targeted parts' own transform ranges (notes, plus every map `applyTo` selects), widened
     // by the tempo map's entries when `applyTo` carries it. Everything that moves then scales or
@@ -434,24 +483,6 @@ extension Work {
         return min(partsRange.lowerBound, first.beatTime)...max(partsRange.upperBound, last.beatTime)
     }
 
-    //
-    // The targeted parts' own transform ranges (notes, plus every map `applyTo` selects), joined.
-    // A wall-time work has no tempo map, so this is its whole default.
-    //
-    internal static func transformTimeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>],
-                                                                    applyTo: MapTargets) -> ClosedRange<TimeType>? {
-        parts.reduce(nil) { acc, part in
-            guard let partRange = part.transformTimeRange(noteIDs: nil,
-                                                          applyTo: applyTo)
-            else { return acc }
-
-            guard let acc
-            else { return partRange }
-
-            return min(acc.lowerBound, partRange.lowerBound)...max(acc.upperBound, partRange.upperBound)
-        }
-    }
-
     // MARK: Internal Instance Methods
 
     //
@@ -461,6 +492,12 @@ extension Work {
     internal func ensureUnlocked() throws(Error) {
         guard !isLocked
         else { throw Error.workIsLocked }
+    }
+
+    // MARK: Private Type Methods
+
+    private static func _normalized(_ extras: Extras?) -> Extras? {
+        extras?.isEmpty ?? true ? nil : extras
     }
 }
 
@@ -485,6 +522,9 @@ extension Work: Codable {
         //
         self.unsafeContent = try container.decode(Content.self,
                                                   forKey: .content)
+
+        self.extras = try Self._normalized(container.decodeIfPresent(Extras.self,
+                                                                     forKey: .extras))
 
         self.generation = try container.decodeIfPresent(Generation.self,
                                                         forKey: .generation)
@@ -546,6 +586,9 @@ extension Work: Codable {
         try container.encode(info,
                              forKey: .info)
 
+        try container.encodeIfPresent(extras,
+                                      forKey: .extras)
+
         try container.encodeIfPresent(generation,
                                       forKey: .generation)
 
@@ -560,6 +603,7 @@ extension Work: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case content
+        case extras
         case generation
         case info
         case isLocked

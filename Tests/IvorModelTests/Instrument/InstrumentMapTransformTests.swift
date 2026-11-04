@@ -266,9 +266,12 @@ extension InstrumentMapTransformTests {
         //
         // Mirrored around its own bounds (10...12), not the whole map's (0...20), so
         // the phrase lands back within its own span rather than somewhere else
-        // entirely:
+        // entirely. Guitar holds for all of 10...12, so it starts there; piano's stretch
+        // ends where the range does, so it has no length and mirrors to 10 as well, ahead of
+        // guitar:
         //
-        #expect(phraseTimes.sorted() == [10, 12])
+        #expect(phraseTimes == [10, 10])
+        #expect(map[BeatTime(10)] == guitar)
 
         var allTimes: [BeatTime] = []
 
@@ -279,7 +282,7 @@ extension InstrumentMapTransformTests {
         //
         // The entries outside the selection are untouched:
         //
-        #expect(allTimes.sorted() == [0, 10, 12, 20])
+        #expect(allTimes == [0, 10, 10, 20])
     }
 
     @Test
@@ -296,22 +299,89 @@ extension InstrumentMapTransformTests {
     }
 
     @Test
-    func reverse_mirrorsTimes() throws {
+    func reverse_leadingStretchKeepsPrecedingUnselectedInstrument() throws {
+        //
+        // Flute from 0, then piccolo from 4 and oboe from 6, with only the last two reversed
+        // within 2…8. The stretch 2–4 is still flute, from the unselected entry, so flute (not
+        // the default) begins the stretch it mirrors to, 6–8.
+        //
         var map = InstrumentMapSB()
-        let guitar = try #require(Instrument(stringValue: "Guitar"))
+        let flute = try #require(Instrument(stringValue: "Flute"))
+        let oboe = try #require(Instrument(stringValue: "Oboe"))
+        let piccolo = try #require(Instrument(stringValue: "Piccolo"))
 
-        map.insert(time: 0, instrument: .vanilla)
-        map.insert(time: 2, instrument: guitar)
+        map.insert(time: 0, instrument: flute)
 
-        try map.reverse()
+        let piccoloID = map.insert(time: 4, instrument: piccolo).entryID
+        let oboeID = map.insert(time: 6, instrument: oboe).entryID
 
-        var times: [BeatTime] = []
+        try map.reverse(within: BeatTime(2)...8,
+                        entryIDs: [piccoloID, oboeID])
 
-        for entry in map {
-            times.append(entry.time)
-        }
+        #expect(map.map(\.time) == [0, 2, 4, 6])
+        #expect(map.map(\.instrument) == [flute, oboe, piccolo, flute])
+    }
 
-        #expect(times.sorted() == [0, 2])
+    @Test
+    func reverse_movesEachEntryToItsStretchStart() throws {
+        //
+        // Each entry's instrument holds until the next entry. Flute for 0–4, then piccolo for
+        // 4–8, reversed within 0…8, is piccolo for 0–4, then flute for 4–8.
+        //
+        var map = InstrumentMapSB()
+        let flute = try #require(Instrument(stringValue: "Flute"))
+        let piccolo = try #require(Instrument(stringValue: "Piccolo"))
+
+        map.insert(time: 0, instrument: flute)
+        map.insert(time: 4, instrument: piccolo)
+
+        try map.reverse(within: BeatTime(0)...8)
+
+        #expect(map.map(\.time) == [0, 4])
+        #expect(map.map(\.instrument) == [piccolo, flute])
+    }
+
+    @Test
+    func reverse_movesLeadingStretchToRangeEnd() throws {
+        //
+        // Before the first entry, the default instrument is in effect. Vanilla for 0–2, flute
+        // for 2–4, then piccolo for 4–8, reversed within 0…8, is piccolo for 0–4, flute for
+        // 4–6, then vanilla for 6–8. A new entry begins the vanilla stretch.
+        //
+        var map = InstrumentMapSB()
+        let flute = try #require(Instrument(stringValue: "Flute"))
+        let piccolo = try #require(Instrument(stringValue: "Piccolo"))
+
+        map.insert(time: 2, instrument: flute)
+        map.insert(time: 4, instrument: piccolo)
+
+        try map.reverse(within: BeatTime(0)...8)
+
+        #expect(map.map(\.time) == [0, 4, 6])
+        #expect(map.map(\.instrument) == [piccolo, flute, .vanilla])
+    }
+
+    @Test
+    func reverse_swapsEntriesThatShareATime() throws {
+        //
+        // Flute then piccolo at 4 is an instant switch: piccolo holds from 4. Reversed within
+        // 0…8, piccolo holds for 0–4, and the flute stretch that had no length lands at 4,
+        // ahead of oboe, which takes over from it.
+        //
+        var map = InstrumentMapSB()
+        let flute = try #require(Instrument(stringValue: "Flute"))
+        let oboe = try #require(Instrument(stringValue: "Oboe"))
+        let piccolo = try #require(Instrument(stringValue: "Piccolo"))
+
+        map.insert(time: 0, instrument: oboe)
+        map.insert(time: 4, instrument: flute)
+        map.insert(time: 4, instrument: piccolo)
+
+        try map.reverse(within: BeatTime(0)...8)
+
+        #expect(map.map(\.time) == [0, 4, 4])
+        #expect(map.map(\.instrument) == [piccolo, flute, oboe])
+        #expect(map[BeatTime(4)] == oboe)
     }
 
     @Test
@@ -324,12 +394,11 @@ extension InstrumentMapTransformTests {
 
         try map.reverse(within: BeatTime(0)...2)
 
-        var times: [BeatTime] = []
-
-        for entry in map {
-            times.append(entry.time)
-        }
-
-        #expect(times.sorted() == [0, 2])
+        //
+        // Vanilla holds for all of 0…2, so it starts at 0. Guitar's stretch ends where the
+        // range does, so it has no length and mirrors to 0 as well, ahead of vanilla:
+        //
+        #expect(map.map(\.time) == [0, 0])
+        #expect(map[BeatTime(0)] == .vanilla)
     }
 }

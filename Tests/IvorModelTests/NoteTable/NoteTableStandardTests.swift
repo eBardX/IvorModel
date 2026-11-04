@@ -243,21 +243,6 @@ extension NoteTableStandardTests {
     }
 
     @Test
-    func reverse_withinWiderRange_updatesTimeRange() throws {
-        //
-        // Reversed within 0...4, wider than the table's own 0...1, the note lands at 3–4, and the
-        // table's time range must follow it.
-        //
-        var table = NoteTableSB()
-
-        table.insert(attack: 0, duration: 1, pitch: .c4)
-
-        try table.reverse(within: BeatTime(0)...4)
-
-        #expect(table.timeRange == BeatTime(3)...4)
-    }
-
-    @Test
     func reverse_invalidAnchorThrows() {
         var table = NoteTableSB()
 
@@ -267,6 +252,30 @@ extension NoteTableStandardTests {
         #expect(throws: NoteTableSB.Error.invalidAnchor) {
             try table.reverse(within: BeatTime(1)...3)
         }
+    }
+
+    @Test
+    func reverse_mirrorsEachNoteBySpan() throws {
+        var table = NoteTableSB()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+        table.insert(attack: 1, duration: 3, pitch: .e4)
+
+        try table.reverse()
+
+        var spans: [(pitch: Pitch, attack: BeatTime, release: BeatTime)] = []
+
+        for note in table {
+            spans.append((note.startPitch, note.attack, note.release))
+        }
+
+        //
+        // Within 0...4, C4 (0–1) lands at 3–4 and E4 (1–4) at 0–3: each note is mirrored by
+        // its release, not its attack, so durations are kept and no notes overlap.
+        //
+        #expect(spans.count == 2)
+        #expect(spans.first { $0.pitch == .e4 }.map { [$0.attack, $0.release] } == [0, 3])
+        #expect(spans.first { $0.pitch == .c4 }.map { [$0.attack, $0.release] } == [3, 4])
     }
 
     @Test
@@ -301,27 +310,23 @@ extension NoteTableStandardTests {
     }
 
     @Test
-    func reverse_mirrorsEachNoteBySpan() throws {
+    func reverse_swapsGlidePitches() throws {
         var table = NoteTableSB()
 
-        table.insert(attack: 0, duration: 1, pitch: .c4)
-        table.insert(attack: 1, duration: 3, pitch: .e4)
+        table.insert(attack: 0, duration: 1, startPitch: .c4, endPitch: .e4)
+
+        let originalTimeRange = table.timeRange
 
         try table.reverse()
 
-        var spans: [(pitch: Pitch, attack: BeatTime, release: BeatTime)] = []
+        var swapped = false
 
         for note in table {
-            spans.append((note.startPitch, note.attack, note.release))
+            swapped = (note.startPitch == .e4 && note.endPitch == .c4)
         }
 
-        //
-        // Within 0...4, C4 (0–1) lands at 3–4 and E4 (1–4) at 0–3: each note is mirrored by
-        // its release, not its attack, so durations are kept and no notes overlap.
-        //
-        #expect(spans.count == 2)
-        #expect(spans.first { $0.pitch == .e4 }.map { [$0.attack, $0.release] } == [0, 3])
-        #expect(spans.first { $0.pitch == .c4 }.map { [$0.attack, $0.release] } == [3, 4])
+        #expect(table.timeRange == originalTimeRange)
+        #expect(swapped)
     }
 
     @Test
@@ -362,26 +367,6 @@ extension NoteTableStandardTests {
     }
 
     @Test
-    func reverse_swapsGlidePitches() throws {
-        var table = NoteTableSB()
-
-        table.insert(attack: 0, duration: 1, startPitch: .c4, endPitch: .e4)
-
-        let originalTimeRange = table.timeRange
-
-        try table.reverse()
-
-        var swapped = false
-
-        for note in table {
-            swapped = (note.startPitch == .e4 && note.endPitch == .c4)
-        }
-
-        #expect(table.timeRange == originalTimeRange)
-        #expect(swapped)
-    }
-
-    @Test
     func reverse_validAnchorDoesNotThrow() throws {
         var table = NoteTableSB()
 
@@ -393,6 +378,21 @@ extension NoteTableStandardTests {
         try table.reverse(within: ownRange)
 
         #expect(table.timeRange == ownRange)
+    }
+
+    @Test
+    func reverse_withinWiderRange_updatesTimeRange() throws {
+        //
+        // Reversed within 0...4, wider than the table's own 0...1, the note lands at 3–4, and the
+        // table's time range must follow it.
+        //
+        var table = NoteTableSB()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+
+        try table.reverse(within: BeatTime(0)...4)
+
+        #expect(table.timeRange == BeatTime(3)...4)
     }
 
     @Test

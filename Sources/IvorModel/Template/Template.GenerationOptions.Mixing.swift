@@ -6,13 +6,13 @@ extension Template.GenerationOptions {
 
     /// A way of mixing the recipe’s ``Template/GenerationOptions/order`` with another order.
     public enum Mixing {
-        /// Blends the recipe’s order with another order at fixed weights. `weight` is the
+        /// A blend of the recipe’s order with another order at fixed weights. `weight` is the
         /// other order’s share, between 0 and 1 (exclusive); the recipe’s order gets the rest.
         /// For example, order 2 blended with order 1 at weight 0.3 is mostly faithful to the
         /// source, and sometimes wanders.
         case blend(with: Int, weight: Double)
 
-        /// Morphs from the recipe’s order to another order over the given number of note
+        /// A morph from the recipe’s order to another order over the given number of note
         /// events, following the given curve. For example, a morph from a high order to a low
         /// one starts faithful to the source and ends free.
         case morph(to: Int, over: Int, curve: Template.MorphCurve)
