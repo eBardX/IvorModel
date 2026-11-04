@@ -529,11 +529,11 @@ extension PartTransformTests {
         part.noteTable.insert(attack: 0,
                               duration: 1,
                               pitch: .c4,
-                              extras: Extras(elements: [Extra(name: Extra.velocity.name, values: [.int(100)])]))
+                              extras: Extras(elements: [Extra(name: Extra.attackVelocity.name, values: [.int(100)])]))
         part.noteTable.insert(attack: 2,
                               duration: 1,
                               pitch: .e4,
-                              extras: Extras(elements: [Extra(name: Extra.velocity.name, values: [.int(50)])]))
+                              extras: Extras(elements: [Extra(name: Extra.attackVelocity.name, values: [.int(50)])]))
         part.dynamicMap.insert(time: 0, dynamic: .f)
         part.dynamicMap.insert(time: 2, dynamic: .p)
 
@@ -544,8 +544,8 @@ extension PartTransformTests {
 
         #expect(c4.attack == 2)
         #expect(e4.attack == 0)
-        #expect(extraValues(.velocity, in: c4.extras) == [.int(100)])
-        #expect(extraValues(.velocity, in: e4.extras) == [.int(50)])
+        #expect(extraValues(.attackVelocity, in: c4.extras) == [.int(100)])
+        #expect(extraValues(.attackVelocity, in: e4.extras) == [.int(50)])
     }
 
     @Test

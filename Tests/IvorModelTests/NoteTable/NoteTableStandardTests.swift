@@ -243,6 +243,66 @@ extension NoteTableStandardTests {
     }
 
     @Test
+    func reverse_breathMark_movesToChordNowBeforeIt() throws {
+        //
+        // A breath after C4, before the E4–G4 chord, must, once reversed, follow the chord (now
+        // first) instead — on both of its notes.
+        //
+        var table = NoteTableSB()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4, extras: Extras(elements: [.breathMark]))
+        table.insert(attack: 1, duration: 1, pitch: .e4)
+        table.insert(attack: 1, duration: 1, pitch: .g4)
+
+        try table.reverse()
+
+        #expect(breathMarkPitches(table) == [.e4, .g4])
+    }
+
+    @Test
+    func reverse_breathMark_movesToNoteNowBeforeIt() throws {
+        //
+        // A breath between C4 and E4 must, once reversed, still fall between them: after E4,
+        // which now comes before C4.
+        //
+        var table = NoteTableSB()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4, extras: Extras(elements: [.breathMark, .accent]))
+        table.insert(attack: 1, duration: 1, pitch: .e4)
+        table.insert(attack: 2, duration: 1, pitch: .g4)
+
+        try table.reverse()
+
+        var accentPitches: [Pitch] = []
+
+        for note in table where note.extras?.contains(.accent) ?? false {
+            accentPitches.append(note.startPitch)
+        }
+
+        #expect(breathMarkPitches(table) == [.e4])
+        #expect(accentPitches == [.c4])
+    }
+
+    @Test
+    func reverse_breathMark_withNoReversedNoteBefore_staysOnItsNote() throws {
+        //
+        // G4 is last, so once reversed it's first; nothing selected comes before it, even though
+        // the unselected C4 does.
+        //
+        var table = NoteTableSB()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+        table.insert(attack: 1, duration: 1, pitch: .e4)
+        table.insert(attack: 2, duration: 1, pitch: .g4, extras: Extras(elements: [.breathMark]))
+
+        let noteIDs = Set(table.filter { $0.startPitch != .c4 }.map(\.noteID))
+
+        try table.reverse(noteIDs: noteIDs)
+
+        #expect(breathMarkPitches(table) == [.g4])
+    }
+
+    @Test
     func reverse_invalidAnchorThrows() {
         var table = NoteTableSB()
 
@@ -252,6 +312,26 @@ extension NoteTableStandardTests {
         #expect(throws: NoteTableSB.Error.invalidAnchor) {
             try table.reverse(within: BeatTime(1)...3)
         }
+    }
+
+    @Test
+    func reverse_keepsVelocitiesOnTheirNote() throws {
+        var table = NoteTableSB()
+
+        table.insert(attack: 0,
+                     duration: 1,
+                     pitch: .c4,
+                     extras: Extras(elements: [Extra(name: Extra.attackVelocity.name, values: [.int(100)]),
+                                               Extra(name: Extra.releaseVelocity.name, values: [.int(30)])]))
+        table.insert(attack: 1, duration: 1, pitch: .e4)
+
+        try table.reverse()
+
+        let c4 = try #require(table.first { $0.startPitch == .c4 })
+
+        #expect(c4.attack == 1)
+        #expect(extraValues(.attackVelocity, in: c4.extras) == [.int(100)])
+        #expect(extraValues(.releaseVelocity, in: c4.extras) == [.int(30)])
     }
 
     @Test

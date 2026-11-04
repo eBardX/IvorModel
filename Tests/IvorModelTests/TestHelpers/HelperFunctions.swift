@@ -133,6 +133,13 @@ func blendOptions(with other: Template,
                                       templateMix: .blend([.init(template: .init(other), weight: weight)])))
 }
 
+//
+// The start pitches of the notes in `table` that carry a breath mark, lowest first.
+//
+func breathMarkPitches(_ table: NoteTable<BeatTime, Pitch>) -> [Pitch] {
+    table.filter { $0.extras?.contains(.breathMark) ?? false }.map(\.startPitch).sorted()
+}
+
 func descending(_ interval: Interval) -> Template.AnalysisOptions.Transposition {
     .interval(DirectedInterval(interval: interval,
                                direction: .descending))

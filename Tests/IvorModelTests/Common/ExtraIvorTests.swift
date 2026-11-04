@@ -58,6 +58,42 @@ extension ExtraIvorTests {
     }
 
     @Test
+    func attackVelocity() {
+        #expect(Extra.attackVelocity.name == "attackVelocity")
+        #expect(Extra.attackVelocity.values.isEmpty)
+    }
+
+    @Test
+    func attackVelocityAndExpressionValue_roundTripThroughDynamicMapEntry() {
+        var dynamicMap = DynamicMap<BeatTime>()
+
+        dynamicMap.insert(time: 1,
+                          dynamic: .mf,
+                          extras: Extras(elements: [Extra(name: Extra.attackVelocity.name,
+                                                          values: [.int(84)]),
+                                                    Extra(name: Extra.expressionValue.name,
+                                                          values: [.int(100)])]))
+
+        var foundVelocity: Int?
+        var foundExpression: Int?
+
+        for entry in dynamicMap {
+            for extra in entry.extras?.elements ?? [] {
+                if extra.name == Extra.attackVelocity.name,
+                   case let .int(value)? = extra.values.first {
+                    foundVelocity = value
+                } else if extra.name == Extra.expressionValue.name,
+                          case let .int(value)? = extra.values.first {
+                    foundExpression = value
+                }
+            }
+        }
+
+        #expect(foundVelocity == 84)
+        #expect(foundExpression == 100)
+    }
+
+    @Test
     func breathMark() {
         #expect(Extra.breathMark.name == "breathMark")
         #expect(Extra.breathMark.values.isEmpty)
@@ -261,12 +297,6 @@ extension ExtraIvorTests {
     }
 
     @Test
-    func midiReleaseVelocity() {
-        #expect(Extra.midiReleaseVelocity.name == "midiReleaseVelocity")
-        #expect(Extra.midiReleaseVelocity.values.isEmpty)
-    }
-
-    @Test
     func midiTempo() {
         #expect(Extra.midiTempo.name == "midiTempo")
         #expect(Extra.midiTempo.values.isEmpty)
@@ -318,6 +348,12 @@ extension ExtraIvorTests {
     func rampStartTempo() {
         #expect(Extra.rampStartTempo.name == "rampStartTempo")
         #expect(Extra.rampStartTempo.values.isEmpty)
+    }
+
+    @Test
+    func releaseVelocity() {
+        #expect(Extra.releaseVelocity.name == "releaseVelocity")
+        #expect(Extra.releaseVelocity.values.isEmpty)
     }
 
     @Test
@@ -389,41 +425,5 @@ extension ExtraIvorTests {
     func upBow() {
         #expect(Extra.upBow.name == "upBow")
         #expect(Extra.upBow.values.isEmpty)
-    }
-
-    @Test
-    func velocity() {
-        #expect(Extra.velocity.name == "velocity")
-        #expect(Extra.velocity.values.isEmpty)
-    }
-
-    @Test
-    func velocityAndExpressionValue_roundTripThroughDynamicMapEntry() {
-        var dynamicMap = DynamicMap<BeatTime>()
-
-        dynamicMap.insert(time: 1,
-                          dynamic: .mf,
-                          extras: Extras(elements: [Extra(name: Extra.velocity.name,
-                                                          values: [.int(84)]),
-                                                    Extra(name: Extra.expressionValue.name,
-                                                          values: [.int(100)])]))
-
-        var foundVelocity: Int?
-        var foundExpression: Int?
-
-        for entry in dynamicMap {
-            for extra in entry.extras?.elements ?? [] {
-                if extra.name == Extra.velocity.name,
-                   case let .int(value)? = extra.values.first {
-                    foundVelocity = value
-                } else if extra.name == Extra.expressionValue.name,
-                          case let .int(value)? = extra.values.first {
-                    foundExpression = value
-                }
-            }
-        }
-
-        #expect(foundVelocity == 84)
-        #expect(foundExpression == 100)
     }
 }

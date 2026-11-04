@@ -20,6 +20,15 @@ extension Extra {
     /// Payload: a single `.string`.
     public static let articulation = Self(name: "articulation")
 
+    /// The exact key velocity (0–127, MIDI-style scale) a ``NoteTable`` note
+    /// is attacked with, as its source recorded it: a MIDI note-on velocity,
+    /// a MusicXML note’s `dynamics` attribute, or a JohnnySonic note’s
+    /// volume. It belongs to the note, so it travels with it through every
+    /// transform; playback and export use it in place of the velocity
+    /// derived from the ``DynamicMap`` level at the attack. Its counterpart
+    /// at the note’s end is ``releaseVelocity``. Payload: a single `.int`.
+    public static let attackVelocity = Self(name: "attackVelocity")
+
     /// A breath-mark articulation on a ``NoteTable`` note. Bare flag, no
     /// payload.
     public static let breathMark = Self(name: "breathMark")
@@ -95,12 +104,6 @@ extension Extra {
     /// instrument=` directive use. Payload: a single `.int`.
     public static let midiProgram = Self(name: "midiProgram")
 
-    /// The MIDI note-off (release) velocity (1–127) of a ``NoteTable``
-    /// note. It’s left out when the note-off velocity was 0 or 64, the
-    /// value MIDI prescribes for a device that doesn’t sense release
-    /// velocity. Payload: a single `.int`.
-    public static let midiReleaseVelocity = Self(name: "midiReleaseVelocity")
-
     /// The exact microseconds-per-quarter-note value of a MIDI tempo meta
     /// event, before it’s rounded to an integer BPM for a ``TempoMap``
     /// entry’s ``Tempo`` value. Payload: a single `.int`.
@@ -147,6 +150,16 @@ extension Extra {
     /// `.double`.
     public static let rampStartTempo = Self(name: "rampStartTempo")
 
+    /// The exact key velocity (1–127, MIDI-style scale) a ``NoteTable`` note
+    /// is released with, as its source recorded it: a MIDI note-off velocity
+    /// or a MusicXML note’s `end-dynamics` attribute. It’s left out when the
+    /// source didn’t measure one — for MIDI, a note-off velocity of 0 or 64,
+    /// the value MIDI prescribes for a device that doesn’t sense release
+    /// velocity. It belongs to the note, so it travels with it through every
+    /// transform. Its counterpart at the note’s start is ``attackVelocity``.
+    /// Payload: a single `.int`.
+    public static let releaseVelocity = Self(name: "releaseVelocity")
+
     /// A marker that a ``NoteTable`` note ends a slur. When the originating
     /// format can express overlapping/crossing slurs (MusicXML, Guido),
     /// payload is a single `.string` id matching the corresponding
@@ -182,13 +195,4 @@ extension Extra {
     /// An up-bow articulation on a ``NoteTable`` note. Bare flag, no
     /// payload.
     public static let upBow = Self(name: "upBow")
-
-    /// The exact key velocity (0–127, MIDI-style scale) a ``NoteTable`` note
-    /// is attacked with, as its source recorded it: a MIDI note-on velocity,
-    /// a MusicXML note’s `dynamics` attribute, or a JohnnySonic note’s
-    /// volume. It belongs to the note, so it travels with it through every
-    /// transform; playback and export use it in place of the velocity
-    /// derived from the ``DynamicMap`` level at the attack. Payload: a single
-    /// `.int`.
-    public static let velocity = Self(name: "velocity")
 }

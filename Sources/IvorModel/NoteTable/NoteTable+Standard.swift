@@ -193,6 +193,12 @@ extension NoteTable {
 
     /// Reverses the order of notes within a time range.
     ///
+    /// The reversed passage is a mirror image: a glide runs from its old end pitch to its old
+    /// start pitch, a slur starts on the note that ended it, and a breath mark stays in the gap
+    /// between the same notes — so it moves to the reversed notes that now come just before its
+    /// note, or stays on its note when no reversed note comes before it. Every other extra,
+    /// including a note’s attack and release velocities, stays on its note unchanged.
+    ///
     /// - Parameter timeRange:   The time range to mirror attack times around. `nil` resolves to
     ///                          the table’s own time range, or — when `noteIDs` is non-`nil` — the
     ///                          selected notes’ own time range.
@@ -214,9 +220,15 @@ extension NoteTable {
         let hiTime = anchorRange.upperBound
         let loTime = anchorRange.lowerBound
 
+        var breathMarkIDs: Set<NoteID> = []
+
         for (idx, note) in notes.enumerated() {
             guard noteIDs?.contains(note.noteID) ?? true
             else { continue }
+
+            if note.extras?.contains(.breathMark) ?? false {
+                breathMarkIDs.insert(note.noteID)
+            }
 
             guard let dirDur = note.release.duration(to: hiTime),
                   let newAttack = loTime.moved(by: dirDur)
@@ -231,6 +243,9 @@ extension NoteTable {
         }
 
         notes.sort()
+
+        _moveBreathMarks(from: breathMarkIDs,
+                         noteIDs: noteIDs)
 
         self.timeRange = Self.timeRange(in: notes)
     }
@@ -327,6 +342,50 @@ extension NoteTable {
     }
 
     // MARK: Private Instance Methods
+
+    //
+    // A breath mark sits after its note, in the gap before whatever follows. Once the notes are
+    // reversed, that gap is in front of the note instead, so the mark moves to the notes that now
+    // come just before it — every reversed note at the latest attack earlier than its own (all of
+    // a chord's notes, say) — and the breath stays between the same notes. Only reversed notes
+    // count, since an unselected note was never on the other side of that gap; a note with no
+    // reversed note before it keeps its mark.
+    //
+    private mutating func _moveBreathMarks(from sourceIDs: Set<NoteID>,
+                                           noteIDs: Set<NoteID>?) {
+        guard !sourceIDs.isEmpty
+        else { return }
+
+        let reversedNotes = notes.filter { noteIDs?.contains($0.noteID) ?? true }
+        var markedIDs: Set<NoteID> = []
+
+        for note in reversedNotes where sourceIDs.contains(note.noteID) {
+            if let previousAttack = reversedNotes.lazy.map(\.attack).filter({ $0 < note.attack }).max() {
+                for other in reversedNotes where other.attack == previousAttack {
+                    markedIDs.insert(other.noteID)
+                }
+            } else {
+                markedIDs.insert(note.noteID)
+            }
+        }
+
+        for (idx, note) in notes.enumerated() {
+            guard sourceIDs.contains(note.noteID) || markedIDs.contains(note.noteID)
+            else { continue }
+
+            let oldExtras = note.extras ?? Extras()
+            let newExtras = markedIDs.contains(note.noteID)
+                ? oldExtras.inserting(.breathMark)
+                : oldExtras.removing(.breathMark)
+
+            notes[idx] = StoredNote(noteID: note.noteID,
+                                    attack: note.attack,
+                                    duration: note.duration,
+                                    startPitch: note.startPitch,
+                                    endPitch: note.endPitch,
+                                    extras: newExtras)
+        }
+    }
 
     //
     // `nil` resolves to `containing` (the selected notes' own range) — safe by construction, since
