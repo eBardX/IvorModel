@@ -12,12 +12,14 @@ extension Template {
 
     /// Creates a template by analyzing the note events of a specific part in a work, exactly.
     ///
-    /// The same as ``analyzeNoteEvents(in:at:options:)`` with
+    /// The same as ``analyzeNoteEvents(in:at:options:name:)`` with
     /// `AnalysisOptions(maximumOrder: maximumOrder)`.
     ///
     /// - Parameter work:           The ``Work`` containing the part to analyze.
     /// - Parameter index:          The zero-based index of the part to analyze.
     /// - Parameter maximumOrder:   The maximum pattern depth for the analysis.
+    /// - Parameter name:           The display name of the new template. Its whitespace is
+    ///                             normalized to a single line.
     ///
     /// - Returns:  A new ``Template`` capturing the musical character of the specified part.
     ///
@@ -25,10 +27,12 @@ extension Template {
     ///             otherwise, ``Template/Error/partNotFound(_:)`` if no part exists at `index`.
     public static func analyzeNoteEvents(in work: Work,
                                          at index: Int,
-                                         maximumOrder: Int) throws(Error) -> Self {
+                                         maximumOrder: Int,
+                                         name: String) throws(Error) -> Self {
         try analyzeNoteEvents(in: work,
                               at: index,
-                              options: AnalysisOptions(maximumOrder: maximumOrder))
+                              options: AnalysisOptions(maximumOrder: maximumOrder),
+                              name: name)
     }
 
     /// Creates a template by analyzing the note events of a specific part in a work, with the
@@ -39,6 +43,8 @@ extension Template {
     /// - Parameter work:       The ``Work`` containing the part to analyze.
     /// - Parameter index:      The zero-based index of the part to analyze.
     /// - Parameter options:    The analysis recipe.
+    /// - Parameter name:       The display name of the new template. Its whitespace is
+    ///                         normalized to a single line.
     ///
     /// - Returns:  A new ``Template`` capturing the musical character of the specified part.
     ///
@@ -49,14 +55,9 @@ extension Template {
     ///             ``Template/Error/partNotFound(_:)`` if no part exists at `index`.
     public static func analyzeNoteEvents(in work: Work,
                                          at index: Int,
-                                         options: AnalysisOptions) throws(Error) -> Self {
+                                         options: AnalysisOptions,
+                                         name: String) throws(Error) -> Self {
         try options.validate()
-
-        let name = if work.name.isEmpty {
-            "Analysis of \(work.workID)"
-        } else {
-            "Analysis of “\(work.name)”"
-        }
 
         let (content, summary) = try _analyzeNoteEvents(in: work.content,
                                                         at: index,
@@ -86,7 +87,7 @@ extension Template {
     ///
     /// - Returns:  The number of sequences.
     ///
-    /// - Throws:   The same errors as ``analyzeNoteEvents(in:at:options:)``.
+    /// - Throws:   The same errors as ``analyzeNoteEvents(in:at:options:name:)``.
     public static func sequenceCount(in work: Work,
                                      at index: Int,
                                      options: AnalysisOptions) throws(Error) -> Int {

@@ -106,6 +106,7 @@ extension TemplateAnalysisOptionsRestSplitTests {
 
         for seed in UInt64(0)..<10 {
             let work = try template.generateWork(name: "G",
+                                                 partName: "Part",
                                                  options: .init(order: 1,
                                                                 length: .noteCount(30),
                                                                 stopsAtEnd: false,
@@ -166,7 +167,7 @@ extension TemplateAnalysisOptionsRestSplitTests {
         let options = Template.AnalysisOptions(maximumOrder: 2,
                                                variants: .init(retrogrades: true),
                                                restSplit: .beat(beats(2)))
-        let summary = try Template.analyzeNoteEvents(in: makeRestSplitTune(), at: 0, options: options).analysisSummary
+        let summary = try Template.analyzeNoteEvents(in: makeRestSplitTune(), at: 0, options: options, name: "Test").analysisSummary
 
         #expect(summary.mergedCount == 0)
         #expect(try Template.sequenceCount(in: makeRestSplitTune(), at: 0, options: options) == summary.sequenceCount)

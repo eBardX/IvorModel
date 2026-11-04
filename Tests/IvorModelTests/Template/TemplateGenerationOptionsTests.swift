@@ -50,6 +50,7 @@ extension TemplateGenerationOptionsTests {
 
         for seed in UInt64(0)..<10 {
             let work = try tmpl.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Options(order: 2,
                                                               length: .noteCount(40),
                                                               backsOff: true),
@@ -67,6 +68,7 @@ extension TemplateGenerationOptionsTests {
 
         for seed in UInt64(0)..<10 {
             let work = try tmpl.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Options(length: .noteCount(200),
                                                               stopsAtEnd: false,
                                                               cadence: cadence),
@@ -88,6 +90,7 @@ extension TemplateGenerationOptionsTests {
 
         for seed in UInt64(0)..<10 {
             let work = try tmpl.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Options(length: .noteCount(30),
                                                               stopsAtEnd: false,
                                                               backsOff: true,
@@ -107,6 +110,7 @@ extension TemplateGenerationOptionsTests {
                               length: .noteCount(12),
                               contrast: 2)
         let work = try tmpl.generateWork(name: "G",
+                                         partName: "Part",
                                          options: options,
                                          seed: 99)
         let generation = try #require(work.generation)
@@ -122,10 +126,12 @@ extension TemplateGenerationOptionsTests {
     func generation_regenerate_reproducesWork() throws {
         let tmpl = try makeBranchingTemplate()
         let work = try tmpl.generateWork(name: "G",
+                                         partName: "Part",
                                          order: 1,
                                          limit: 50)
         let generation = try #require(work.generation)
         let again = try tmpl.generateWork(name: "G",
+                                          partName: "Part",
                                           options: generation.options,
                                           seed: generation.seed)
 
@@ -138,12 +144,14 @@ extension TemplateGenerationOptionsTests {
 
         #expect(throws: Template.Error.incompatibleOptions) {
             try tmpl.generateWork(name: "G",
+                                  partName: "Part",
                                   options: Template.GenerationOptions<WallTime, Pitch>(),
                                   seed: 0)
         }
 
         #expect(throws: Template.Error.incompatibleOptions) {
             try tmpl.generateWork(name: "G",
+                                  partName: "Part",
                                   options: .keyboardBeat(.init()),
                                   seed: 0)
         }
@@ -167,6 +175,7 @@ extension TemplateGenerationOptionsTests {
         for (options, error) in cases {
             #expect(throws: error) {
                 try tmpl.generateWork(name: "G",
+                                      partName: "Part",
                                       options: options,
                                       seed: 0)
             }
@@ -179,6 +188,7 @@ extension TemplateGenerationOptionsTests {
 
         for seed in UInt64(0)..<10 {
             let work = try tmpl.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Options(length: .duration(12),
                                                               stopsAtEnd: false),
                                              seed: seed)
@@ -193,6 +203,7 @@ extension TemplateGenerationOptionsTests {
     func loops_reachesLength() throws {
         let tmpl = try makeBranchingTemplate()
         let work = try tmpl.generateWork(name: "G",
+                                         partName: "Part",
                                          options: Options(order: 1,
                                                           length: .noteCount(60),
                                                           loops: true),
@@ -212,8 +223,8 @@ extension TemplateGenerationOptionsTests {
                                   length: .noteCount(30),
                                   backsOff: true,
                                   mixing: mixing)
-            let work1 = try tmpl.generateWork(name: "G", options: options, seed: 3)
-            let work2 = try tmpl.generateWork(name: "G", options: options, seed: 3)
+            let work1 = try tmpl.generateWork(name: "G", partName: "Part", options: options, seed: 3)
+            let work2 = try tmpl.generateWork(name: "G", partName: "Part", options: options, seed: 3)
 
             //
             // Back-off means 30 events are generated; a note table can't keep a final rest, so 29
@@ -229,9 +240,9 @@ extension TemplateGenerationOptionsTests {
         let tmpl = try makeBranchingTemplate()
         let options = Options(length: .noteCount(60),
                               stopsAtEnd: false)
-        let work1 = try tmpl.generateWork(name: "G", options: options, seed: 1)
-        let work2 = try tmpl.generateWork(name: "G", options: options, seed: 1)
-        let work3 = try tmpl.generateWork(name: "G", options: options, seed: 2)
+        let work1 = try tmpl.generateWork(name: "G", partName: "Part", options: options, seed: 1)
+        let work2 = try tmpl.generateWork(name: "G", partName: "Part", options: options, seed: 1)
+        let work3 = try tmpl.generateWork(name: "G", partName: "Part", options: options, seed: 2)
 
         #expect(try standardBeatNoteTriples(of: work1) == standardBeatNoteTriples(of: work2))
         #expect(try standardBeatNoteTriples(of: work1) != standardBeatNoteTriples(of: work3))
@@ -245,9 +256,11 @@ extension TemplateGenerationOptionsTests {
 
         for seed in UInt64(0)..<30 {
             let anchored = try tmpl.generateWork(name: "G",
+                                                 partName: "Part",
                                                  options: Options(order: 3, length: .noteCount(3)),
                                                  seed: seed)
             let free = try tmpl.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Options(order: 3, length: .noteCount(3), startsAtBegin: false),
                                              seed: seed)
 
@@ -263,9 +276,11 @@ extension TemplateGenerationOptionsTests {
     func stopsAtEnd_false_reachesLength() throws {
         let tmpl = try makeBranchingTemplate(maximumOrder: 3)
         let stopping = try tmpl.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Options(order: 3, length: .noteCount(500)),
                                              seed: 0)
         let endless = try tmpl.generateWork(name: "G",
+                                            partName: "Part",
                                             options: Options(order: 3, length: .noteCount(500), stopsAtEnd: false),
                                             seed: 0)
 
@@ -277,6 +292,7 @@ extension TemplateGenerationOptionsTests {
     func work_codable_withAndWithoutGeneration() throws {
         let tmpl = try makeBranchingTemplate()
         let generated = try tmpl.generateWork(name: "G",
+                                              partName: "Part",
                                               options: Options(length: .noteCount(8)),
                                               seed: .max)
         let plain = Work(name: "Plain")

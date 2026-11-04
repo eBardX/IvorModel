@@ -155,7 +155,7 @@ extension TemplateTests {
         table.insert(attack: 3, duration: 2, pitch: .g4)
 
         let work = Work(name: "W", content: .standardBeat([Part(name: "Piano", noteTable: table)], TempoMap()))
-        let tmpl = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1)
+        let tmpl = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1, name: "Test")
 
         guard case let .standardBeat(model) = tmpl.content
         else { Issue.record("Unexpected content"); return }

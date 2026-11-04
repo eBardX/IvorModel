@@ -68,7 +68,8 @@ extension TemplateAnalysisOptionsStateRecipeTests {
                                            at: 0,
                                            options: .init(maximumOrder: 1,
                                                           states: .init(pitch: .omitted,
-                                                                        duration: .omitted)))
+                                                                        duration: .omitted)),
+                                           name: "Test")
         }
     }
 
@@ -88,6 +89,7 @@ extension TemplateAnalysisOptionsStateRecipeTests {
         let range = Pitch.d4...Pitch.a4
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Template.GenerationOptions<BeatTime, Pitch>(order: 0,
                                                                                                   length: .noteCount(30),
                                                                                                   stopsAtEnd: false,
@@ -107,6 +109,7 @@ extension TemplateAnalysisOptionsStateRecipeTests {
         let template = try analyzeRecipeTemplate(makeStandardBeatWork(melody), pitch: .interval)
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Template.GenerationOptions<BeatTime, Pitch>(order: 0,
                                                                                                   length: .noteCount(40),
                                                                                                   stopsAtEnd: false),
@@ -131,6 +134,7 @@ extension TemplateAnalysisOptionsStateRecipeTests {
                                                  duration: .relative)
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Template.GenerationOptions<BeatTime, Pitch>(length: .noteCount(10)),
                                              seed: 1)
 
@@ -145,6 +149,7 @@ extension TemplateAnalysisOptionsStateRecipeTests {
                                                  duration: .relative)
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Template.GenerationOptions<BeatTime, Pitch>(length: .noteCount(10),
                                                                                                   startPitch: .g4,
                                                                                                   startDuration: 2),
@@ -175,14 +180,15 @@ extension TemplateAnalysisOptionsStateRecipeTests {
         let template = try Template.analyzeNoteEvents(in: Work(content: .standardWall([Part(name: "Flute", noteTable: noteTable)])),
                                                       at: 0,
                                                       options: .init(maximumOrder: 1,
-                                                                     durations: .proportional(0.05)))
+                                                                     durations: .proportional(0.05)),
+                                                      name: "Test")
         let options = Template.GenerationOptions<WallTime, Pitch>(order: 0,
                                                                   length: .noteCount(20),
                                                                   stopsAtEnd: false,
                                                                   samplesMembers: true)
 
-        let durations1 = try standardWallDurations(of: template.generateWork(name: "G", options: options, seed: 2))
-        let durations2 = try standardWallDurations(of: template.generateWork(name: "G", options: options, seed: 2))
+        let durations1 = try standardWallDurations(of: template.generateWork(name: "G", partName: "Part", options: options, seed: 2))
+        let durations2 = try standardWallDurations(of: template.generateWork(name: "G", partName: "Part", options: options, seed: 2))
 
         #expect(durations1 == durations2)
         #expect(Set(durations1).isSubset(of: [wallDuration(500), wallDuration(505), wallDuration(510)]))

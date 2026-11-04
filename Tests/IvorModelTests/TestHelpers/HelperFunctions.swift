@@ -30,7 +30,8 @@ func analyzeAddingTemplate(_ work: Work,
                                    at: 0,
                                    options: .init(maximumOrder: 2,
                                                   states: states,
-                                                  variants: variants))
+                                                  variants: variants),
+                                   name: "Test")
 }
 
 func analyzeMixTemplate(_ work: Work,
@@ -39,7 +40,8 @@ func analyzeMixTemplate(_ work: Work,
     try Template.analyzeNoteEvents(in: work,
                                    at: 0,
                                    options: .init(maximumOrder: maximumOrder,
-                                                  states: states))
+                                                  states: states),
+                                   name: work.name)
 }
 
 func analyzePhraseTemplate(_ work: Work,
@@ -48,7 +50,8 @@ func analyzePhraseTemplate(_ work: Work,
     try Template.analyzeNoteEvents(in: work,
                                    at: 0,
                                    options: .init(maximumOrder: maximumOrder,
-                                                  states: states))
+                                                  states: states),
+                                   name: "Test")
 }
 
 func analyzeRecipeTemplate(_ work: Work,
@@ -58,7 +61,8 @@ func analyzeRecipeTemplate(_ work: Work,
                                    at: 0,
                                    options: .init(maximumOrder: 1,
                                                   states: .init(pitch: pitch,
-                                                                duration: duration)))
+                                                                duration: duration)),
+                                   name: "Test")
 }
 
 func analyzeRestSplitTune(restSplit: Template.AnalysisOptions.RestSplit?,
@@ -69,7 +73,8 @@ func analyzeRestSplitTune(restSplit: Template.AnalysisOptions.RestSplit?,
                                    options: .init(maximumOrder: 2,
                                                   states: states,
                                                   variants: variants,
-                                                  restSplit: restSplit))
+                                                  restSplit: restSplit),
+                                   name: "Test")
 }
 
 func analyzeSeparatedTemplate(_ work: Work,
@@ -80,7 +85,8 @@ func analyzeSeparatedTemplate(_ work: Work,
                                    options: .init(maximumOrder: 1,
                                                   states: .init(pitch: pitch,
                                                                 duration: duration,
-                                                                separatesPitchAndDuration: true)))
+                                                                separatesPitchAndDuration: true)),
+                                   name: "Test")
 }
 
 func analyzeVariantsTemplate(_ work: Work,
@@ -90,7 +96,8 @@ func analyzeVariantsTemplate(_ work: Work,
                                    at: 0,
                                    options: .init(maximumOrder: 1,
                                                   states: states,
-                                                  variants: variants))
+                                                  variants: variants),
+                                   name: "Test")
 }
 
 func ascending(_ interval: Interval) -> Template.AnalysisOptions.Transposition {

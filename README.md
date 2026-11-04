@@ -94,7 +94,8 @@ import IvorTuning
 
 // A work in beat time and standard pitch, with one part.
 var work = Work(name: "Etude",
-                content: .empty(timeBasis: .beat, pitchNotation: .standard))
+                content: .empty(timeBasis: .beat,
+                                pitchNotation: .standard))
 let melody = try work.addPart(name: "Melody")
 
 let notes: [(BeatTime, String)] = [(0, "C4"), (1, "E4"), (2, "G4"), (3, "E4"),
@@ -102,21 +103,30 @@ let notes: [(BeatTime, String)] = [(0, "C4"), (1, "E4"), (2, "G4"), (3, "E4"),
 
 try work.modifyPart(melody, as: Part<BeatTime, Pitch>.self) { part in
     for (attack, name) in notes {
-        part.noteTable.insert(attack: attack, duration: 1, pitch: Pitch(plain: name)!)
+        part.noteTable.insert(attack: attack,
+                              duration: 1,
+                              pitch: Pitch(plain: name)!)
     }
 }
 
 // Transpose it up a fifth, then convert it to wall time and MIDI note numbers.
 try work.transpose(by: DirectedInterval(interval: .perfect5, direction: .ascending))
 
-let midi = try work.convert(timeBasis: .wall, pitchNotation: .keyboard)!
+let midi = try work.convert(timeBasis: .wall,
+                            pitchNotation: .keyboard)!
 
 // Learn the melody, and generate a 12-note variation of it.
-let template = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 2)
+let template = try Template.analyzeNoteEvents(in: work,
+                                              at: 0,
+                                              maximumOrder: 2,
+                                              name: "Melody")
 let options  = Template.GenerationOptions<BeatTime, Pitch>(order: 1,
                                                            length: .noteCount(12),
                                                            stopsAtEnd: false)
-let variation = try template.generateWork(name: "Variation", options: options, seed: 42)
+let variation = try template.generateWork(name: "Variation",
+                                          partName: "Melody",
+                                          options: options,
+                                          seed: 42)
 
 // Keep them in a project, and save it.
 var project = Project()

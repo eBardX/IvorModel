@@ -23,6 +23,7 @@ extension TemplateGenerationOptionsTemplateMixTests {
         let ds = try analyzeMixTemplate(makeOneBeatWork(Array(repeating: .d4, count: 6)))
 
         let pitches = try standardBeatPitches(of: cs.generateWork(name: "G",
+                                                                  partName: "Part",
                                                                   options: blendOptions(with: ds, weight: 0.5),
                                                                   seed: 2,
                                                                   mixingWith: [ds]))
@@ -38,6 +39,7 @@ extension TemplateGenerationOptionsTemplateMixTests {
 
         for seed: UInt64 in 1...20 {
             let pitches = try standardBeatPitches(of: cs.generateWork(name: "G",
+                                                                      partName: "Part",
                                                                       options: blendOptions(with: ds,
                                                                                             stopsAtEnd: true),
                                                                       seed: seed,
@@ -58,6 +60,7 @@ extension TemplateGenerationOptionsTemplateMixTests {
         let fifths = try analyzeMixTemplate(makeOneBeatWork([.c4, .g4, .c4, .g4]), states: separated)
 
         let pitches = try standardBeatPitches(of: thirds.generateWork(name: "G",
+                                                                      partName: "Part",
                                                                       options: blendOptions(with: fifths, weight: 0.5),
                                                                       seed: 3,
                                                                       mixingWith: [fifths]))
@@ -72,6 +75,7 @@ extension TemplateGenerationOptionsTemplateMixTests {
         let fifths = try analyzeMixTemplate(makeOneBeatWork([.c4, .g4, .c4, .g4, .c4, .g4]))
 
         let pitches = try standardBeatPitches(of: thirds.generateWork(name: "G",
+                                                                      partName: "Part",
                                                                       options: blendOptions(with: fifths, weight: 0.5),
                                                                       seed: 3,
                                                                       mixingWith: [fifths]))
@@ -86,7 +90,7 @@ extension TemplateGenerationOptionsTemplateMixTests {
         let intervals = try analyzeMixTemplate(makeOneBeatWork([.c4, .g4]), states: .init(pitch: .interval))
 
         #expect(throws: Template.Error.incompatibleTemplates) {
-            try thirds.generateWork(name: "G", options: blendOptions(with: intervals), seed: 1, mixingWith: [intervals])
+            try thirds.generateWork(name: "G", partName: "Part", options: blendOptions(with: intervals), seed: 1, mixingWith: [intervals])
         }
     }
 
@@ -96,7 +100,7 @@ extension TemplateGenerationOptionsTemplateMixTests {
         let fifths = try analyzeMixTemplate(makeOneBeatWork([.c4, .g4]))
 
         #expect(throws: Template.Error.invalidMixing) {
-            try thirds.generateWork(name: "G", options: blendOptions(with: fifths, weight: weight), seed: 1, mixingWith: [fifths])
+            try thirds.generateWork(name: "G", partName: "Part", options: blendOptions(with: fifths, weight: weight), seed: 1, mixingWith: [fifths])
         }
     }
 
@@ -106,7 +110,7 @@ extension TemplateGenerationOptionsTemplateMixTests {
         let fifths = try analyzeMixTemplate(makeOneBeatWork([.c4, .g4]))
 
         #expect(throws: Template.Error.templateNotFound(fifths.templateID)) {
-            try thirds.generateWork(name: "G", options: blendOptions(with: fifths), seed: 1)
+            try thirds.generateWork(name: "G", partName: "Part", options: blendOptions(with: fifths), seed: 1)
         }
     }
 
@@ -118,7 +122,7 @@ extension TemplateGenerationOptionsTemplateMixTests {
                                           templateMix: .blend([.init(template: .init(fifths), weight: 0.5)]))
 
         #expect(throws: Template.Error.incompatibleTemplates) {
-            try thirds.generateWork(name: "G", options: .standardBeat(options), seed: 1, mixingWith: [fifths])
+            try thirds.generateWork(name: "G", partName: "Part", options: .standardBeat(options), seed: 1, mixingWith: [fifths])
         }
     }
 
@@ -128,15 +132,15 @@ extension TemplateGenerationOptionsTemplateMixTests {
         let fifths = try analyzeMixTemplate(makeOneBeatWork([.c4, .g4, .c4, .g4]))
         let options = blendOptions(with: fifths, weight: 0.5)
 
-        let work1 = try thirds.generateWork(name: "G", options: options, seed: 9, mixingWith: [fifths])
-        let work2 = try thirds.generateWork(name: "G", options: options, seed: 9, mixingWith: [fifths, thirds])
+        let work1 = try thirds.generateWork(name: "G", partName: "Part", options: options, seed: 9, mixingWith: [fifths])
+        let work2 = try thirds.generateWork(name: "G", partName: "Part", options: options, seed: 9, mixingWith: [fifths, thirds])
         let decoded = try JSONDecoder().decode(Template.AnyGenerationOptions.self,
                                                from: JSONEncoder().encode(options))
 
         #expect(try standardBeatPitches(of: work1) == standardBeatPitches(of: work2))
         #expect(work1.generation?.options == options)
         #expect(decoded == options)
-        #expect(options.otherTemplates.map(\.templateName) == ["Analysis of “Fifths”"])
+        #expect(options.otherTemplates.map(\.templateName) == ["Fifths"])
     }
 
     @Test
@@ -148,7 +152,7 @@ extension TemplateGenerationOptionsTemplateMixTests {
                                           templateMix: .blend([.init(template: .init(fifths), weight: 0.5)]))
 
         #expect(throws: Template.Error.incompatibleOptions) {
-            try thirds.generateWork(name: "G", options: .standardBeat(options), seed: 1, mixingWith: [fifths])
+            try thirds.generateWork(name: "G", partName: "Part", options: .standardBeat(options), seed: 1, mixingWith: [fifths])
         }
     }
 
@@ -162,6 +166,7 @@ extension TemplateGenerationOptionsTemplateMixTests {
                                           templateMix: .morph(to: .init(ds), over: 10, curve: .linear))
 
         let pitches = try standardBeatPitches(of: cs.generateWork(name: "G",
+                                                                  partName: "Part",
                                                                   options: .standardBeat(options),
                                                                   seed: 5,
                                                                   mixingWith: [ds]))

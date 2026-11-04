@@ -31,7 +31,8 @@ extension TemplateModelChainsTests {
     func analysis_jointRecipe_hasOneChain() throws {
         let template = try Template.analyzeNoteEvents(in: makeStandardBeatWork(Fixtures.melodyWithRest),
                                                       at: 0,
-                                                      maximumOrder: 1)
+                                                      maximumOrder: 1,
+                                                      name: "Test")
 
         #expect(template.chainRoles == [.joint])
         #expect(template.metrics(for: .joint) != nil)
@@ -62,7 +63,8 @@ extension TemplateModelChainsTests {
             try Template.analyzeNoteEvents(in: makeStandardBeatWork([(0, 1, .c4)]),
                                            at: 0,
                                            options: .init(maximumOrder: 1,
-                                                          states: recipe))
+                                                          states: recipe),
+                                           name: "Test")
         }
     }
 
@@ -105,6 +107,7 @@ extension TemplateModelChainsTests {
         let allowed: Set<Pitch> = [.c4, .e4, .g4]
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Template.GenerationOptions<BeatTime, Pitch>(order: 0,
                                                                                                   length: .noteCount(30),
                                                                                                   stopsAtEnd: false,
@@ -122,6 +125,7 @@ extension TemplateModelChainsTests {
         let template = try analyzeSeparatedTemplate(makeStandardBeatWork(Fixtures.risingScale))
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Template.GenerationOptions<BeatTime, Pitch>(order: 1,
                                                                                                   length: .noteCount(50),
                                                                                                   pitchChain: .init(order: 0)),
@@ -134,10 +138,12 @@ extension TemplateModelChainsTests {
     func generation_jointTemplateWithPitchChain_throws() throws {
         let template = try Template.analyzeNoteEvents(in: makeStandardBeatWork(Fixtures.risingScale),
                                                       at: 0,
-                                                      maximumOrder: 1)
+                                                      maximumOrder: 1,
+                                                      name: "Test")
 
         #expect(throws: Template.Error.incompatibleOptions) {
             try template.generateWork(name: "G",
+                                      partName: "Part",
                                       options: Template.GenerationOptions<BeatTime, Pitch>(pitchChain: .init(order: 1)),
                                       seed: 1)
         }
@@ -148,6 +154,7 @@ extension TemplateModelChainsTests {
         let template = try analyzeSeparatedTemplate(makeStandardBeatWork(Fixtures.risingScale))
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Template.GenerationOptions<BeatTime, Pitch>(order: 0,
                                                                                                   length: .noteCount(50),
                                                                                                   pitchChain: .init(order: 1)),
@@ -161,6 +168,7 @@ extension TemplateModelChainsTests {
         let template = try analyzeSeparatedTemplate(makeStandardBeatWork(Fixtures.risingScale))
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Template.GenerationOptions<BeatTime, Pitch>(order: 0,
                                                                                                   length: .noteCount(12),
                                                                                                   loops: true,
@@ -187,6 +195,7 @@ extension TemplateModelChainsTests {
 
         #expect(throws: Template.Error.invalidOrder(1)) {
             try template.generateWork(name: "G",
+                                      partName: "Part",
                                       options: Template.GenerationOptions<BeatTime, Pitch>(pitchChain: .init(order: 2)),
                                       seed: 1)
         }
@@ -202,6 +211,7 @@ extension TemplateModelChainsTests {
                                                     pitch: .interval)
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Template.GenerationOptions<BeatTime, Pitch>(order: 0,
                                                                                                   length: .noteCount(40),
                                                                                                   stopsAtEnd: false),
@@ -226,6 +236,7 @@ extension TemplateModelChainsTests {
                                                     duration: duration)
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: Template.GenerationOptions<BeatTime, Pitch>(length: .noteCount(20)),
                                              seed: 1)
 
@@ -239,8 +250,8 @@ extension TemplateModelChainsTests {
                                                                   length: .noteCount(25),
                                                                   stopsAtEnd: false)
 
-        let notes1 = try standardBeatNoteTriples(of: template.generateWork(name: "G", options: options, seed: 7))
-        let notes2 = try standardBeatNoteTriples(of: template.generateWork(name: "G", options: options, seed: 7))
+        let notes1 = try standardBeatNoteTriples(of: template.generateWork(name: "G", partName: "Part", options: options, seed: 7))
+        let notes2 = try standardBeatNoteTriples(of: template.generateWork(name: "G", partName: "Part", options: options, seed: 7))
 
         #expect(notes1 == notes2)
         #expect(!notes1.isEmpty)

@@ -237,7 +237,7 @@ which new, derived works can be generated.
 
 ### Analyzing
 
-``Template/analyzeNoteEvents(in:at:options:)`` analyzes one part of a work with
+``Template/analyzeNoteEvents(in:at:options:name:)`` analyzes one part of a work with
 a ``Template/AnalysisOptions`` recipe. The recipe sets the maximum order — the
 longest pattern the template remembers — and can also:
 
@@ -254,24 +254,32 @@ longest pattern the template remembers — and can also:
 - split the part into separate sequences at long rests
   (``Template/AnalysisOptions/RestSplit``).
 
-``Template/analyzeNoteEvents(in:at:maximumOrder:)`` is the exact analysis, with
-no tolerances. ``Template/adding(partAt:of:name:)`` returns a template that has
-learned another part as well.
+``Template/analyzeNoteEvents(in:at:maximumOrder:name:)`` is the exact analysis,
+with no tolerances. ``Template/adding(partAt:of:name:)`` returns a template that
+has learned another part as well. Each takes the new template’s name from the
+caller; IvorModel never makes up names.
 
 ### Generating
 
-`generateWork(name:options:seed:)` generates a new work from a
-``Template/GenerationOptions`` recipe and a seed. The same template, recipe, and
+`generateWork(name:partName:options:seed:)` generates a new work, with the
+given work and part names, from a ``Template/GenerationOptions`` recipe and a
+seed. The same template, recipe, and
 seed always give the same notes, and the new work records the recipe and seed
 in its ``Work/generation``, so it can be generated again or varied.
 
 ```swift
-let template = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 2)
+let template = try Template.analyzeNoteEvents(in: work,
+                                              at: 0,
+                                              maximumOrder: 2,
+                                              name: "Melody")
 let options  = Template.GenerationOptions<BeatTime, Pitch>(order: 1,
                                                            length: .noteCount(12),
                                                            stopsAtEnd: false)
 
-let variation = try template.generateWork(name: "Variation", options: options, seed: 42)
+let variation = try template.generateWork(name: "Variation",
+                                          partName: "Melody",
+                                          options: options,
+                                          seed: 42)
 ```
 
 The recipe is generic over the template’s time and pitch types;
@@ -294,7 +302,7 @@ Its main settings are:
   ``Template/GenerationOptions/Cadence`` to end on.
 - **Material.** A ``Template/GenerationOptions/Phrase`` to continue, and other
   templates to blend or morph with (``Template/GenerationOptions/TemplateMix``),
-  passed to ``Template/generateWork(name:options:seed:mixingWith:)``.
+  passed to ``Template/generateWork(name:partName:options:seed:mixingWith:)``.
 
 ## Projects
 

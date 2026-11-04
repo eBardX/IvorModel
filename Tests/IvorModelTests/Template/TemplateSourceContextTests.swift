@@ -21,7 +21,7 @@ extension TemplateSourceContextTests {
     func adding_keepsOriginalContext() throws {
         let original = makeSourceContextWork(instrument: Fixtures.flute)
         let other = makeSourceContextWork(instrument: Fixtures.oboe)
-        let template = try Template.analyzeNoteEvents(in: original, at: 0, maximumOrder: 1)
+        let template = try Template.analyzeNoteEvents(in: original, at: 0, maximumOrder: 1, name: "Test")
         let added = try template.adding(partAt: 0, of: other, name: "Both")
 
         #expect(added.sourceContext == template.sourceContext)
@@ -30,7 +30,7 @@ extension TemplateSourceContextTests {
 
     @Test
     func analyze_beatWork_recordsSettingAtFirstAttack() throws {
-        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1)
+        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
         let context = template.sourceContext
 
         #expect(context.dynamic == .f)
@@ -54,7 +54,7 @@ extension TemplateSourceContextTests {
                         content: .standardWall([Part(name: "Voice",
                                                      noteTable: noteTable,
                                                      dynamicMap: dynamicMap)]))
-        let template = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1)
+        let template = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1, name: "Test")
 
         #expect(template.sourceContext.tempo == nil)
         #expect(template.sourceContext.dynamic == .pp)
@@ -62,11 +62,11 @@ extension TemplateSourceContextTests {
 
     @Test
     func generate_defaultContext_leavesMapsEmpty() throws {
-        let template = try Template.analyzeNoteEvents(in: makePlainSourceWork(), at: 0, maximumOrder: 1)
+        let template = try Template.analyzeNoteEvents(in: makePlainSourceWork(), at: 0, maximumOrder: 1, name: "Test")
 
         #expect(template.sourceContext == Template.SourceContext(tempo: .default))
 
-        let generated = try template.generateWork(name: "Out", order: 1, limit: 4)
+        let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
 
         guard case let .standardBeat(parts, tempoMap) = generated.content
         else { Issue.record("not standard beat"); return }
@@ -81,8 +81,8 @@ extension TemplateSourceContextTests {
 
     @Test
     func generate_startsInSourceContext() throws {
-        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1)
-        let generated = try template.generateWork(name: "Out", order: 1, limit: 4)
+        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
+        let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
 
         guard case let .standardBeat(parts, tempoMap) = generated.content
         else { Issue.record("not standard beat"); return }
@@ -111,7 +111,7 @@ extension TemplateSourceContextTests {
 
     @Test
     func sourceContext_roundTripsThroughProject() throws {
-        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1)
+        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
         var project = Project()
 
         project.updateTemplate(template)

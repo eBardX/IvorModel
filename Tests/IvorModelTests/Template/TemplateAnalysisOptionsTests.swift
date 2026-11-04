@@ -21,14 +21,16 @@ extension TemplateAnalysisOptionsTests {
 
         let exact = try jointNoteEvents(of: Template.analyzeNoteEvents(in: work,
                                                                        at: 0,
-                                                                       maximumOrder: 1))
+                                                                       maximumOrder: 1,
+                                                                       name: "Test"))
 
         #expect(exact.count == 3)
 
         let states = try jointNoteEvents(of: Template.analyzeNoteEvents(in: work,
                                                                         at: 0,
                                                                         options: .init(maximumOrder: 1,
-                                                                                       timing: .grid(factors: [4]))))
+                                                                                       timing: .grid(factors: [4])),
+                                                                        name: "Test"))
 
         #expect(states == [NoteEvent(pitches: [.c4, .e4], duration: 1)])
     }
@@ -44,7 +46,8 @@ extension TemplateAnalysisOptionsTests {
         let template = try Template.analyzeNoteEvents(in: work,
                                                       at: 0,
                                                       options: .init(maximumOrder: 1,
-                                                                     pitches: .cents(1)))
+                                                                     pitches: .cents(1)),
+                                                      name: "Test")
         let states = try absoluteWallNoteEvents(of: template)
 
         #expect(states == [NoteEvent(pitches: [440], duration: wallDuration(500))])
@@ -57,7 +60,8 @@ extension TemplateAnalysisOptionsTests {
         let states = try absoluteWallNoteEvents(of: Template.analyzeNoteEvents(in: work,
                                                                                at: 0,
                                                                                options: .init(maximumOrder: 1,
-                                                                                              pitches: .cents(100))))
+                                                                                              pitches: .cents(100)),
+                                                                               name: "Test"))
 
         #expect(states == [NoteEvent(pitches: [440], duration: wallDuration(500))])
     }
@@ -66,7 +70,8 @@ extension TemplateAnalysisOptionsTests {
     func analyzeNoteEvents_exact_recordsOptions() throws {
         let template = try Template.analyzeNoteEvents(in: makeStandardBeatWork([(0, 1, .c4)]),
                                                       at: 0,
-                                                      maximumOrder: 2)
+                                                      maximumOrder: 2,
+                                                      name: "Test")
 
         #expect(template.analysisOptions == Template.AnalysisOptions(maximumOrder: 2))
     }
@@ -82,7 +87,8 @@ extension TemplateAnalysisOptionsTests {
             #expect(throws: Template.Error.incompatibleOptions) {
                 try Template.analyzeNoteEvents(in: beatWork,
                                                at: 0,
-                                               options: options)
+                                               options: options,
+                                               name: "Test")
             }
         }
 
@@ -90,7 +96,8 @@ extension TemplateAnalysisOptionsTests {
             try Template.analyzeNoteEvents(in: wallWork,
                                            at: 0,
                                            options: .init(maximumOrder: 1,
-                                                          timing: .grid(factors: [4])))
+                                                          timing: .grid(factors: [4])),
+                                           name: "Test")
         }
     }
 
@@ -101,7 +108,8 @@ extension TemplateAnalysisOptionsTests {
         #expect(throws: Template.Error.invalidMaximumOrder) {
             try Template.analyzeNoteEvents(in: work,
                                            at: 0,
-                                           options: .init(maximumOrder: 0))
+                                           options: .init(maximumOrder: 0),
+                                           name: "Test")
         }
 
         let zero = wallDuration(0)
@@ -117,7 +125,8 @@ extension TemplateAnalysisOptionsTests {
             #expect(throws: Template.Error.invalidTolerance) {
                 try Template.analyzeNoteEvents(in: work,
                                                at: 0,
-                                               options: options)
+                                               options: options,
+                                               name: "Test")
             }
         }
     }
@@ -129,7 +138,8 @@ extension TemplateAnalysisOptionsTests {
         let durations = try standardWallNoteEvents(of: Template.analyzeNoteEvents(in: work,
                                                                                   at: 0,
                                                                                   options: .init(maximumOrder: 1,
-                                                                                                 durations: .proportional(0.05))))
+                                                                                                 durations: .proportional(0.05)),
+                                                                                  name: "Test"))
             .map(\.duration)
 
         #expect(durations == [wallDuration(510), wallDuration(1_000)])
@@ -142,7 +152,8 @@ extension TemplateAnalysisOptionsTests {
         let durations = try standardWallNoteEvents(of: Template.analyzeNoteEvents(in: work,
                                                                                   at: 0,
                                                                                   options: .init(maximumOrder: 1,
-                                                                                                 durations: .proportional(0.05))))
+                                                                                                 durations: .proportional(0.05)),
+                                                                                  name: "Test"))
             .map(\.duration)
 
         #expect(durations == [wallDuration(500)])
@@ -155,7 +166,8 @@ extension TemplateAnalysisOptionsTests {
         let durations = try standardWallNoteEvents(of: Template.analyzeNoteEvents(in: work,
                                                                                   at: 0,
                                                                                   options: .init(maximumOrder: 1,
-                                                                                                 durations: .step(wallDuration(100)))))
+                                                                                                 durations: .step(wallDuration(100))),
+                                                                                  name: "Test"))
             .map(\.duration)
 
         #expect(durations == [wallDuration(100), wallDuration(500)])
@@ -172,14 +184,16 @@ extension TemplateAnalysisOptionsTests {
 
         let exact = try standardWallNoteEvents(of: Template.analyzeNoteEvents(in: work,
                                                                               at: 0,
-                                                                              maximumOrder: 1))
+                                                                              maximumOrder: 1,
+                                                                              name: "Test"))
 
         #expect(exact.count == 3)
 
         let states = try standardWallNoteEvents(of: Template.analyzeNoteEvents(in: work,
                                                                                at: 0,
                                                                                options: .init(maximumOrder: 1,
-                                                                                              timing: .window(wallDuration(50)))))
+                                                                                              timing: .window(wallDuration(50))),
+                                                                               name: "Test"))
 
         #expect(states == [NoteEvent(pitches: [.c4, .e4], duration: wallDuration(1_000))])
     }
@@ -192,7 +206,8 @@ extension TemplateAnalysisOptionsTests {
                                                pitches: .cents(1))
         let template = try Template.analyzeNoteEvents(in: makeAbsoluteWallWork([(0, 500, [440])]),
                                                       at: 0,
-                                                      options: options)
+                                                      options: options,
+                                                      name: "Test")
 
         let decoded = try JSONDecoder().decode(Template.self,
                                                from: JSONEncoder().encode(template))

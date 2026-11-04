@@ -19,6 +19,7 @@ extension TemplateGenerationOptionsPhraseTests {
 
         #expect(throws: Template.Error.invalidPhrase) {
             try template.generateWork(name: "G",
+                                      partName: "Part",
                                       options: StandardBeatOptions(phrase: .init(noteEvents: [])),
                                       seed: 1)
         }
@@ -30,6 +31,7 @@ extension TemplateGenerationOptionsPhraseTests {
         let template = try analyzePhraseTemplate(source)
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: StandardBeatOptions(order: 2,
                                                                           length: .noteCount(20),
                                                                           phrase: .init(noteEvents: standardBeatNoteEventsOrEmpty(of: source)
@@ -48,6 +50,7 @@ extension TemplateGenerationOptionsPhraseTests {
         let transposed = standardBeatNoteEventsOrEmpty(of: makeStandardBeatWork([(0, 1, .d4), (1, 1, .fSharp4)]))
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: StandardBeatOptions(length: .noteCount(20),
                                                                           constraints: .init(pitchRange: Pitch.c4...Pitch.c6),
                                                                           phrase: .init(noteEvents: transposed,
@@ -63,6 +66,7 @@ extension TemplateGenerationOptionsPhraseTests {
         let template = try analyzePhraseTemplate(source)
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: StandardBeatOptions(order: 2,
                                                                           length: .noteCount(20),
                                                                           phrase: .init(noteEvents: standardBeatNoteEventsOrEmpty(of: source)
@@ -87,8 +91,8 @@ extension TemplateGenerationOptionsPhraseTests {
 
         let decoded = try JSONDecoder().decode(StandardBeatOptions.self,
                                                from: JSONEncoder().encode(options))
-        let work1 = try template.generateWork(name: "G", options: options, seed: 7)
-        let work2 = try template.generateWork(name: "G", options: decoded, seed: 7)
+        let work1 = try template.generateWork(name: "G", partName: "Part", options: options, seed: 7)
+        let work2 = try template.generateWork(name: "G", partName: "Part", options: decoded, seed: 7)
 
         #expect(decoded == options)
         #expect(try standardBeatNoteTriples(of: work1) == standardBeatNoteTriples(of: work2))
@@ -102,6 +106,7 @@ extension TemplateGenerationOptionsPhraseTests {
                                                  states: .init(separatesPitchAndDuration: true))
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: StandardBeatOptions(order: 2,
                                                                           length: .noteCount(20),
                                                                           phrase: .init(noteEvents: standardBeatNoteEventsOrEmpty(of: source)
@@ -121,6 +126,7 @@ extension TemplateGenerationOptionsPhraseTests {
         let template = try analyzePhraseTemplate(source, maximumOrder: 1)
 
         let work = try template.generateWork(name: "G",
+                                             partName: "Part",
                                              options: StandardBeatOptions(length: .noteCount(20),
                                                                           phrase: .init(noteEvents: [standardBeatNoteEventsOrEmpty(of: source)[0]])),
                                              seed: 1)
@@ -136,10 +142,12 @@ extension TemplateGenerationOptionsPhraseTests {
         let unfamiliar = standardBeatNoteEventsOrEmpty(of: makeStandardBeatWork([(0, 1, .fSharp5)]))
 
         let stopped = try template.generateWork(name: "G",
+                                                partName: "Part",
                                                 options: StandardBeatOptions(length: .noteCount(5),
                                                                              phrase: .init(noteEvents: unfamiliar)),
                                                 seed: 1)
         let backedOff = try template.generateWork(name: "G",
+                                                  partName: "Part",
                                                   options: StandardBeatOptions(length: .noteCount(5),
                                                                                backsOff: true,
                                                                                phrase: .init(noteEvents: unfamiliar)),
@@ -164,7 +172,8 @@ extension TemplateGenerationOptionsPhraseTests {
         let template = try Template.analyzeNoteEvents(in: Work(content: .standardWall([Part(name: "Flute", noteTable: noteTable)])),
                                                       at: 0,
                                                       options: .init(maximumOrder: 1,
-                                                                     durations: .proportional(0.05)))
+                                                                     durations: .proportional(0.05)),
+                                                      name: "Test")
 
         guard case let .standardWall(model) = template.content
         else { throw Template.Error.incompatibleOptions }

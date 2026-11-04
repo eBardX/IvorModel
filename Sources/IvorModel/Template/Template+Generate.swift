@@ -12,10 +12,11 @@ extension Template {
     ///
     /// Generating from the same template with the same recipe and seed always gives the same
     /// notes. The new work records the recipe and seed in its ``Work/generation``. It has one
-    /// part, which starts out in this template’s ``sourceContext``: its dynamic level, instrument
-    /// and pan position, and — in beat time — its tempo.
+    /// part, named `partName`, which starts out in this template’s ``sourceContext``: its
+    /// dynamic level, instrument and pan position, and — in beat time — its tempo.
     ///
     /// - Parameter name:       The name to assign to the generated work.
+    /// - Parameter partName:   The name to assign to the generated work’s part.
     /// - Parameter options:    The recipe to generate with. Its pitch notation and time basis must
     ///                         match this template’s.
     /// - Parameter seed:       The seed for the random choices made during generation.
@@ -26,9 +27,11 @@ extension Template {
     ///             template’s pitch notation and time basis; otherwise, a
     ///             ``Template/Error`` describing the first invalid option.
     public func generateWork(name: String,
+                             partName: String,
                              options: AnyGenerationOptions,
                              seed: UInt64) throws -> Work {
         try generateWork(name: name,
+                         partName: partName,
                          options: options,
                          seed: seed,
                          mixingWith: [])
@@ -36,10 +39,11 @@ extension Template {
 
     /// Returns a new work generated from this template with the given typed recipe and seed.
     ///
-    /// This is equivalent to calling `generateWork(name:options:seed:)`
+    /// This is equivalent to calling `generateWork(name:partName:options:seed:)`
     /// with the recipe wrapped in ``Template/AnyGenerationOptions``.
     ///
     /// - Parameter name:       The name to assign to the generated work.
+    /// - Parameter partName:   The name to assign to the generated work’s part.
     /// - Parameter options:    The recipe to generate with. Its time and pitch types must match
     ///                         this template’s.
     /// - Parameter seed:       The seed for the random choices made during generation.
@@ -50,12 +54,14 @@ extension Template {
     ///             template’s pitch notation and time basis; otherwise, a
     ///             ``Template/Error`` describing the first invalid option.
     public func generateWork(name: String,
+                             partName: String,
                              options: GenerationOptions<some Any, some Any>,
                              seed: UInt64) throws -> Work {
         guard let anyOptions = AnyGenerationOptions(options)
         else { throw Error.incompatibleOptions }
 
         return try generateWork(name: name,
+                                partName: partName,
                                 options: anyOptions,
                                 seed: seed)
     }
@@ -69,6 +75,7 @@ extension Template {
     /// ``Work/generation``.
     ///
     /// - Parameter name:       The name to assign to the generated work.
+    /// - Parameter partName:   The name to assign to the generated work’s part.
     /// - Parameter options:    The recipe to generate with. Its pitch notation and time basis must
     ///                         match this template’s.
     /// - Parameter seed:       The seed for the random choices made during generation.
@@ -82,11 +89,13 @@ extension Template {
     ///             doesn’t match this template’s pitch notation and time basis; otherwise, a
     ///             ``Template/Error`` describing the first invalid option.
     public func generateWork(name: String,
+                             partName: String,
                              options: AnyGenerationOptions,
                              seed: UInt64,
                              mixingWith others: [Template]) throws -> Work {
         try Work(name: name,
                  content: Self._generateWorkContent(from: content,
+                                                    partName: partName,
                                                     mixingWith: _mixedTemplates(for: options,
                                                                                 among: others).map(\.content),
                                                     options: options,
@@ -101,12 +110,13 @@ extension Template {
 
     /// Returns a new work generated from this template at the given order, with a random seed.
     ///
-    /// This is equivalent to calling `generateWork(name:options:seed:)`
+    /// This is equivalent to calling `generateWork(name:partName:options:seed:)`
     /// with the default recipe at `order`, a length of `limit` note events, and a random seed.
     ///
-    /// - Parameter name:   The name to assign to the generated work.
-    /// - Parameter order:  The pattern depth to use for generation.
-    /// - Parameter limit:  The maximum number of note events to generate.
+    /// - Parameter name:       The name to assign to the generated work.
+    /// - Parameter partName:   The name to assign to the generated work’s part.
+    /// - Parameter order:      The pattern depth to use for generation.
+    /// - Parameter limit:      The maximum number of note events to generate.
     ///
     /// - Returns:  A new ``Work`` containing the generated note content.
     ///
@@ -114,9 +124,11 @@ extension Template {
     ///             otherwise, ``Template/Error/invalidOrder(_:)`` if `order` exceeds
     ///             the template’s maximum supported depth.
     public func generateWork(name: String,
+                             partName: String,
                              order: Int,
                              limit: Int) throws -> Work {
         try generateWork(name: name,
+                         partName: partName,
                          options: _defaultOptions(order: order,
                                                   limit: limit),
                          seed: UInt64.random(in: .min ... .max))
@@ -243,31 +255,21 @@ extension Template {
         return assembler.assembleNoteTable()
     }
 
-    private static func _generatePart<T, P>(using model: Model<T, P>,
-                                            mixingWith others: [Model<T, P>],
-                                            options: GenerationOptions<T, P>,
-                                            analysisOptions: AnalysisOptions,
-                                            grouping: @escaping ([T.DurationType]) -> [T.DurationType: T.DurationType],
-                                            rounding: @escaping (P) -> P,
-                                            sourceContext: SourceContext,
-                                            seed: UInt64) throws -> Part<T, P> where T.DurationType: TemplateDuration {
-        let partName = switch options.length {
-        case let .duration(duration):
-            "Generated, order: \(options.order), length: \(duration)"
-
-        case let .noteCount(count):
-            "Generated, order: \(options.order), limit: \(count)"
-        }
-
-        return try sourceContext.part(name: partName,
-                                      noteTable: _generateNoteTable(using: model,
-                                                                    mixingWith: others,
-                                                                    options: options,
-                                                                    learner: PhraseLearner(analysisOptions: analysisOptions,
-                                                                                           vocabulary: model.vocabulary,
-                                                                                           grouping: grouping,
-                                                                                           rounding: rounding),
-                                                                    seed: seed))
+    private static func _generatePartNoteTable<T, P>(using model: Model<T, P>,
+                                                     mixingWith others: [Model<T, P>],
+                                                     options: GenerationOptions<T, P>,
+                                                     analysisOptions: AnalysisOptions,
+                                                     grouping: @escaping ([T.DurationType]) -> [T.DurationType: T.DurationType],
+                                                     rounding: @escaping (P) -> P,
+                                                     seed: UInt64) throws -> NoteTable<T, P> where T.DurationType: TemplateDuration {
+        try _generateNoteTable(using: model,
+                               mixingWith: others,
+                               options: options,
+                               learner: PhraseLearner(analysisOptions: analysisOptions,
+                                                      vocabulary: model.vocabulary,
+                                                      grouping: grouping,
+                                                      rounding: rounding),
+                               seed: seed)
     }
 
     //
@@ -349,6 +351,7 @@ extension Template {
     // part and, in beat time, the tempo map start out in `sourceContext`.
     //
     private static func _generateWorkContent(from content: Template.Content,
+                                             partName: String,
                                              mixingWith others: [Template.Content],
                                              options: AnyGenerationOptions,
                                              analysisOptions: AnalysisOptions,
@@ -359,67 +362,79 @@ extension Template {
 
         return switch (content, options) {
         case let (.absoluteBeat(model), .absoluteBeat(options)):
-            try .absoluteBeat([_generatePart(using: model,
-                                             mixingWith: _models(others) { if case let .absoluteBeat(model) = $0 { model } else { nil } },
-                                             options: options,
-                                             analysisOptions: analysisOptions,
-                                             grouping: beatGrouping(durations),
-                                             rounding: frequencyRounding(pitches),
-                                             sourceContext: sourceContext,
-                                             seed: seed)],
+            try .absoluteBeat([sourceContext.part(name: partName,
+                                                  noteTable: _generatePartNoteTable(using: model,
+                                                                                    mixingWith: _models(others) {
+                                                                                        if case let .absoluteBeat(model) = $0 { model } else { nil }
+                                                                                    },
+                                                                                    options: options,
+                                                                                    analysisOptions: analysisOptions,
+                                                                                    grouping: beatGrouping(durations),
+                                                                                    rounding: frequencyRounding(pitches),
+                                                                                    seed: seed))],
                               sourceContext.tempoMap())
 
         case let (.absoluteWall(model), .absoluteWall(options)):
-            try .absoluteWall([_generatePart(using: model,
-                                             mixingWith: _models(others) { if case let .absoluteWall(model) = $0 { model } else { nil } },
-                                             options: options,
-                                             analysisOptions: analysisOptions,
-                                             grouping: wallGrouping(durations),
-                                             rounding: frequencyRounding(pitches),
-                                             sourceContext: sourceContext,
-                                             seed: seed)])
+            try .absoluteWall([sourceContext.part(name: partName,
+                                                  noteTable: _generatePartNoteTable(using: model,
+                                                                                    mixingWith: _models(others) {
+                                                                                        if case let .absoluteWall(model) = $0 { model } else { nil }
+                                                                                    },
+                                                                                    options: options,
+                                                                                    analysisOptions: analysisOptions,
+                                                                                    grouping: wallGrouping(durations),
+                                                                                    rounding: frequencyRounding(pitches),
+                                                                                    seed: seed))])
 
         case let (.keyboardBeat(model), .keyboardBeat(options)):
-            try .keyboardBeat([_generatePart(using: model,
-                                             mixingWith: _models(others) { if case let .keyboardBeat(model) = $0 { model } else { nil } },
-                                             options: options,
-                                             analysisOptions: analysisOptions,
-                                             grouping: beatGrouping(durations),
-                                             rounding: exactRounding(pitches),
-                                             sourceContext: sourceContext,
-                                             seed: seed)],
+            try .keyboardBeat([sourceContext.part(name: partName,
+                                                  noteTable: _generatePartNoteTable(using: model,
+                                                                                    mixingWith: _models(others) {
+                                                                                        if case let .keyboardBeat(model) = $0 { model } else { nil }
+                                                                                    },
+                                                                                    options: options,
+                                                                                    analysisOptions: analysisOptions,
+                                                                                    grouping: beatGrouping(durations),
+                                                                                    rounding: exactRounding(pitches),
+                                                                                    seed: seed))],
                               sourceContext.tempoMap())
 
         case let (.keyboardWall(model), .keyboardWall(options)):
-            try .keyboardWall([_generatePart(using: model,
-                                             mixingWith: _models(others) { if case let .keyboardWall(model) = $0 { model } else { nil } },
-                                             options: options,
-                                             analysisOptions: analysisOptions,
-                                             grouping: wallGrouping(durations),
-                                             rounding: exactRounding(pitches),
-                                             sourceContext: sourceContext,
-                                             seed: seed)])
+            try .keyboardWall([sourceContext.part(name: partName,
+                                                  noteTable: _generatePartNoteTable(using: model,
+                                                                                    mixingWith: _models(others) {
+                                                                                        if case let .keyboardWall(model) = $0 { model } else { nil }
+                                                                                    },
+                                                                                    options: options,
+                                                                                    analysisOptions: analysisOptions,
+                                                                                    grouping: wallGrouping(durations),
+                                                                                    rounding: exactRounding(pitches),
+                                                                                    seed: seed))])
 
         case let (.standardBeat(model), .standardBeat(options)):
-            try .standardBeat([_generatePart(using: model,
-                                             mixingWith: _models(others) { if case let .standardBeat(model) = $0 { model } else { nil } },
-                                             options: options,
-                                             analysisOptions: analysisOptions,
-                                             grouping: beatGrouping(durations),
-                                             rounding: exactRounding(pitches),
-                                             sourceContext: sourceContext,
-                                             seed: seed)],
+            try .standardBeat([sourceContext.part(name: partName,
+                                                  noteTable: _generatePartNoteTable(using: model,
+                                                                                    mixingWith: _models(others) {
+                                                                                        if case let .standardBeat(model) = $0 { model } else { nil }
+                                                                                    },
+                                                                                    options: options,
+                                                                                    analysisOptions: analysisOptions,
+                                                                                    grouping: beatGrouping(durations),
+                                                                                    rounding: exactRounding(pitches),
+                                                                                    seed: seed))],
                               sourceContext.tempoMap())
 
         case let (.standardWall(model), .standardWall(options)):
-            try .standardWall([_generatePart(using: model,
-                                             mixingWith: _models(others) { if case let .standardWall(model) = $0 { model } else { nil } },
-                                             options: options,
-                                             analysisOptions: analysisOptions,
-                                             grouping: wallGrouping(durations),
-                                             rounding: exactRounding(pitches),
-                                             sourceContext: sourceContext,
-                                             seed: seed)])
+            try .standardWall([sourceContext.part(name: partName,
+                                                  noteTable: _generatePartNoteTable(using: model,
+                                                                                    mixingWith: _models(others) {
+                                                                                        if case let .standardWall(model) = $0 { model } else { nil }
+                                                                                    },
+                                                                                    options: options,
+                                                                                    analysisOptions: analysisOptions,
+                                                                                    grouping: wallGrouping(durations),
+                                                                                    rounding: exactRounding(pitches),
+                                                                                    seed: seed))])
 
         default:
             throw Error.incompatibleOptions

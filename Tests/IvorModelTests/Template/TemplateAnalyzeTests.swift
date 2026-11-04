@@ -125,7 +125,8 @@ extension TemplateAnalyzeTests {
         #expect(throws: Template.Error.self) {
             try Template.analyzeNoteEvents(in: work,
                                            at: 0,
-                                           maximumOrder: 0)
+                                           maximumOrder: 0,
+                                           name: "Test")
         }
     }
 
@@ -137,7 +138,8 @@ extension TemplateAnalyzeTests {
         #expect(throws: Template.Error.self) {
             try Template.analyzeNoteEvents(in: work,
                                            at: 1,
-                                           maximumOrder: 1)
+                                           maximumOrder: 1,
+                                           name: "Test")
         }
     }
 
@@ -153,9 +155,10 @@ extension TemplateAnalyzeTests {
 
         let tmpl = try Template.analyzeNoteEvents(in: work,
                                                   at: 0,
-                                                  maximumOrder: 1)
+                                                  maximumOrder: 1,
+                                                  name: "  Left\n Hand ")
 
-        #expect(tmpl.name.contains("My Work"))
+        #expect(tmpl.name == "Left Hand")
         #expect(tmpl.pitchNotation == .standard)
         #expect(tmpl.timeBasis == .beat)
         #expect(tmpl.maximumOrder == 1)

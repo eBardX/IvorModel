@@ -20,6 +20,7 @@ extension TemplateGenerateTests {
 
         #expect(throws: Template.Error.self) {
             try tmpl.generateWork(name: "Generated",
+                                  partName: "Part",
                                   order: 1,
                                   limit: 0)
         }
@@ -32,6 +33,7 @@ extension TemplateGenerateTests {
 
         #expect(throws: Template.Error.self) {
             try tmpl.generateWork(name: "Generated",
+                                  partName: "Part",
                                   order: 5,
                                   limit: 4)
         }
@@ -52,6 +54,7 @@ extension TemplateGenerateTests {
 
         let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(chains: .joint(mc))))
         let work = try tmpl.generateWork(name: "Generated",
+                                         partName: "Part",
                                          order: 1,
                                          limit: 100)
 
@@ -74,10 +77,12 @@ extension TemplateGenerateTests {
         let tmpl = Template(name: "Test", content: .standardBeat(Template.Model(chains: .joint(mc))))
 
         let work = try tmpl.generateWork(name: "Generated",
+                                         partName: "Melody",
                                          order: 1,
                                          limit: 4)
 
         #expect(work.name == "Generated")
+        #expect(work.partName(at: 0) == "Melody")
         #expect(work.pitchNotation == .standard)
         #expect(work.timeBasis == .beat)
         #expect(work.partCount == 1)
