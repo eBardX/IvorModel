@@ -26,7 +26,7 @@ extension Template {
         /// - Parameter pan:        The pan position. Defaults to `.center`.
         /// - Parameter tempo:      The tempo, or `nil` for a wall-time source. Defaults to `nil`.
         public init(dynamic: Dynamic = DynamicMap<BeatTime>().defaultDynamic,
-                    instrument: Instrument = InstrumentMap<BeatTime>().defaultInstrument,
+                    instrument: Instrument = InstrumentTable<BeatTime>().defaultInstrument,
                     pan: Pan = PanMap<BeatTime>().defaultPan,
                     tempo: Tempo? = nil) {
             self.dynamic = dynamic
@@ -99,7 +99,7 @@ extension Template.SourceContext {
     internal func part<T, P>(name: String,
                              noteTable: NoteTable<T, P>) -> Part<T, P> {
         var dynamicMap = DynamicMap<T>()
-        var instrumentMap = InstrumentMap<T>()
+        var instrumentTable = InstrumentTable<T>()
         var panMap = PanMap<T>()
 
         if dynamic != dynamicMap.defaultDynamic {
@@ -107,9 +107,9 @@ extension Template.SourceContext {
                               dynamic: dynamic)
         }
 
-        if instrument != instrumentMap.defaultInstrument {
-            instrumentMap.insert(time: .zero,
-                                 instrument: instrument)
+        if instrument != instrumentTable.defaultInstrument {
+            instrumentTable.insert(time: .zero,
+                                   instrument: instrument)
         }
 
         if pan != panMap.defaultPan {
@@ -120,7 +120,7 @@ extension Template.SourceContext {
         return Part(name: name,
                     noteTable: noteTable,
                     dynamicMap: dynamicMap,
-                    instrumentMap: instrumentMap,
+                    instrumentTable: instrumentTable,
                     panMap: panMap)
     }
 
@@ -154,7 +154,7 @@ extension Template.SourceContext {
         let time = part.timeRange?.lowerBound ?? .zero
 
         self.init(dynamic: part.dynamicMap[time],
-                  instrument: part.instrumentMap[time],
+                  instrument: part.instrumentTable[time],
                   pan: part.panMap[time],
                   tempo: tempo(time))
     }

@@ -4,6 +4,9 @@ public import IvorTiming
 public import IvorTuning
 
 extension Template {
+
+    // MARK: Public Nested Types
+
     /// The analysis data of a template — its ``Template/Model`` — at the template’s pitch notation and
     /// time basis.
     public enum Content {

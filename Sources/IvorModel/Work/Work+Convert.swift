@@ -17,12 +17,12 @@ extension Work {
     /// Always permitted, even on a locked work: this returns an independent copy rather than
     /// mutating `self`, so ``Work/isLocked`` does not apply.
     ///
-    /// - Parameter timeBasis:      The time basis to which to convert.
-    /// - Parameter pitchNotation:  The pitch notation to which to convert. Use
-    ///                             `PitchNotation.isConversionSupported(to:)` to check that
-    ///                             converting this work’s pitch notation to it is supported.
-    /// - Parameter context:        The conversion dependencies. Defaults to `.default`
-    ///                             (12-EDO, A4 = 440 Hz, Meredith pitch speller).
+    /// - Parameter timeBasis:                  The time basis to which to convert.
+    /// - Parameter pitchNotation:              The pitch notation to which to convert. Use
+    ///                                         `PitchNotation.isConversionSupported(to:)` to check that
+    ///                                         converting this work’s pitch notation to it is supported.
+    /// - Parameter context:                    The conversion dependencies. Defaults to `.default`
+    ///                                         (12-EDO, A4 = 440 Hz, Meredith pitch speller).
     /// - Parameter dropsUnconvertibleNotes:    Whether to leave out of the new work any note
     ///                                         whose start or end pitch has no counterpart in
     ///                                         `pitchNotation`, rather than throwing. Defaults to
@@ -101,16 +101,16 @@ extension Work {
                                     entries: entries)
     }
 
-    internal static func convertBeatTimes(in instrumentMap: InstrumentMap<BeatTime>,
-                                          using timeConverter: TimeConverter) -> InstrumentMap<WallTime> {
-        let entries = instrumentMap.entries.map { entry in
-            InstrumentMap<WallTime>.StoredEntry(time: timeConverter.wallTime(at: entry.time),
-                                                instrument: entry.instrument,
-                                                extras: entry.extras)
+    internal static func convertBeatTimes(in instrumentTable: InstrumentTable<BeatTime>,
+                                          using timeConverter: TimeConverter) -> InstrumentTable<WallTime> {
+        let entries = instrumentTable.entries.map { entry in
+            InstrumentTable<WallTime>.StoredEntry(time: timeConverter.wallTime(at: entry.time),
+                                                  instrument: entry.instrument,
+                                                  extras: entry.extras)
         }
 
-        return InstrumentMap<WallTime>(defaultInstrument: instrumentMap.defaultInstrument,
-                                       entries: entries)
+        return InstrumentTable<WallTime>(defaultInstrument: instrumentTable.defaultInstrument,
+                                         entries: entries)
     }
 
     internal static func convertBeatTimes(in panMap: PanMap<BeatTime>,
@@ -133,8 +133,8 @@ extension Work {
                                           using: timeConverter),
              dynamicMap: convertBeatTimes(in: part.dynamicMap,
                                           using: timeConverter),
-             instrumentMap: convertBeatTimes(in: part.instrumentMap,
-                                             using: timeConverter),
+             instrumentTable: convertBeatTimes(in: part.instrumentTable,
+                                               using: timeConverter),
              panMap: convertBeatTimes(in: part.panMap,
                                       using: timeConverter),
              extras: part.extras)
@@ -148,8 +148,8 @@ extension Work {
                                           using: timeConverter),
              dynamicMap: _convertWallTimes(in: part.dynamicMap,
                                            using: timeConverter),
-             instrumentMap: _convertWallTimes(in: part.instrumentMap,
-                                              using: timeConverter),
+             instrumentTable: _convertWallTimes(in: part.instrumentTable,
+                                                using: timeConverter),
              panMap: _convertWallTimes(in: part.panMap,
                                        using: timeConverter),
              extras: part.extras)
@@ -241,7 +241,7 @@ extension Work {
                     name: part.name,
                     noteTable: noteTable,
                     dynamicMap: part.dynamicMap,
-                    instrumentMap: part.instrumentMap,
+                    instrumentTable: part.instrumentTable,
                     panMap: part.panMap,
                     extras: part.extras)
     }
@@ -432,16 +432,16 @@ extension Work {
                                     entries: entries)
     }
 
-    private static func _convertWallTimes(in instrumentMap: InstrumentMap<WallTime>,
-                                          using timeConverter: TimeConverter) -> InstrumentMap<BeatTime> {
-        let entries = instrumentMap.entries.map { entry in
-            InstrumentMap<BeatTime>.StoredEntry(time: timeConverter.beatTime(at: entry.time),
-                                                instrument: entry.instrument,
-                                                extras: entry.extras)
+    private static func _convertWallTimes(in instrumentTable: InstrumentTable<WallTime>,
+                                          using timeConverter: TimeConverter) -> InstrumentTable<BeatTime> {
+        let entries = instrumentTable.entries.map { entry in
+            InstrumentTable<BeatTime>.StoredEntry(time: timeConverter.beatTime(at: entry.time),
+                                                  instrument: entry.instrument,
+                                                  extras: entry.extras)
         }
 
-        return InstrumentMap<BeatTime>(defaultInstrument: instrumentMap.defaultInstrument,
-                                       entries: entries)
+        return InstrumentTable<BeatTime>(defaultInstrument: instrumentTable.defaultInstrument,
+                                         entries: entries)
     }
 
     private static func _convertWallTimes<PitchType: PitchProtocol>(in noteTable: NoteTable<WallTime, PitchType>,

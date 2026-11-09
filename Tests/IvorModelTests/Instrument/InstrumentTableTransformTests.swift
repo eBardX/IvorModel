@@ -5,28 +5,28 @@ import IvorTiming
 import Testing
 import XestiNumbers
 
-struct InstrumentMapTransformTests {
+struct InstrumentTableTransformTests {
 }
 
 // MARK: -
 
-extension InstrumentMapTransformTests {
-    private typealias InstrumentMapSB = InstrumentMap<BeatTime>
+extension InstrumentTableTransformTests {
+    private typealias InstrumentTableSB = InstrumentTable<BeatTime>
 
     @Test
     func augment_entryIDsRestrictsAffectedEntries() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
 
-        let entryID1 = map.insert(time: 0, instrument: .vanilla).entryID
+        let entryID1 = table.insert(time: 0, instrument: .vanilla).entryID
 
-        map.insert(time: 4, instrument: guitar)
+        table.insert(time: 4, instrument: guitar)
 
-        try map.augment(by: Number(2), entryIDs: [entryID1])
+        try table.augment(by: Number(2), entryIDs: [entryID1])
 
         var times: [BeatTime] = []
 
-        for entry in map {
+        for entry in table {
             times.append(entry.time)
         }
 
@@ -35,41 +35,41 @@ extension InstrumentMapTransformTests {
 
     @Test
     func augment_invalidAnchorThrows() {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
 
-        map.insert(time: 2, instrument: .vanilla)
+        table.insert(time: 2, instrument: .vanilla)
 
-        #expect(throws: InstrumentMapSB.Error.invalidAnchor) {
-            try map.augment(by: Number(2), anchor: 3)
+        #expect(throws: InstrumentTableSB.Error.invalidAnchor) {
+            try table.augment(by: Number(2), anchor: 3)
         }
     }
 
     @Test
     func augment_invalidFactor() {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
 
-        #expect(throws: InstrumentMapSB.Error.self) {
-            try map.augment(by: Number(0))
+        #expect(throws: InstrumentTableSB.Error.self) {
+            try table.augment(by: Number(0))
         }
     }
 
     @Test
     func augment_nilAnchorWithEntryIDsUsesSelectedRange() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
         let piano = try #require(Instrument(stringValue: "Piano"))
 
-        map.insert(time: 0, instrument: .vanilla)
+        table.insert(time: 0, instrument: .vanilla)
 
-        let entryID10 = map.insert(time: 10, instrument: guitar).entryID
-        let entryID14 = map.insert(time: 14, instrument: piano).entryID
+        let entryID10 = table.insert(time: 10, instrument: guitar).entryID
+        let entryID14 = table.insert(time: 14, instrument: piano).entryID
 
-        try map.augment(by: Number(2), entryIDs: [entryID10, entryID14])
+        try table.augment(by: Number(2), entryIDs: [entryID10, entryID14])
 
         var time10: BeatTime?
         var time14: BeatTime?
 
-        for entry in map {
+        for entry in table {
             if entry.entryID == entryID10 {
                 time10 = entry.time
             }
@@ -80,7 +80,7 @@ extension InstrumentMapTransformTests {
         }
 
         //
-        // Anchored to the selected entries' own low bound (10), not the whole map's
+        // Anchored to the selected entries' own low bound (10), not the whole table's
         // (0), so the selected entry at 10 stays put while the one at 14 stretches
         // relative to it:
         //
@@ -90,18 +90,18 @@ extension InstrumentMapTransformTests {
 
     @Test
     func augment_scalesTimes() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
         let piano = try #require(Instrument(stringValue: "Piano"))
 
-        map.insert(time: 1, instrument: guitar)
-        map.insert(time: 3, instrument: piano)
+        table.insert(time: 1, instrument: guitar)
+        table.insert(time: 3, instrument: piano)
 
-        try map.augment(by: Number(2))
+        try table.augment(by: Number(2))
 
         var times: [BeatTime] = []
 
-        for entry in map {
+        for entry in table {
             times.append(entry.time)
         }
 
@@ -110,15 +110,15 @@ extension InstrumentMapTransformTests {
 
     @Test
     func augment_validAnchorDoesNotThrow() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
 
-        map.insert(time: 2, instrument: .vanilla)
+        table.insert(time: 2, instrument: .vanilla)
 
-        try map.augment(by: Number(2), anchor: 2)
+        try table.augment(by: Number(2), anchor: 2)
 
         var times: [BeatTime] = []
 
-        for entry in map {
+        for entry in table {
             times.append(entry.time)
         }
 
@@ -127,27 +127,27 @@ extension InstrumentMapTransformTests {
 
     @Test
     func diminish_invalidFactor() {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
 
-        #expect(throws: InstrumentMapSB.Error.self) {
-            try map.diminish(by: Number(0))
+        #expect(throws: InstrumentTableSB.Error.self) {
+            try table.diminish(by: Number(0))
         }
     }
 
     @Test
     func diminish_scalesTimes() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
         let piano = try #require(Instrument(stringValue: "Piano"))
 
-        map.insert(time: 2, instrument: guitar)
-        map.insert(time: 6, instrument: piano)
+        table.insert(time: 2, instrument: guitar)
+        table.insert(time: 6, instrument: piano)
 
-        try map.diminish(by: Number(2))
+        try table.diminish(by: Number(2))
 
         var times: [BeatTime] = []
 
-        for entry in map {
+        for entry in table {
             times.append(entry.time)
         }
 
@@ -156,20 +156,20 @@ extension InstrumentMapTransformTests {
 
     @Test
     func move_entryIDsRestrictsAffectedEntries() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
 
-        let entryID1 = map.insert(time: 0, instrument: .vanilla).entryID
+        let entryID1 = table.insert(time: 0, instrument: .vanilla).entryID
 
-        map.insert(time: 4, instrument: guitar)
+        table.insert(time: 4, instrument: guitar)
 
         let directedDuration = try #require(BeatTime(0).duration(to: 2))
 
-        try map.move(by: directedDuration, entryIDs: [entryID1])
+        try table.move(by: directedDuration, entryIDs: [entryID1])
 
         var times: [BeatTime] = []
 
-        for entry in map {
+        for entry in table {
             times.append(entry.time)
         }
 
@@ -178,17 +178,17 @@ extension InstrumentMapTransformTests {
 
     @Test
     func move_shiftsTimes() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
 
-        map.insert(time: 0, instrument: .vanilla)
+        table.insert(time: 0, instrument: .vanilla)
 
         let directedDuration = try #require(BeatTime(0).duration(to: 2))
 
-        try map.move(by: directedDuration)
+        try table.move(by: directedDuration)
 
         var times: [BeatTime] = []
 
-        for entry in map {
+        for entry in table {
             times.append(entry.time)
         }
 
@@ -197,19 +197,19 @@ extension InstrumentMapTransformTests {
 
     @Test
     func quantize_entryIDsRestrictsAffectedEntries() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
 
-        let entryID1 = map.insert(time: 0.49, instrument: .vanilla).entryID
-        let entryID2 = map.insert(time: 4.49, instrument: guitar).entryID
+        let entryID1 = table.insert(time: 0.49, instrument: .vanilla).entryID
+        let entryID2 = table.insert(time: 4.49, instrument: guitar).entryID
 
         let quantizer = try BeatQuantizer(factors: [1])
 
-        map.quantize(using: quantizer, entryIDs: [entryID1])
+        table.quantize(using: quantizer, entryIDs: [entryID1])
 
         var timesByID: [EntryID: BeatTime] = [:]
 
-        for entry in map {
+        for entry in table {
             timesByID[entry.entryID] = entry.time
         }
 
@@ -219,21 +219,21 @@ extension InstrumentMapTransformTests {
 
     @Test
     func quantize_snapsTimesToGrid() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
 
-        map.insert(time: 0.49, instrument: .vanilla)
+        table.insert(time: 0.49, instrument: .vanilla)
 
         let guitar = try #require(Instrument(stringValue: "Guitar"))
 
-        map.insert(time: 3.6, instrument: guitar)
+        table.insert(time: 3.6, instrument: guitar)
 
         let quantizer = try BeatQuantizer(factors: [1])
 
-        map.quantize(using: quantizer)
+        table.quantize(using: quantizer)
 
         var times: [BeatTime] = []
 
-        for entry in map {
+        for entry in table {
             times.append(entry.time)
         }
 
@@ -242,40 +242,40 @@ extension InstrumentMapTransformTests {
 
     @Test
     func reverse_entryIDsSelectionIsSelfContained() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
         let piano = try #require(Instrument(stringValue: "Piano"))
 
-        map.insert(time: 0, instrument: .vanilla)
+        table.insert(time: 0, instrument: .vanilla)
 
-        let phraseID1 = map.insert(time: 10, instrument: guitar).entryID
-        let phraseID2 = map.insert(time: 12, instrument: piano).entryID
+        let phraseID1 = table.insert(time: 10, instrument: guitar).entryID
+        let phraseID2 = table.insert(time: 12, instrument: piano).entryID
 
-        map.insert(time: 20, instrument: .vanilla)
+        table.insert(time: 20, instrument: .vanilla)
 
-        try map.reverse(entryIDs: [phraseID1, phraseID2])
+        try table.reverse(entryIDs: [phraseID1, phraseID2])
 
         var phraseTimes: [BeatTime] = []
 
-        for entry in map {
+        for entry in table {
             if entry.entryID == phraseID1 || entry.entryID == phraseID2 {
                 phraseTimes.append(entry.time)
             }
         }
 
         //
-        // Mirrored around its own bounds (10...12), not the whole map's (0...20), so
+        // Mirrored around its own bounds (10...12), not the whole table's (0...20), so
         // the phrase lands back within its own span rather than somewhere else
         // entirely. Guitar holds for all of 10...12, so it starts there; piano's stretch
         // ends where the range does, so it has no length and mirrors to 10 as well, ahead of
         // guitar:
         //
         #expect(phraseTimes == [10, 10])
-        #expect(map[BeatTime(10)] == guitar)
+        #expect(table[BeatTime(10)] == guitar)
 
         var allTimes: [BeatTime] = []
 
-        for entry in map {
+        for entry in table {
             allTimes.append(entry.time)
         }
 
@@ -287,14 +287,14 @@ extension InstrumentMapTransformTests {
 
     @Test
     func reverse_invalidAnchorThrows() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
 
-        map.insert(time: 0, instrument: .vanilla)
-        map.insert(time: 2, instrument: guitar)
+        table.insert(time: 0, instrument: .vanilla)
+        table.insert(time: 2, instrument: guitar)
 
-        #expect(throws: InstrumentMapSB.Error.invalidAnchor) {
-            try map.reverse(within: BeatTime(1)...3)
+        #expect(throws: InstrumentTableSB.Error.invalidAnchor) {
+            try table.reverse(within: BeatTime(1)...3)
         }
     }
 
@@ -305,21 +305,21 @@ extension InstrumentMapTransformTests {
         // within 2…8. The stretch 2–4 is still flute, from the unselected entry, so flute (not
         // the default) begins the stretch it mirrors to, 6–8.
         //
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let flute = try #require(Instrument(stringValue: "Flute"))
         let oboe = try #require(Instrument(stringValue: "Oboe"))
         let piccolo = try #require(Instrument(stringValue: "Piccolo"))
 
-        map.insert(time: 0, instrument: flute)
+        table.insert(time: 0, instrument: flute)
 
-        let piccoloID = map.insert(time: 4, instrument: piccolo).entryID
-        let oboeID = map.insert(time: 6, instrument: oboe).entryID
+        let piccoloID = table.insert(time: 4, instrument: piccolo).entryID
+        let oboeID = table.insert(time: 6, instrument: oboe).entryID
 
-        try map.reverse(within: BeatTime(2)...8,
-                        entryIDs: [piccoloID, oboeID])
+        try table.reverse(within: BeatTime(2)...8,
+                          entryIDs: [piccoloID, oboeID])
 
-        #expect(map.map(\.time) == [0, 2, 4, 6])
-        #expect(map.map(\.instrument) == [flute, oboe, piccolo, flute])
+        #expect(table.map(\.time) == [0, 2, 4, 6])
+        #expect(table.map(\.instrument) == [flute, oboe, piccolo, flute])
     }
 
     @Test
@@ -328,17 +328,17 @@ extension InstrumentMapTransformTests {
         // Each entry's instrument holds until the next entry. Flute for 0–4, then piccolo for
         // 4–8, reversed within 0…8, is piccolo for 0–4, then flute for 4–8.
         //
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let flute = try #require(Instrument(stringValue: "Flute"))
         let piccolo = try #require(Instrument(stringValue: "Piccolo"))
 
-        map.insert(time: 0, instrument: flute)
-        map.insert(time: 4, instrument: piccolo)
+        table.insert(time: 0, instrument: flute)
+        table.insert(time: 4, instrument: piccolo)
 
-        try map.reverse(within: BeatTime(0)...8)
+        try table.reverse(within: BeatTime(0)...8)
 
-        #expect(map.map(\.time) == [0, 4])
-        #expect(map.map(\.instrument) == [piccolo, flute])
+        #expect(table.map(\.time) == [0, 4])
+        #expect(table.map(\.instrument) == [piccolo, flute])
     }
 
     @Test
@@ -348,17 +348,17 @@ extension InstrumentMapTransformTests {
         // for 2–4, then piccolo for 4–8, reversed within 0…8, is piccolo for 0–4, flute for
         // 4–6, then vanilla for 6–8. A new entry begins the vanilla stretch.
         //
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let flute = try #require(Instrument(stringValue: "Flute"))
         let piccolo = try #require(Instrument(stringValue: "Piccolo"))
 
-        map.insert(time: 2, instrument: flute)
-        map.insert(time: 4, instrument: piccolo)
+        table.insert(time: 2, instrument: flute)
+        table.insert(time: 4, instrument: piccolo)
 
-        try map.reverse(within: BeatTime(0)...8)
+        try table.reverse(within: BeatTime(0)...8)
 
-        #expect(map.map(\.time) == [0, 4, 6])
-        #expect(map.map(\.instrument) == [piccolo, flute, .vanilla])
+        #expect(table.map(\.time) == [0, 4, 6])
+        #expect(table.map(\.instrument) == [piccolo, flute, .vanilla])
     }
 
     @Test
@@ -368,37 +368,37 @@ extension InstrumentMapTransformTests {
         // 0…8, piccolo holds for 0–4, and the flute stretch that had no length lands at 4,
         // ahead of oboe, which takes over from it.
         //
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let flute = try #require(Instrument(stringValue: "Flute"))
         let oboe = try #require(Instrument(stringValue: "Oboe"))
         let piccolo = try #require(Instrument(stringValue: "Piccolo"))
 
-        map.insert(time: 0, instrument: oboe)
-        map.insert(time: 4, instrument: flute)
-        map.insert(time: 4, instrument: piccolo)
+        table.insert(time: 0, instrument: oboe)
+        table.insert(time: 4, instrument: flute)
+        table.insert(time: 4, instrument: piccolo)
 
-        try map.reverse(within: BeatTime(0)...8)
+        try table.reverse(within: BeatTime(0)...8)
 
-        #expect(map.map(\.time) == [0, 4, 4])
-        #expect(map.map(\.instrument) == [piccolo, flute, oboe])
-        #expect(map[BeatTime(4)] == oboe)
+        #expect(table.map(\.time) == [0, 4, 4])
+        #expect(table.map(\.instrument) == [piccolo, flute, oboe])
+        #expect(table[BeatTime(4)] == oboe)
     }
 
     @Test
     func reverse_validAnchorDoesNotThrow() throws {
-        var map = InstrumentMapSB()
+        var table = InstrumentTableSB()
         let guitar = try #require(Instrument(stringValue: "Guitar"))
 
-        map.insert(time: 0, instrument: .vanilla)
-        map.insert(time: 2, instrument: guitar)
+        table.insert(time: 0, instrument: .vanilla)
+        table.insert(time: 2, instrument: guitar)
 
-        try map.reverse(within: BeatTime(0)...2)
+        try table.reverse(within: BeatTime(0)...2)
 
         //
         // Vanilla holds for all of 0…2, so it starts at 0. Guitar's stretch ends where the
         // range does, so it has no length and mirrors to 0 as well, ahead of vanilla:
         //
-        #expect(map.map(\.time) == [0, 0])
-        #expect(map[BeatTime(0)] == .vanilla)
+        #expect(table.map(\.time) == [0, 0])
+        #expect(table[BeatTime(0)] == .vanilla)
     }
 }

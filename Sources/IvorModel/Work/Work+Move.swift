@@ -10,7 +10,7 @@ extension Work {
 
     /// Moves note attack times by a directed duration across the beat-time parts in this work that
     /// `partIDs` names, along with any parameter maps selected by `applyTo` and, when `applyTo`
-    /// contains ``MapTargets/tempo``, the work’s own tempo map. The tempo map is work-wide, so it is carried along
+    /// contains ``TransformTargets/tempo``, the work’s own tempo map. The tempo map is work-wide, so it is carried along
     /// whichever parts are targeted.
     ///
     /// - Parameter directedDuration:   The directed duration by which to move the targeted parts’
@@ -25,7 +25,7 @@ extension Work {
     ///             time; otherwise, a transform-failure case naming the part (or the tempo map)
     ///             and sub-structure that failed.
     public mutating func move(by directedDuration: DirectedDuration<BeatDuration>,
-                              applyTo: MapTargets = .all,
+                              applyTo: TransformTargets = .all,
                               partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 
@@ -86,7 +86,7 @@ extension Work {
     ///             time; otherwise, a transform-failure case naming the part and sub-structure
     ///             that failed.
     public mutating func move(by directedDuration: DirectedDuration<WallDuration>,
-                              applyTo: MapTargets = .all,
+                              applyTo: TransformTargets = .all,
                               partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 

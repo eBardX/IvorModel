@@ -171,20 +171,20 @@ extension ExtraIvorTests {
     }
 
     @Test
-    func instrumentNameAndAbbreviation_roundTripThroughInstrumentMapEntry() {
-        var instrumentMap = InstrumentMap<BeatTime>()
+    func instrumentNameAndAbbreviation_roundTripThroughInstrumentTableEntry() {
+        var instrumentTable = InstrumentTable<BeatTime>()
 
-        instrumentMap.insert(time: 0,
-                             instrument: .vanilla,
-                             extras: Extras(elements: [Extra(name: Extra.instrumentName.name,
-                                                             values: [.string("Flauto 1")]),
-                                                       Extra(name: Extra.instrumentAbbreviation.name,
-                                                             values: [.string("Fl. 1")])]))
+        instrumentTable.insert(time: 0,
+                               instrument: .vanilla,
+                               extras: Extras(elements: [Extra(name: Extra.instrumentName.name,
+                                                               values: [.string("Flauto 1")]),
+                                                         Extra(name: Extra.instrumentAbbreviation.name,
+                                                               values: [.string("Fl. 1")])]))
 
         var foundName: String?
         var foundAbbreviation: String?
 
-        for entry in instrumentMap {
+        for entry in instrumentTable {
             for extra in entry.extras?.elements ?? [] {
                 if extra.name == Extra.instrumentName.name,
                    case let .string(value)? = extra.values.first {
@@ -219,20 +219,20 @@ extension ExtraIvorTests {
     }
 
     @Test
-    func midiChannelAndMidiBank_roundTripThroughInstrumentMapEntry() {
-        var instrumentMap = InstrumentMap<BeatTime>()
+    func midiChannelAndMidiBank_roundTripThroughInstrumentTableEntry() {
+        var instrumentTable = InstrumentTable<BeatTime>()
 
-        instrumentMap.insert(time: 1,
-                             instrument: .vanilla,
-                             extras: Extras(elements: [Extra(name: Extra.midiChannel.name,
-                                                             values: [.int(3)]),
-                                                       Extra(name: Extra.midiBank.name,
-                                                             values: [.int(129)])]))
+        instrumentTable.insert(time: 1,
+                               instrument: .vanilla,
+                               extras: Extras(elements: [Extra(name: Extra.midiChannel.name,
+                                                               values: [.int(3)]),
+                                                         Extra(name: Extra.midiBank.name,
+                                                               values: [.int(129)])]))
 
         var foundChannel: Int?
         var foundBank: Int?
 
-        for entry in instrumentMap {
+        for entry in instrumentTable {
             for extra in entry.extras?.elements ?? [] {
                 if extra.name == Extra.midiChannel.name,
                    case let .int(value)? = extra.values.first {
@@ -267,20 +267,20 @@ extension ExtraIvorTests {
     }
 
     @Test
-    func midiProgramAndMidiVolume_roundTripThroughInstrumentMapEntry() {
-        var instrumentMap = InstrumentMap<BeatTime>()
+    func midiProgramAndMidiVolume_roundTripThroughInstrumentTableEntry() {
+        var instrumentTable = InstrumentTable<BeatTime>()
 
-        instrumentMap.insert(time: 1,
-                             instrument: .vanilla,
-                             extras: Extras(elements: [Extra(name: Extra.midiProgram.name,
-                                                             values: [.int(41)]),
-                                                       Extra(name: Extra.midiVolume.name,
-                                                             values: [.double(80)])]))
+        instrumentTable.insert(time: 1,
+                               instrument: .vanilla,
+                               extras: Extras(elements: [Extra(name: Extra.midiProgram.name,
+                                                               values: [.int(41)]),
+                                                         Extra(name: Extra.midiVolume.name,
+                                                               values: [.double(80)])]))
 
         var foundProgram: Int?
         var foundVolume: Double?
 
-        for entry in instrumentMap {
+        for entry in instrumentTable {
             for extra in entry.extras?.elements ?? [] {
                 if extra.name == Extra.midiProgram.name,
                    case let .int(value)? = extra.values.first {

@@ -17,6 +17,8 @@ extension Work {
     /// Always succeeds, even on a locked work: this returns an independent, unlocked copy rather
     /// than mutating `self`, so ``Work/isLocked`` — which only protects `self` from being
     /// modified — does not apply here.
+    ///
+    /// - Returns:  The converted work, or `nil` for wall-time content.
     public func warped() -> Work? {
         guard let newContent = Self._warped(content)
         else { return nil }
@@ -84,6 +86,8 @@ extension Work {
     /// Always succeeds, even on a locked work — see ``warped()``’s doc comment for why.
     ///
     /// - Parameter tempoMap:   The tempo map to convert wall times to beat times with.
+    ///
+    /// - Returns:  The converted work, or `nil` for beat-time content.
     public func unwarped(using tempoMap: TempoMap) -> Work? {
         guard let newContent = Self._unwarped(content,
                                               using: tempoMap)
@@ -145,14 +149,16 @@ extension Work {
     /// ``Work/smpteStartTime``, ``Work/info``, ``Work/extras``, and ``Work/realizations``, and
     /// its parts keep their IDs and extras.
     ///
-    /// The parameter maps (`dynamicMap`/`instrumentMap`/`panMap`) go through the same plain time
+    /// The parameter maps (`dynamicMap`, `panMap`) and the instrument table go through the same plain time
     /// conversion ``warped()`` uses — none of them carries a pitch axis, so none is
     /// varispeed-shifted; only note pitches are.
     ///
     /// Works even on a locked work — see ``warped()``’s doc comment for why.
     ///
-    /// - Parameter normalTempo:   The reference tempo used for pitch shifting. Defaults to
-    ///                            `.default`.
+    /// - Parameter normalTempo:    The reference tempo used for pitch shifting. Defaults to
+    ///                             `.default`.
+    ///
+    /// - Returns:  The converted work, or `nil` for any content other than `.absoluteBeat`.
     ///
     /// - Throws:   ``Work/Error/transformFailure(kind:partID:detail:)`` with kind
     ///             ``Work/TransformKind/varispeed`` if shifting any note’s pitch by the tempo
@@ -181,8 +187,8 @@ extension Work {
                                  noteTable: noteTable,
                                  dynamicMap: Self.convertBeatTimes(in: part.dynamicMap,
                                                                    using: timeConverter),
-                                 instrumentMap: Self.convertBeatTimes(in: part.instrumentMap,
-                                                                      using: timeConverter),
+                                 instrumentTable: Self.convertBeatTimes(in: part.instrumentTable,
+                                                                        using: timeConverter),
                                  panMap: Self.convertBeatTimes(in: part.panMap,
                                                                using: timeConverter),
                                  extras: part.extras))

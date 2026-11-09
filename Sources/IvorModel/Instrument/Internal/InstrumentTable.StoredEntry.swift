@@ -2,7 +2,7 @@
 
 internal import XestiTools
 
-extension InstrumentMap {
+extension InstrumentTable {
 
     // MARK: Internal Nested Types
 
@@ -33,7 +33,7 @@ extension InstrumentMap {
 
 // MARK: -
 
-extension InstrumentMap.StoredEntry {
+extension InstrumentTable.StoredEntry {
 
     // MARK: Internal Instance Properties
 
@@ -74,7 +74,7 @@ extension InstrumentMap.StoredEntry {
 
 // MARK: - Codable
 
-extension InstrumentMap.StoredEntry: Codable {
+extension InstrumentTable.StoredEntry: Codable {
 
     // MARK: Internal Initializers
 
@@ -111,7 +111,7 @@ extension InstrumentMap.StoredEntry: Codable {
 
 // MARK: - Comparable
 
-extension InstrumentMap.StoredEntry: Comparable {
+extension InstrumentTable.StoredEntry: Comparable {
 
     // MARK: Internal Type Methods
 
@@ -123,7 +123,7 @@ extension InstrumentMap.StoredEntry: Comparable {
 
 // MARK: - Equatable
 
-extension InstrumentMap.StoredEntry: Equatable {
+extension InstrumentTable.StoredEntry: Equatable {
 
     // MARK: Internal Type Methods
 
@@ -142,5 +142,5 @@ extension InstrumentMap.StoredEntry: Equatable {
 
 // MARK: - Sendable
 
-extension InstrumentMap.StoredEntry: Sendable {
+extension InstrumentTable.StoredEntry: Sendable {
 }

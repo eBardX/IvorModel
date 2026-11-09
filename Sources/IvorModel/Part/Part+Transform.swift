@@ -29,7 +29,7 @@ extension Part {
     public mutating func augment(by factor: Number,
                                  anchor: TimeType? = nil,
                                  noteIDs: Set<NoteID>? = nil,
-                                 applyTo: MapTargets = .all) throws(Error) {
+                                 applyTo: TransformTargets = .all) throws(Error) {
         //
         // Resolve the default once, so the note table and every map scale about the same anchor.
         //
@@ -47,7 +47,7 @@ extension Part {
         }
 
         var newDynamicMap = dynamicMap
-        var newInstrumentMap = instrumentMap
+        var newInstrumentTable = instrumentTable
         var newPanMap = panMap
 
         if applyTo.contains(.dynamic) {
@@ -62,11 +62,11 @@ extension Part {
 
         if applyTo.contains(.instrument) {
             do {
-                try newInstrumentMap.augment(by: factor,
-                                             anchor: resolvedAnchor,
-                                             entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
+                try newInstrumentTable.augment(by: factor,
+                                               anchor: resolvedAnchor,
+                                               entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
             } catch {
-                throw Error.instrumentMapFailure(error)
+                throw Error.instrumentTableFailure(error)
             }
         }
 
@@ -82,7 +82,7 @@ extension Part {
 
         noteTable = newNoteTable
         dynamicMap = newDynamicMap
-        instrumentMap = newInstrumentMap
+        instrumentTable = newInstrumentTable
         panMap = newPanMap
     }
 
@@ -107,7 +107,7 @@ extension Part {
     public mutating func diminish(by factor: Number,
                                   anchor: TimeType? = nil,
                                   noteIDs: Set<NoteID>? = nil,
-                                  applyTo: MapTargets = .all) throws(Error) {
+                                  applyTo: TransformTargets = .all) throws(Error) {
         //
         // Resolve the default once, so the note table and every map scale about the same anchor.
         //
@@ -125,7 +125,7 @@ extension Part {
         }
 
         var newDynamicMap = dynamicMap
-        var newInstrumentMap = instrumentMap
+        var newInstrumentTable = instrumentTable
         var newPanMap = panMap
 
         if applyTo.contains(.dynamic) {
@@ -140,11 +140,11 @@ extension Part {
 
         if applyTo.contains(.instrument) {
             do {
-                try newInstrumentMap.diminish(by: factor,
-                                              anchor: resolvedAnchor,
-                                              entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
+                try newInstrumentTable.diminish(by: factor,
+                                                anchor: resolvedAnchor,
+                                                entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
             } catch {
-                throw Error.instrumentMapFailure(error)
+                throw Error.instrumentTableFailure(error)
             }
         }
 
@@ -160,17 +160,17 @@ extension Part {
 
         noteTable = newNoteTable
         dynamicMap = newDynamicMap
-        instrumentMap = newInstrumentMap
+        instrumentTable = newInstrumentTable
         panMap = newPanMap
     }
 
     /// Inverts note pitches around a pitch range.
     ///
-    /// - Parameter pitchRange:   The pitch range to invert pitches around. `nil` resolves to the
-    ///                           note table’s own pitch range, or — when `noteIDs` is non-`nil` —
-    ///                           the selected notes’ own pitch range.
-    /// - Parameter noteIDs:      The identities of the notes to invert, or `nil` to invert every
-    ///                           note in the note table.
+    /// - Parameter pitchRange: The pitch range to invert pitches around. `nil` resolves to the
+    ///                         note table’s own pitch range, or — when `noteIDs` is non-`nil` —
+    ///                         the selected notes’ own pitch range.
+    /// - Parameter noteIDs:    The identities of the notes to invert, or `nil` to invert every
+    ///                         note in the note table.
     ///
     /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the note table cannot be inverted.
     ///
@@ -206,7 +206,7 @@ extension Part {
     ///             corresponding map-failure case if a selected map cannot be moved.
     public mutating func move(by directedDuration: DirectedDuration<DurationType>,
                               noteIDs: Set<NoteID>? = nil,
-                              applyTo: MapTargets = .all) throws(Error) {
+                              applyTo: TransformTargets = .all) throws(Error) {
         var newNoteTable = noteTable
 
         do {
@@ -217,7 +217,7 @@ extension Part {
         }
 
         var newDynamicMap = dynamicMap
-        var newInstrumentMap = instrumentMap
+        var newInstrumentTable = instrumentTable
         var newPanMap = panMap
 
         if applyTo.contains(.dynamic) {
@@ -231,10 +231,10 @@ extension Part {
 
         if applyTo.contains(.instrument) {
             do {
-                try newInstrumentMap.move(by: directedDuration,
-                                          entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
+                try newInstrumentTable.move(by: directedDuration,
+                                            entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
             } catch {
-                throw Error.instrumentMapFailure(error)
+                throw Error.instrumentTableFailure(error)
             }
         }
 
@@ -249,29 +249,29 @@ extension Part {
 
         noteTable = newNoteTable
         dynamicMap = newDynamicMap
-        instrumentMap = newInstrumentMap
+        instrumentTable = newInstrumentTable
         panMap = newPanMap
     }
 
     /// Reverses the order of notes within a time range, along with any parameter maps selected
     /// by `applyTo`.
     ///
-    /// - Parameter timeRange:   The time range to mirror attack times around. `nil` resolves to
-    ///                          the span of everything being reversed: the notes and the entries
-    ///                          of every map `applyTo` selects, or — when `noteIDs` is non-`nil`
-    ///                          — the selected notes’ own time range.
-    /// - Parameter noteIDs:     The identities of the notes to reverse, or `nil` to reverse every
-    ///                          note in the note table. Also narrows which entries of any map
-    ///                          selected by `applyTo` are carried along, to those falling within
-    ///                          the selected notes’ own time range.
-    /// - Parameter applyTo:     The parameter maps to reverse along with the note table.
-    ///                          Defaults to every map.
+    /// - Parameter timeRange:  The time range to mirror attack times around. `nil` resolves to
+    ///                         the span of everything being reversed: the notes and the entries
+    ///                         of every map `applyTo` selects, or — when `noteIDs` is non-`nil`
+    ///                         — the selected notes’ own time range.
+    /// - Parameter noteIDs:    The identities of the notes to reverse, or `nil` to reverse every
+    ///                         note in the note table. Also narrows which entries of any map
+    ///                         selected by `applyTo` are carried along, to those falling within
+    ///                         the selected notes’ own time range.
+    /// - Parameter applyTo:    The parameter maps to reverse along with the note table.
+    ///                         Defaults to every map.
     ///
     /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the note table cannot be reversed, or
     ///             the corresponding map-failure case if a selected map cannot be reversed.
     public mutating func reverse(within timeRange: ClosedRange<TimeType>? = nil,
                                  noteIDs: Set<NoteID>? = nil,
-                                 applyTo: MapTargets = .all) throws(Error) {
+                                 applyTo: TransformTargets = .all) throws(Error) {
         //
         // Resolve the default once, so the note table and every map mirror about the same axis.
         //
@@ -288,7 +288,7 @@ extension Part {
         }
 
         var newDynamicMap = dynamicMap
-        var newInstrumentMap = instrumentMap
+        var newInstrumentTable = instrumentTable
         var newPanMap = panMap
 
         if applyTo.contains(.dynamic) {
@@ -302,10 +302,10 @@ extension Part {
 
         if applyTo.contains(.instrument) {
             do {
-                try newInstrumentMap.reverse(within: resolvedRange,
-                                             entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
+                try newInstrumentTable.reverse(within: resolvedRange,
+                                               entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
             } catch {
-                throw Error.instrumentMapFailure(error)
+                throw Error.instrumentTableFailure(error)
             }
         }
 
@@ -320,7 +320,7 @@ extension Part {
 
         noteTable = newNoteTable
         dynamicMap = newDynamicMap
-        instrumentMap = newInstrumentMap
+        instrumentTable = newInstrumentTable
         panMap = newPanMap
     }
 
@@ -365,14 +365,14 @@ extension Part where TimeType == BeatTime {
     ///                         map selected by `applyTo` are carried along, to those falling
     ///                         within the selected notes’ own time range.
     /// - Parameter applyTo:    The parameter maps to quantize along with the note table.
-    ///                         Defaults to ``MapTargets/all``.
+    ///                         Defaults to ``TransformTargets/all``.
     ///
     /// - Throws:   ``Part/Error/noteTableFailure(_:)`` wrapping
     ///             ``NoteTable/Error/emptyQuantizationFactors`` or
     ///             ``NoteTable/Error/invalidQuantizationFactor(_:)`` if `factors` is invalid.
     public mutating func quantize(to factors: [Int],
                                   noteIDs: Set<NoteID>? = nil,
-                                  applyTo: MapTargets = .all) throws(Error) {
+                                  applyTo: TransformTargets = .all) throws(Error) {
         let quantizer: BeatQuantizer
 
         do {
@@ -401,16 +401,16 @@ extension Part where TimeType == BeatTime {
     /// (`Work+Quantize.swift`) call, so a single `BeatQuantizer` can be validated once and reused
     /// across every part without re-validating per part.
     ///
-    /// - Parameter quantizer:   The quantizer whose grid to snap attack/release times to.
-    /// - Parameter noteIDs:     The identities of the notes to quantize, or `nil` to quantize
-    ///                          every note in the note table. Also narrows which entries of any
-    ///                          map selected by `applyTo` are carried along, to those falling
-    ///                          within the selected notes’ own time range.
-    /// - Parameter applyTo:     The parameter maps to quantize along with the note table.
-    ///                          Defaults to ``MapTargets/all``.
+    /// - Parameter quantizer:  The quantizer whose grid to snap attack/release times to.
+    /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize
+    ///                         every note in the note table. Also narrows which entries of any
+    ///                         map selected by `applyTo` are carried along, to those falling
+    ///                         within the selected notes’ own time range.
+    /// - Parameter applyTo:    The parameter maps to quantize along with the note table.
+    ///                         Defaults to ``TransformTargets/all``.
     public mutating func quantize(to quantizer: BeatQuantizer,
                                   noteIDs: Set<NoteID>? = nil,
-                                  applyTo: MapTargets = .all) {
+                                  applyTo: TransformTargets = .all) {
         noteTable.quantize(using: quantizer,
                            noteIDs: noteIDs)
 
@@ -420,8 +420,8 @@ extension Part where TimeType == BeatTime {
         }
 
         if applyTo.contains(.instrument) {
-            instrumentMap.quantize(using: quantizer,
-                                   entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
+            instrumentTable.quantize(using: quantizer,
+                                     entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
         }
 
         if applyTo.contains(.pan) {
@@ -446,7 +446,7 @@ extension Part {
     // the targeted parts and the tempo map.
     //
     internal func transformTimeRange(noteIDs: Set<NoteID>?,
-                                     applyTo: MapTargets) -> ClosedRange<TimeType>? {
+                                     applyTo: TransformTargets) -> ClosedRange<TimeType>? {
         if let noteIDs {
             return noteTable.selectedTimeRange(noteIDs: noteIDs)
         }
@@ -464,8 +464,8 @@ extension Part {
         }
 
         if applyTo.contains(.instrument),
-           let first = instrumentMap.first,
-           let last = instrumentMap.last {
+           let first = instrumentTable.first,
+           let last = instrumentTable.last {
             bounds += [first.time, last.time]
         }
 
@@ -501,7 +501,7 @@ extension Part {
         guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
-        return Set(instrumentMap.filter { range.contains($0.time) }.map(\.entryID))
+        return Set(instrumentTable.filter { range.contains($0.time) }.map(\.entryID))
     }
 
     private func _panEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {

@@ -25,6 +25,11 @@ extension Template {
     /// dead end, unless ``stopsAtEnd`` is `false` or ``backsOff`` is `true`.
     public struct GenerationOptions<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
+        // MARK: Public Type Aliases
+
+        /// The duration type associated with the time type.
+        public typealias DurationType = TimeType.DurationType
+
         // MARK: Public Initializers
 
         /// Creates a new generation recipe.
@@ -169,11 +174,6 @@ extension Template {
 // MARK: -
 
 extension Template.GenerationOptions {
-
-    // MARK: Public Type Aliases
-
-    /// The duration type associated with the time type.
-    public typealias DurationType = TimeType.DurationType
 
     // MARK: Internal Instance Properties
 

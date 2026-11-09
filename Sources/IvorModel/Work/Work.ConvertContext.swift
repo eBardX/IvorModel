@@ -3,6 +3,9 @@
 public import IvorTuning
 
 extension Work {
+
+    // MARK: Public Nested Types
+
     /// A bundle of dependencies needed when converting a work between time bases or pitch notations.
     ///
     /// A conversion uses only the dependencies it needs. For example, a raw keyboard layout

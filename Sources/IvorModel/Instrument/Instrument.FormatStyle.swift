@@ -13,7 +13,7 @@ extension Instrument {
 
         /// Creates a format style with the given locale.
         ///
-        /// - Parameter locale:     The locale to use for formatting. Defaults to `.autoupdatingCurrent`.
+        /// - Parameter locale: The locale to use for formatting. Defaults to `.autoupdatingCurrent`.
         public init(locale: Locale = .autoupdatingCurrent) {
             self.locale = locale
         }
@@ -44,6 +44,9 @@ extension Instrument.FormatStyle: FormatStyle {
 // MARK: -
 
 extension Instrument {
+
+    // MARK: Public Instance Methods
+
     /// Returns an attributed string representation of this instrument using the default format style.
     ///
     /// - Returns:  An `AttributedString` representation of the instrument.

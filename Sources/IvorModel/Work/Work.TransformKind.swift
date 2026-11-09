@@ -36,6 +36,8 @@ extension Work {
 
 extension Work.TransformKind: CustomStringConvertible {
 
+    // MARK: Public Instance Properties
+
     /// The string representation of this transform kind (e.g., `"augment"`, `"invert"`).
     public var description: String {
         switch self {

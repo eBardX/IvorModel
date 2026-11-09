@@ -31,6 +31,8 @@ public struct Work {
     ///                             empty realization named ``defaultRealizationName``.
     /// - Parameter generation:     How the work was generated from a template, or `nil` if it
     ///                             wasn’t. Defaults to `nil`.
+    ///
+    /// - Precondition: `realizations` must be non-empty, with distinct realization IDs.
     public init(name: String = "",
                 content: Content? = nil,
                 smpteStartTime: SMPTETime = Self.defaultSMPTEStartTime,
@@ -115,24 +117,6 @@ public struct Work {
     /// ``setSMPTEStartTime(_:)``.
     public internal(set) var smpteStartTime: SMPTETime
 
-    /// The musical content of the work.
-    ///
-    /// To replace it, use ``replaceContent(with:)``.
-    public internal(set) var content: Content {
-        get { unsafeContent }
-        set {
-            //
-            // Every public mutator checks `isLocked` (via `ensureUnlocked()`) before it gets here,
-            // so reaching this with a locked work is a bug in this package.
-            //
-            precondition(!isLocked, "Cannot assign content to a locked work.")
-
-            unsafeContent = newValue
-
-            removeOrphanedPartTables()
-        }
-    }
-
     // MARK: Private Instance Properties
 
     //
@@ -176,6 +160,24 @@ extension Work {
 
         default:
             nil
+        }
+    }
+
+    /// The musical content of the work.
+    ///
+    /// To replace it, use ``replaceContent(with:)``.
+    public internal(set) var content: Content {
+        get { unsafeContent }
+        set {
+            //
+            // Every public mutator checks `isLocked` (via `ensureUnlocked()`) before it gets here,
+            // so reaching this with a locked work is a bug in this package.
+            //
+            precondition(!isLocked, "Cannot assign content to a locked work.")
+
+            unsafeContent = newValue
+
+            removeOrphanedPartTables()
         }
     }
 
@@ -447,7 +449,7 @@ extension Work {
     // A wall-time work has no tempo map, so this is its whole default.
     //
     internal static func transformTimeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>],
-                                                                    applyTo: MapTargets) -> ClosedRange<TimeType>? {
+                                                                    applyTo: TransformTargets) -> ClosedRange<TimeType>? {
         parts.reduce(nil) { acc, part in
             guard let partRange = part.transformTimeRange(noteIDs: nil,
                                                           applyTo: applyTo)
@@ -468,7 +470,7 @@ extension Work {
     //
     internal static func transformTimeRange(of parts: [Part<BeatTime, some PitchProtocol>],
                                             tempoMap: TempoMap,
-                                            applyTo: MapTargets) -> ClosedRange<BeatTime>? {
+                                            applyTo: TransformTargets) -> ClosedRange<BeatTime>? {
         let partsRange = transformTimeRange(of: parts,
                                             applyTo: applyTo)
 

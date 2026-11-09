@@ -15,7 +15,7 @@ extension Work {
     // the app clears `.tempo` by default when the user targets only some parts.
     //
     internal static func carried(tempoMap: TempoMap,
-                                 applyTo: MapTargets,
+                                 applyTo: TransformTargets,
                                  kind: TransformKind,
                                  transform: (inout TempoMap) throws(TempoMap.Error) -> Void) throws(Error) -> TempoMap {
         guard applyTo.contains(.tempo)
@@ -105,10 +105,10 @@ extension Work {
                                             partID: partID,
                                             detail: underlying.message)
 
-        case let .instrumentMapFailure(underlying):
-                .instrumentMapTransformFailure(kind: kind,
-                                               partID: partID,
-                                               detail: underlying.message)
+        case let .instrumentTableFailure(underlying):
+                .instrumentTableTransformFailure(kind: kind,
+                                                 partID: partID,
+                                                 detail: underlying.message)
 
         case let .noteTableFailure(underlying):
                 .transformFailure(kind: kind,

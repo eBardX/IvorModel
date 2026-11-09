@@ -21,13 +21,13 @@ extension PartTransformTests {
 
         part.dynamicMap.insert(time: 0, dynamic: .mp)
         part.dynamicMap.insert(time: 2, dynamic: .ff)
-        part.instrumentMap.insert(time: 0, instrument: .vanilla)
+        part.instrumentTable.insert(time: 0, instrument: .vanilla)
 
         let violin = try #require(Instrument(stringValue: "Violin"))
 
-        part.instrumentMap.insert(time: 2, instrument: violin)
+        part.instrumentTable.insert(time: 2, instrument: violin)
 
-        try part.augment(by: Number(2), applyTo: MapTargets.all.subtracting(.dynamic))
+        try part.augment(by: Number(2), applyTo: TransformTargets.all.subtracting(.dynamic))
 
         //
         // Excluded from `applyTo`, so untouched:
@@ -45,7 +45,7 @@ extension PartTransformTests {
         //
         var instrumentTimes: [BeatTime] = []
 
-        for entry in part.instrumentMap {
+        for entry in part.instrumentTable {
             instrumentTimes.append(entry.time)
         }
 
@@ -179,7 +179,7 @@ extension PartTransformTests {
         part.noteTable.insert(attack: 2, duration: 1, pitch: .d4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
         part.dynamicMap.insert(time: 2, dynamic: .ff)
-        part.instrumentMap.insert(time: 0, instrument: .vanilla)
+        part.instrumentTable.insert(time: 0, instrument: .vanilla)
         part.panMap.insert(time: 0, pan: .center)
         part.panMap.insert(time: 2, pan: .right)
 
@@ -627,7 +627,7 @@ extension PartTransformTests {
         var part = PartSB(name: "Test")
 
         part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part.instrumentMap.insert(time: 0, instrument: .vanilla)
+        part.instrumentTable.insert(time: 0, instrument: .vanilla)
 
         let interval = try #require(Pitch.c4.interval(to: .e4))
 
@@ -635,7 +635,7 @@ extension PartTransformTests {
 
         var instrumentTimes: [BeatTime] = []
 
-        for entry in part.instrumentMap {
+        for entry in part.instrumentTable {
             instrumentTimes.append(entry.time)
         }
 

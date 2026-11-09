@@ -11,7 +11,7 @@ extension Work {
 
     /// Augments note attack times and durations by a rational factor across the beat-time parts in
     /// this work that `partIDs` names, along with any parameter maps selected by `applyTo` and,
-    /// when `applyTo` contains ``MapTargets/tempo``, the work’s own tempo map. The tempo map is work-wide, so it is
+    /// when `applyTo` contains ``TransformTargets/tempo``, the work’s own tempo map. The tempo map is work-wide, so it is
     /// carried along whichever parts are targeted.
     ///
     /// - Parameter factor:     A rational number ≥ 1 by which to stretch the targeted parts’ note
@@ -31,7 +31,7 @@ extension Work {
     ///             and sub-structure that failed.
     public mutating func augment(by factor: Number,
                                  anchor: BeatTime? = nil,
-                                 applyTo: MapTargets = .all,
+                                 applyTo: TransformTargets = .all,
                                  partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 
@@ -135,7 +135,7 @@ extension Work {
     ///             that failed.
     public mutating func augment(by factor: Number,
                                  anchor: WallTime? = nil,
-                                 applyTo: MapTargets = .all,
+                                 applyTo: TransformTargets = .all,
                                  partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 

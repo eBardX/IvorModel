@@ -13,9 +13,9 @@ Project
 │  ├─ content:      Work.Content       // parts, plus a tempo map in beat time
 │  │  └─ [Part]
 │  │     ├─ noteTable:     NoteTable
-│  │     ├─ dynamicMap:    DynamicMap
-│  │     ├─ instrumentMap: InstrumentMap
-│  │     └─ panMap:        PanMap
+│  │     ├─ dynamicMap:      DynamicMap
+│  │     ├─ instrumentTable: InstrumentTable
+│  │     └─ panMap:          PanMap
 │  ├─ info:         Work.Info          // titles, credits, rights, remarks
 │  └─ realizations: [Realization]      // how instruments sound when played
 └─ templates: [Template]               // analyses that generate new works
@@ -26,7 +26,7 @@ Every work chooses a **time basis** and a **pitch notation**, from
 [IvorTuning](https://github.com/eBardX/IvorTuning): times are beats
 (`BeatTime`) or seconds (`WallTime`), and pitches are standard pitches
 (`Pitch`), frequencies (`Frequency`), or MIDI note numbers (`NoteNumber`). The
-generic types — ``Part``, ``NoteTable``, ``NoteEvent``, and the parameter maps —
+generic types — ``Part``, ``NoteTable``, ``NoteEvent``, the parameter maps, and the instrument table —
 take those as their type parameters, so a `Part<BeatTime, Pitch>` holds notes in
 beats and standard pitch.
 
@@ -69,8 +69,8 @@ always be set.
 
 ## Parts
 
-A ``Part`` is a named line of music: a note table and three parameter maps,
-plus ``Part/extras`` for format-specific data about the part as a whole, such as
+A ``Part`` is a named line of music: a note table, two parameter maps, and an
+instrument table, plus ``Part/extras`` for format-specific data about the part as a whole, such as
 the ``Extra/midiChannel`` it came from. A work’s parts all share its time and pitch types, so reading or editing one
 means naming its concrete type:
 
@@ -121,22 +121,27 @@ with ties (``NoteEvent/TiedPitch``) where a note continues from one event into
 the next. A work’s `extractNoteEvents()` does the same across every part, and
 tags each event with its part and attack time.
 
-## Parameter maps
+## Parameter maps and the instrument table
 
-A part has three parameter maps, which work like IvorTiming’s `TempoMap`: a
-list of entries, each a value that takes effect at a time, with a default for
-an empty map. Each entry has an ``EntryID`` that keeps naming it across edits,
-and the maps share `insert`, `update`, `move`, `remove`, and `merge`.
+A part has two parameter maps and an instrument table, which work like
+IvorTiming’s `TempoMap`: a list of entries, each a value that takes effect at a
+time, with a default for an empty one. Each entry has an ``EntryID`` that keeps
+naming it across edits, and all three share `insert`, `update`, `move`,
+`remove`, and `merge`.
 
- Map                  | Value              | Default                    | Represents
+ Type                 | Value              | Default                    | Represents
 :---                  |:-----              |:------                     |:----------
  ``DynamicMap``       | ``Dynamic``        | ``Dynamic/mp``             | A loudness from 0 to 1; presets from `pppp` to `ffff`
- ``InstrumentMap``    | ``Instrument``     | ``Instrument/vanilla``     | An instrument designation, as a name
+ ``InstrumentTable``  | ``Instrument``     | ``Instrument/vanilla``     | An instrument designation, as a name
  ``PanMap``           | ``Pan``            | ``Pan/center``             | A direction in 3-D space, as horizontal and vertical angles
 
 Subscripting a dynamic map with a time gives the level in effect there,
 interpolated between entries. A ``Pan`` can be made from, and folded down to, a
 stereo position from −1 (hard left) to 1 (hard right).
+
+An instrument table doesn’t interpolate. Subscripting it with a time gives the
+instrument of the last entry at or before that time, which holds until the next
+entry.
 
 An ``Instrument`` only designates an instrument; what it sounds like when the
 part plays is up to a realization (see [Realizations](#Realizations)).
@@ -161,8 +166,9 @@ try work.augment(by: 2, anchor: BeatTime.zero)  // twice as slow, from beat 0
 
 The time transforms come in a beat-time and a wall-time form, so give the anchor
 (or the duration, or the range) in the work’s own time type. They move a part’s
-parameter maps along with its notes, and the work’s own tempo map with them;
-`applyTo` takes a ``MapTargets`` set to choose which maps go along. A transform
+parameter maps and instrument table along with its notes, and the work’s own
+tempo map with them; `applyTo` takes a ``TransformTargets`` set to choose which of
+these go along. A transform
 whose interval or time type doesn’t match the work throws
 ``Work/Error/pitchNotationMismatch(expected:)`` or
 ``Work/Error/timeBasisMismatch(expected:)``. Parts and note tables have the same
@@ -334,9 +340,9 @@ Thrown errors conform to `EnhancedError` (from
  Type                            | Thrown by
 :----                            |:---------
  ``Work/Error``                  | ``Work`` methods: editing a locked work, mismatched types, transforms, conversion
- ``Part/Error``                  | ``Part`` transforms, wrapping the error of the note table or map that failed
+ ``Part/Error``                  | ``Part`` transforms, wrapping the error of the note table, map, or instrument table that failed
  ``NoteTable/Error``             | ``NoteTable`` transforms
- ``DynamicMap/Error``, ``InstrumentMap/Error``, ``PanMap/Error`` | The parameter-map transforms
+ ``DynamicMap/Error``, ``InstrumentTable/Error``, ``PanMap/Error`` | The parameter-map and instrument-table transforms
  ``Template/Error``              | Analysis, generation, and renaming a locked template
  ``Project/Error``               | Loading, saving, and removing locked works and templates
 

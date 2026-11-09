@@ -31,9 +31,9 @@ extension WorkWarpTests {
 
         dynamicMap.insert(time: 1_000, dynamic: .mf)
 
-        var instrumentMap = InstrumentMap<WallTime>()
+        var instrumentTable = InstrumentTable<WallTime>()
 
-        instrumentMap.insert(time: 1_000, instrument: Instrument(stringValue: "Piano").require())
+        instrumentTable.insert(time: 1_000, instrument: Instrument(stringValue: "Piano").require())
 
         var panMap = PanMap<WallTime>()
 
@@ -42,7 +42,7 @@ extension WorkWarpTests {
         let part = Part<WallTime, Frequency>(name: "Piano",
                                              noteTable: table,
                                              dynamicMap: dynamicMap,
-                                             instrumentMap: instrumentMap,
+                                             instrumentTable: instrumentTable,
                                              panMap: panMap)
         let work = Work(name: "Test", content: .absoluteWall([part]))
 
@@ -60,7 +60,7 @@ extension WorkWarpTests {
         #expect(resultTempoMap == tempoMap)
         #expect(parts[0].noteTable.notes.first?.attack == expectedTime)
         #expect(parts[0].dynamicMap.entries.first?.time == expectedTime)
-        #expect(parts[0].instrumentMap.entries.first?.time == expectedTime)
+        #expect(parts[0].instrumentTable.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
     }
 
@@ -159,9 +159,9 @@ extension WorkWarpTests {
 
         dynamicMap.insert(time: 1, dynamic: .mf)
 
-        var instrumentMap = InstrumentMap<BeatTime>()
+        var instrumentTable = InstrumentTable<BeatTime>()
 
-        instrumentMap.insert(time: 1, instrument: Instrument(stringValue: "Piano").require())
+        instrumentTable.insert(time: 1, instrument: Instrument(stringValue: "Piano").require())
 
         var panMap = PanMap<BeatTime>()
 
@@ -170,7 +170,7 @@ extension WorkWarpTests {
         let part = Part<BeatTime, Frequency>(name: "Piano",
                                              noteTable: table,
                                              dynamicMap: dynamicMap,
-                                             instrumentMap: instrumentMap,
+                                             instrumentTable: instrumentTable,
                                              panMap: panMap)
         let work = Work(content: .absoluteBeat([part], tempoMap))
 
@@ -183,8 +183,8 @@ extension WorkWarpTests {
 
         #expect(parts[0].dynamicMap.entries.first?.time == expectedTime)
         #expect(parts[0].dynamicMap.entries.first?.dynamic == .mf)
-        #expect(parts[0].instrumentMap.entries.first?.time == expectedTime)
-        #expect(parts[0].instrumentMap.entries.first?.instrument == Instrument(stringValue: "Piano").require())
+        #expect(parts[0].instrumentTable.entries.first?.time == expectedTime)
+        #expect(parts[0].instrumentTable.entries.first?.instrument == Instrument(stringValue: "Piano").require())
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.pan == .center)
     }
@@ -354,9 +354,9 @@ extension WorkWarpTests {
 
         dynamicMap.insert(time: 1, dynamic: .mf)
 
-        var instrumentMap = InstrumentMap<BeatTime>()
+        var instrumentTable = InstrumentTable<BeatTime>()
 
-        instrumentMap.insert(time: 1, instrument: Instrument(stringValue: "Piano").require())
+        instrumentTable.insert(time: 1, instrument: Instrument(stringValue: "Piano").require())
 
         var panMap = PanMap<BeatTime>()
 
@@ -365,7 +365,7 @@ extension WorkWarpTests {
         let part = Part<BeatTime, Frequency>(name: "Piano",
                                              noteTable: table,
                                              dynamicMap: dynamicMap,
-                                             instrumentMap: instrumentMap,
+                                             instrumentTable: instrumentTable,
                                              panMap: panMap)
         let work = Work(name: "Test", content: .absoluteBeat([part], tempoMap))
 
@@ -381,7 +381,7 @@ extension WorkWarpTests {
 
         #expect(parts[0].noteTable.notes.first?.attack == expectedTime)
         #expect(parts[0].dynamicMap.entries.first?.time == expectedTime)
-        #expect(parts[0].instrumentMap.entries.first?.time == expectedTime)
+        #expect(parts[0].instrumentTable.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
     }
 

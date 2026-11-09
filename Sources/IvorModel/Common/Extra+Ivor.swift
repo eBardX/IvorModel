@@ -3,7 +3,7 @@
 public import XestiTools
 
 // The names of every `Extra` Ivor attaches to the model — a note, a
-// dynamic, instrument, pan, or tempo map entry, a part, or the work
+// dynamic, pan, or tempo map entry, an instrument table entry, a part, or the work
 // itself — gathered in one place so that a name is never claimed twice. Each one’s documentation says which
 // entries it’s attached to, and what its payload holds.
 extension Extra {
@@ -60,12 +60,12 @@ extension Extra {
     public static let harmonic = Self(name: "harmonic")
 
     /// The abbreviated form of ``instrumentName`` (e.g. `"Fl. 1"`), attached
-    /// to an ``InstrumentMap`` entry. Payload: a single `.string`, which
+    /// to an ``InstrumentTable`` entry. Payload: a single `.string`, which
     /// whoever creates the entry normalizes with `normalizingWhitespace()`.
     public static let instrumentAbbreviation = Self(name: "instrumentAbbreviation")
 
     /// The human-readable name of the instrument in effect from an
-    /// ``InstrumentMap`` entry (e.g. `"Flauto 1"`, `"Cl 1 (in A)"`), as
+    /// ``InstrumentTable`` entry (e.g. `"Flauto 1"`, `"Cl 1 (in A)"`), as
     /// distinct from the playback ``Instrument`` designation. Payload: a
     /// single `.string`, which whoever creates the entry normalizes with
     /// `normalizingWhitespace()`.
@@ -75,7 +75,7 @@ extension Extra {
     /// payload.
     public static let marcato = Self(name: "marcato")
 
-    /// The MIDI bank number in effect for an ``InstrumentMap`` entry, as the
+    /// The MIDI bank number in effect for an ``InstrumentTable`` entry, as the
     /// combined 14-bit Bank Select value (Control Change 0 MSB × 128 +
     /// Control Change 32 LSB), 0–16,383 — the value sent, and the same
     /// numbering as ``Patch/Kind/custom(program:bank:name:)``. (MusicXML’s
@@ -99,7 +99,7 @@ extension Extra {
     public static let midiPan = Self(name: "midiPan")
 
     /// The General MIDI program number (1–128) in effect for an
-    /// ``InstrumentMap`` entry, matching the 1-based convention both
+    /// ``InstrumentTable`` entry, matching the 1-based convention both
     /// MusicXML’s `<midi-program>` and ABC 2.1’s `%%MIDI voice
     /// instrument=` directive use. Payload: a single `.int`.
     public static let midiProgram = Self(name: "midiProgram")
@@ -118,13 +118,13 @@ extension Extra {
     public static let midiTimeCode = Self(name: "midiTimeCode")
 
     /// The MIDI note number (1–128, MusicXML’s 1-based convention) an
-    /// unpitched ``InstrumentMap`` entry plays, as MusicXML’s
+    /// unpitched ``InstrumentTable`` entry plays, as MusicXML’s
     /// `<midi-instrument><midi-unpitched>` declares it. Payload: a single
     /// `.int`.
     public static let midiUnpitched = Self(name: "midiUnpitched")
 
     /// The MIDI Channel Volume (Control Change 7) in effect for an
-    /// ``InstrumentMap`` entry, on MusicXML’s 0–100 percent scale. Payload:
+    /// ``InstrumentTable`` entry, on MusicXML’s 0–100 percent scale. Payload:
     /// a single `.double`.
     public static let midiVolume = Self(name: "midiVolume")
 

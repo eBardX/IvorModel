@@ -1,6 +1,9 @@
 // © 2026 John Gary Pusey (see LICENSE.md)
 
 extension Template {
+
+    // MARK: Public Nested Types
+
     /// Metrics describing how a template’s Markov chain was trained.
     ///
     /// Apart from ``recommendedOrder`` and ``stateCount``, which describe the

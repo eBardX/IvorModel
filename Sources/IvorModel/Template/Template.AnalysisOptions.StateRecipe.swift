@@ -15,10 +15,10 @@ extension Template.AnalysisOptions {
 
         /// Creates a new state recipe.
         ///
-        /// - Parameter pitch:      What a state records of an event’s pitches. Defaults to
-        ///                         ``PitchFeature/absolute``.
-        /// - Parameter duration:   What a state records of an event’s duration. Defaults to
-        ///                         ``DurationFeature/absolute``.
+        /// - Parameter pitch:                      What a state records of an event’s pitches. Defaults to
+        ///                                         ``PitchFeature/absolute``.
+        /// - Parameter duration:                   What a state records of an event’s duration. Defaults to
+        ///                                         ``DurationFeature/absolute``.
         /// - Parameter separatesPitchAndDuration:  Whether to learn pitches and durations in
         ///                                         separate chains. Defaults to `false`.
         public init(pitch: PitchFeature = .absolute,

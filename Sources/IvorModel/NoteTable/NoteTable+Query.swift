@@ -6,7 +6,7 @@ extension NoteTable {
 
     /// Returns the identities of the notes whose attack time falls within a range.
     ///
-    /// - Parameter range:   The closed range of attack times to select.
+    /// - Parameter range:  The closed range of attack times to select.
     ///
     /// - Returns:  The identities of the matching notes, for use with any transform’s
     ///             `noteIDs:` parameter.
@@ -17,7 +17,7 @@ extension NoteTable {
     /// Returns the identities of the notes whose pitch — start, end, or anything a portamento
     /// glides through — falls within a range.
     ///
-    /// - Parameter range:   The closed range of pitches to select.
+    /// - Parameter range:  The closed range of pitches to select.
     ///
     /// - Returns:  The identities of the matching notes, for use with any transform’s
     ///             `noteIDs:` parameter.
@@ -28,7 +28,7 @@ extension NoteTable {
     /// Returns the identities of the notes sounding at any point within a range — that is, whose
     /// attack-to-release span overlaps the range, not only notes that attack within it.
     ///
-    /// - Parameter range:   The closed range of times to select.
+    /// - Parameter range:  The closed range of times to select.
     ///
     /// - Returns:  The identities of the matching notes, for use with any transform’s
     ///             `noteIDs:` parameter.

@@ -191,12 +191,12 @@ extension WorkAugmentTests {
 
         part1.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
         part1.dynamicMap.insert(time: 0, dynamic: .mp)
-        part1.instrumentMap.insert(time: 0, instrument: .vanilla)
+        part1.instrumentTable.insert(time: 0, instrument: .vanilla)
         part1.panMap.insert(time: 0, pan: .center)
 
         part2.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
         part2.dynamicMap.insert(time: 2, dynamic: .mf)
-        part2.instrumentMap.insert(time: 2, instrument: .vanilla)
+        part2.instrumentTable.insert(time: 2, instrument: .vanilla)
         part2.panMap.insert(time: 2, pan: .left)
 
         var tempoMap = TempoMap()
@@ -209,7 +209,7 @@ extension WorkAugmentTests {
         try work.augment(by: Number(2), anchor: nil as BeatTime?, applyTo: .all)
 
         //
-        // Every part's note table, dynamic map, instrument map, and pan map, and the work's
+        // Every part's note table, dynamic map, instrument table, and pan map, and the work's
         // tempo map, all scaled consistently relative to the same anchor (the aggregate
         // beat-time range's lower bound, 0).
         //
@@ -232,7 +232,7 @@ extension WorkAugmentTests {
                 dynamicTimes.append(entry.time)
             }
 
-            for entry in part.instrumentMap {
+            for entry in part.instrumentTable {
                 instrumentTimes.append(entry.time)
             }
 
@@ -354,19 +354,19 @@ extension WorkAugmentTests {
     }
 
     @Test
-    func mapTransformFailure_wrapsUnderlyingInstrumentMapError() {
+    func mapTransformFailure_wrapsUnderlyingInstrumentTableError() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
         part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
-        part.instrumentMap.insert(time: 0, instrument: .vanilla)
+        part.instrumentTable.insert(time: 0, instrument: .vanilla)
 
         let partID = part.partID
         let detail = "Invalid anchor: does not contain the range of entries it is being applied to"
         var work = Work(content: .standardBeat([part], TempoMap()))
 
-        #expect(throws: Work.Error.instrumentMapTransformFailure(kind: .augment,
-                                                                 partID: partID,
-                                                                 detail: detail)) {
+        #expect(throws: Work.Error.instrumentTableTransformFailure(kind: .augment,
+                                                                   partID: partID,
+                                                                   detail: detail)) {
             try work.augment(by: Number(2), anchor: BeatTime(5))
         }
 

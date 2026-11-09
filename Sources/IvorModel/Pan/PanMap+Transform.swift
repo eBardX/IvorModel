@@ -136,11 +136,11 @@ extension PanMap {
 
     /// Reverses the order of entries within a time range.
     ///
-    /// - Parameter timeRange:   The time range to mirror entry times around. `nil` resolves to the
-    ///                          map’s own time range, or — when `entryIDs` is non-`nil` — the
-    ///                          selected entries’ own time range.
-    /// - Parameter entryIDs:    The identities of the entries to reverse, or `nil` to reverse every
-    ///                          entry in the map.
+    /// - Parameter timeRange:  The time range to mirror entry times around. `nil` resolves to the
+    ///                         map’s own time range, or — when `entryIDs` is non-`nil` — the
+    ///                         selected entries’ own time range.
+    /// - Parameter entryIDs:   The identities of the entries to reverse, or `nil` to reverse every
+    ///                         entry in the map.
     ///
     /// - Throws:   ``PanMap/Error/invalidAnchor`` if `timeRange` does not contain the time range of
     ///             the entries being reversed; otherwise, ``PanMap/Error/reverseFailure(_:)`` if an
@@ -251,9 +251,9 @@ extension PanMap where TimeType == BeatTime {
     /// this call to fail on, and snapping an entry to a grid point can never overflow the way a
     /// relative move can.
     ///
-    /// - Parameter quantizer:   The quantizer whose grid to snap entry times to.
-    /// - Parameter entryIDs:    The identities of the entries to quantize, or `nil` to quantize
-    ///                          every entry in the map.
+    /// - Parameter quantizer:  The quantizer whose grid to snap entry times to.
+    /// - Parameter entryIDs:   The identities of the entries to quantize, or `nil` to quantize
+    ///                         every entry in the map.
     public mutating func quantize(using quantizer: BeatQuantizer,
                                   entryIDs: Set<EntryID>? = nil) {
         guard !entries.isEmpty

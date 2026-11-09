@@ -3,19 +3,19 @@
 public import IvorTiming
 public import XestiTools
 
-/// A time-indexed map of instrument designations with a configurable default.
+/// A time-indexed table of instrument designations with a configurable default.
 ///
 /// Each entry is a step: its instrument holds from its time until the next entry’s. Before
 /// the first entry, ``defaultInstrument`` is in effect.
-public struct InstrumentMap<TimeType: TimeProtocol> {
+public struct InstrumentTable<TimeType: TimeProtocol> {
 
     // MARK: Public Initializers
 
-    /// Creates a new, empty instrument map with the given default instrument.
+    /// Creates a new, empty instrument table with the given default instrument.
     ///
     /// - Parameter defaultInstrument:  The instrument in effect before the
     ///                                 first entry, or throughout if the
-    ///                                 instrument map is empty. Defaults to
+    ///                                 instrument table is empty. Defaults to
     ///                                 `.vanilla`.
     public init(defaultInstrument: Instrument = .vanilla) {
         self.init(defaultInstrument: defaultInstrument,
@@ -24,11 +24,11 @@ public struct InstrumentMap<TimeType: TimeProtocol> {
 
     // MARK: Public Instance Properties
 
-    /// The instrument in effect before this instrument map’s first entry, or
+    /// The instrument in effect before this instrument table’s first entry, or
     /// throughout if it contains no entries.
     public let defaultInstrument: Instrument
 
-    /// A Boolean value indicating whether any entry in this instrument map
+    /// A Boolean value indicating whether any entry in this instrument table
     /// carries extra data.
     public private(set) var hasExtras: Bool
 
@@ -48,14 +48,14 @@ public struct InstrumentMap<TimeType: TimeProtocol> {
 
 // MARK: -
 
-extension InstrumentMap {
+extension InstrumentTable {
 
     // MARK: Public Instance Properties
 
-    /// Every instrument this instrument map designates, each once, in the
+    /// Every instrument this instrument table designates, each once, in the
     /// order they first take effect.
     ///
-    /// The array starts with ``defaultInstrument`` if this instrument map is
+    /// The array starts with ``defaultInstrument`` if this instrument table is
     /// empty or its first entry comes after time zero.
     public var instruments: [Instrument] {
         guard let first = entries.first
@@ -90,7 +90,7 @@ extension InstrumentMap {
 
     // MARK: Public Instance Methods
 
-    /// Inserts an instrument entry into this instrument map at the given time.
+    /// Inserts an instrument entry into this instrument table at the given time.
     ///
     /// An entry that exactly duplicates one already present — same time,
     /// instrument, and extras — carries no information beyond the original
@@ -121,10 +121,10 @@ extension InstrumentMap {
                 extras: extras)
     }
 
-    /// Merges the entries from another instrument map into this instrument map.
+    /// Merges the entries from another instrument table into this instrument table.
     ///
-    /// - Parameter other:  The instrument map whose entries are merged into
-    ///                     this instrument map.
+    /// - Parameter other:  The instrument table whose entries are merged into
+    ///                     this instrument table.
     public mutating func merge(with other: Self) {
         guard !other.entries.isEmpty
         else { return }
@@ -155,11 +155,11 @@ extension InstrumentMap {
     /// exact-duplicate case ``insert(time:instrument:extras:)`` silently
     /// collapses. There, the moved entry merges into that pre-existing one
     /// instead of being kept separately, so `entryID` no longer names anything in
-    /// the map; the returned identity is the survivor’s instead, which a
+    /// the table; the returned identity is the survivor’s instead, which a
     /// caller must switch to addressing from then on.
     ///
-    /// - Parameter entryID: The identity of the entry to move.
-    /// - Parameter time:    The new time for the entry.
+    /// - Parameter entryID:    The identity of the entry to move.
+    /// - Parameter time:       The new time for the entry.
     ///
     /// - Returns:  The identity that now addresses this entry’s content — `entryID`
     ///             itself, unless the move merged it into a pre-existing exact
@@ -185,8 +185,8 @@ extension InstrumentMap {
 
     /// Removes the instrument entry with the given identity, if present.
     ///
-    /// - Parameter entryID:  The identity of the entry to remove. An identity
-    ///                       naming no entry is ignored.
+    /// - Parameter entryID:    The identity of the entry to remove. An identity
+    ///                         naming no entry is ignored.
     ///
     /// - Returns:  `true` if `entryID` identified an entry and it was
     ///             removed, `false` if `entryID` named no entry and nothing
@@ -225,11 +225,11 @@ extension InstrumentMap {
     /// wasn’t referencing has to be the one that gives way, never the one
     /// it was.
     ///
-    /// - Parameter entryID:     The identity of the entry to replace. An
-    ///                          identity naming no entry is ignored.
-    /// - Parameter instrument:  The new instrument for the entry.
-    /// - Parameter extras:      The new optional extra data for the entry.
-    ///                          Defaults to `nil`.
+    /// - Parameter entryID:    The identity of the entry to replace. An
+    ///                         identity naming no entry is ignored.
+    /// - Parameter instrument: The new instrument for the entry.
+    /// - Parameter extras:     The new optional extra data for the entry.
+    ///                         Defaults to `nil`.
     ///
     /// - Returns:  A pair of `updated`, `true` if `entryID` identified an
     ///             entry and it was updated, `false` if `entryID` named no
@@ -303,13 +303,16 @@ extension InstrumentMap {
 
 // MARK: - Codable
 
-extension InstrumentMap: Codable {
-    /// Creates an instrument map by decoding from the provided decoder.
+extension InstrumentTable: Codable {
+
+    // MARK: Public Initializers
+
+    /// Creates an instrument table by decoding from the provided decoder.
     ///
     /// Entries that exactly duplicate one another — same time, instrument,
     /// and extras — are collapsed, keeping the first occurrence, the same
     /// rule ``insert(time:instrument:extras:)`` applies to a live instrument
-    /// map. This is needed here, not just belt and suspenders: a document saved
+    /// table. This is needed here, not just belt and suspenders: a document saved
     /// before that dedup rule existed can have duplicates already baked into
     /// its encoded form, and decoding is the only place left to catch those.
     ///
@@ -329,7 +332,9 @@ extension InstrumentMap: Codable {
         self.hasExtras = Self.hasExtras(in: entries)
     }
 
-    /// Encodes this instrument map into the provided encoder.
+    // MARK: Public Instance Methods
+
+    /// Encodes this instrument table into the provided encoder.
     ///
     /// - Parameter encoder:    The encoder to write to.
     ///
@@ -357,16 +362,16 @@ extension InstrumentMap: Codable {
 
 // MARK: - RandomAccessCollection
 
-extension InstrumentMap: RandomAccessCollection {
+extension InstrumentTable: RandomAccessCollection {
 
     // MARK: Public Instance Properties
 
-    /// The position one past the last entry in this instrument map.
+    /// The position one past the last entry in this instrument table.
     public var endIndex: Index {
         Index(entries.endIndex)
     }
 
-    /// The position of the first entry in this instrument map, or ``endIndex`` if this instrument map is
+    /// The position of the first entry in this instrument table, or ``endIndex`` if this instrument table is
     /// empty.
     public var startIndex: Index {
         Index(entries.startIndex)
@@ -376,7 +381,7 @@ extension InstrumentMap: RandomAccessCollection {
 
     /// Returns the entry at the given position.
     ///
-    /// - Parameter position:   A valid position in this instrument map, other than ``endIndex``.
+    /// - Parameter position:   A valid position in this instrument table, other than ``endIndex``.
     ///
     /// - Returns:  The ``Entry`` at `position`.
     public subscript(position: Index) -> Entry {
@@ -385,10 +390,10 @@ extension InstrumentMap: RandomAccessCollection {
 
     // MARK: Public Instance Methods
 
-    /// Returns the number of positions between two positions in this instrument map.
+    /// Returns the number of positions between two positions in this instrument table.
     ///
-    /// - Parameter start:  A valid position in this instrument map.
-    /// - Parameter end:    Another valid position in this instrument map.
+    /// - Parameter start:  A valid position in this instrument table.
+    /// - Parameter end:    Another valid position in this instrument table.
     ///
     /// - Returns:  The distance from `start` to `end`, negative if `end` precedes `start`.
     public func distance(from start: Index,
@@ -398,7 +403,7 @@ extension InstrumentMap: RandomAccessCollection {
 
     /// Returns a position offset by the given distance from the given position.
     ///
-    /// - Parameter index:      A valid position in this instrument map.
+    /// - Parameter index:      A valid position in this instrument table.
     /// - Parameter distance:   The distance to offset `index` by.
     ///
     /// - Returns:  The position `distance` positions from `index`.
@@ -409,7 +414,7 @@ extension InstrumentMap: RandomAccessCollection {
 
     /// Returns the position immediately after the given position.
     ///
-    /// - Parameter index:  A valid position in this instrument map, other than ``endIndex``.
+    /// - Parameter index:  A valid position in this instrument table, other than ``endIndex``.
     ///
     /// - Returns:  The position after `index`.
     public func index(after index: Index) -> Index {
@@ -418,7 +423,7 @@ extension InstrumentMap: RandomAccessCollection {
 
     /// Returns the position immediately before the given position.
     ///
-    /// - Parameter index:  A valid position in this instrument map, other than ``startIndex``.
+    /// - Parameter index:  A valid position in this instrument table, other than ``startIndex``.
     ///
     /// - Returns:  The position before `index`.
     public func index(before index: Index) -> Index {
@@ -428,5 +433,5 @@ extension InstrumentMap: RandomAccessCollection {
 
 // MARK: - Sendable
 
-extension InstrumentMap: Sendable {
+extension InstrumentTable: Sendable {
 }

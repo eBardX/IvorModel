@@ -25,7 +25,7 @@ extension NoteNumber: TemplatePitch {
         let base = value - self.pitchClass + pitchClass
 
         return [base - 12, base, base + 12]
-            .filter { $0 >= 0 }
+            .filter { $0 >= 0 && Self.isValid(UInt($0)) }
             .min { abs($0 - value) < abs($1 - value) }
             .flatMap { Self(uintValue: UInt($0)) }
     }

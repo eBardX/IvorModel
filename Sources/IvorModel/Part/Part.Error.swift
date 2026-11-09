@@ -11,8 +11,8 @@ extension Part {
         /// A failure that occurred in the part’s dynamic map.
         case dynamicMapFailure(DynamicMap<TimeType>.Error)
 
-        /// A failure that occurred in the part’s instrument map.
-        case instrumentMapFailure(InstrumentMap<TimeType>.Error)
+        /// A failure that occurred in the part’s instrument table.
+        case instrumentTableFailure(InstrumentTable<TimeType>.Error)
 
         /// A failure that occurred in the part’s note table.
         case noteTableFailure(NoteTable<TimeType, PitchType>.Error)
@@ -25,6 +25,9 @@ extension Part {
 // MARK: - EnhancedError
 
 extension Part.Error: EnhancedError {
+
+    // MARK: Public Instance Properties
+
     /// The error category for this error.
     public var category: Category? {
         Category("IvorModel")
@@ -36,8 +39,8 @@ extension Part.Error: EnhancedError {
         case let .dynamicMapFailure(error):
             "Dynamic map failure: \(error.message)"
 
-        case let .instrumentMapFailure(error):
-            "Instrument map failure: \(error.message)"
+        case let .instrumentTableFailure(error):
+            "Instrument table failure: \(error.message)"
 
         case let .noteTableFailure(error):
             "Note table failure: \(error.message)"

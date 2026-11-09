@@ -11,16 +11,16 @@ extension Work {
 
     /// Quantizes note attack/release times across the beat-time parts in this work that `partIDs`
     /// names, along with any parameter maps selected by `applyTo` and, when `applyTo` contains
-    /// ``MapTargets/tempo``, the work’s own tempo map. The tempo map is work-wide, so it is carried
+    /// ``TransformTargets/tempo``, the work’s own tempo map. The tempo map is work-wide, so it is carried
     /// along whichever parts are targeted.
     ///
-    /// - Parameter factors:   An array of positive integer subdivision factors.
-    /// - Parameter noteIDs:   The identities of the notes to quantize, or `nil` to quantize every
-    ///                        note in the targeted parts.
-    /// - Parameter applyTo:   The parameter maps (and tempo map) to quantize along with each part’s
-    ///                        note table. Defaults to ``MapTargets/all``.
-    /// - Parameter partIDs:   The IDs of the parts to transform, or `nil` (the default) for every
-    ///                        part. IDs naming no part are ignored.
+    /// - Parameter factors:    An array of positive integer subdivision factors.
+    /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize every
+    ///                         note in the targeted parts.
+    /// - Parameter applyTo:    The parameter maps (and tempo map) to quantize along with each part’s
+    ///                         note table. Defaults to ``TransformTargets/all``.
+    /// - Parameter partIDs:    The IDs of the parts to transform, or `nil` (the default) for every
+    ///                         part. IDs naming no part are ignored.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
@@ -29,7 +29,7 @@ extension Work {
     ///             otherwise a transform-failure case naming the part.
     public mutating func quantize(to factors: [Int],
                                   noteIDs: Set<NoteID>? = nil,
-                                  applyTo: MapTargets = .all,
+                                  applyTo: TransformTargets = .all,
                                   partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 
@@ -101,7 +101,7 @@ extension Work {
     //
     private static func _quantized(tempoMap: TempoMap,
                                    using quantizer: BeatQuantizer,
-                                   applyTo: MapTargets) -> TempoMap {
+                                   applyTo: TransformTargets) -> TempoMap {
         guard applyTo.contains(.tempo)
         else { return tempoMap }
 

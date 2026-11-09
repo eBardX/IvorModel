@@ -4,7 +4,7 @@ public import IvorTiming
 public import IvorTuning
 public import XestiTools
 
-/// A named musical part containing a note table and its parameter maps.
+/// A named musical part containing a note table, its parameter maps, and its instrument table.
 public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     // MARK: Public Type Aliases
@@ -17,31 +17,31 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     // MARK: Public Initializers
 
-    /// Creates a part with the given name and optional note/map data and extras.
+    /// Creates a part with the given name and optional note, map, and instrument data and extras.
     ///
-    /// - Parameter name:           The display name of the part. Its whitespace is
-    ///                             normalized to a single line.
-    /// - Parameter noteTable:      The note table for the part. Defaults to an
-    ///                             empty note table.
-    /// - Parameter dynamicMap:     The dynamic map for the part. Defaults to
-    ///                             an empty dynamic map.
-    /// - Parameter instrumentMap:  The instrument map for the part. Defaults to
-    ///                             an empty instrument map.
-    /// - Parameter panMap:         The pan map for the part. Defaults to an
-    ///                             empty pan map.
-    /// - Parameter extras:         Format-specific data about the part as a whole. Empty
-    ///                             extras are stored as `nil`. Defaults to `nil`.
+    /// - Parameter name:               The display name of the part. Its whitespace is
+    ///                                 normalized to a single line.
+    /// - Parameter noteTable:          The note table for the part. Defaults to an
+    ///                                 empty note table.
+    /// - Parameter dynamicMap:         The dynamic map for the part. Defaults to
+    ///                                 an empty dynamic map.
+    /// - Parameter instrumentTable:    The instrument table for the part. Defaults to
+    ///                                 an empty instrument table.
+    /// - Parameter panMap:             The pan map for the part. Defaults to an
+    ///                                 empty pan map.
+    /// - Parameter extras:             Format-specific data about the part as a whole. Empty
+    ///                                 extras are stored as `nil`. Defaults to `nil`.
     public init(name: String,
                 noteTable: NoteTable<TimeType, PitchType>? = nil,
                 dynamicMap: DynamicMap<TimeType>? = nil,
-                instrumentMap: InstrumentMap<TimeType>? = nil,
+                instrumentTable: InstrumentTable<TimeType>? = nil,
                 panMap: PanMap<TimeType>? = nil,
                 extras: Extras? = nil) {
         self.init(partID: PartID(),
                   name: name,
                   noteTable: noteTable,
                   dynamicMap: dynamicMap,
-                  instrumentMap: instrumentMap,
+                  instrumentTable: instrumentTable,
                   panMap: panMap,
                   extras: extras)
     }
@@ -63,8 +63,8 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
         didSet { extras = Self._normalized(extras) }
     }
 
-    /// The instrument map for this part.
-    public var instrumentMap: InstrumentMap<TimeType>
+    /// The instrument table for this part.
+    public var instrumentTable: InstrumentTable<TimeType>
 
     /// The display name of this part, with whitespace normalized to a single line.
     public var name: String {
@@ -88,12 +88,12 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
                   name: String,
                   noteTable: NoteTable<TimeType, PitchType>? = nil,
                   dynamicMap: DynamicMap<TimeType>? = nil,
-                  instrumentMap: InstrumentMap<TimeType>? = nil,
+                  instrumentTable: InstrumentTable<TimeType>? = nil,
                   panMap: PanMap<TimeType>? = nil,
                   extras: Extras? = nil) {
         self.dynamicMap = dynamicMap ?? DynamicMap()
         self.extras = Self._normalized(extras)
-        self.instrumentMap = instrumentMap ?? InstrumentMap()
+        self.instrumentTable = instrumentTable ?? InstrumentTable()
         //
         // `didSet` doesn't run during initialization, so normalize here too:
         //
@@ -129,7 +129,7 @@ extension Part {
 
     /// Returns the identities of the notes in this part whose attack time falls within a range.
     ///
-    /// - Parameter range:   The closed range of attack times to select.
+    /// - Parameter range:  The closed range of attack times to select.
     ///
     /// - Returns:  The identities of the matching notes, for use with any transform’s
     ///             `noteIDs:` parameter.
@@ -143,7 +143,7 @@ extension Part {
         Self(name: name,
              noteTable: noteTable,
              dynamicMap: dynamicMap,
-             instrumentMap: instrumentMap,
+             instrumentTable: instrumentTable,
              panMap: panMap,
              extras: extras)
     }
@@ -151,7 +151,7 @@ extension Part {
     /// Returns the identities of the notes in this part whose pitch — start, end, or anything a
     /// portamento glides through — falls within a range.
     ///
-    /// - Parameter range:   The closed range of pitches to select.
+    /// - Parameter range:  The closed range of pitches to select.
     ///
     /// - Returns:  The identities of the matching notes, for use with any transform’s
     ///             `noteIDs:` parameter.
@@ -163,7 +163,7 @@ extension Part {
     /// that is, whose attack-to-release span overlaps the range, not only notes that attack
     /// within it.
     ///
-    /// - Parameter range:   The closed range of times to select.
+    /// - Parameter range:  The closed range of times to select.
     ///
     /// - Returns:  The identities of the matching notes, for use with any transform’s
     ///             `noteIDs:` parameter.
@@ -198,8 +198,8 @@ extension Part: Codable {
         let extras = try container.decodeIfPresent(Extras.self,
                                                    forKey: .extras)
 
-        let instrumentMap = try container.decode(InstrumentMap<TimeType>.self,
-                                                 forKey: .instrumentMap)
+        let instrumentTable = try container.decode(InstrumentTable<TimeType>.self,
+                                                   forKey: .instrumentTable)
 
         let name = try container.decode(String.self,
                                         forKey: .name)
@@ -217,7 +217,7 @@ extension Part: Codable {
                   name: name,
                   noteTable: noteTable,
                   dynamicMap: dynamicMap,
-                  instrumentMap: instrumentMap,
+                  instrumentTable: instrumentTable,
                   panMap: panMap,
                   extras: extras)
     }
@@ -247,8 +247,8 @@ extension Part: Codable {
         try container.encode(dynamicMap,
                              forKey: .dynamicMap)
 
-        try container.encode(instrumentMap,
-                             forKey: .instrumentMap)
+        try container.encode(instrumentTable,
+                             forKey: .instrumentTable)
 
         try container.encode(panMap,
                              forKey: .panMap)
@@ -262,7 +262,7 @@ extension Part: Codable {
     private enum CodingKeys: String, CodingKey {
         case dynamicMap
         case extras
-        case instrumentMap
+        case instrumentTable
         case name
         case noteTable
         case panMap

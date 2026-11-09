@@ -486,8 +486,8 @@ func makeSourceContextWork(instrument: Instrument = Fixtures.oboe) -> Work {
     var part = makePlainSourcePart()
 
     part.dynamicMap.insert(time: .zero, dynamic: .f)
-    part.instrumentMap.insert(time: .zero, instrument: Fixtures.flute)
-    part.instrumentMap.insert(time: beatTime(1), instrument: instrument)
+    part.instrumentTable.insert(time: .zero, instrument: Fixtures.flute)
+    part.instrumentTable.insert(time: beatTime(1), instrument: instrument)
     part.panMap.insert(time: .zero, pan: Pan(horizontal: 30))
     part.panMap.insert(time: beatTime(1), pan: Fixtures.leftPan)
 

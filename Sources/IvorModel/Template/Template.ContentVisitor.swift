@@ -3,6 +3,9 @@
 public import IvorTiming
 
 extension Template {
+
+    // MARK: Public Nested Types
+
     /// A type that works with a template’s model at its concrete time and
     /// pitch types.
     ///

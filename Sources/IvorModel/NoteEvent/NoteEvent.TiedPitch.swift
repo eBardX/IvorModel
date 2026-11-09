@@ -172,6 +172,9 @@ extension NoteEvent.TiedPitch: Codable {
 // MARK: - Comparable
 
 extension NoteEvent.TiedPitch: Comparable {
+
+    // MARK: Public Type Methods
+
     /// Returns a Boolean value indicating whether the left tied pitch compares less than the right.
     ///
     /// - Parameter lhs:    The left-hand tied pitch.

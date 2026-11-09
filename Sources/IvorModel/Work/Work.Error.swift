@@ -5,6 +5,9 @@ public import IvorTuning
 public import XestiTools
 
 extension Work {
+
+    // MARK: Public Nested Types
+
     /// An error thrown by ``Work`` operations.
     public enum Error {
         /// Two parts share a part ID.
@@ -20,9 +23,9 @@ extension Work {
         /// The quantization factors array is empty.
         case emptyQuantizationFactors
 
-        /// A failure that occurred in a part’s instrument map while carrying it along with a
+        /// A failure that occurred in a part’s instrument table while carrying it along with a
         /// transform.
-        case instrumentMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
+        case instrumentTableTransformFailure(kind: TransformKind, partID: PartID, detail: String)
 
         /// The conversion context’s keyboard layout is invalid for the conversion or for the
         /// context’s tuning system.
@@ -84,6 +87,9 @@ extension Work {
 // MARK: - EnhancedError
 
 extension Work.Error: EnhancedError {
+
+    // MARK: Public Instance Properties
+
     /// The error category for this error.
     public var category: Category? {
         Category("IvorModel")
@@ -104,8 +110,8 @@ extension Work.Error: EnhancedError {
         case .emptyQuantizationFactors:
             "Invalid quantization factors: empty"
 
-        case let .instrumentMapTransformFailure(kind, partID, detail):
-            "Instrument map failure during \(kind) of part \(partID.stringValue): \(detail)"
+        case let .instrumentTableTransformFailure(kind, partID, detail):
+            "Instrument table failure during \(kind) of part \(partID.stringValue): \(detail)"
 
         case let .invalidKeyboardLayout(problem):
             TuningError.invalidKeyboardLayout(problem).message

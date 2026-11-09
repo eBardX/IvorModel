@@ -115,11 +115,11 @@ extension NoteTable {
 
     /// Inverts note pitches around a pitch range.
     ///
-    /// - Parameter pitchRange:   The pitch range to invert pitches around. `nil` resolves to the
-    ///                           table’s own pitch range, or — when `noteIDs` is non-`nil` — the
-    ///                           selected notes’ own pitch range.
-    /// - Parameter noteIDs:      The identities of the notes to invert, or `nil` to invert every
-    ///                           note in the table.
+    /// - Parameter pitchRange: The pitch range to invert pitches around. `nil` resolves to the
+    ///                         table’s own pitch range, or — when `noteIDs` is non-`nil` — the
+    ///                         selected notes’ own pitch range.
+    /// - Parameter noteIDs:    The identities of the notes to invert, or `nil` to invert every
+    ///                         note in the table.
     ///
     /// - Throws:   ``NoteTable/Error/invalidAnchor`` if `pitchRange` does not contain the pitch
     ///             range of the notes being inverted; otherwise,
@@ -199,11 +199,11 @@ extension NoteTable {
     /// note, or stays on its note when no reversed note comes before it. Every other extra,
     /// including a note’s attack and release velocities, stays on its note unchanged.
     ///
-    /// - Parameter timeRange:   The time range to mirror attack times around. `nil` resolves to
-    ///                          the table’s own time range, or — when `noteIDs` is non-`nil` — the
-    ///                          selected notes’ own time range.
-    /// - Parameter noteIDs:     The identities of the notes to reverse, or `nil` to reverse every
-    ///                          note in the table.
+    /// - Parameter timeRange:  The time range to mirror attack times around. `nil` resolves to
+    ///                         the table’s own time range, or — when `noteIDs` is non-`nil` — the
+    ///                         selected notes’ own time range.
+    /// - Parameter noteIDs:    The identities of the notes to reverse, or `nil` to reverse every
+    ///                         note in the table.
     ///
     /// - Throws:   ``NoteTable/Error/invalidAnchor`` if `timeRange` does not contain the time range
     ///             of the notes being reversed; otherwise,

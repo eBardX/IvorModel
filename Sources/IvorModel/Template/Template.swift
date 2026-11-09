@@ -15,9 +15,9 @@ public struct Template {
     /// Creates a new template with the given name and content, recorded as an exact analysis
     /// at the content’s maximum order.
     ///
-    /// - Parameter name:     The display name of the template. Its whitespace is normalized to
-    ///                       a single line.
-    /// - Parameter content:  The ``Template/Content`` holding the analysis data.
+    /// - Parameter name:       The display name of the template. Its whitespace is normalized to
+    ///                         a single line.
+    /// - Parameter content:    The ``Template/Content`` holding the analysis data.
     public init(name: String,
                 content: Content) {
         self.init(name: name,

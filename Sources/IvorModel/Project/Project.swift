@@ -99,7 +99,7 @@ extension Project {
 
     /// Returns the template with the given ID, or `nil` if not found.
     ///
-    /// - Parameter templateID:     The ID of the template to fetch.
+    /// - Parameter templateID: The ID of the template to fetch.
     ///
     /// - Returns:  The matching ``Template``, or `nil` if no template with that ID exists.
     public func fetchTemplate(_ templateID: TemplateID) -> Template? {
@@ -108,7 +108,7 @@ extension Project {
 
     /// Returns the work with the given ID, or `nil` if not found.
     ///
-    /// - Parameter workID:     The ID of the work to fetch.
+    /// - Parameter workID: The ID of the work to fetch.
     ///
     /// - Returns:  The matching ``Work``, or `nil` if no work with that ID exists.
     public func fetchWork(_ workID: WorkID) -> Work? {
@@ -117,7 +117,7 @@ extension Project {
 
     /// Removes the template with the given ID from this project.
     ///
-    /// - Parameter templateID:     The ID of the template to remove.
+    /// - Parameter templateID: The ID of the template to remove.
     ///
     /// - Returns:  The removed ``Template``, or `nil` if no template with that ID exists.
     ///
@@ -137,7 +137,7 @@ extension Project {
     /// Removes the unreadable work with the given ID from this project, so that saving no longer
     /// keeps it.
     ///
-    /// - Parameter workID:     The ID of the unreadable work to remove.
+    /// - Parameter workID: The ID of the unreadable work to remove.
     ///
     /// - Returns:  The removed ``UnreadableWork``, or `nil` if no unreadable work has that ID.
     @discardableResult
@@ -150,7 +150,7 @@ extension Project {
 
     /// Removes the work with the given ID from this project.
     ///
-    /// - Parameter workID:     The ID of the work to remove.
+    /// - Parameter workID: The ID of the work to remove.
     ///
     /// - Returns:  The removed ``Work``, or `nil` if no work with that ID exists.
     ///

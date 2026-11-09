@@ -3,7 +3,7 @@
 public import IvorTiming
 public import XestiNumbers
 
-extension InstrumentMap {
+extension InstrumentTable {
 
     // MARK: Public Instance Methods
 
@@ -11,15 +11,15 @@ extension InstrumentMap {
     ///
     /// - Parameter factor:     A rational number ≥ 1 by which to stretch the selected entry times.
     /// - Parameter anchor:     The low time bound to stretch times relative to. `nil` resolves to
-    ///                         the map’s own range, or — when `entryIDs` is non-`nil` — the
+    ///                         the table’s own range, or — when `entryIDs` is non-`nil` — the
     ///                         selected entries’ own range.
     /// - Parameter entryIDs:   The identities of the entries to augment, or `nil` to augment every
-    ///                         entry in the map.
+    ///                         entry in the table.
     ///
-    /// - Throws:   ``InstrumentMap/Error/invalidAugmentationFactor(_:)`` if `factor` is not a
-    ///             rational number ≥ 1; ``InstrumentMap/Error/invalidAnchor`` if `anchor` is later
+    /// - Throws:   ``InstrumentTable/Error/invalidAugmentationFactor(_:)`` if `factor` is not a
+    ///             rational number ≥ 1; ``InstrumentTable/Error/invalidAnchor`` if `anchor` is later
     ///             than the low bound of the entries being augmented; otherwise,
-    ///             ``InstrumentMap/Error/augmentFailure(_:)`` if an entry cannot be augmented.
+    ///             ``InstrumentTable/Error/augmentFailure(_:)`` if an entry cannot be augmented.
     public mutating func augment(by factor: Number,
                                  anchor: TimeType? = nil,
                                  entryIDs: Set<EntryID>? = nil) throws(Error) {
@@ -60,15 +60,15 @@ extension InstrumentMap {
     /// - Parameter factor:     A rational number ≥ 1 by which to compress the selected entry
     ///                         times.
     /// - Parameter anchor:     The low time bound to compress times relative to. `nil` resolves to
-    ///                         the map’s own range, or — when `entryIDs` is non-`nil` — the
+    ///                         the table’s own range, or — when `entryIDs` is non-`nil` — the
     ///                         selected entries’ own range.
     /// - Parameter entryIDs:   The identities of the entries to diminish, or `nil` to diminish
-    ///                         every entry in the map.
+    ///                         every entry in the table.
     ///
-    /// - Throws:   ``InstrumentMap/Error/invalidDiminutionFactor(_:)`` if `factor` is not a
-    ///             rational number ≥ 1; ``InstrumentMap/Error/invalidAnchor`` if `anchor` is later
+    /// - Throws:   ``InstrumentTable/Error/invalidDiminutionFactor(_:)`` if `factor` is not a
+    ///             rational number ≥ 1; ``InstrumentTable/Error/invalidAnchor`` if `anchor` is later
     ///             than the low bound of the entries being diminished; otherwise,
-    ///             ``InstrumentMap/Error/diminishFailure(_:)`` if an entry cannot be diminished.
+    ///             ``InstrumentTable/Error/diminishFailure(_:)`` if an entry cannot be diminished.
     public mutating func diminish(by factor: Number,
                                   anchor: TimeType? = nil,
                                   entryIDs: Set<EntryID>? = nil) throws(Error) {
@@ -109,9 +109,9 @@ extension InstrumentMap {
     /// - Parameter directedDuration:   The directed duration by which to move the selected entry
     ///                                 times.
     /// - Parameter entryIDs:           The identities of the entries to move, or `nil` to move
-    ///                                 every entry in the map.
+    ///                                 every entry in the table.
     ///
-    /// - Throws:   ``InstrumentMap/Error/moveFailure(_:)`` if an entry cannot be moved.
+    /// - Throws:   ``InstrumentTable/Error/moveFailure(_:)`` if an entry cannot be moved.
     public mutating func move(by directedDuration: DirectedDuration<TimeType.DurationType>,
                               entryIDs: Set<EntryID>? = nil) throws(Error) {
         guard !entries.isEmpty,
@@ -146,15 +146,15 @@ extension InstrumentMap {
     /// instrument after the range isn’t restored, just as the interpolating maps don’t restore
     /// their values after it.
     ///
-    /// - Parameter timeRange:   The time range to mirror entry times around. `nil` resolves to the
-    ///                          map’s own time range, or — when `entryIDs` is non-`nil` — the
-    ///                          selected entries’ own time range.
-    /// - Parameter entryIDs:    The identities of the entries to reverse, or `nil` to reverse every
-    ///                          entry in the map.
+    /// - Parameter timeRange:  The time range to mirror entry times around. `nil` resolves to the
+    ///                         table’s own time range, or — when `entryIDs` is non-`nil` — the
+    ///                         selected entries’ own time range.
+    /// - Parameter entryIDs:   The identities of the entries to reverse, or `nil` to reverse every
+    ///                         entry in the table.
     ///
-    /// - Throws:   ``InstrumentMap/Error/invalidAnchor`` if `timeRange` does not contain the time
+    /// - Throws:   ``InstrumentTable/Error/invalidAnchor`` if `timeRange` does not contain the time
     ///             range of the entries being reversed; otherwise,
-    ///             ``InstrumentMap/Error/reverseFailure(_:)`` if an entry cannot be reversed.
+    ///             ``InstrumentTable/Error/reverseFailure(_:)`` if an entry cannot be reversed.
     public mutating func reverse(within timeRange: ClosedRange<TimeType>? = nil,
                                  entryIDs: Set<EntryID>? = nil) throws(Error) {
         guard !entries.isEmpty
@@ -286,7 +286,7 @@ extension InstrumentMap {
 
 // MARK: -
 
-extension InstrumentMap where TimeType == BeatTime {
+extension InstrumentTable where TimeType == BeatTime {
 
     // MARK: Public Instance Methods
 
@@ -297,9 +297,9 @@ extension InstrumentMap where TimeType == BeatTime {
     /// this call to fail on, and snapping an entry to a grid point can never overflow the way a
     /// relative move can.
     ///
-    /// - Parameter quantizer:   The quantizer whose grid to snap entry times to.
-    /// - Parameter entryIDs:    The identities of the entries to quantize, or `nil` to quantize
-    ///                          every entry in the map.
+    /// - Parameter quantizer:  The quantizer whose grid to snap entry times to.
+    /// - Parameter entryIDs:   The identities of the entries to quantize, or `nil` to quantize
+    ///                         every entry in the table.
     public mutating func quantize(using quantizer: BeatQuantizer,
                                   entryIDs: Set<EntryID>? = nil) {
         guard !entries.isEmpty

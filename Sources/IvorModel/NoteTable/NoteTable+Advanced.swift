@@ -55,9 +55,9 @@ extension NoteTable where TimeType == BeatTime {
 
     /// Quantizes note attack and release times to the nearest grid point defined by `quantizer`.
     ///
-    /// - Parameter quantizer:   The quantizer whose grid to snap attack/release times to.
-    /// - Parameter noteIDs:     The identities of the notes to quantize, or `nil` to quantize
-    ///                          every note in the table.
+    /// - Parameter quantizer:  The quantizer whose grid to snap attack/release times to.
+    /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize
+    ///                         every note in the table.
     public mutating func quantize(using quantizer: BeatQuantizer,
                                   noteIDs: Set<NoteID>? = nil) {
         guard !notes.isEmpty

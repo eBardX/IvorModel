@@ -3,8 +3,11 @@
 public import XestiNumbers
 public import XestiTools
 
-extension InstrumentMap {
-    /// An error thrown by ``InstrumentMap`` operations.
+extension InstrumentTable {
+
+    // MARK: Public Nested Types
+
+    /// An error thrown by ``InstrumentTable`` operations.
     public enum Error {
         /// A failure that occurred while augmenting an entry.
         case augmentFailure(TimeType)
@@ -31,7 +34,10 @@ extension InstrumentMap {
 
 // MARK: - EnhancedError
 
-extension InstrumentMap.Error: EnhancedError {
+extension InstrumentTable.Error: EnhancedError {
+
+    // MARK: Public Instance Properties
+
     /// The error category for this error.
     public var category: Category? {
         Category("IvorModel")
@@ -41,10 +47,10 @@ extension InstrumentMap.Error: EnhancedError {
     public var message: String {
         switch self {
         case let .augmentFailure(time):
-            "Unable to augment instrument map entry, time: \(time)"
+            "Unable to augment instrument table entry, time: \(time)"
 
         case let .diminishFailure(time):
-            "Unable to diminish instrument map entry, time: \(time)"
+            "Unable to diminish instrument table entry, time: \(time)"
 
         case .invalidAnchor:
             "Invalid anchor: does not contain the range of entries it is being applied to"
@@ -56,20 +62,20 @@ extension InstrumentMap.Error: EnhancedError {
             "Invalid diminution factor: \(factor)"
 
         case let .moveFailure(time):
-            "Unable to move instrument map entry, time: \(time)"
+            "Unable to move instrument table entry, time: \(time)"
 
         case let .reverseFailure(time):
-            "Unable to reverse instrument map entry, time: \(time)"
+            "Unable to reverse instrument table entry, time: \(time)"
         }
     }
 }
 
 // MARK: - Equatable
 
-extension InstrumentMap.Error: Equatable {
+extension InstrumentTable.Error: Equatable {
 }
 
 // MARK: - Sendable
 
-extension InstrumentMap.Error: Sendable {
+extension InstrumentTable.Error: Sendable {
 }

@@ -47,7 +47,7 @@ extension PartTests {
         #expect(decoded.name == original.name)
         #expect(decoded.timeRange == nil)
         #expect(decoded.dynamicMap.isEmpty)
-        #expect(decoded.instrumentMap.isEmpty)
+        #expect(decoded.instrumentTable.isEmpty)
         #expect(decoded.panMap.isEmpty)
     }
 
@@ -98,7 +98,7 @@ extension PartTests {
         #expect(duplicate.partID != original.partID)
         #expect(duplicate.name == original.name)
         #expect(duplicate.dynamicMap.isEmpty == original.dynamicMap.isEmpty)
-        #expect(duplicate.instrumentMap.isEmpty == original.instrumentMap.isEmpty)
+        #expect(duplicate.instrumentTable.isEmpty == original.instrumentTable.isEmpty)
         #expect(duplicate.panMap.isEmpty == original.panMap.isEmpty)
     }
 
@@ -125,7 +125,7 @@ extension PartTests {
         #expect(part.name == "Piano")
         #expect(part.timeRange == nil)
         #expect(part.dynamicMap.isEmpty)
-        #expect(part.instrumentMap.isEmpty)
+        #expect(part.instrumentTable.isEmpty)
         #expect(part.panMap.isEmpty)
     }
 

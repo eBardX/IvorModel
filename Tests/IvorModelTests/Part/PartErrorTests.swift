@@ -28,10 +28,10 @@ extension PartErrorTests {
     }
 
     @Test
-    func message_instrumentMapFailure() {
-        let msg = PartSB.Error.instrumentMapFailure(.invalidAnchor).message
+    func message_instrumentTableFailure() {
+        let msg = PartSB.Error.instrumentTableFailure(.invalidAnchor).message
 
-        #expect(msg.contains("Instrument map"))
+        #expect(msg.contains("Instrument table"))
         #expect(msg.contains("anchor"))
     }
 

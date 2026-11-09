@@ -105,6 +105,9 @@ extension NoteEvent: Codable {
 // MARK: - Comparable
 
 extension NoteEvent: Comparable {
+
+    // MARK: Public Type Methods
+
     /// Returns a Boolean value indicating whether the left note event compares less than the right.
     ///
     /// - Parameter lhs:    The left-hand note event.

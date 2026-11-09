@@ -243,6 +243,9 @@ extension Pan {
 // MARK: - Codable
 
 extension Pan: Codable {
+
+    // MARK: Public Initializers
+
     /// Creates a pan position by decoding from the provided decoder.
     ///
     /// A pan position is encoded as a two-element array of its horizontal and
@@ -271,6 +274,8 @@ extension Pan: Codable {
         self = pan
     }
 
+    // MARK: Public Instance Methods
+
     /// Encodes this pan position into the provided encoder.
     ///
     /// - Parameter encoder:    The encoder to write to.
@@ -287,6 +292,9 @@ extension Pan: Codable {
 // MARK: - CustomStringConvertible
 
 extension Pan: CustomStringConvertible {
+
+    // MARK: Public Instance Properties
+
     /// The plain string representation of this pan position.
     public var description: String {
         plain

@@ -3,6 +3,9 @@
 public import XestiTools
 
 extension Template {
+
+    // MARK: Public Nested Types
+
     /// An error thrown by ``Template`` operations.
     public enum Error {
         /// The generation options don’t match the template’s pitch notation and time basis, or
@@ -61,6 +64,9 @@ extension Template {
 // MARK: - EnhancedError
 
 extension Template.Error: EnhancedError {
+
+    // MARK: Public Instance Properties
+
     /// The error category for this error.
     public var category: Category? {
         Category("IvorModel")

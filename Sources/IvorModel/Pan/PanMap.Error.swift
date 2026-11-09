@@ -4,6 +4,9 @@ public import XestiNumbers
 public import XestiTools
 
 extension PanMap {
+
+    // MARK: Public Nested Types
+
     /// An error thrown by ``PanMap`` operations.
     public enum Error {
         /// A failure that occurred while augmenting an entry.
@@ -32,6 +35,9 @@ extension PanMap {
 // MARK: - EnhancedError
 
 extension PanMap.Error: EnhancedError {
+
+    // MARK: Public Instance Properties
+
     /// The error category for this error.
     public var category: Category? {
         Category("IvorModel")

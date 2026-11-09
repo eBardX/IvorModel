@@ -5,13 +5,13 @@ import IvorTiming
 import Testing
 import XestiNumbers
 
-struct InstrumentMapErrorTests {
+struct InstrumentTableErrorTests {
 }
 
 // MARK: -
 
-extension InstrumentMapErrorTests {
-    private typealias ErrorSB = InstrumentMap<BeatTime>.Error
+extension InstrumentTableErrorTests {
+    private typealias ErrorSB = InstrumentTable<BeatTime>.Error
 
     @Test
     func category() {

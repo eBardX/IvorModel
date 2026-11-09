@@ -157,8 +157,8 @@ extension PanMap {
     /// the returned identity is the survivor’s instead, which a caller must
     /// switch to addressing from then on.
     ///
-    /// - Parameter entryID: The identity of the entry to move.
-    /// - Parameter time:    The new time for the entry.
+    /// - Parameter entryID:    The identity of the entry to move.
+    /// - Parameter time:       The new time for the entry.
     ///
     /// - Returns:  The identity that now addresses this entry’s content — `entryID`
     ///             itself, unless the move merged it into a pre-existing exact
@@ -184,8 +184,8 @@ extension PanMap {
 
     /// Removes the pan entry with the given identity, if present.
     ///
-    /// - Parameter entryID:  The identity of the entry to remove. An identity
-    ///                       naming no entry is ignored.
+    /// - Parameter entryID:    The identity of the entry to remove. An identity
+    ///                         naming no entry is ignored.
     ///
     /// - Returns:  `true` if `entryID` identified an entry and it was
     ///             removed, `false` if `entryID` named no entry and nothing
@@ -224,11 +224,11 @@ extension PanMap {
     /// wasn’t referencing has to be the one that gives way, never the one
     /// it was.
     ///
-    /// - Parameter entryID: The identity of the entry to replace. An
-    ///                      identity naming no entry is ignored.
-    /// - Parameter pan:     The new pan position for the entry.
-    /// - Parameter extras:  The new optional extra data for the entry.
-    ///                      Defaults to `nil`.
+    /// - Parameter entryID:    The identity of the entry to replace. An
+    ///                         identity naming no entry is ignored.
+    /// - Parameter pan:        The new pan position for the entry.
+    /// - Parameter extras:     The new optional extra data for the entry.
+    ///                         Defaults to `nil`.
     ///
     /// - Returns:  A pair of `updated`, `true` if `entryID` identified an
     ///             entry and it was updated, `false` if `entryID` named no
@@ -312,6 +312,9 @@ extension PanMap {
 // MARK: - Codable
 
 extension PanMap: Codable {
+
+    // MARK: Public Initializers
+
     /// Creates a pan map by decoding from the provided decoder.
     ///
     /// Entries that exactly duplicate one another — same time, pan position,
@@ -336,6 +339,8 @@ extension PanMap: Codable {
         self.entries = Self.deduplicated(decodedEntries)
         self.hasExtras = Self.hasExtras(in: entries)
     }
+
+    // MARK: Public Instance Methods
 
     /// Encodes this pan map into the provided encoder.
     ///

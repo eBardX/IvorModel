@@ -11,10 +11,10 @@ extension Work {
     /// Inverts note pitches around a frequency range across the parts in this work that `partIDs`
     /// names.
     ///
-    /// - Parameter pitchRange:   The frequency range to invert pitches around. `nil` resolves to
-    ///                           the aggregate frequency range spanned by the targeted parts.
-    /// - Parameter partIDs:      The IDs of the parts to transform, or `nil` (the default) for
-    ///                           every part. IDs naming no part are ignored.
+    /// - Parameter pitchRange: The frequency range to invert pitches around. `nil` resolves to
+    ///                         the aggregate frequency range spanned by the targeted parts.
+    /// - Parameter partIDs:    The IDs of the parts to transform, or `nil` (the default) for
+    ///                         every part. IDs naming no part are ignored.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
@@ -59,10 +59,10 @@ extension Work {
     /// Inverts note pitches around a MIDI note number range across the parts in this work that
     /// `partIDs` names.
     ///
-    /// - Parameter pitchRange:   The note number range to invert pitches around. `nil` resolves to
-    ///                           the aggregate note number range spanned by the targeted parts.
-    /// - Parameter partIDs:      The IDs of the parts to transform, or `nil` (the default) for
-    ///                           every part. IDs naming no part are ignored.
+    /// - Parameter pitchRange: The note number range to invert pitches around. `nil` resolves to
+    ///                         the aggregate note number range spanned by the targeted parts.
+    /// - Parameter partIDs:    The IDs of the parts to transform, or `nil` (the default) for
+    ///                         every part. IDs naming no part are ignored.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use
@@ -107,10 +107,10 @@ extension Work {
     /// Inverts note pitches around a pitch range across the parts in this work that `partIDs`
     /// names.
     ///
-    /// - Parameter pitchRange:   The pitch range to invert pitches around. `nil` resolves to the
-    ///                           aggregate pitch range spanned by the targeted parts.
-    /// - Parameter partIDs:      The IDs of the parts to transform, or `nil` (the default) for
-    ///                           every part. IDs naming no part are ignored.
+    /// - Parameter pitchRange: The pitch range to invert pitches around. `nil` resolves to the
+    ///                         aggregate pitch range spanned by the targeted parts.
+    /// - Parameter partIDs:    The IDs of the parts to transform, or `nil` (the default) for
+    ///                         every part. IDs naming no part are ignored.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/pitchNotationMismatch(expected:)`` if this work does not use

@@ -2,7 +2,7 @@
 
 internal import XestiTools
 
-/// A unique identity for an entry in a time-keyed map, represented as a
+/// A unique identity for an entry in a time-keyed map or table, represented as a
 /// validated string.
 public struct EntryID {
 

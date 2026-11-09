@@ -2,16 +2,16 @@
 
 public import XestiTools
 
-extension InstrumentMap {
+extension InstrumentTable {
 
     // MARK: Public Nested Types
 
-    /// A snapshot of an entry in an ``InstrumentMap``.
+    /// A snapshot of an entry in an ``InstrumentTable``.
     ///
     /// There is deliberately no public initializer. Values of this type come only from an
-    /// ``InstrumentMap``, so the ``entryID`` of one identifies an entry in that map — until that
+    /// ``InstrumentTable``, so the ``entryID`` of one identifies an entry in that table — until that
     /// entry is removed — and can be passed back to methods such as
-    /// ``InstrumentMap/remove(entryID:)``.
+    /// ``InstrumentTable/remove(entryID:)``.
     public struct Entry {
 
         // MARK: Public Instance Properties
@@ -41,10 +41,10 @@ extension InstrumentMap {
 
 // MARK: - Equatable
 
-extension InstrumentMap.Entry: Equatable {
+extension InstrumentTable.Entry: Equatable {
 }
 
 // MARK: - Sendable
 
-extension InstrumentMap.Entry: Sendable {
+extension InstrumentTable.Entry: Sendable {
 }

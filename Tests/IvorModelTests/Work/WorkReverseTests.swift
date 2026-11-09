@@ -73,15 +73,15 @@ extension WorkReverseTests {
     func reverse_keepsWorkExtrasInWallWork() throws {
         //
         // `midiTimeCode` describes the whole file, so it lives on the work, where reversing an
-        // instrument map can't move it away from time zero.
+        // instrument table can't move it away from time zero.
         //
         let flute = try #require(Instrument(stringValue: "Flute"))
         let piccolo = try #require(Instrument(stringValue: "Piccolo"))
         var part = Part<WallTime, Pitch>(name: "Flute")
 
         part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
-        part.instrumentMap.insert(time: 0, instrument: flute)
-        part.instrumentMap.insert(time: 2, instrument: piccolo)
+        part.instrumentTable.insert(time: 0, instrument: flute)
+        part.instrumentTable.insert(time: 2, instrument: piccolo)
 
         var work = Work(content: .standardWall([part]),
                         extras: makeTimeCodeExtras())

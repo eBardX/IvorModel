@@ -4,6 +4,9 @@ public import XestiNumbers
 public import XestiTools
 
 extension NoteTable {
+
+    // MARK: Public Nested Types
+
     /// An error thrown by ``NoteTable`` operations.
     public enum Error {
         /// A failure that occurred while augmenting a note.
@@ -48,6 +51,9 @@ extension NoteTable {
 // MARK: - EnhancedError
 
 extension NoteTable.Error: EnhancedError {
+
+    // MARK: Public Instance Properties
+
     /// The error category for this error.
     public var category: Category? {
         Category("IvorModel")

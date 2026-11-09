@@ -18,10 +18,10 @@ internal import XestiTools
 /// in-memory note table’s lifetime — never across an encode/decode round trip,
 /// and so never across a save and reopen.
 ///
-/// Unlike the time-keyed maps’ `EntryID`, identity here does the same job in a
+/// Unlike the `EntryID` of the time-keyed maps and tables, identity here does the same job in a
 /// context where content isn’t unique to begin with: a note table allows exact
 /// duplicates (a doubled unison), so — unlike `TempoMap`/`PanMap`/`DynamicMap`/
-/// `InstrumentMap` — a move here can never “merge into” a pre-existing duplicate;
+/// `InstrumentTable` — a move here can never “merge into” a pre-existing duplicate;
 /// `noteID` always keeps naming the same note, with no survivor-identity case to
 /// account for.
 ///

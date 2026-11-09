@@ -4,6 +4,9 @@ public import IvorTiming
 public import IvorTuning
 
 extension Work {
+
+    // MARK: Public Nested Types
+
     /// The musical content of a work, parameterized by pitch notation and time basis.
     public enum Content {
         /// Beat-time parts using absolute (frequency) pitch notation, with an associated tempo map.

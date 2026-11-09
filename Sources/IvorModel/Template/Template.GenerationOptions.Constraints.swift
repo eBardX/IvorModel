@@ -13,16 +13,16 @@ extension Template.GenerationOptions {
 
         /// Creates a new set of constraints. With the defaults, every note event is allowed.
         ///
-        /// - Parameter pitchRange:         The range every pitch must lie in, or `nil` for any
-        ///                                 range. Defaults to `nil`.
-        /// - Parameter allowedPitches:     The pitches allowed, such as a scale spelled out in
-        ///                                 every octave, or `nil` for any pitch. Defaults to
-        ///                                 `nil`.
-        /// - Parameter maximumDuration:    The longest duration allowed, or `nil` for any
-        ///                                 duration. Defaults to `nil`.
-        /// - Parameter allowsRests:        Whether rests are allowed. Defaults to `true`.
-        /// - Parameter maximumRestDuration: The longest rest allowed, or `nil` for any rest
-        ///                                 ``maximumDuration`` allows. Defaults to `nil`.
+        /// - Parameter pitchRange:             The range every pitch must lie in, or `nil` for any
+        ///                                     range. Defaults to `nil`.
+        /// - Parameter allowedPitches:         The pitches allowed, such as a scale spelled out in
+        ///                                     every octave, or `nil` for any pitch. Defaults to
+        ///                                     `nil`.
+        /// - Parameter maximumDuration:        The longest duration allowed, or `nil` for any
+        ///                                     duration. Defaults to `nil`.
+        /// - Parameter allowsRests:            Whether rests are allowed. Defaults to `true`.
+        /// - Parameter maximumRestDuration:    The longest rest allowed, or `nil` for any rest
+        ///                                     ``maximumDuration`` allows. Defaults to `nil`.
         public init(pitchRange: ClosedRange<PitchType>? = nil,
                     allowedPitches: Set<PitchType>? = nil,
                     maximumDuration: DurationType? = nil,

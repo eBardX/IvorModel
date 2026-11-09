@@ -2,7 +2,7 @@
 
 internal import XestiTools
 
-extension InstrumentMap {
+extension InstrumentTable {
 
     // MARK: Internal Type Methods
 
@@ -10,7 +10,7 @@ extension InstrumentMap {
     // Keeps the first occurrence of each exact duplicate (same time, instrument,
     // and extras — `StoredEntry`'s own `==` already excludes identity) and drops the
     // rest, matching the rule `insert(time:instrument:extras:)` applies to a live
-    // instrument map.
+    // instrument table.
     //
     internal static func deduplicated(_ entries: [StoredEntry]) -> [StoredEntry] {
         var result: [StoredEntry] = []

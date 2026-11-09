@@ -28,16 +28,16 @@ extension NoteTable {
 
     /// Inserts a note with a start pitch and an end pitch into the table.
     ///
-    /// Unlike the time-keyed maps (`TempoMap`, `PanMap`, `DynamicMap`, `InstrumentMap`), a note
-    /// table represents discrete events rather than state sampled at a time, so two notes that are
-    /// identical in every field — for example, a doubled unison — are not redundant and are not
-    /// rejected or collapsed here.
+    /// Unlike the time-keyed maps (`TempoMap`, `PanMap`, `DynamicMap`) and `InstrumentTable`, which
+    /// collapse exact-duplicate entries, a note table keeps them: two notes that are identical in
+    /// every field — for example, a doubled unison — are not redundant and are not rejected or
+    /// collapsed here.
     ///
-    /// - Parameter attack:      The attack time of the note.
-    /// - Parameter duration:    The duration of the note.
-    /// - Parameter startPitch:  The pitch at the start of the note.
-    /// - Parameter endPitch:    The pitch at the end of the note.
-    /// - Parameter extras:      Optional extra data attached to the note. Defaults to `nil`.
+    /// - Parameter attack:     The attack time of the note.
+    /// - Parameter duration:   The duration of the note.
+    /// - Parameter startPitch: The pitch at the start of the note.
+    /// - Parameter endPitch:   The pitch at the end of the note.
+    /// - Parameter extras:     Optional extra data attached to the note. Defaults to `nil`.
     ///
     /// - Returns:  The identity of the newly inserted note.
     @discardableResult
@@ -88,14 +88,14 @@ extension NoteTable {
     /// reorder the table — that is the point of editing any of these fields, not a side effect to
     /// avoid.
     ///
-    /// Unlike the time-keyed maps’ `move(noteID:to:)`, there is no “merges into a pre-existing
-    /// duplicate” case to account for here — a note table allows exact duplicates (see
+    /// Unlike moving an entry of a time-keyed map or `InstrumentTable`, there is no “merges into a
+    /// pre-existing duplicate” case to account for here — a note table allows exact duplicates (see
     /// ``insert(attack:duration:startPitch:endPitch:extras:)``), so `noteID` always keeps naming this
     /// same note after the move, regardless of whether another, unrelated note happens to already
     /// share every field with it.
     ///
-    /// - Parameter noteID:  The identity of the note to move.
-    /// - Parameter attack:  The new attack time for the note.
+    /// - Parameter noteID: The identity of the note to move.
+    /// - Parameter attack: The new attack time for the note.
     ///
     /// - Returns:  `true` if `noteID` identified a note and it was moved; `false` if `noteID` did not
     ///             identify any note and nothing moved.
@@ -123,8 +123,8 @@ extension NoteTable {
     /// See ``moveAttack(noteID:to:)`` for why this reorders rather than updating in place, and why `noteID`
     /// always keeps naming the same note afterward.
     ///
-    /// - Parameter noteID:    The identity of the note to move.
-    /// - Parameter duration:  The new duration for the note.
+    /// - Parameter noteID:     The identity of the note to move.
+    /// - Parameter duration:   The new duration for the note.
     ///
     /// - Returns:  `true` if `noteID` identified a note and it was moved; `false` otherwise. See
     ///             ``moveAttack(noteID:to:)``.
@@ -152,8 +152,8 @@ extension NoteTable {
     /// See ``moveAttack(noteID:to:)`` for why this reorders rather than updating in place, and why `noteID`
     /// always keeps naming the same note afterward.
     ///
-    /// - Parameter noteID:    The identity of the note to move.
-    /// - Parameter endPitch:  The new end pitch for the note.
+    /// - Parameter noteID:     The identity of the note to move.
+    /// - Parameter endPitch:   The new end pitch for the note.
     ///
     /// - Returns:  `true` if `noteID` identified a note and it was moved; `false` otherwise. See
     ///             ``moveAttack(noteID:to:)``.
@@ -181,8 +181,8 @@ extension NoteTable {
     /// See ``moveAttack(noteID:to:)`` for why this reorders rather than updating in place, and why `noteID`
     /// always keeps naming the same note afterward.
     ///
-    /// - Parameter noteID:      The identity of the note to move.
-    /// - Parameter startPitch:  The new start pitch for the note.
+    /// - Parameter noteID:     The identity of the note to move.
+    /// - Parameter startPitch: The new start pitch for the note.
     ///
     /// - Returns:  `true` if `noteID` identified a note and it was moved; `false` otherwise. See
     ///             ``moveAttack(noteID:to:)``.
@@ -206,8 +206,8 @@ extension NoteTable {
 
     /// Removes the note with the given identity, if present.
     ///
-    /// - Parameter noteID:  The identity of the note to remove. An identity
-    ///                       naming no note is ignored.
+    /// - Parameter noteID: The identity of the note to remove. An identity
+    ///                     naming no note is ignored.
     ///
     /// - Returns:  `true` if `noteID` identified a note and it was removed,
     ///             `false` if `noteID` named no note and nothing happened.
@@ -245,8 +245,8 @@ extension NoteTable {
     /// (see `insertionIndex`’s doc comment), silently swapping their relative order even though
     /// neither note’s own position actually changed.
     ///
-    /// - Parameter noteID:  The identity of the note to update.
-    /// - Parameter extras:  The new extras for the note.
+    /// - Parameter noteID: The identity of the note to update.
+    /// - Parameter extras: The new extras for the note.
     ///
     /// - Returns:  `true` if `noteID` identified a note and it was updated; `false` if `noteID`
     ///             named no note and nothing happened.

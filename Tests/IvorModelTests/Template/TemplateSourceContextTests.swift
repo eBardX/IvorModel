@@ -74,7 +74,7 @@ extension TemplateSourceContextTests {
         let part = try #require(parts.first)
 
         #expect(part.dynamicMap.isEmpty)
-        #expect(part.instrumentMap.isEmpty)
+        #expect(part.instrumentTable.isEmpty)
         #expect(part.panMap.isEmpty)
         #expect(tempoMap.isEmpty)
     }
@@ -91,8 +91,8 @@ extension TemplateSourceContextTests {
 
         #expect(part.dynamicMap.count == 1)
         #expect(part.dynamicMap[.zero] == .f)
-        #expect(part.instrumentMap.count == 1)
-        #expect(part.instrumentMap[.zero] == Fixtures.oboe)
+        #expect(part.instrumentTable.count == 1)
+        #expect(part.instrumentTable[.zero] == Fixtures.oboe)
         #expect(part.panMap.count == 1)
         #expect(part.panMap[.zero] == Fixtures.leftPan)
         #expect(tempoMap.count == 1)

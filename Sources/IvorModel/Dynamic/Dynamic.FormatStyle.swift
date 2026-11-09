@@ -15,7 +15,7 @@ extension Dynamic {
 
         /// Creates a format style with the given locale.
         ///
-        /// - Parameter locale:     The locale to use for formatting. Defaults to `.autoupdatingCurrent`.
+        /// - Parameter locale: The locale to use for formatting. Defaults to `.autoupdatingCurrent`.
         public init(locale: Locale = .autoupdatingCurrent) {
             self.baseStyle = Number.FormatStyle(locale: locale)
                 .decimalPrecision(0...3)
@@ -54,6 +54,9 @@ extension Dynamic.FormatStyle: FormatStyle {
 // MARK: -
 
 extension Dynamic {
+
+    // MARK: Public Instance Methods
+
     /// Returns an attributed string representation of this dynamic level using the default format style.
     ///
     /// - Returns:  An `AttributedString` representation of the dynamic level.

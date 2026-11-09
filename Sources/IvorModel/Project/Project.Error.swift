@@ -3,6 +3,9 @@
 public import XestiTools
 
 extension Project {
+
+    // MARK: Public Nested Types
+
     /// An error thrown by ``Project`` operations.
     public enum Error {
         /// The project data is corrupted and cannot be read.
@@ -28,6 +31,9 @@ extension Project {
 // MARK: - EnhancedError
 
 extension Project.Error: EnhancedError {
+
+    // MARK: Public Instance Properties
+
     /// The error category for this error.
     public var category: Category? {
         Category("IvorModel")

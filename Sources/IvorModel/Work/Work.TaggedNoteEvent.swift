@@ -15,9 +15,9 @@ extension Work {
 
         /// Creates a tagged note event.
         ///
-        /// - Parameter partID:      The ID of the part this event was extracted from.
-        /// - Parameter attack:      The absolute attack time of this event.
-        /// - Parameter noteEvent:   The underlying note event.
+        /// - Parameter partID:     The ID of the part this event was extracted from.
+        /// - Parameter attack:     The absolute attack time of this event.
+        /// - Parameter noteEvent:  The underlying note event.
         public init(partID: PartID,
                     attack: TimeType,
                     noteEvent: NoteEvent<TimeType, PitchType>) {

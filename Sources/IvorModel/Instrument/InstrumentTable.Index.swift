@@ -1,15 +1,15 @@
 // © 2026 John Gary Pusey (see LICENSE.md)
 
-extension InstrumentMap {
+extension InstrumentTable {
 
     // MARK: Public Nested Types
 
-    /// A position of an entry in a ``InstrumentMap``.
+    /// A position of an entry in a ``InstrumentTable``.
     ///
-    /// Opaque rather than a plain `Int`, so that an integer literal such as `instrumentMap[1]` still
-    /// means the time passed to ``InstrumentMap/subscript(_:)``, never a position. Like an array
-    /// index, a position is valid only until the instrument map is next modified; to keep addressing an
-    /// entry across edits, use its ``InstrumentMap/Entry/entryID``.
+    /// Opaque rather than a plain `Int`, so that an integer literal such as `instrumentTable[1]` still
+    /// means the time passed to ``InstrumentTable/subscript(_:)``, never a position. Like an array
+    /// index, a position is valid only until the instrument table is next modified; to keep addressing an
+    /// entry across edits, use its ``InstrumentTable/Entry/entryID``.
     public struct Index {
 
         // MARK: Internal Initializers
@@ -26,7 +26,7 @@ extension InstrumentMap {
 
 // MARK: - Comparable
 
-extension InstrumentMap.Index: Comparable {
+extension InstrumentTable.Index: Comparable {
 
     // MARK: Public Type Methods
 
@@ -44,10 +44,10 @@ extension InstrumentMap.Index: Comparable {
 
 // MARK: - Hashable
 
-extension InstrumentMap.Index: Hashable {
+extension InstrumentTable.Index: Hashable {
 }
 
 // MARK: - Sendable
 
-extension InstrumentMap.Index: Sendable {
+extension InstrumentTable.Index: Sendable {
 }

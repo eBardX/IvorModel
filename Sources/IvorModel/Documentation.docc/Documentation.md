@@ -103,11 +103,17 @@ maps, transforms, conversion, realizations, templates, and projects.
 
 - ``Dynamic``
 - ``DynamicMap``
-- ``Instrument``
-- ``InstrumentMap``
 - ``Pan``
 - ``PanMap``
-- ``MapTargets``
+
+### Instruments
+
+- ``Instrument``
+- ``InstrumentTable``
+
+### Transforms
+
+- ``TransformTargets``
 
 ### Realizations
 

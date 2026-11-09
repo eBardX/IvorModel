@@ -7,7 +7,7 @@ import Testing
 import XestiNumbers
 import XestiTools
 
-struct InstrumentMapStoredEntryTests {
+struct InstrumentTableStoredEntryTests {
     private let guitar: Instrument
 
     init() throws {
@@ -17,8 +17,8 @@ struct InstrumentMapStoredEntryTests {
 
 // MARK: -
 
-extension InstrumentMapStoredEntryTests {
-    private typealias StoredEntry = InstrumentMap<BeatTime>.StoredEntry
+extension InstrumentTableStoredEntryTests {
+    private typealias StoredEntry = InstrumentTable<BeatTime>.StoredEntry
 
     @Test
     func codable_extended() throws {
