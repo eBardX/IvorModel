@@ -9,6 +9,8 @@ import XestiMarkov
 import XestiNumbers
 import XestiTools
 
+// swiftlint:disable file_length
+
 func absoluteWallNoteEvents(of template: Template) throws -> [NoteEvent<WallTime, Frequency>] {
     guard case let .absoluteWall(model) = template.content
     else { throw Template.Error.incompatibleOptions }
@@ -464,6 +466,18 @@ func makePlainSourceWork() -> Work {
 //
 // C D, a four-beat rest, E F, a one-beat rest, then G held for four beats.
 //
+// On at 1, re-pedaled at 3, up at 5.
+func makeRepedaledPedalTable() -> PedalTable<BeatTime> {
+    var table = PedalTable<BeatTime>()
+
+    table.insert(time: 1, level: .on)
+    table.insert(time: 3, level: .off)
+    table.insert(time: 3, level: .on)
+    table.insert(time: 5, level: .off)
+
+    return table
+}
+
 func makeRestSplitTune() -> Work {
     var noteTable = NoteTable<BeatTime, Pitch>()
 
@@ -548,6 +562,11 @@ func makeWorkInfo() -> Work.Info {
               credits: Credit(name: "J. Smith", role: .composer).map { [$0] } ?? [],
               rights: RightsNotice(text: "© 2026 J. Smith", scope: .music).map { [$0] } ?? [],
               remarks: Remark(text: "Written at dawn.", label: "history").map { [$0] } ?? [])
+}
+
+func pedalLevel(_ numerator: Int,
+                _ denominator: Int) -> Pedal.Level {
+    Pedal.Level(Number(numerator: numerator, denominator: denominator))
 }
 
 func pianoFrequency(of noteNumber: NoteNumber) -> Frequency {
@@ -691,3 +710,5 @@ func wallDuration(_ milliseconds: UInt) -> WallDuration {
 func wallTime(_ milliseconds: UInt) -> WallTime {
     WallTime(uintValue: milliseconds * 1_000)! // swiftlint:disable:this force_unwrapping
 }
+
+// swiftlint:enable file_length

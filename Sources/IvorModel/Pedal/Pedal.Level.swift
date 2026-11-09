@@ -63,10 +63,12 @@ extension Pedal.Level {
     // MARK: Public Type Properties
 
     /// The level of a pedal all the way up (`0`).
-    public static let off = Self(Number(numerator: 0, denominator: 1))
+    public static let off = Self(Number(numerator: 0,
+                                        denominator: 1))
 
     /// The level of a pedal all the way down (`1`).
-    public static let on = Self(Number(numerator: 1, denominator: 1))
+    public static let on = Self(Number(numerator: 1,
+                                       denominator: 1))
 
     // MARK: Public Type Methods
 
@@ -103,7 +105,8 @@ extension Pedal.Level {
 
     // MARK: Private Type Properties
 
-    private static let downThreshold = Number(numerator: 1, denominator: 2)
+    private static let downThreshold = Number(numerator: 1,
+                                              denominator: 2)
     private static let offPlain = "off"
     private static let onPlain = "on"
 

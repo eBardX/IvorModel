@@ -198,21 +198,6 @@ extension WorkConvertTests {
     }
 
     @Test
-    func convert_pitchNotationKeepsPedals() throws {
-        var soft = PedalTable<BeatTime>()
-
-        soft.insert(time: 2, level: .on)
-
-        let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.soft: soft])
-        let work = Work(content: .standardBeat([part], TempoMap()))
-
-        let result = try #require(try work.convert(timeBasis: .beat,
-                                                   pitchNotation: .absolute))
-
-        #expect(result.part(part.partID, as: Part<BeatTime, Frequency>.self)?.pedals[.soft]?.map(\.time) == [2])
-    }
-
-    @Test
     func convert_pitchNotation_keepsInfo() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         let work = Work(content: .standardBeat([part], TempoMap()),
@@ -225,6 +210,21 @@ extension WorkConvertTests {
         else { Issue.record("Expected .absoluteBeat content."); return }
 
         #expect(result.info == work.info)
+    }
+
+    @Test
+    func convert_pitchNotationKeepsPedals() throws {
+        var soft = PedalTable<BeatTime>()
+
+        soft.insert(time: 2, level: .on)
+
+        let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.soft: soft])
+        let work = Work(content: .standardBeat([part], TempoMap()))
+
+        let result = try #require(try work.convert(timeBasis: .beat,
+                                                   pitchNotation: .absolute))
+
+        #expect(result.part(part.partID, as: Part<BeatTime, Frequency>.self)?.pedals[.soft]?.map(\.time) == [2])
     }
 
     @Test

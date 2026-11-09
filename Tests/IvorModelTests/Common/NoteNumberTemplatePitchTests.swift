@@ -23,14 +23,14 @@ extension NoteNumberTemplatePitchTests {
     }
 
     @Test
-    func nearest_nearZero_skipsNegative() {
-        #expect(NoteNumber(1).nearest(11) == NoteNumber(11))
-    }
-
-    @Test
     func nearest_nearTop_skipsOutOfRange() {
         #expect(NoteNumber(127).nearest(0) == NoteNumber(120))
         #expect(NoteNumber(126).nearest(1) == NoteNumber(121))
+    }
+
+    @Test
+    func nearest_nearZero_skipsNegative() {
+        #expect(NoteNumber(1).nearest(11) == NoteNumber(11))
     }
 
     @Test

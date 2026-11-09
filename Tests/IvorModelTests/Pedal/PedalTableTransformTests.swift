@@ -49,7 +49,7 @@ extension PedalTableTransformTests {
 
     @Test
     func augment_keepsRepedal() throws {
-        var table = makeRepedaledTable()
+        var table = makeRepedaledPedalTable()
 
         try table.augment(by: Number(2))
 
@@ -109,7 +109,7 @@ extension PedalTableTransformTests {
 
     @Test
     func diminish_keepsRepedal() throws {
-        var table = makeRepedaledTable()
+        var table = makeRepedaledPedalTable()
 
         try table.diminish(by: Number(2))
 
@@ -146,7 +146,7 @@ extension PedalTableTransformTests {
 
     @Test
     func move_keepsRepedal() throws {
-        var table = makeRepedaledTable()
+        var table = makeRepedaledPedalTable()
 
         let directedDuration = try #require(BeatTime(0).duration(to: 2))
 
@@ -343,19 +343,5 @@ extension PedalTableTransformTests {
         //
         #expect(table.map(\.time) == [0, 0])
         #expect(table[BeatTime(0)] == .on)
-    }
-
-    // MARK: Private Instance Methods
-
-    // On at 1, re-pedaled at 3, up at 5.
-    private func makeRepedaledTable() -> PedalTableSB {
-        var table = PedalTableSB()
-
-        table.insert(time: 1, level: .on)
-        table.insert(time: 3, level: .off)
-        table.insert(time: 3, level: .on)
-        table.insert(time: 5, level: .off)
-
-        return table
     }
 }

@@ -102,11 +102,6 @@ extension PedalTableTests {
     }
 
     @Test
-    func hasExtras_initial() {
-        #expect(!PedalTable<BeatTime>().hasExtras)
-    }
-
-    @Test
     func hasExtras_clearedWhenLastExtrasRemoved() {
         var table = PedalTable<BeatTime>()
 
@@ -117,6 +112,11 @@ extension PedalTableTests {
         table.remove(entryID: entry.entryID)
 
         #expect(!table.hasExtras)
+    }
+
+    @Test
+    func hasExtras_initial() {
+        #expect(!PedalTable<BeatTime>().hasExtras)
     }
 
     @Test
@@ -132,19 +132,6 @@ extension PedalTableTests {
     }
 
     @Test
-    func insert_duplicateOfLastSameTimeEntry_folds() {
-        var table = PedalTable<BeatTime>()
-
-        let first = table.insert(time: 1, level: .on)
-        let second = table.insert(time: 1, level: .on)
-
-        #expect(first.inserted)
-        #expect(!second.inserted)
-        #expect(second.entryID == first.entryID)
-        #expect(table.count == 1)
-    }
-
-    @Test
     func insert_duplicateOfEarlierSameTimeEntry_isKept() {
         var table = PedalTable<BeatTime>()
 
@@ -156,6 +143,19 @@ extension PedalTableTests {
         #expect(third.inserted)
         #expect(table.map(\.level) == [.on, .off, .on])
         #expect(table[1] == .on)
+    }
+
+    @Test
+    func insert_duplicateOfLastSameTimeEntry_folds() {
+        var table = PedalTable<BeatTime>()
+
+        let first = table.insert(time: 1, level: .on)
+        let second = table.insert(time: 1, level: .on)
+
+        #expect(first.inserted)
+        #expect(!second.inserted)
+        #expect(second.entryID == first.entryID)
+        #expect(table.count == 1)
     }
 
     @Test
@@ -296,6 +296,13 @@ extension PedalTableTests {
     }
 
     @Test
+    func move_notFound() {
+        var table = PedalTable<BeatTime>()
+
+        #expect(table.move(entryID: EntryID(), to: 1) == nil)
+    }
+
+    @Test
     func move_ontoIdenticalLastEntry_folds() {
         var table = PedalTable<BeatTime>()
 
@@ -308,10 +315,15 @@ extension PedalTableTests {
     }
 
     @Test
-    func move_notFound() {
+    func pressEnd_downAtBoundByRepedal_returnsNextEntry() {
         var table = PedalTable<BeatTime>()
 
-        #expect(table.move(entryID: EntryID(), to: 1) == nil)
+        table.insert(time: 4, level: .off)
+        table.insert(time: 4, level: .on)
+
+        let release = table.insert(time: 6, level: .off)
+
+        #expect(table.pressEnd(after: 2...4) == release.entryID)
     }
 
     @Test
@@ -328,33 +340,10 @@ extension PedalTableTests {
     }
 
     @Test
-    func pressEnd_downAtBoundByRepedal_returnsNextEntry() {
-        var table = PedalTable<BeatTime>()
-
-        table.insert(time: 4, level: .off)
-        table.insert(time: 4, level: .on)
-
-        let release = table.insert(time: 6, level: .off)
-
-        #expect(table.pressEnd(after: 2...4) == release.entryID)
-    }
-
-    @Test
     func pressEnd_downWithNoLaterEntry_isNil() {
         var table = PedalTable<BeatTime>()
 
         table.insert(time: 1, level: .on)
-
-        #expect(table.pressEnd(after: 2...4) == nil)
-    }
-
-    @Test
-    func pressEnd_up_isNil() {
-        var table = PedalTable<BeatTime>()
-
-        table.insert(time: 1, level: .on)
-        table.insert(time: 3, level: .off)
-        table.insert(time: 6, level: .on)
 
         #expect(table.pressEnd(after: 2...4) == nil)
     }
@@ -369,6 +358,17 @@ extension PedalTableTests {
         let release = table.insert(time: 6, level: .off)
 
         #expect(table.pressEnd(after: 2...4) == release.entryID)
+    }
+
+    @Test
+    func pressEnd_up_isNil() {
+        var table = PedalTable<BeatTime>()
+
+        table.insert(time: 1, level: .on)
+        table.insert(time: 3, level: .off)
+        table.insert(time: 6, level: .on)
+
+        #expect(table.pressEnd(after: 2...4) == nil)
     }
 
     @Test
