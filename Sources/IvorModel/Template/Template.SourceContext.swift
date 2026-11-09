@@ -117,6 +117,9 @@ extension Template.SourceContext {
                           pan: pan)
         }
 
+        //
+        // A generated part starts with every pedal up: the source's pedal state isn't captured.
+        //
         return Part(name: name,
                     noteTable: noteTable,
                     dynamicMap: dynamicMap,

@@ -52,6 +52,10 @@ extension Work {
         /// A failure that occurred in a part’s pan map while carrying it along with a transform.
         case panMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
 
+        /// A failure that occurred in one of a part’s pedal tables while carrying it along with a
+        /// transform.
+        case pedalTableTransformFailure(kind: TransformKind, partID: PartID, pedal: Pedal, detail: String)
+
         /// The requested transform was invoked with a pitch notation that does not match the
         /// work’s own.
         case pitchNotationMismatch(expected: PitchNotation)
@@ -136,6 +140,9 @@ extension Work.Error: EnhancedError {
 
         case let .panMapTransformFailure(kind, partID, detail):
             "Pan map failure during \(kind) of part \(partID.stringValue): \(detail)"
+
+        case let .pedalTableTransformFailure(kind, partID, pedal, detail):
+            "Pedal table failure (\(pedal.rawValue)) during \(kind) of part \(partID.stringValue): \(detail)"
 
         case let .pitchNotationMismatch(expected):
             "This transform requires \(expected) pitch notation."

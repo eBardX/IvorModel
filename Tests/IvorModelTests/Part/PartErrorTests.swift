@@ -50,4 +50,13 @@ extension PartErrorTests {
         #expect(msg.contains("Pan map"))
         #expect(msg.contains("anchor"))
     }
+
+    @Test
+    func message_pedalTableFailure() {
+        let msg = PartSB.Error.pedalTableFailure(.sostenuto, .invalidAnchor).message
+
+        #expect(msg.contains("Pedal table"))
+        #expect(msg.contains("sostenuto"))
+        #expect(msg.contains("anchor"))
+    }
 }

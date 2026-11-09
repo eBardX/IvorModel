@@ -49,6 +49,7 @@ extension Part {
         var newDynamicMap = dynamicMap
         var newInstrumentTable = instrumentTable
         var newPanMap = panMap
+        var newPedals = pedals
 
         if applyTo.contains(.dynamic) {
             do {
@@ -78,12 +79,31 @@ extension Part {
             } catch {
                 throw Error.panMapFailure(error)
             }
+
+        if applyTo.contains(.pedal) {
+            let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
+
+            for (pedal, table) in pedals {
+                var newTable = table
+
+                do {
+                    try newTable.augment(by: factor,
+                                         anchor: resolvedAnchor,
+                                         entryIDs: pedalEntryIDs.map { $0[pedal] ?? [] })
+                } catch {
+                    throw Error.pedalTableFailure(pedal, error)
+                }
+
+                newPedals[pedal] = newTable
+            }
+        }
         }
 
         noteTable = newNoteTable
         dynamicMap = newDynamicMap
         instrumentTable = newInstrumentTable
         panMap = newPanMap
+        pedals = newPedals
     }
 
     /// Diminishes note attack times and durations by a rational factor, along with any
@@ -127,6 +147,7 @@ extension Part {
         var newDynamicMap = dynamicMap
         var newInstrumentTable = instrumentTable
         var newPanMap = panMap
+        var newPedals = pedals
 
         if applyTo.contains(.dynamic) {
             do {
@@ -156,12 +177,31 @@ extension Part {
             } catch {
                 throw Error.panMapFailure(error)
             }
+
+        if applyTo.contains(.pedal) {
+            let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
+
+            for (pedal, table) in pedals {
+                var newTable = table
+
+                do {
+                    try newTable.diminish(by: factor,
+                                          anchor: resolvedAnchor,
+                                          entryIDs: pedalEntryIDs.map { $0[pedal] ?? [] })
+                } catch {
+                    throw Error.pedalTableFailure(pedal, error)
+                }
+
+                newPedals[pedal] = newTable
+            }
+        }
         }
 
         noteTable = newNoteTable
         dynamicMap = newDynamicMap
         instrumentTable = newInstrumentTable
         panMap = newPanMap
+        pedals = newPedals
     }
 
     /// Inverts note pitches around a pitch range.
@@ -219,6 +259,7 @@ extension Part {
         var newDynamicMap = dynamicMap
         var newInstrumentTable = instrumentTable
         var newPanMap = panMap
+        var newPedals = pedals
 
         if applyTo.contains(.dynamic) {
             do {
@@ -245,12 +286,30 @@ extension Part {
             } catch {
                 throw Error.panMapFailure(error)
             }
+
+        if applyTo.contains(.pedal) {
+            let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
+
+            for (pedal, table) in pedals {
+                var newTable = table
+
+                do {
+                    try newTable.move(by: directedDuration,
+                                      entryIDs: pedalEntryIDs.map { $0[pedal] ?? [] })
+                } catch {
+                    throw Error.pedalTableFailure(pedal, error)
+                }
+
+                newPedals[pedal] = newTable
+            }
+        }
         }
 
         noteTable = newNoteTable
         dynamicMap = newDynamicMap
         instrumentTable = newInstrumentTable
         panMap = newPanMap
+        pedals = newPedals
     }
 
     /// Reverses the order of notes within a time range, along with any parameter maps selected
@@ -290,6 +349,7 @@ extension Part {
         var newDynamicMap = dynamicMap
         var newInstrumentTable = instrumentTable
         var newPanMap = panMap
+        var newPedals = pedals
 
         if applyTo.contains(.dynamic) {
             do {
@@ -316,12 +376,30 @@ extension Part {
             } catch {
                 throw Error.panMapFailure(error)
             }
+
+        if applyTo.contains(.pedal) {
+            let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
+
+            for (pedal, table) in pedals {
+                var newTable = table
+
+                do {
+                    try newTable.reverse(within: resolvedRange,
+                                         entryIDs: pedalEntryIDs.map { $0[pedal] ?? [] })
+                } catch {
+                    throw Error.pedalTableFailure(pedal, error)
+                }
+
+                newPedals[pedal] = newTable
+            }
+        }
         }
 
         noteTable = newNoteTable
         dynamicMap = newDynamicMap
         instrumentTable = newInstrumentTable
         panMap = newPanMap
+        pedals = newPedals
     }
 
     /// Transposes note pitches by a directed interval.
@@ -428,6 +506,15 @@ extension Part where TimeType == BeatTime {
             panMap.quantize(using: quantizer,
                             entryIDs: _panEntryIDs(forNoteIDs: noteIDs))
         }
+
+        if applyTo.contains(.pedal) {
+            let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
+
+            for pedal in pedals.keys {
+                pedals[pedal]?.quantize(using: quantizer,
+                                        entryIDs: pedalEntryIDs.map { $0[pedal] ?? [] })
+            }
+        }
     }
 }
 
@@ -475,6 +562,15 @@ extension Part {
             bounds += [first.time, last.time]
         }
 
+        if applyTo.contains(.pedal) {
+            for table in pedals.values {
+                if let first = table.first,
+                   let last = table.last {
+                    bounds += [first.time, last.time]
+                }
+            }
+        }
+
         guard let lowerBound = bounds.min(),
               let upperBound = bounds.max()
         else { return nil }
@@ -512,5 +608,30 @@ extension Part {
         else { return [] }
 
         return Set(panMap.filter { range.contains($0.time) }.map(\.entryID))
+    }
+
+    //
+    // Unlike the other layers, each pedal table also gives up the entry that ends a press under
+    // way at the end of the selected notes' range (see `PedalTable.pressEnd(after:)`): moving a
+    // selection must not leave its release behind, or the pedal would stay down from the moved
+    // notes' end until wherever the old release was. `nil` (every entry) when there is no
+    // selection; a pedal missing from the result has no entries selected.
+    //
+    private func _pedalEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> [Pedal: Set<EntryID>]? {
+        guard let noteIDs
+        else { return nil }
+
+        guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
+        else { return [:] }
+
+        return pedals.mapValues { table in
+            var entryIDs = Set(table.filter { range.contains($0.time) }.map(\.entryID))
+
+            if let pressEnd = table.pressEnd(after: range) {
+                entryIDs.insert(pressEnd)
+            }
+
+            return entryIDs
+        }
     }
 }

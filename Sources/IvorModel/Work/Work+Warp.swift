@@ -191,6 +191,7 @@ extension Work {
                                                                         using: timeConverter),
                                  panMap: Self.convertBeatTimes(in: part.panMap,
                                                                using: timeConverter),
+                                 pedals: part.pedals.mapValues { $0.mapTimes(timeConverter.wallTime(at:)) },
                                  extras: part.extras))
         }
 

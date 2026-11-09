@@ -1,0 +1,146 @@
+// © 2026 John Gary Pusey (see LICENSE.md)
+
+internal import XestiTools
+
+extension PedalTable {
+
+    // MARK: Internal Nested Types
+
+    internal enum StoredEntry {
+        case extended(EntryID, TimeType, Pedal.Level, Extras)
+        case simple(EntryID, TimeType, Pedal.Level)
+
+        // MARK: Internal Initializers
+
+        //
+        // `entryID` defaults to a fresh identity — the common case, a newly inserted or
+        // decoded entry. Passing one explicitly is for the one caller that needs to
+        // keep an existing identity across a content change:
+        // `update(entryID:level:extras:)`.
+        //
+        internal init(entryID: EntryID = EntryID(),
+                      time: TimeType,
+                      level: Pedal.Level,
+                      extras: Extras?) {
+            if let extras, !extras.isEmpty {
+                self = .extended(entryID, time, level, extras)
+            } else {
+                self = .simple(entryID, time, level)
+            }
+        }
+    }
+}
+
+// MARK: -
+
+extension PedalTable.StoredEntry {
+
+    // MARK: Internal Instance Properties
+
+    internal var entryID: EntryID {
+        switch self {
+        case let .extended(entryID, _, _, _),
+            let .simple(entryID, _, _):
+            entryID
+        }
+    }
+
+    internal var extras: Extras? {
+        switch self {
+        case let .extended(_, _, _, extras):
+            extras
+
+        default:
+            nil
+        }
+    }
+
+    internal var level: Pedal.Level {
+        switch self {
+        case let .extended(_, _, level, _),
+            let .simple(_, _, level):
+            level
+        }
+    }
+
+    internal var time: TimeType {
+        switch self {
+        case let .extended(_, time, _, _),
+            let .simple(_, time, _):
+            time
+        }
+    }
+}
+
+// MARK: - Codable
+
+extension PedalTable.StoredEntry: Codable {
+
+    // MARK: Internal Initializers
+
+    //
+    // Identity is never encoded (see `EntryID`'s doc comment), so decoding always
+    // assigns a fresh one via the default parameter — indistinguishable from a
+    // freshly inserted entry.
+    //
+    internal init(from decoder: any Decoder) throws {
+        var container = try decoder.unkeyedContainer()
+
+        let time = try container.decode(TimeType.self)
+        let level = try container.decode(Pedal.Level.self)
+        let extras = try container.decodeIfPresent(Extras.self)
+
+        self.init(time: time,
+                  level: level,
+                  extras: extras)
+    }
+
+    // MARK: Internal Instance Methods
+
+    internal func encode(to encoder: any Encoder) throws {
+        var container = encoder.unkeyedContainer()
+
+        try container.encode(time)
+        try container.encode(level)
+
+        if let extras {
+            try container.encode(extras)
+        }
+    }
+}
+
+// MARK: - Comparable
+
+extension PedalTable.StoredEntry: Comparable {
+
+    // MARK: Internal Type Methods
+
+    internal static func < (lhs: Self,
+                            rhs: Self) -> Bool {
+        lhs.time < rhs.time
+    }
+}
+
+// MARK: - Equatable
+
+extension PedalTable.StoredEntry: Equatable {
+
+    // MARK: Internal Type Methods
+
+    //
+    // Identity is deliberately excluded: two entries are equal here exactly when
+    // they carry the same time, level, and extras, regardless of which
+    // `EntryID` each holds. This is what lets `insert`'s exact-duplicate check keep
+    // working — a synthesized `==` that compared identity too would make every
+    // content-identical pair unequal, since each gets a fresh, distinct entryID.
+    //
+    internal static func == (lhs: Self,
+                             rhs: Self) -> Bool {
+        (lhs.time, lhs.level, lhs.extras) == (rhs.time, rhs.level, rhs.extras)
+    }
+}
+
+// MARK: - Sendable
+
+extension PedalTable.StoredEntry: Sendable {
+}

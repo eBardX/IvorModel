@@ -11,7 +11,8 @@ struct TransformTargetsTests {
 extension TransformTargetsTests {
     @Test
     func all_containsEveryMap() {
-        #expect(TransformTargets.all == [.dynamic, .instrument, .pan, .tempo])
+        #expect(TransformTargets.all == [.dynamic, .instrument, .pan, .pedal, .tempo])
+        #expect(TransformTargets.all.contains(.pedal))
     }
 
     @Test
@@ -21,6 +22,7 @@ extension TransformTargetsTests {
         #expect(TransformTargets(rawValue: 1 << 1) == .instrument)
         #expect(TransformTargets(rawValue: 1 << 2) == .pan)
         #expect(TransformTargets(rawValue: 1 << 3) == .tempo)
+        #expect(TransformTargets(rawValue: 1 << 4) == .pedal)
     }
 
     @Test

@@ -198,6 +198,21 @@ extension WorkConvertTests {
     }
 
     @Test
+    func convert_pitchNotationKeepsPedals() throws {
+        var soft = PedalTable<BeatTime>()
+
+        soft.insert(time: 2, level: .on)
+
+        let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.soft: soft])
+        let work = Work(content: .standardBeat([part], TempoMap()))
+
+        let result = try #require(try work.convert(timeBasis: .beat,
+                                                   pitchNotation: .absolute))
+
+        #expect(result.part(part.partID, as: Part<BeatTime, Frequency>.self)?.pedals[.soft]?.map(\.time) == [2])
+    }
+
+    @Test
     func convert_pitchNotation_keepsInfo() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         let work = Work(content: .standardBeat([part], TempoMap()),
@@ -344,6 +359,47 @@ extension WorkConvertTests {
 
         #expect(result.timeBasis == .wall)
         #expect(result.partCount == 1)
+    }
+
+    @Test
+    func convert_timeBasis_roundTripKeepsPedals() throws {
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: Tempo(120))
+
+        var sustain = PedalTable<BeatTime>()
+
+        sustain.insert(time: 1, level: .on)
+        sustain.insert(time: 3, level: .off)
+        sustain.insert(time: 3, level: .on)
+        sustain.insert(time: 5, level: .off)
+
+        let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.sustain: sustain])
+        let work = Work(content: .standardBeat([part], tempoMap))
+        let timeConverter = TimeConverter(tempoMap: tempoMap)
+
+        let wall = try #require(try work.convert(timeBasis: .wall,
+                                                 pitchNotation: .standard))
+        let wallPart = try #require(wall.part(part.partID, as: Part<WallTime, Pitch>.self))
+        let wallTable = try #require(wallPart.pedals[.sustain])
+
+        #expect(wallTable.map(\.time) == [1, 3, 3, 5].map { timeConverter.wallTime(at: BeatTime($0)) })
+        #expect(wallTable.map(\.level) == [.on, .off, .on, .off])
+
+        let beat = try #require(try wall.convert(timeBasis: .beat,
+                                                 pitchNotation: .standard))
+        let beatPart = try #require(beat.part(part.partID, as: Part<BeatTime, Pitch>.self))
+        let beatTimes = try #require(beatPart.pedals[.sustain]?.map(\.time))
+
+        //
+        // The wall-time work has no tempo map of its own, so the times come back on a different
+        // beat scale; what matters is that every entry, the re-pedal included, survives in order:
+        //
+        #expect(beatTimes.count == 4)
+        #expect(beatTimes[0] < beatTimes[1])
+        #expect(beatTimes[1] == beatTimes[2])
+        #expect(beatTimes[2] < beatTimes[3])
+        #expect(beatPart.pedals[.sustain]?.map(\.level) == [.on, .off, .on, .off])
     }
 
     @Test

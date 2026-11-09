@@ -137,6 +137,7 @@ extension Work {
                                                using: timeConverter),
              panMap: convertBeatTimes(in: part.panMap,
                                       using: timeConverter),
+             pedals: part.pedals.mapValues { $0.mapTimes(timeConverter.wallTime(at:)) },
              extras: part.extras)
     }
 
@@ -152,6 +153,7 @@ extension Work {
                                                 using: timeConverter),
              panMap: _convertWallTimes(in: part.panMap,
                                        using: timeConverter),
+             pedals: part.pedals.mapValues { $0.mapTimes(timeConverter.beatTime(at:)) },
              extras: part.extras)
     }
 
@@ -243,6 +245,7 @@ extension Work {
                     dynamicMap: part.dynamicMap,
                     instrumentTable: part.instrumentTable,
                     panMap: part.panMap,
+                    pedals: part.pedals,
                     extras: part.extras)
     }
 

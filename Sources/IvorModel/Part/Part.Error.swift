@@ -19,6 +19,9 @@ extension Part {
 
         /// A failure that occurred in the part’s pan map.
         case panMapFailure(PanMap<TimeType>.Error)
+
+        /// A failure that occurred in one of the part’s pedal tables.
+        case pedalTableFailure(Pedal, PedalTable<TimeType>.Error)
     }
 }
 
@@ -47,6 +50,9 @@ extension Part.Error: EnhancedError {
 
         case let .panMapFailure(error):
             "Pan map failure: \(error.message)"
+
+        case let .pedalTableFailure(pedal, error):
+            "Pedal table failure (\(pedal.rawValue)): \(error.message)"
         }
     }
 }

@@ -4,7 +4,8 @@ public import IvorTiming
 public import IvorTuning
 public import XestiTools
 
-/// A named musical part containing a note table, its parameter maps, and its instrument table.
+/// A named musical part containing a note table, its parameter maps, its instrument table, and its
+/// dictionary of pedal tables.
 public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     // MARK: Public Type Aliases
@@ -17,7 +18,8 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     // MARK: Public Initializers
 
-    /// Creates a part with the given name and optional note, map, and instrument data and extras.
+    /// Creates a part with the given name and optional note, map, instrument, and pedal data and
+    /// extras.
     ///
     /// - Parameter name:               The display name of the part. Its whitespace is
     ///                                 normalized to a single line.
@@ -29,6 +31,9 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
     ///                                 an empty instrument table.
     /// - Parameter panMap:             The pan map for the part. Defaults to an
     ///                                 empty pan map.
+    /// - Parameter pedals:             The dictionary of pedal tables for the part, keyed by
+    ///                                 pedal. Empty tables are dropped. Defaults to an empty
+    ///                                 dictionary.
     /// - Parameter extras:             Format-specific data about the part as a whole. Empty
     ///                                 extras are stored as `nil`. Defaults to `nil`.
     public init(name: String,
@@ -36,6 +41,7 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
                 dynamicMap: DynamicMap<TimeType>? = nil,
                 instrumentTable: InstrumentTable<TimeType>? = nil,
                 panMap: PanMap<TimeType>? = nil,
+                pedals: [Pedal: PedalTable<TimeType>] = [:],
                 extras: Extras? = nil) {
         self.init(partID: PartID(),
                   name: name,
@@ -43,6 +49,7 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
                   dynamicMap: dynamicMap,
                   instrumentTable: instrumentTable,
                   panMap: panMap,
+                  pedals: pedals,
                   extras: extras)
     }
 
@@ -77,6 +84,15 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
     /// The pan map for this part.
     public var panMap: PanMap<TimeType>
 
+    /// The dictionary of pedal tables for this part, keyed by pedal.
+    ///
+    /// A pedal with no key has no entries, so it stays up throughout. Empty tables are removed on
+    /// assignment, so they are never stored or encoded, and a part’s content doesn’t depend on
+    /// whether an empty table was ever touched.
+    public var pedals: [Pedal: PedalTable<TimeType>] {
+        didSet { pedals = Self._normalized(pedals) }
+    }
+
     // MARK: Internal Initializers
 
     //
@@ -90,6 +106,7 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
                   dynamicMap: DynamicMap<TimeType>? = nil,
                   instrumentTable: InstrumentTable<TimeType>? = nil,
                   panMap: PanMap<TimeType>? = nil,
+                  pedals: [Pedal: PedalTable<TimeType>] = [:],
                   extras: Extras? = nil) {
         self.dynamicMap = dynamicMap ?? DynamicMap()
         self.extras = Self._normalized(extras)
@@ -101,6 +118,7 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
         self.noteTable = noteTable ?? NoteTable()
         self.panMap = panMap ?? PanMap()
         self.partID = partID
+        self.pedals = Self._normalized(pedals)
     }
 }
 
@@ -145,6 +163,7 @@ extension Part {
              dynamicMap: dynamicMap,
              instrumentTable: instrumentTable,
              panMap: panMap,
+             pedals: pedals,
              extras: extras)
     }
 
@@ -175,6 +194,10 @@ extension Part {
 
     private static func _normalized(_ extras: Extras?) -> Extras? {
         extras?.isEmpty ?? true ? nil : extras
+    }
+
+    private static func _normalized(_ pedals: [Pedal: PedalTable<TimeType>]) -> [Pedal: PedalTable<TimeType>] {
+        pedals.filter { !$0.value.isEmpty }
     }
 }
 
@@ -213,12 +236,16 @@ extension Part: Codable {
         let partID = try container.decode(PartID.self,
                                           forKey: .partID)
 
+        let pedals = try container.decode([Pedal: PedalTable<TimeType>].self,
+                                          forKey: .pedals)
+
         self.init(partID: partID,
                   name: name,
                   noteTable: noteTable,
                   dynamicMap: dynamicMap,
                   instrumentTable: instrumentTable,
                   panMap: panMap,
+                  pedals: pedals,
                   extras: extras)
     }
 
@@ -253,6 +280,9 @@ extension Part: Codable {
         try container.encode(panMap,
                              forKey: .panMap)
 
+        try container.encode(pedals,
+                             forKey: .pedals)
+
         try container.encodeIfPresent(extras,
                                       forKey: .extras)
     }
@@ -267,6 +297,7 @@ extension Part: Codable {
         case noteTable
         case panMap
         case partID
+        case pedals
     }
 }
 

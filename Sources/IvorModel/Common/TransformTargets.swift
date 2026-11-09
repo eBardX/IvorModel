@@ -1,7 +1,8 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
 /// A set of the time-keyed collections that a time-based transform should carry along with the
-/// notes: a part’s parameter maps and instrument table, and the work’s own tempo map.
+/// notes: a part’s parameter maps, instrument table and dictionary of pedal tables, and the
+/// work’s own tempo map.
 public struct TransformTargets {
 
     // MARK: Public Initializers
@@ -25,8 +26,9 @@ extension TransformTargets {
 
     // MARK: Public Type Properties
 
-    /// Every target: the parameter maps, the instrument table, and the work’s own tempo map.
-    public static let all: Self = [.dynamic, .instrument, .pan, .tempo]
+    /// Every target: the parameter maps, the instrument table, the dictionary of pedal tables, and
+    /// the work’s own tempo map.
+    public static let all: Self = [.dynamic, .instrument, .pan, .pedal, .tempo]
 
     /// The dynamic map.
     public static let dynamic = Self(rawValue: 1 << 0)
@@ -36,6 +38,14 @@ extension TransformTargets {
 
     /// The pan map.
     public static let pan = Self(rawValue: 1 << 2)
+
+    /// The dictionary of pedal tables, every pedal alike: sustain, sostenuto, soft, legato, and
+    /// portamento.
+    ///
+    /// Unlike the other targets, a transform of selected notes carries not only the pedal entries
+    /// inside the notes’ time range but also the entry that ends a press under way at the end of
+    /// it, so that the selection doesn’t leave its release behind.
+    public static let pedal = Self(rawValue: 1 << 4)
 
     /// The work’s own tempo map. Only meaningful to a whole-work transform — a `Part` has no
     /// tempo map of its own, so this target is ignored wherever `TransformTargets` selects among a

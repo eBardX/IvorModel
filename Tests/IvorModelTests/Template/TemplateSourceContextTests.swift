@@ -110,6 +110,15 @@ extension TemplateSourceContextTests {
     }
 
     @Test
+    func part_hasNoPedals() throws {
+        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
+        let part = template.sourceContext.part(name: "Generated",
+                                               noteTable: NoteTable<BeatTime, Pitch>())
+
+        #expect(part.pedals.isEmpty)
+    }
+
+    @Test
     func sourceContext_roundTripsThroughProject() throws {
         let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
         var project = Project()

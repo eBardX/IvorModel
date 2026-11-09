@@ -74,6 +74,33 @@ extension WorkWarpTests {
     }
 
     @Test
+    func unwarped_convertsPedalTimes() throws {
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: Tempo(120))
+
+        let timeConverter = TimeConverter(tempoMap: tempoMap)
+
+        var sustain = PedalTable<WallTime>()
+
+        sustain.insert(time: 1_000, level: .off)
+        sustain.insert(time: 1_000, level: .on)
+
+        let part = Part<WallTime, Frequency>(name: "Piano", pedals: [.sustain: sustain])
+        let work = Work(content: .absoluteWall([part]))
+
+        let result = try #require(work.unwarped(using: tempoMap))
+
+        guard case let .absoluteBeat(parts, _) = result.content
+        else { Issue.record("Expected .absoluteBeat content."); return }
+
+        let expectedTime = timeConverter.beatTime(at: 1_000)
+
+        #expect(parts[0].pedals[.sustain]?.map(\.time) == [expectedTime, expectedTime])
+        #expect(parts[0].pedals[.sustain]?.map(\.level) == [.off, .on])
+    }
+
+    @Test
     func unwarped_keepsExtras() throws {
         let part = Part<WallTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
         let work = Work(content: .standardWall([part]),
@@ -187,6 +214,38 @@ extension WorkWarpTests {
         #expect(parts[0].instrumentTable.entries.first?.instrument == Instrument(stringValue: "Piano").require())
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.pan == .center)
+    }
+
+    @Test
+    func varispeeded_convertsPedalTimes() throws {
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 0, tempo: Tempo(120))
+
+        let timeConverter = TimeConverter(tempoMap: tempoMap)
+
+        var table = NoteTable<BeatTime, Frequency>()
+
+        table.insert(attack: 0, duration: 1, pitch: Frequency(440))
+
+        var sustain = PedalTable<BeatTime>()
+
+        sustain.insert(time: 1, level: .on)
+        sustain.insert(time: 2, level: .off)
+        sustain.insert(time: 2, level: .on)
+
+        let part = Part<BeatTime, Frequency>(name: "Piano",
+                                             noteTable: table,
+                                             pedals: [.sustain: sustain])
+        let work = Work(content: .absoluteBeat([part], tempoMap))
+
+        let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
+
+        guard case let .absoluteWall(parts) = result.content
+        else { Issue.record("Expected .absoluteWall content."); return }
+
+        #expect(parts[0].pedals[.sustain]?.map(\.time) == [1, 2, 2].map { timeConverter.wallTime(at: BeatTime($0)) })
+        #expect(parts[0].pedals[.sustain]?.map(\.level) == [.on, .off, .on])
     }
 
     @Test

@@ -69,12 +69,35 @@ extension PartTests {
     }
 
     @Test
+    func codable_missingPedalsKeyThrows() throws {
+        let data = try JSONEncoder().encode(Part<BeatTime, Pitch>(name: "Violin"))
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        object["pedals"] = nil
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(Part<BeatTime, Pitch>.self, from: stripped)
+        }
+    }
+
+    @Test
     func codable_noExtrasOmitsKey() throws {
         let data = try JSONEncoder().encode(Part<BeatTime, Pitch>(name: "Violin"))
         let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 
         #expect(object["extras"] == nil)
         #expect(try JSONDecoder().decode(Part<BeatTime, Pitch>.self, from: data).extras == nil)
+    }
+
+    @Test
+    func codable_noPedalsEncodesEmptyObject() throws {
+        let data = try JSONEncoder().encode(Part<BeatTime, Pitch>(name: "Violin"))
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let pedals = try #require(object["pedals"] as? [String: Any])
+
+        #expect(pedals.isEmpty)
     }
 
     @Test
@@ -88,6 +111,22 @@ extension PartTests {
                                                from: JSONSerialization.data(withJSONObject: object))
 
         #expect(decoded.name == "Violin 1")
+    }
+
+    @Test
+    func codable_pedalsRoundTrip() throws {
+        var sustain = PedalTable<BeatTime>()
+
+        sustain.insert(time: 1, level: .on)
+        sustain.insert(time: 3, level: .off)
+        sustain.insert(time: 3, level: .on)
+
+        let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.sustain: sustain])
+        let decoded = try JSONDecoder().decode(Part<BeatTime, Pitch>.self, from: JSONEncoder().encode(part))
+
+        #expect(Array(decoded.pedals.keys) == [.sustain])
+        #expect(decoded.pedals[.sustain]?.map(\.time) == [1, 3, 3])
+        #expect(decoded.pedals[.sustain]?.map(\.level) == [.on, .off, .on])
     }
 
     @Test
@@ -110,6 +149,17 @@ extension PartTests {
     }
 
     @Test
+    func duplicated_keepsPedals() {
+        var soft = PedalTable<BeatTime>()
+
+        soft.insert(time: 2, level: .on)
+
+        let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.soft: soft])
+
+        #expect(part.duplicated().pedals[.soft]?.map(\.time) == [2])
+    }
+
+    @Test
     func extras_emptyAssignmentBecomesNil() {
         var part = Part<BeatTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
 
@@ -127,6 +177,19 @@ extension PartTests {
         #expect(part.dynamicMap.isEmpty)
         #expect(part.instrumentTable.isEmpty)
         #expect(part.panMap.isEmpty)
+        #expect(part.pedals.isEmpty)
+    }
+
+    @Test
+    func init_dropsEmptyPedalTables() {
+        var sustain = PedalTable<BeatTime>()
+
+        sustain.insert(time: 0, level: .on)
+
+        let part = Part<BeatTime, Pitch>(name: "Piano",
+                                         pedals: [.sostenuto: PedalTable(), .sustain: sustain])
+
+        #expect(Array(part.pedals.keys) == [.sustain])
     }
 
     @Test
@@ -167,6 +230,25 @@ extension PartTests {
         part.name = " Viola \n da  gamba "
 
         #expect(part.name == "Viola da gamba")
+    }
+
+    @Test
+    func pedals_assignmentDropsEmptyTables() {
+        var part = Part<BeatTime, Pitch>(name: "Piano")
+
+        part.pedals[.legato] = PedalTable()
+
+        #expect(part.pedals.isEmpty)
+
+        part.pedals[.legato, default: PedalTable()].insert(time: 1, level: .on)
+
+        #expect(part.pedals[.legato]?.count == 1)
+
+        if let entryID = part.pedals[.legato]?.first?.entryID {
+            part.pedals[.legato]?.remove(entryID: entryID)
+        }
+
+        #expect(part.pedals.isEmpty)
     }
 
     @Test

@@ -119,6 +119,12 @@ extension Work {
                 .panMapTransformFailure(kind: kind,
                                         partID: partID,
                                         detail: underlying.message)
+
+        case let .pedalTableFailure(pedal, underlying):
+                .pedalTableTransformFailure(kind: kind,
+                                            partID: partID,
+                                            pedal: pedal,
+                                            detail: underlying.message)
         }
     }
 }

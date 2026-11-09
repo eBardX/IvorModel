@@ -44,6 +44,18 @@ extension WorkErrorTests {
     }
 
     @Test
+    func message_pedalTableTransformFailure() {
+        let msg = Work.Error.pedalTableTransformFailure(kind: .augment,
+                                                        partID: PartID(),
+                                                        pedal: .sustain,
+                                                        detail: "boom").message
+
+        #expect(msg.contains("Pedal table"))
+        #expect(msg.contains("sustain"))
+        #expect(msg.contains("boom"))
+    }
+
+    @Test
     func message_unconvertiblePitch() {
         let partID = PartID()
         let msg = Work.Error.unconvertiblePitch(partID: partID).message
