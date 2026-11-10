@@ -15,7 +15,7 @@ extension PedalTable {
     /// up entry and the last entry. An entry whose level, after `mode` is applied, repeats the
     /// level already in effect is removed too.
     ///
-    /// An entry that carries extras is never removed, though ``ThinMode/snap`` still snaps its
+    /// An entry that carries extras is never removed, though ``SimplifyMode/snap`` still snaps its
     /// level. When one is kept ahead of other entries at its time, the last entry at that time is
     /// kept as well, so the level from then on doesn’t change.
     ///
@@ -23,7 +23,7 @@ extension PedalTable {
     ///
     /// - Returns:  The identities of the removed entries, in table order.
     @discardableResult
-    public mutating func thin(_ mode: ThinMode) -> [EntryID] {
+    public mutating func simplify(_ mode: SimplifyMode) -> [EntryID] {
         var kept: [StoredEntry] = []
         var removedEntryIDs: [EntryID] = []
         var current: Pedal.Level = .off
@@ -68,7 +68,7 @@ extension PedalTable {
 
     // MARK: Private Type Methods
 
-    private static func _applying(_ mode: ThinMode,
+    private static func _applying(_ mode: SimplifyMode,
                                   to entry: StoredEntry) -> StoredEntry {
         guard mode == .snap
         else { return entry }
@@ -83,7 +83,7 @@ extension PedalTable {
     // enough to keep.
     private static func _isSignificant(_ level: Pedal.Level,
                                        after current: Pedal.Level,
-                                       mode: ThinMode) -> Bool {
+                                       mode: SimplifyMode) -> Bool {
         guard level != current
         else { return false }
 
@@ -103,7 +103,7 @@ extension PedalTable {
     // level in effect before them.
     private static func _keeps(_ group: [StoredEntry],
                                after current: Pedal.Level,
-                               mode: ThinMode) -> [Bool] {
+                               mode: SimplifyMode) -> [Bool] {
         guard let final = group.last
         else { return [] }
 

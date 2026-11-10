@@ -6,7 +6,7 @@ import Testing
 import XestiNumbers
 import XestiTools
 
-struct PedalTableThinTests {
+struct PedalTableSimplifyTests {
     private let half = Pedal.Level(Number(numerator: 1, denominator: 2))
     private let level30 = Pedal.Level(Number(numerator: 30, denominator: 100))
     private let level32 = Pedal.Level(Number(numerator: 32, denominator: 100))
@@ -19,27 +19,27 @@ struct PedalTableThinTests {
 
 // MARK: -
 
-extension PedalTableThinTests {
+extension PedalTableSimplifyTests {
     private typealias PedalTableSB = PedalTable<BeatTime>
 
     @Test
-    func thin_emptyTableIsNoOp() {
+    func simplify_emptyTableIsNoOp() {
         var table = PedalTableSB()
 
-        #expect(table.thin(.snap).isEmpty)
-        #expect(table.thin(.merge(tolerance: tolerance)).isEmpty)
+        #expect(table.simplify(.snap).isEmpty)
+        #expect(table.simplify(.merge(tolerance: tolerance)).isEmpty)
         #expect(table.isEmpty)
     }
 
     @Test
-    func thin_entryWithExtrasIsKeptAndSnapped() {
+    func simplify_entryWithExtrasIsKeptAndSnapped() {
         var table = PedalTableSB()
         let extras = Extras(elements: [Extra(name: "tag")])
 
         table.insert(time: 0, level: .on)
         table.insert(time: 1, level: level60, extras: extras)
 
-        let removed = table.thin(.snap)
+        let removed = table.simplify(.snap)
 
         #expect(removed.isEmpty)
         #expect(table.map(\.level) == [.on, .on])
@@ -47,7 +47,7 @@ extension PedalTableThinTests {
     }
 
     @Test
-    func thin_extrasEntryAheadKeepsLastEntryAtItsTime() {
+    func simplify_extrasEntryAheadKeepsLastEntryAtItsTime() {
         //
         // Off is already in effect, so the final Off at 1 would be dropped as a repeat; but the
         // half level with extras ahead of it is kept, so Off must stay to keep the level Off.
@@ -58,14 +58,14 @@ extension PedalTableThinTests {
         table.insert(time: 1, level: level30, extras: extras)
         table.insert(time: 1, level: .off)
 
-        let removed = table.thin(.merge(tolerance: tolerance))
+        let removed = table.simplify(.merge(tolerance: tolerance))
 
         #expect(removed.isEmpty)
         #expect(table[BeatTime(1)] == .off)
     }
 
     @Test
-    func thin_mergeDropsSmallChanges() {
+    func simplify_mergeDropsSmallChanges() {
         var table = PedalTableSB()
 
         table.insert(time: 0, level: level30)
@@ -74,7 +74,7 @@ extension PedalTableThinTests {
 
         table.insert(time: 2, level: level40)
 
-        let removed = table.thin(.merge(tolerance: tolerance))
+        let removed = table.simplify(.merge(tolerance: tolerance))
 
         #expect(removed == [smallID])
         #expect(table.map(\.time) == [0, 2])
@@ -82,7 +82,7 @@ extension PedalTableThinTests {
     }
 
     @Test
-    func thin_mergeKeepsExactOffAndOn() {
+    func simplify_mergeKeepsExactOffAndOn() {
         //
         // With a tolerance larger than any step, only the exact-level and threshold rules keep
         // anything: 0.55 crosses the threshold, On and Off are exact, and 0.60 after On is
@@ -95,25 +95,25 @@ extension PedalTableThinTests {
         table.insert(time: 2, level: level60)
         table.insert(time: 3, level: .off)
 
-        table.thin(.merge(tolerance: .on))
+        table.simplify(.merge(tolerance: .on))
 
         #expect(table.map(\.level) == [level55, .on, .off])
     }
 
     @Test
-    func thin_mergeKeepsThresholdCrossing() {
+    func simplify_mergeKeepsThresholdCrossing() {
         var table = PedalTableSB()
 
         table.insert(time: 0, level: level45)
         table.insert(time: 1, level: half)
 
-        table.thin(.merge(tolerance: tolerance))
+        table.simplify(.merge(tolerance: tolerance))
 
         #expect(table.map(\.level) == [level45, half])
     }
 
     @Test
-    func thin_removesRepeatedLevel() {
+    func simplify_removesRepeatedLevel() {
         var table = PedalTableSB()
 
         table.insert(time: 0, level: .on)
@@ -122,36 +122,36 @@ extension PedalTableThinTests {
 
         table.insert(time: 4, level: .off)
 
-        #expect(table.thin(.merge(tolerance: tolerance)) == [repeatID])
+        #expect(table.simplify(.merge(tolerance: tolerance)) == [repeatID])
         #expect(table.map(\.time) == [0, 4])
     }
 
     @Test
-    func thin_removesSupersededSameTimeEntries() {
+    func simplify_removesSupersededSameTimeEntries() {
         var table = PedalTableSB()
 
         let halfID = table.insert(time: 1, level: half).entryID
 
         table.insert(time: 1, level: .on)
 
-        #expect(table.thin(.merge(tolerance: tolerance)) == [halfID])
+        #expect(table.simplify(.merge(tolerance: tolerance)) == [halfID])
         #expect(table.map(\.level) == [.on])
     }
 
     @Test
-    func thin_repedalSurvivesMerge() {
+    func simplify_repedalSurvivesMerge() {
         var table = PedalTableSB()
 
         table.insert(time: 0, level: .on)
         table.insert(time: 2, level: level30)
         table.insert(time: 2, level: .on)
 
-        #expect(table.thin(.merge(tolerance: .on)).isEmpty)
+        #expect(table.simplify(.merge(tolerance: .on)).isEmpty)
         #expect(table.map(\.level) == [.on, level30, .on])
     }
 
     @Test
-    func thin_repedalSurvivesSnap() {
+    func simplify_repedalSurvivesSnap() {
         var table = PedalTableSB()
 
         table.insert(time: 0, level: .on)
@@ -159,13 +159,13 @@ extension PedalTableThinTests {
         table.insert(time: 2, level: .on)
         table.insert(time: 4, level: .off)
 
-        #expect(table.thin(.snap).isEmpty)
+        #expect(table.simplify(.snap).isEmpty)
         #expect(table.map(\.time) == [0, 2, 2, 4])
         #expect(table.map(\.level) == [.on, .off, .on, .off])
     }
 
     @Test
-    func thin_returnsRemovedIDsInTableOrder() {
+    func simplify_returnsRemovedIDsInTableOrder() {
         var table = PedalTableSB()
 
         table.insert(time: 0, level: .on)
@@ -175,11 +175,11 @@ extension PedalTableThinTests {
 
         table.insert(time: 3, level: .off)
 
-        #expect(table.thin(.snap) == [id1, id2])
+        #expect(table.simplify(.snap) == [id1, id2])
     }
 
     @Test
-    func thin_snapMakesSwitch() {
+    func simplify_snapMakesSwitch() {
         var table = PedalTableSB()
 
         table.insert(time: 0, level: level60)
@@ -187,7 +187,7 @@ extension PedalTableThinTests {
         table.insert(time: 2, level: level45)
         table.insert(time: 3, level: half)
 
-        let removed = table.thin(.snap)
+        let removed = table.simplify(.snap)
 
         #expect(removed.count == 1)
         #expect(table.map(\.time) == [0, 1, 3])

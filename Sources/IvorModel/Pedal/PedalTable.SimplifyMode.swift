@@ -4,8 +4,8 @@ extension PedalTable {
 
     // MARK: Public Nested Types
 
-    /// How ``PedalTable/thin(_:)`` reduces a pedal table’s entries.
-    public enum ThinMode {
+    /// How ``PedalTable/simplify(_:)`` reduces a pedal table’s entries.
+    public enum SimplifyMode {
         /// Keeps a level only where it differs from the last kept level by at least `tolerance`,
         /// where it crosses the threshold at which the pedal counts as down
         /// (``Pedal/Level/isDown``), or where it is exactly ``Pedal/Level/off`` or
@@ -22,10 +22,10 @@ extension PedalTable {
 
 // MARK: - Equatable
 
-extension PedalTable.ThinMode: Equatable {
+extension PedalTable.SimplifyMode: Equatable {
 }
 
 // MARK: - Sendable
 
-extension PedalTable.ThinMode: Sendable {
+extension PedalTable.SimplifyMode: Sendable {
 }
