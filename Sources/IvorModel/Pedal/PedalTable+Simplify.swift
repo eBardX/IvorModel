@@ -15,18 +15,18 @@ extension PedalTable {
     /// up entry and the last entry. An entry whose level, after `mode` is applied, repeats the
     /// level already in effect is removed too.
     ///
-    /// An entry that carries extras is never removed, though ``SimplifyMode/snap`` still snaps its
-    /// level. When one is kept ahead of other entries at its time, the last entry at that time is
-    /// kept as well, so the level from then on doesn’t change.
+    /// An entry that carries extras is never removed, though ``Pedal/SimplifyMode/snap`` still
+    /// snaps its level. When one is kept ahead of other entries at its time, the last entry at
+    /// that time is kept as well, so the level from then on doesn’t change.
     ///
     /// - Parameter mode:   How to reduce the entries.
     ///
     /// - Returns:  The identities of the removed entries, in table order.
     @discardableResult
-    public mutating func simplify(_ mode: SimplifyMode) -> [EntryID] {
+    public mutating func simplify(_ mode: Pedal.SimplifyMode) -> [EntryID] {
         var kept: [StoredEntry] = []
         var removedEntryIDs: [EntryID] = []
-        var current: Pedal.Level = .off
+        var current: Pedal.Level = .up
         var position = entries.startIndex
 
         while position < entries.endIndex {
@@ -68,14 +68,14 @@ extension PedalTable {
 
     // MARK: Private Type Methods
 
-    private static func _applying(_ mode: SimplifyMode,
+    private static func _applying(_ mode: Pedal.SimplifyMode,
                                   to entry: StoredEntry) -> StoredEntry {
         guard mode == .snap
         else { return entry }
 
         return StoredEntry(entryID: entry.entryID,
                            time: entry.time,
-                           level: entry.level.isDown ? .on : .off,
+                           level: entry.level.isDown ? .down : .up,
                            extras: entry.extras)
     }
 
@@ -83,14 +83,14 @@ extension PedalTable {
     // enough to keep.
     private static func _isSignificant(_ level: Pedal.Level,
                                        after current: Pedal.Level,
-                                       mode: SimplifyMode) -> Bool {
+                                       mode: Pedal.SimplifyMode) -> Bool {
         guard level != current
         else { return false }
 
         switch mode {
         case let .merge(tolerance):
-            return level == .off
-                || level == .on
+            return level == .up
+                || level == .down
                 || level.isDown != current.isDown
                 || (level.numberValue - current.numberValue).magnitude >= tolerance.numberValue
 
@@ -103,7 +103,7 @@ extension PedalTable {
     // level in effect before them.
     private static func _keeps(_ group: [StoredEntry],
                                after current: Pedal.Level,
-                               mode: SimplifyMode) -> [Bool] {
+                               mode: Pedal.SimplifyMode) -> [Bool] {
         guard let final = group.last
         else { return [] }
 

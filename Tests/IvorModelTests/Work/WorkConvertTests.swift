@@ -216,7 +216,7 @@ extension WorkConvertTests {
     func convert_pitchNotationKeepsPedals() throws {
         var soft = PedalTable<BeatTime>()
 
-        soft.insert(time: 2, level: .on)
+        soft.insert(time: 2, level: .down)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.soft: soft])
         let work = Work(content: .standardBeat([part], TempoMap()))
@@ -369,10 +369,10 @@ extension WorkConvertTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 1, level: .on)
-        sustain.insert(time: 3, level: .off)
-        sustain.insert(time: 3, level: .on)
-        sustain.insert(time: 5, level: .off)
+        sustain.insert(time: 1, level: .down)
+        sustain.insert(time: 3, level: .up)
+        sustain.insert(time: 3, level: .down)
+        sustain.insert(time: 5, level: .up)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.sustain: sustain])
         let work = Work(content: .standardBeat([part], tempoMap))
@@ -384,7 +384,7 @@ extension WorkConvertTests {
         let wallTable = try #require(wallPart.pedals[.sustain])
 
         #expect(wallTable.map(\.time) == [1, 3, 3, 5].map { timeConverter.wallTime(at: BeatTime($0)) })
-        #expect(wallTable.map(\.level) == [.on, .off, .on, .off])
+        #expect(wallTable.map(\.level) == [.down, .up, .down, .up])
 
         let beat = try #require(try wall.convert(timeBasis: .beat,
                                                  pitchNotation: .standard))
@@ -399,7 +399,7 @@ extension WorkConvertTests {
         #expect(beatTimes[0] < beatTimes[1])
         #expect(beatTimes[1] == beatTimes[2])
         #expect(beatTimes[2] < beatTimes[3])
-        #expect(beatPart.pedals[.sustain]?.map(\.level) == [.on, .off, .on, .off])
+        #expect(beatPart.pedals[.sustain]?.map(\.level) == [.down, .up, .down, .up])
     }
 
     @Test

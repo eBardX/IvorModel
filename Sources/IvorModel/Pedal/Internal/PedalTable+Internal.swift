@@ -10,8 +10,8 @@ extension PedalTable {
     //
     // Drops each entry identical to the one just before it (same time, level, and extras —
     // `StoredEntry`'s own `==` already excludes identity), matching the rule
-    // `insert(time:level:extras:)` applies to a live pedal table. Only neighbors fold: in On, Off,
-    // On at one time, the second On is what puts the pedal back down.
+    // `insert(time:level:extras:)` applies to a live pedal table. Only neighbors fold: in Down, Up,
+    // Down at one time, the second Down is what puts the pedal back down.
     //
     internal static func deduplicated(_ entries: [StoredEntry]) -> [StoredEntry] {
         var result: [StoredEntry] = []

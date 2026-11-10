@@ -138,12 +138,12 @@ extension PedalTable {
     ///
     /// Each entry is a step: its level holds until the next entry. So reversing mirrors the
     /// stretch each selected entry governs — up to the next selected entry, or to the range’s
-    /// upper bound — and moves the entry to that stretch’s new start. On at 0 and Off at 4,
-    /// reversed within 0…8, gives Off at 0 and On at 4. The stretch before the first selected
-    /// entry, which holds the level in effect before it (``Pedal/Level/off`` unless an
+    /// upper bound — and moves the entry to that stretch’s new start. Down at 0 and Up at 4,
+    /// reversed within 0…8, gives Up at 0 and Down at 4. The stretch before the first selected
+    /// entry, which holds the level in effect before it (``Pedal/Level/up`` unless an
     /// unselected entry precedes it), moves to the end of the range, and a new entry begins it
-    /// there. Entries that share a time swap order, so a re-pedal (Off then On at one time)
-    /// stays Off then On at its mirrored time. The level after the range isn’t restored, just as
+    /// there. Entries that share a time swap order, so a re-pedal (Up then Down at one time)
+    /// stays Up then Down at its mirrored time. The level after the range isn’t restored, just as
     /// the interpolating maps don’t restore their values after it.
     ///
     /// - Parameter timeRange:  The time range to mirror entry times around. `nil` resolves to the
@@ -204,7 +204,7 @@ extension PedalTable {
         let firstTime = entries[firstIndex].time
 
         if firstTime > anchorRange.lowerBound {
-            let leading = entries[..<firstIndex].last?.level ?? .off
+            let leading = entries[..<firstIndex].last?.level ?? .up
 
             guard let newTime = Self._mirrored(firstTime, within: anchorRange)
             else { throw Error.reverseFailure(firstTime) }

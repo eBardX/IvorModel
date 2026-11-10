@@ -117,16 +117,16 @@ extension PartTests {
     func codable_pedalsRoundTrip() throws {
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 1, level: .on)
-        sustain.insert(time: 3, level: .off)
-        sustain.insert(time: 3, level: .on)
+        sustain.insert(time: 1, level: .down)
+        sustain.insert(time: 3, level: .up)
+        sustain.insert(time: 3, level: .down)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.sustain: sustain])
         let decoded = try JSONDecoder().decode(Part<BeatTime, Pitch>.self, from: JSONEncoder().encode(part))
 
         #expect(Array(decoded.pedals.keys) == [.sustain])
         #expect(decoded.pedals[.sustain]?.map(\.time) == [1, 3, 3])
-        #expect(decoded.pedals[.sustain]?.map(\.level) == [.on, .off, .on])
+        #expect(decoded.pedals[.sustain]?.map(\.level) == [.down, .up, .down])
     }
 
     @Test
@@ -152,7 +152,7 @@ extension PartTests {
     func duplicated_keepsPedals() {
         var soft = PedalTable<BeatTime>()
 
-        soft.insert(time: 2, level: .on)
+        soft.insert(time: 2, level: .down)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.soft: soft])
 
@@ -184,7 +184,7 @@ extension PartTests {
     func init_dropsEmptyPedalTables() {
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0, level: .on)
+        sustain.insert(time: 0, level: .down)
 
         let part = Part<BeatTime, Pitch>(name: "Piano",
                                          pedals: [.sostenuto: PedalTable(), .sustain: sustain])
@@ -240,7 +240,7 @@ extension PartTests {
 
         #expect(part.pedals.isEmpty)
 
-        part.pedals[.legato, default: PedalTable()].insert(time: 1, level: .on)
+        part.pedals[.legato, default: PedalTable()].insert(time: 1, level: .down)
 
         #expect(part.pedals[.legato]?.count == 1)
 

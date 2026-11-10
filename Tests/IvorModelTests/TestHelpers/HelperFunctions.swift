@@ -466,14 +466,14 @@ func makePlainSourceWork() -> Work {
 //
 // C D, a four-beat rest, E F, a one-beat rest, then G held for four beats.
 //
-// On at 1, re-pedaled at 3, up at 5.
+// Down at 1, re-pedaled at 3, up at 5.
 func makeRepedaledPedalTable() -> PedalTable<BeatTime> {
     var table = PedalTable<BeatTime>()
 
-    table.insert(time: 1, level: .on)
-    table.insert(time: 3, level: .off)
-    table.insert(time: 3, level: .on)
-    table.insert(time: 5, level: .off)
+    table.insert(time: 1, level: .down)
+    table.insert(time: 3, level: .up)
+    table.insert(time: 3, level: .down)
+    table.insert(time: 5, level: .up)
 
     return table
 }

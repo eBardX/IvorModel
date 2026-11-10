@@ -6,11 +6,11 @@ public import XestiTools
 /// A time-indexed table of one pedal’s levels.
 ///
 /// Each entry is a step: its level holds from its time until the next entry’s. Before the first
-/// entry, the pedal is up (``Pedal/Level/off``).
+/// entry, the pedal is up (``Pedal/Level/up``).
 ///
 /// Entries at the same time keep the order they were inserted in, and the last of them is the
 /// level from then on. So a re-pedal — the pedal let up and pressed again at one instant — is an
-/// Off entry followed by an On entry at the same time, and both are kept. Only an entry identical
+/// Up entry followed by an Down entry at the same time, and both are kept. Only an entry identical
 /// to its neighbor at the same time (same level and extras) adds nothing, so inserting one folds
 /// it into that neighbor.
 public struct PedalTable<TimeType: TimeProtocol> {
@@ -51,13 +51,13 @@ extension PedalTable {
     /// - Parameter time:   The time at which to query the level.
     ///
     /// - Returns:  The level of the last entry at or before `time` (the last of several at the
-    ///             same time), or ``Pedal/Level/off`` if there is none.
+    ///             same time), or ``Pedal/Level/up`` if there is none.
     public subscript(_ time: TimeType) -> Pedal.Level {
         guard let idx = entries.firstIndex(where: { time < $0.time })
-        else { return entries.last?.level ?? .off }
+        else { return entries.last?.level ?? .up }
 
         guard idx > 0
-        else { return .off }
+        else { return .up }
 
         return entries[idx - 1].level
     }
@@ -69,7 +69,7 @@ extension PedalTable {
     ///
     /// If the last entry already at that time is identical — same level and extras — the new
     /// entry would add nothing, and is folded into it instead. An identical entry earlier among
-    /// those at that time doesn’t count: in On, Off, On, the second On is what puts the pedal
+    /// those at that time doesn’t count: in Down, Up, Down, the second Down is what puts the pedal
     /// back down.
     ///
     /// - Parameter time:       The time at which the level takes effect.
@@ -94,8 +94,8 @@ extension PedalTable {
     /// Inserts a pedal entry into this pedal table immediately before another entry at the same
     /// time.
     ///
-    /// This is how a re-pedal is added where a pedal goes down: an Off entry inserted before the
-    /// On entry lets the pedal up and presses it again at that instant.
+    /// This is how a re-pedal is added where a pedal goes down: an Up entry inserted before the
+    /// Down entry lets the pedal up and presses it again at that instant.
     ///
     /// If an entry it would be placed next to — the anchor, or the entry just before it — is
     /// identical (same time, level and extras), the new entry would add nothing, and is folded

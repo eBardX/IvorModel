@@ -62,8 +62,8 @@ extension PartTransformTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0, level: .on)
-        sustain.insert(time: 2, level: .off)
+        sustain.insert(time: 0, level: .down)
+        sustain.insert(time: 2, level: .up)
 
         part.pedals[.sustain] = sustain
 
@@ -80,14 +80,14 @@ extension PartTransformTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0, level: .on)
-        sustain.insert(time: 2, level: .off)
+        sustain.insert(time: 0, level: .down)
+        sustain.insert(time: 2, level: .up)
 
         part.pedals[.sustain] = sustain
 
         var soft = PedalTable<BeatTime>()
 
-        soft.insert(time: 1, level: .on)
+        soft.insert(time: 1, level: .down)
 
         part.pedals[.soft] = soft
 
@@ -224,8 +224,8 @@ extension PartTransformTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0, level: .on)
-        sustain.insert(time: 2, level: .off)
+        sustain.insert(time: 0, level: .down)
+        sustain.insert(time: 2, level: .up)
 
         part.pedals[.sustain] = sustain
 
@@ -323,8 +323,8 @@ extension PartTransformTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0, level: .on)
-        sustain.insert(time: 2, level: .off)
+        sustain.insert(time: 0, level: .down)
+        sustain.insert(time: 2, level: .up)
 
         part.pedals[.sustain] = sustain
 
@@ -410,8 +410,8 @@ extension PartTransformTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0, level: .on)
-        sustain.insert(time: 2, level: .off)
+        sustain.insert(time: 0, level: .down)
+        sustain.insert(time: 2, level: .up)
 
         part.pedals[.sustain] = sustain
 
@@ -430,8 +430,8 @@ extension PartTransformTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0, level: .on)
-        sustain.insert(time: 2, level: .off)
+        sustain.insert(time: 0, level: .down)
+        sustain.insert(time: 2, level: .up)
 
         part.pedals[.sustain] = sustain
 
@@ -452,8 +452,8 @@ extension PartTransformTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0, level: .on)
-        sustain.insert(time: 2, level: .off)
+        sustain.insert(time: 0, level: .down)
+        sustain.insert(time: 2, level: .up)
 
         part.pedals[.sustain] = sustain
 
@@ -478,9 +478,9 @@ extension PartTransformTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0, level: .on)
-        sustain.insert(time: 1, level: .off)
-        sustain.insert(time: 5, level: .on)
+        sustain.insert(time: 0, level: .down)
+        sustain.insert(time: 1, level: .up)
+        sustain.insert(time: 5, level: .down)
 
         part.pedals[.sustain] = sustain
 
@@ -493,7 +493,7 @@ extension PartTransformTests {
         // 5 stays where it is:
         //
         #expect(part.pedals[.sustain]?.map(\.time) == [4, 5, 5])
-        #expect(part.pedals[.sustain]?.map(\.level) == [.on, .off, .on])
+        #expect(part.pedals[.sustain]?.map(\.level) == [.down, .up, .down])
     }
 
     @Test
@@ -693,8 +693,8 @@ extension PartTransformTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0.9, level: .on)
-        sustain.insert(time: 2.2, level: .off)
+        sustain.insert(time: 0.9, level: .down)
+        sustain.insert(time: 2.2, level: .up)
 
         part.pedals[.sustain] = sustain
 
@@ -731,17 +731,17 @@ extension PartTransformTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0, level: .on)
-        sustain.insert(time: 3, level: .off)
-        sustain.insert(time: 3, level: .on)
-        sustain.insert(time: 8, level: .off)
+        sustain.insert(time: 0, level: .down)
+        sustain.insert(time: 3, level: .up)
+        sustain.insert(time: 3, level: .down)
+        sustain.insert(time: 8, level: .up)
 
         part.pedals[.sustain] = sustain
 
         try part.reverse(within: BeatTime(0)...8)
 
         #expect(part.pedals[.sustain]?.map(\.time) == [0, 0, 5, 5])
-        #expect(part.pedals[.sustain]?.map(\.level) == [.off, .on, .off, .on])
+        #expect(part.pedals[.sustain]?.map(\.level) == [.up, .down, .up, .down])
     }
 
     @Test
@@ -878,8 +878,8 @@ extension PartTransformTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 0, level: .on)
-        sustain.insert(time: 2, level: .off)
+        sustain.insert(time: 0, level: .down)
+        sustain.insert(time: 2, level: .up)
 
         part.pedals[.sustain] = sustain
 

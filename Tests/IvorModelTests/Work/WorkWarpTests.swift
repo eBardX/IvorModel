@@ -83,8 +83,8 @@ extension WorkWarpTests {
 
         var sustain = PedalTable<WallTime>()
 
-        sustain.insert(time: 1_000, level: .off)
-        sustain.insert(time: 1_000, level: .on)
+        sustain.insert(time: 1_000, level: .up)
+        sustain.insert(time: 1_000, level: .down)
 
         let part = Part<WallTime, Frequency>(name: "Piano", pedals: [.sustain: sustain])
         let work = Work(content: .absoluteWall([part]))
@@ -97,7 +97,7 @@ extension WorkWarpTests {
         let expectedTime = timeConverter.beatTime(at: 1_000)
 
         #expect(parts[0].pedals[.sustain]?.map(\.time) == [expectedTime, expectedTime])
-        #expect(parts[0].pedals[.sustain]?.map(\.level) == [.off, .on])
+        #expect(parts[0].pedals[.sustain]?.map(\.level) == [.up, .down])
     }
 
     @Test
@@ -230,9 +230,9 @@ extension WorkWarpTests {
 
         var sustain = PedalTable<BeatTime>()
 
-        sustain.insert(time: 1, level: .on)
-        sustain.insert(time: 2, level: .off)
-        sustain.insert(time: 2, level: .on)
+        sustain.insert(time: 1, level: .down)
+        sustain.insert(time: 2, level: .up)
+        sustain.insert(time: 2, level: .down)
 
         let part = Part<BeatTime, Frequency>(name: "Piano",
                                              noteTable: table,
@@ -245,7 +245,7 @@ extension WorkWarpTests {
         else { Issue.record("Expected .absoluteWall content."); return }
 
         #expect(parts[0].pedals[.sustain]?.map(\.time) == [1, 2, 2].map { timeConverter.wallTime(at: BeatTime($0)) })
-        #expect(parts[0].pedals[.sustain]?.map(\.level) == [.on, .off, .on])
+        #expect(parts[0].pedals[.sustain]?.map(\.level) == [.down, .up, .down])
     }
 
     @Test

@@ -13,14 +13,14 @@ extension PedalLevelFormatStyleTests {
     @Test
     func format() {
         let style = Pedal.Level.FormatStyle()
-        let result = style.format(.on)
+        let result = style.format(.down)
 
         #expect(!result.characters.isEmpty)
     }
 
     @Test
     func formatted() {
-        let result = Pedal.Level.off.formatted()
+        let result = Pedal.Level.up.formatted()
 
         #expect(!result.characters.isEmpty)
     }
