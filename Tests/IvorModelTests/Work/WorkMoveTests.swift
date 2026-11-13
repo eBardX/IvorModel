@@ -40,7 +40,7 @@ extension WorkMoveTests {
 
         tempoMap.insert(beatTime: 0, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         let directedDuration = try #require(BeatTime(0).duration(to: 2))
 

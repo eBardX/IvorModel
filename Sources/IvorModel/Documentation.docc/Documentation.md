@@ -39,15 +39,24 @@ var work = Work(name: "Etude",
                                 pitchNotation: .standard))
 let melody = try work.addPart(name: "Melody")
 
-let notes: [(BeatTime, String)] = [(0, "C4"), (1, "E4"), (2, "G4"), (3, "E4"),
-                                   (4, "C4"), (5, "G3"), (6, "C4")]
+// Seven quarter notes. Beat time counts whole notes, so a quarter note is 1/4.
+let pitches = ["C4", "E4", "G4", "E4", "C4", "G3", "C4"]
 
 try work.modifyPart(melody, as: Part<BeatTime, Pitch>.self) { part in
-    for (attack, name) in notes {
+    var attack = BeatTime.zero
+
+    for name in pitches {
         part.noteTable.insert(attack: attack,
-                              duration: 1,
+                              duration: .quarter,
                               pitch: Pitch(plain: name)!)
+        attack += .quarter
     }
+}
+
+// In 3/4, starting with a one-beat pickup.
+try work.modifyMeterTable { table in
+    _ = try? table.insert(beatTime: .zero, meter: Meter(plain: "3/4")!)
+    try? table.setPickup(.quarter)
 }
 
 // Transpose it up a fifth, then convert it to wall time and MIDI note numbers.
@@ -80,7 +89,7 @@ let file = try project.save()               // a FileWrapper
 ```
 
 See <doc:UsingIvorModel> for a full guide to works, parts, notes, parameter
-maps, transforms, conversion, realizations, templates, and projects.
+maps, meters, transforms, conversion, realizations, templates, and projects.
 
 ## Topics
 
@@ -105,6 +114,11 @@ maps, transforms, conversion, realizations, templates, and projects.
 - ``DynamicMap``
 - ``Pan``
 - ``PanMap``
+
+### Meters
+
+- ``Meter``
+- ``MeterTable``
 
 ### Instruments
 

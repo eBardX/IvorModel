@@ -36,7 +36,7 @@ extension WorkInvertTests {
         part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
         part.noteTable.insert(attack: 0, duration: 1, pitch: .e4)
 
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         try work.invert(around: nil as ClosedRange<Pitch>?)
 
@@ -45,7 +45,7 @@ extension WorkInvertTests {
 
     @Test
     func invert_wrongPitchNotationThrows() {
-        var work = Work(content: .keyboardBeat([], TempoMap()))
+        var work = Work(content: .keyboardBeat([], TempoMap(), MeterTable()))
 
         #expect(throws: Work.Error.pitchNotationMismatch(expected: .standard)) {
             try work.invert(around: nil as ClosedRange<Pitch>?)

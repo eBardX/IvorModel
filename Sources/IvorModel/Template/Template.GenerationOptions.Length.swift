@@ -8,7 +8,7 @@ extension Template.GenerationOptions {
 
     /// An amount of generated music.
     public enum Length {
-        /// A duration, in beats or seconds according to the template’s time basis. Generation
+        /// A duration, in whole notes or seconds according to the template’s time basis. Generation
         /// stops at the first note event that reaches it, so the result may run slightly over.
         case duration(DurationType)
 

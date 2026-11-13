@@ -266,19 +266,21 @@ extension Work {
                                               with context: ConvertContext,
                                               dropsUnconvertibleNotes: Bool) throws -> Content {
         switch (content, targetNotation) {
-        case let (.absoluteBeat(parts, tempoMap), .keyboard):
+        case let (.absoluteBeat(parts, tempoMap, meterTable), .keyboard):
             // Absolute/Beat → Keyboard/Beat
             try .keyboardBeat(_convertPitches(in: parts,
                                               using: _makeAbsoluteToKeyboardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
-                              tempoMap)
+                              tempoMap,
+                              meterTable)
 
-        case let (.absoluteBeat(parts, tempoMap), .standard):
+        case let (.absoluteBeat(parts, tempoMap, meterTable), .standard):
             // Absolute/Beat → Standard/Beat
             try .standardBeat(_convertPitches(in: parts,
                                               using: _makeAbsoluteToStandardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
-                              tempoMap)
+                              tempoMap,
+                              meterTable)
 
         case let (.absoluteWall(parts), .keyboard):
             // Absolute/Wall → Keyboard/Wall
@@ -292,19 +294,21 @@ extension Work {
                                               using: _makeAbsoluteToStandardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes))
 
-        case let (.keyboardBeat(parts, tempoMap), .absolute):
+        case let (.keyboardBeat(parts, tempoMap, meterTable), .absolute):
             // Keyboard/Beat → Absolute/Beat
             try .absoluteBeat(_convertPitches(in: parts,
                                               using: _makeKeyboardToAbsolutePitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
-                              tempoMap)
+                              tempoMap,
+                              meterTable)
 
-        case let (.keyboardBeat(parts, tempoMap), .standard):
+        case let (.keyboardBeat(parts, tempoMap, meterTable), .standard):
             // Keyboard/Beat → Standard/Beat
             try .standardBeat(_convertPitches(in: parts,
                                               using: _makeKeyboardToStandardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
-                              tempoMap)
+                              tempoMap,
+                              meterTable)
 
         case let (.keyboardWall(parts), .absolute):
             // Keyboard/Wall → Absolute/Wall
@@ -318,19 +322,21 @@ extension Work {
                                               using: _makeKeyboardToStandardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes))
 
-        case let (.standardBeat(parts, tempoMap), .absolute):
+        case let (.standardBeat(parts, tempoMap, meterTable), .absolute):
             // Standard/Beat → Absolute/Beat
             try .absoluteBeat(_convertPitches(in: parts,
                                               using: _makeStandardToAbsolutePitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
-                              tempoMap)
+                              tempoMap,
+                              meterTable)
 
-        case let (.standardBeat(parts, tempoMap), .keyboard):
+        case let (.standardBeat(parts, tempoMap, meterTable), .keyboard):
             // Standard/Beat → Keyboard/Beat
             try .keyboardBeat(_convertPitches(in: parts,
                                               using: _makeStandardToKeyboardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
-                              tempoMap)
+                              tempoMap,
+                              meterTable)
 
         case let (.standardWall(parts), .absolute):
             // Standard/Wall → Absolute/Wall
@@ -352,7 +358,7 @@ extension Work {
     private static func _convertTimeBasis(of content: Content,
                                           to targetBasis: TimeBasis) -> Content {
         switch (content, targetBasis) {
-        case let (.absoluteBeat(parts, tempoMap), .wall):
+        case let (.absoluteBeat(parts, tempoMap, _), .wall):
             let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             let convertedParts = parts.map {
@@ -371,10 +377,9 @@ extension Work {
                                  using: timeConverter)
             }
 
-            return .absoluteBeat(convertedParts,
-                                 tempoMap)
+            return .absoluteBeat(convertedParts, tempoMap, MeterTable())
 
-        case let (.keyboardBeat(parts, tempoMap), .wall):
+        case let (.keyboardBeat(parts, tempoMap, _), .wall):
             let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             let convertedParts = parts.map {
@@ -393,10 +398,9 @@ extension Work {
                                  using: timeConverter)
             }
 
-            return .keyboardBeat(convertedParts,
-                                 tempoMap)
+            return .keyboardBeat(convertedParts, tempoMap, MeterTable())
 
-        case let (.standardBeat(parts, tempoMap), .wall):
+        case let (.standardBeat(parts, tempoMap, _), .wall):
             let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             let convertedParts = parts.map {
@@ -415,8 +419,7 @@ extension Work {
                                  using: timeConverter)
             }
 
-            return .standardBeat(convertedParts,
-                                 tempoMap)
+            return .standardBeat(convertedParts, tempoMap, MeterTable())
 
         default:
             return content

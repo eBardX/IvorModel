@@ -13,7 +13,7 @@ struct WorkPartEditingTests {
 extension WorkPartEditingTests {
     @Test
     func addPart_appendsToEmptyWork() throws {
-        var work = Work(content: .standardBeat([], TempoMap()))
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable()))
 
         let partID = try work.addPart(name: "Violin")
 
@@ -25,7 +25,7 @@ extension WorkPartEditingTests {
     @Test
     func addPart_appendsToNonEmptyWork() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let partID = try work.addPart(name: "Cello")
 
@@ -36,7 +36,7 @@ extension WorkPartEditingTests {
 
     @Test
     func addPart_lockedWork_throws() {
-        var work = Work(content: .standardBeat([], TempoMap()))
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable()))
 
         work.isLocked = true
 
@@ -48,7 +48,7 @@ extension WorkPartEditingTests {
 
     @Test
     func addPart_normalizesName() throws {
-        var work = Work(content: .standardBeat([], TempoMap()))
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable()))
 
         try work.addPart(name: "  Violin \n 2 ")
 
@@ -59,7 +59,7 @@ extension WorkPartEditingTests {
     func duplicatePart_insertsAfterOriginal() throws {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
+        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable()))
 
         let duplicateID = try work.duplicatePart(part1.partID)
 
@@ -71,7 +71,7 @@ extension WorkPartEditingTests {
     @Test
     func duplicatePart_lockedWork_throws() {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         work.isLocked = true
 
@@ -84,7 +84,7 @@ extension WorkPartEditingTests {
     @Test
     func duplicatePart_missingID_isNoOp() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let duplicateID = try work.duplicatePart(PartID())
 
@@ -96,14 +96,14 @@ extension WorkPartEditingTests {
     func index_ofPartID_found() {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        let work = Work(content: .standardBeat([part1, part2], TempoMap()))
+        let work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable()))
 
         #expect(work.index(ofPartID: part2.partID) == 1)
     }
 
     @Test
     func index_ofPartID_notFound() {
-        let work = Work(content: .standardBeat([], TempoMap()))
+        let work = Work(content: .standardBeat([], TempoMap(), MeterTable()))
 
         #expect(work.index(ofPartID: PartID()) == nil)
     }
@@ -112,7 +112,7 @@ extension WorkPartEditingTests {
     func partIDs_matchesParts() {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        let work = Work(content: .standardBeat([part1, part2], TempoMap()))
+        let work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable()))
 
         #expect(work.partIDs == [part1.partID, part2.partID])
     }
@@ -120,7 +120,7 @@ extension WorkPartEditingTests {
     @Test
     func removePart_lockedWork_throws() {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         work.isLocked = true
 
@@ -133,7 +133,7 @@ extension WorkPartEditingTests {
     @Test
     func removePart_missingID_isNoOp() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         try work.removePart(PartID())
 
@@ -144,7 +144,7 @@ extension WorkPartEditingTests {
     func removePart_removesExistingPart() throws {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
+        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable()))
 
         try work.removePart(part1.partID)
 
@@ -155,7 +155,7 @@ extension WorkPartEditingTests {
     @Test
     func removePart_removingOnlyPart_leavesWorkEmpty() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         try work.removePart(part.partID)
 
@@ -166,7 +166,7 @@ extension WorkPartEditingTests {
     @Test
     func renamePart_lockedWork_throws() {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         work.isLocked = true
 
@@ -180,7 +180,7 @@ extension WorkPartEditingTests {
     @Test
     func renamePart_missingID_isNoOp() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         try work.renamePart(PartID(),
                             to: "Cello")
@@ -191,7 +191,7 @@ extension WorkPartEditingTests {
     @Test
     func renamePart_normalizesName() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         try work.renamePart(part.partID,
                             to: "\tCello  1 ")
@@ -202,7 +202,7 @@ extension WorkPartEditingTests {
     @Test
     func renamePart_renamesExistingPart() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         try work.renamePart(part.partID,
                             to: "Cello")
@@ -215,7 +215,7 @@ extension WorkPartEditingTests {
     func shiftPart_clampsOutOfRangeIndex() throws {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
+        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable()))
 
         try work.shiftPart(part1.partID,
                            to: 100)
@@ -227,7 +227,7 @@ extension WorkPartEditingTests {
     func shiftPart_lockedWork_throws() {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
+        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable()))
 
         work.isLocked = true
 
@@ -241,7 +241,7 @@ extension WorkPartEditingTests {
     @Test
     func shiftPart_missingID_isNoOp() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         try work.shiftPart(PartID(),
                            to: 0)
@@ -254,7 +254,7 @@ extension WorkPartEditingTests {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
         let part3 = Part<BeatTime, Pitch>(name: "Viola")
-        var work = Work(content: .standardBeat([part1, part2, part3], TempoMap()))
+        var work = Work(content: .standardBeat([part1, part2, part3], TempoMap(), MeterTable()))
 
         try work.shiftPart(part3.partID,
                            to: 0)
@@ -266,7 +266,7 @@ extension WorkPartEditingTests {
     func shiftPart_movingFirstUp_isInertNoOp() throws {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
+        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable()))
 
         try work.shiftPart(part1.partID,
                            to: -1)

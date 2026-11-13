@@ -372,7 +372,8 @@ extension Template {
                                                                                     grouping: beatGrouping(durations),
                                                                                     rounding: frequencyRounding(pitches),
                                                                                     seed: seed))],
-                              sourceContext.tempoMap())
+                              sourceContext.tempoMap(),
+                              sourceContext.meterTable())
 
         case let (.absoluteWall(model), .absoluteWall(options)):
             try .absoluteWall([sourceContext.part(name: partName,
@@ -397,7 +398,8 @@ extension Template {
                                                                                     grouping: beatGrouping(durations),
                                                                                     rounding: exactRounding(pitches),
                                                                                     seed: seed))],
-                              sourceContext.tempoMap())
+                              sourceContext.tempoMap(),
+                              sourceContext.meterTable())
 
         case let (.keyboardWall(model), .keyboardWall(options)):
             try .keyboardWall([sourceContext.part(name: partName,
@@ -422,7 +424,8 @@ extension Template {
                                                                                     grouping: beatGrouping(durations),
                                                                                     rounding: exactRounding(pitches),
                                                                                     seed: seed))],
-                              sourceContext.tempoMap())
+                              sourceContext.tempoMap(),
+                              sourceContext.meterTable())
 
         case let (.standardWall(model), .standardWall(options)):
             try .standardWall([sourceContext.part(name: partName,

@@ -10,7 +10,7 @@ IvorModel organizes music as a hierarchy of value types:
 ```
 Project
 ├─ works:     [Work]
-│  ├─ content:      Work.Content       // parts, plus a tempo map in beat time
+│  ├─ content:      Work.Content       // parts, plus a tempo map and meter table in beat time
 │  │  └─ [Part]
 │  │     ├─ noteTable:     NoteTable
 │  │     ├─ dynamicMap:      DynamicMap
@@ -23,18 +23,19 @@ Project
 
 Every work chooses a **time basis** and a **pitch notation**, from
 [IvorTiming](https://github.com/eBardX/IvorTiming) and
-[IvorTuning](https://github.com/eBardX/IvorTuning): times are beats
-(`BeatTime`) or seconds (`WallTime`), and pitches are standard pitches
-(`Pitch`), frequencies (`Frequency`), or MIDI note numbers (`NoteNumber`). The
-generic types — ``Part``, ``NoteTable``, ``NoteEvent``, the parameter maps, and the instrument table —
-take those as their type parameters, so a `Part<BeatTime, Pitch>` holds notes in
-beats and standard pitch.
+[IvorTuning](https://github.com/eBardX/IvorTuning): times are metrical
+(`BeatTime`, counted in whole notes, so a quarter note is 1/4) or seconds
+(`WallTime`), and pitches are standard pitches (`Pitch`), frequencies
+(`Frequency`), or MIDI note numbers (`NoteNumber`). The generic types —
+``Part``, ``NoteTable``, ``NoteEvent``, the parameter maps, and the instrument
+table — take those as their type parameters, so a `Part<BeatTime, Pitch>` holds
+notes in whole notes and standard pitch.
 
 ## Works
 
 A ``Work`` holds its parts as ``Work/Content``, an enumeration with one case per
 combination of time basis and pitch notation. The three beat-time cases also
-carry the work’s `TempoMap`.
+carry the work’s `TempoMap` and its ``MeterTable`` (see [Meters](#Meters)).
 
 ```swift
 var work = Work(name: "Etude",
@@ -78,7 +79,7 @@ means naming its concrete type:
 let melody = try work.addPart(name: "Melody")
 
 try work.modifyPart(melody, as: Part<BeatTime, Pitch>.self) { part in
-    part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+    part.noteTable.insert(attack: 0, duration: .quarter, pitch: .c4)
 }
 
 let part = work.part(melody, as: Part<BeatTime, Pitch>.self)
@@ -88,7 +89,8 @@ Both return `nil` when no part has the ID, or when the type doesn’t match the
 work’s content. ``Work/addPart(name:)``, ``Work/duplicatePart(_:)``,
 ``Work/removePart(_:)``, ``Work/renamePart(_:to:)``, and
 ``Work/shiftPart(_:to:)`` edit the list of parts, and ``Work/partIDs`` lists
-them in order. ``Work/modifyTempoMap(_:)`` edits a beat-time work’s tempo map.
+them in order. ``Work/modifyTempoMap(_:)`` and ``Work/modifyMeterTable(_:)`` edit
+a beat-time work’s tempo map and meter table.
 
 A part can also find its notes: ``Part/attackingIn(_:)`` (attacked within a
 time range), ``Part/soundingIn(_:)`` (sounding at any point within it), and
@@ -103,10 +105,10 @@ to an end pitch, and carry `Extras` of your own:
 ```swift
 var table = NoteTable<BeatTime, Pitch>()
 
-let noteID = table.insert(attack: 0, duration: 2, pitch: .c4)
+let noteID = table.insert(attack: 0, duration: .half, pitch: .c4)
 
-table.insert(attack: 2, duration: 2, startPitch: .c4, endPitch: .g4)   // a glide
-table.moveAttack(noteID: noteID, to: 1)
+table.insert(attack: 1, duration: .half, startPitch: .c4, endPitch: .g4)   // a glide
+table.moveAttack(noteID: noteID, to: BeatTime(plain: "1/4")!)
 table.remove(noteID: noteID)
 ```
 
@@ -146,6 +148,31 @@ entry.
 An ``Instrument`` only designates an instrument; what it sounds like when the
 part plays is up to a realization (see [Realizations](#Realizations)).
 
+## Meters
+
+A beat-time work’s ``MeterTable`` says where its barlines and felt beats fall.
+Its meter never changes timing: beat time counts whole notes whatever the
+meter. Each entry is a ``Meter`` — such as 3/4, 6/8, 2+2+3/8, 4/3, or
+``Meter/free`` — that starts a new bar at its time, and the table has a pickup:
+a first bar shorter than its meter, counted as bar 0.
+
+```swift
+try work.modifyMeterTable { table in
+    _ = try? table.insert(beatTime: .zero, meter: Meter(plain: "6/8")!)
+    _ = try? table.insert(beatTime: 3, meter: Meter(plain: "2+2+3/8")!)
+    try? table.setPickup(.eighth)
+}
+
+work.meterTable?.position(at: BeatTime(plain: "1/2")!)   // bar 1, beat 2
+```
+
+A meter’s ``Meter/pulse`` gives its felt beats: two dotted quarter notes for
+6/8, and a quarter, a quarter and a dotted quarter for 2+2+3/8. The table
+answers where a time falls (``MeterTable/position(at:)``), the reverse
+(``MeterTable/beatTime(bar:beat:offset:)``), and which bars overlap a range
+(``MeterTable/bars(overlapping:)``). An entry that cuts the bar before it short
+is a restart (``MeterTable/isRestart(entryID:)``).
+
 ## Transforming a work
 
 A work transforms its parts in place. Each transform applies to every part, or
@@ -161,14 +188,18 @@ to the ones whose IDs you pass in `partIDs`:
 
 ```swift
 try work.transpose(by: DirectedInterval(interval: .perfect5, direction: .ascending))
-try work.augment(by: 2, anchor: BeatTime.zero)  // twice as slow, from beat 0
+try work.augment(by: 2, anchor: BeatTime.zero)  // twice as slow, from the start
 ```
 
 The time transforms come in a beat-time and a wall-time form, so give the anchor
 (or the duration, or the range) in the work’s own time type. They move a part’s
 parameter maps and instrument table along with its notes, and the work’s own
-tempo map with them; `applyTo` takes a ``TransformTargets`` set to choose which of
-these go along. A transform
+tempo map and meter table with them; `applyTo` takes a ``TransformTargets`` set
+to choose which of these go along. When the meter table goes along, the meter is
+re-notated so that every note keeps its bar and beat: 3/4 augmented by 2 becomes
+3/2. Augment and diminish can also keep the sound (`keepingSound`), by scaling
+each tempo’s unit with the music: 3/8 at ♪ = 240, augmented by 2, becomes 3/4 at
+♩ = 240. Quantize never moves the meter table. A transform
 whose interval or time type doesn’t match the work throws
 ``Work/Error/pitchNotationMismatch(expected:)`` or
 ``Work/Error/timeBasisMismatch(expected:)``. Parts and note tables have the same
@@ -213,9 +244,11 @@ their context.
 Three more conversions change only the time basis, using a tempo map:
 
 - ``Work/warped()`` converts beat time to wall time with the work’s own tempo
-  map — a fixed-media rendering of the tempo curve.
+  map — a fixed-media rendering of the tempo curve. Wall time has no bars, so
+  the meter table is dropped.
 - ``Work/unwarped(using:)`` converts wall time to beat time with a tempo map
-  you supply, such as a tapped-in or detected one.
+  you supply, such as a tapped-in or detected one. The meter table starts out
+  empty.
 - ``Work/varispeeded(normalTempo:)`` converts beat-time, absolute-pitch music to
   wall time like ``Work/warped()``, and also shifts each note’s pitch with the
   tempo in effect, as a tape played faster or slower would.
@@ -271,7 +304,10 @@ caller; IvorModel never makes up names.
 given work and part names, from a ``Template/GenerationOptions`` recipe and a
 seed. The same template, recipe, and
 seed always give the same notes, and the new work records the recipe and seed
-in its ``Work/generation``, so it can be generated again or varied.
+in its ``Work/generation``, so it can be generated again or varied. A beat-time
+work starts out in its source’s tempo and meter (``Template/SourceContext``),
+with a pickup that puts the first note as far into its bar as the source’s
+was.
 
 ```swift
 let template = try Template.analyzeNoteEvents(in: work,
@@ -343,6 +379,7 @@ Thrown errors conform to `EnhancedError` (from
  ``Part/Error``                  | ``Part`` transforms, wrapping the error of the note table, map, or instrument table that failed
  ``NoteTable/Error``             | ``NoteTable`` transforms
  ``DynamicMap/Error``, ``InstrumentTable/Error``, ``PanMap/Error`` | The parameter-map and instrument-table transforms
+ ``MeterTable/Error``            | Editing and scaling a meter table
  ``Template/Error``              | Analysis, generation, and renaming a locked template
  ``Project/Error``               | Loading, saving, and removing locked works and templates
 

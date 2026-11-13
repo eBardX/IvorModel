@@ -36,7 +36,7 @@ extension WorkTransposeTests {
 
         part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let interval = try #require(Pitch.c4.interval(to: .e4))
 
@@ -47,7 +47,7 @@ extension WorkTransposeTests {
 
     @Test
     func transpose_wrongPitchNotationThrows() {
-        var work = Work(content: .keyboardBeat([], TempoMap()))
+        var work = Work(content: .keyboardBeat([], TempoMap(), MeterTable()))
 
         let interval = DirectedInterval(interval: Interval.unison, direction: .same)
 

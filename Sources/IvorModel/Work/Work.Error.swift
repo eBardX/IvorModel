@@ -34,6 +34,10 @@ extension Work {
         /// A quantization factor that is not a positive integer.
         case invalidQuantizationFactor(Int)
 
+        /// A failure that occurred in the work’s meter table while carrying it along with a
+        /// whole-work transform.
+        case meterTableTransformFailure(kind: TransformKind, detail: String)
+
         /// The conversion context is missing a keyboard layout.
         case missingKeyboardLayout
 
@@ -122,6 +126,9 @@ extension Work.Error: EnhancedError {
 
         case let .invalidQuantizationFactor(factor):
             "Invalid quantization factor: \(factor)"
+
+        case let .meterTableTransformFailure(kind, detail):
+            "Meter table failure during \(kind): \(detail)"
 
         case .missingKeyboardLayout:
             "A keyboard layout is required for this conversion."

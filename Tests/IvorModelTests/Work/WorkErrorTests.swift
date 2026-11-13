@@ -34,6 +34,15 @@ extension WorkErrorTests {
     }
 
     @Test
+    func message_meterTableTransformFailure() {
+        let msg = Work.Error.meterTableTransformFailure(kind: .augment,
+                                                        detail: "boom").message
+
+        #expect(msg.contains("Meter table"))
+        #expect(msg.contains("boom"))
+    }
+
+    @Test
     func message_missingKeyboardLayout() {
         #expect(!Work.Error.missingKeyboardLayout.message.isEmpty)
     }

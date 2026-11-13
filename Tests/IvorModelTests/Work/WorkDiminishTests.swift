@@ -47,7 +47,7 @@ extension WorkDiminishTests {
 
         tempoMap.insert(beatTime: 0, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         try work.diminish(by: Number(2), anchor: nil as BeatTime?)
     }
@@ -57,8 +57,8 @@ extension WorkDiminishTests {
         //
         // `rampDuration` is in beats. Diminishing a 4-beat ramp by 2 makes it 2 beats long.
         //
-        let t60 = try #require(Tempo(uintValue: 60))
-        let t120 = try #require(Tempo(uintValue: 120))
+        let t60 = Tempo(60)
+        let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
         part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
@@ -72,7 +72,7 @@ extension WorkDiminishTests {
                                                   Extra(name: Extra.rampDuration.name, values: [.double(4)])]))
         tempoMap.insert(beatTime: 4, tempo: t120)
 
-        var work = Work(content: .standardBeat([part], tempoMap))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         try work.diminish(by: Number(2), anchor: nil as BeatTime?)
 

@@ -16,7 +16,7 @@ extension WorkPartAccessTests {
     func modifyPart_editsOnlyMatchingPart() throws {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        var work = Work(content: .standardBeat([part1, part2], TempoMap()))
+        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable()))
 
         let noteID = try work.modifyPart(part2.partID, as: Part<BeatTime, Pitch>.self) {
             $0.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
@@ -31,7 +31,7 @@ extension WorkPartAccessTests {
     @Test
     func modifyPart_lockedWork_throws() {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
         var bodyCalled = false
 
         work.isLocked = true
@@ -49,7 +49,7 @@ extension WorkPartAccessTests {
     @Test
     func modifyPart_missingID_returnsNil() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
         var bodyCalled = false
 
         let result: Void? = try work.modifyPart(PartID(), as: Part<BeatTime, Pitch>.self) { _ in
@@ -75,7 +75,7 @@ extension WorkPartAccessTests {
     @Test
     func modifyPart_wrongType_returnsNil() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
         var bodyCalled = false
 
         let result: Void? = try work.modifyPart(part.partID, as: Part<WallTime, Pitch>.self) { _ in
@@ -89,7 +89,7 @@ extension WorkPartAccessTests {
 
     @Test
     func modifyTempoMap_beatContent_editsTempoMap() throws {
-        var work = Work(content: .keyboardBeat([], TempoMap()))
+        var work = Work(content: .keyboardBeat([], TempoMap(), MeterTable()))
 
         let inserted = try work.modifyTempoMap {
             $0.insert(beatTime: 1, tempo: .default)
@@ -103,7 +103,7 @@ extension WorkPartAccessTests {
 
     @Test
     func modifyTempoMap_lockedWork_throws() {
-        var work = Work(content: .standardBeat([], TempoMap()))
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable()))
         var bodyCalled = false
 
         work.isLocked = true

@@ -14,6 +14,48 @@ struct WorkTransformSupportTests {
 
 extension WorkTransformSupportTests {
     @Test
+    func carried_meterTable_failure_throwsMeterTableTransformFailure() throws {
+        let meterTable = try makeMeterTable([(0, "3/4")])
+
+        do {
+            _ = try Work.carried(meterTable: meterTable,
+                                 applyTo: .all,
+                                 kind: .augment) { (table: inout MeterTable) throws(MeterTable.Error) in
+                try table.augment(by: frac(1, 2))
+            }
+
+            Issue.record("Expected an error")
+        } catch {
+            guard case .meterTableTransformFailure(kind: .augment, detail: _) = error
+            else { Issue.record("Unexpected error: \(error)"); return }
+        }
+    }
+
+    @Test
+    func carried_meterTable_withMeter_appliesTransform() throws {
+        let meterTable = try makeMeterTable([(0, "3/4")])
+        let result = try Work.carried(meterTable: meterTable,
+                                      applyTo: [.meter],
+                                      kind: .augment) { (table: inout MeterTable) throws(MeterTable.Error) in
+            try table.augment(by: 2)
+        }
+
+        #expect(result.map(\.meter) == [meter("3/2")])
+    }
+
+    @Test
+    func carried_meterTable_withoutMeter_leavesTableUnchanged() throws {
+        let meterTable = try makeMeterTable([(0, "3/4")])
+        let result = try Work.carried(meterTable: meterTable,
+                                      applyTo: [.tempo, .dynamic],
+                                      kind: .augment) { (table: inout MeterTable) throws(MeterTable.Error) in
+            try table.augment(by: 2)
+        }
+
+        #expect(result == meterTable)
+    }
+
+    @Test
     func carried_failure_throwsTempoMapTransformFailure() {
         var tempoMap = TempoMap()
 

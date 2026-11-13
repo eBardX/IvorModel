@@ -47,7 +47,7 @@ enum Fixtures {
                                                          (6, 4, .f4),
                                                          (10, 5, .g4)]
 
-    static let slowTempo = Tempo(uintValue: 96)! // swiftlint:disable:this force_unwrapping
+    static let slowTempo = Tempo(96)
 
     static let threeNoteMelody: [(Number, Number, Pitch)] = [(0, 1, .c4), (1, 1, .e4), (2, 2, .g4)]
 }

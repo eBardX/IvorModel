@@ -25,14 +25,16 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap):
+        case let .absoluteBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, Frequency>
 
-            content = try .absoluteBeat(Self.transformed(parts: parts,
-                                                         partIDs: partIDs,
-                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts,
+                                                partIDs: partIDs,
+                                                kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
-            }, tempoMap)
+            }
+
+            content = .absoluteBeat(newParts, tempoMap, meterTable)
 
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
@@ -65,14 +67,16 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .keyboardBeat(parts, tempoMap):
+        case let .keyboardBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, NoteNumber>
 
-            content = try .keyboardBeat(Self.transformed(parts: parts,
-                                                         partIDs: partIDs,
-                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts,
+                                                partIDs: partIDs,
+                                                kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
-            }, tempoMap)
+            }
+
+            content = .keyboardBeat(newParts, tempoMap, meterTable)
 
         case let .keyboardWall(parts):
             typealias PartType = Part<WallTime, NoteNumber>
@@ -105,14 +109,16 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .standardBeat(parts, tempoMap):
+        case let .standardBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, Pitch>
 
-            content = try .standardBeat(Self.transformed(parts: parts,
-                                                         partIDs: partIDs,
-                                                         kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
+            let newParts = try Self.transformed(parts: parts,
+                                                partIDs: partIDs,
+                                                kind: .transpose) { (part: inout PartType) throws(PartType.Error) in
                 try part.transpose(by: directedInterval)
-            }, tempoMap)
+            }
+
+            content = .standardBeat(newParts, tempoMap, meterTable)
 
         case let .standardWall(parts):
             typealias PartType = Part<WallTime, Pitch>

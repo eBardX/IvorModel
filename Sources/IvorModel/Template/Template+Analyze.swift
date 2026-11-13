@@ -94,7 +94,7 @@ extension Template {
         try options.validate()
 
         switch work.content {
-        case let .absoluteBeat(parts, _):
+        case let .absoluteBeat(parts, _, _):
             return try _splitForms(of: parts,
                                    at: index,
                                    options: options,
@@ -110,7 +110,7 @@ extension Template {
                                    splitting: _wallSplitting(options.restSplit),
                                    transposing: _ratioTransposing).forms.reduce(0) { $0 + $1.count }
 
-        case let .keyboardBeat(parts, _):
+        case let .keyboardBeat(parts, _, _):
             return try _splitForms(of: parts,
                                    at: index,
                                    options: options,
@@ -126,7 +126,7 @@ extension Template {
                                    splitting: _wallSplitting(options.restSplit),
                                    transposing: _noteDistanceTransposing).forms.reduce(0) { $0 + $1.count }
 
-        case let .standardBeat(parts, _):
+        case let .standardBeat(parts, _, _):
             return try _splitForms(of: parts,
                                    at: index,
                                    options: options,
@@ -204,7 +204,7 @@ extension Template {
                                            at index: Int,
                                            options: AnalysisOptions) throws(Error) -> (Self.Content, AnalysisSummary) {
         switch content {
-        case let .absoluteBeat(parts, _):
+        case let .absoluteBeat(parts, _, _):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
                                                           at: index,
                                                           options: options,
@@ -228,7 +228,7 @@ extension Template {
 
             return (.absoluteWall(model), summary)
 
-        case let .keyboardBeat(parts, _):
+        case let .keyboardBeat(parts, _, _):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
                                                           at: index,
                                                           options: options,
@@ -252,7 +252,7 @@ extension Template {
 
             return (.keyboardWall(model), summary)
 
-        case let .standardBeat(parts, _):
+        case let .standardBeat(parts, _, _):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
                                                           at: index,
                                                           options: options,

@@ -21,8 +21,8 @@ extension WorkReverseTests {
         // No ramp extras can describe that, so they're dropped, and the exporter rebuilds the
         // ramp from the map.
         //
-        let t60 = try #require(Tempo(uintValue: 60))
-        let t90 = try #require(Tempo(uintValue: 90))
+        let t60 = Tempo(60)
+        let t90 = Tempo(90)
         var tempoMap = TempoMap()
 
         tempoMap.insert(beatTime: 0,
@@ -32,7 +32,7 @@ extension WorkReverseTests {
                                                   Extra(name: Extra.rampDuration.name, values: [.double(4)])]))
         tempoMap.insert(beatTime: 2, tempo: t90)
 
-        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap))
+        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap, MeterTable()))
 
         try work.reverse(within: BeatTime(0)...BeatTime(2))
 
@@ -50,8 +50,8 @@ extension WorkReverseTests {
         // `midiTimeCode` describes the whole file, so it lives on the work, where reversing the
         // tempo map can't move it away from beat zero.
         //
-        let t60 = try #require(Tempo(uintValue: 60))
-        let t120 = try #require(Tempo(uintValue: 120))
+        let t60 = Tempo(60)
+        let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
         part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
@@ -61,7 +61,7 @@ extension WorkReverseTests {
         tempoMap.insert(beatTime: 0, tempo: t60)
         tempoMap.insert(beatTime: 4, tempo: t120)
 
-        var work = Work(content: .standardBeat([part], tempoMap),
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()),
                         extras: makeTimeCodeExtras())
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
@@ -110,7 +110,7 @@ extension WorkReverseTests {
 
         tempoMap.insert(beatTime: 0, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 
@@ -156,7 +156,7 @@ extension WorkReverseTests {
 
         tempoMap.insert(beatTime: 0, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
     }
@@ -168,8 +168,8 @@ extension WorkReverseTests {
         // trusts them over the map. A 60→120 ramp over 0–4, reversed, is a 120→60 ramp that
         // still starts at 0: the extras must stay at 0 with start and end swapped.
         //
-        let t60 = try #require(Tempo(uintValue: 60))
-        let t120 = try #require(Tempo(uintValue: 120))
+        let t60 = Tempo(60)
+        let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
         part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
@@ -183,7 +183,7 @@ extension WorkReverseTests {
                                                   Extra(name: Extra.rampDuration.name, values: [.double(4)])]))
         tempoMap.insert(beatTime: 4, tempo: t120)
 
-        var work = Work(content: .standardBeat([part], tempoMap))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 
@@ -203,8 +203,8 @@ extension WorkReverseTests {
         // 1–4. No entry lands at 1, so one is inserted there, holding the tempo already in
         // effect, to carry the extras.
         //
-        let t60 = try #require(Tempo(uintValue: 60))
-        let t120 = try #require(Tempo(uintValue: 120))
+        let t60 = Tempo(60)
+        let t120 = Tempo(120)
         var tempoMap = TempoMap()
 
         tempoMap.insert(beatTime: 0,
@@ -214,7 +214,7 @@ extension WorkReverseTests {
                                                   Extra(name: Extra.rampDuration.name, values: [.double(3)])]))
         tempoMap.insert(beatTime: 4, tempo: t120)
 
-        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap))
+        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap, MeterTable()))
 
         try work.reverse(within: BeatTime(0)...BeatTime(4))
 
@@ -237,8 +237,8 @@ extension WorkReverseTests {
         // label must move to its section's new start. The ABC exporter writes the label at
         // beat zero into the header.
         //
-        let t60 = try #require(Tempo(uintValue: 60))
-        let t120 = try #require(Tempo(uintValue: 120))
+        let t60 = Tempo(60)
+        let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
         part.noteTable.insert(attack: 0, duration: 8, pitch: .c4)
@@ -254,7 +254,7 @@ extension WorkReverseTests {
                         extras: Extras(elements: [Extra(name: Extra.tempoText.name, values: [.string("Allegro")])]))
         tempoMap.insert(beatTime: 8, tempo: t120)
 
-        var work = Work(content: .standardBeat([part], tempoMap))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 
@@ -278,8 +278,8 @@ extension WorkReverseTests {
         // at 0, where there's no entry either. One is inserted there holding the tempo the map
         // already reads at 0, so playback doesn't change.
         //
-        let t60 = try #require(Tempo(uintValue: 60))
-        let t120 = try #require(Tempo(uintValue: 120))
+        let t60 = Tempo(60)
+        let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
         part.noteTable.insert(attack: 0, duration: 8, pitch: .c4)
@@ -292,7 +292,7 @@ extension WorkReverseTests {
                         tempo: t120,
                         extras: Extras(elements: [Extra(name: Extra.tempoText.name, values: [.string("Allegro")])]))
 
-        var work = Work(content: .standardBeat([part], tempoMap))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 
@@ -313,9 +313,9 @@ extension WorkReverseTests {
         // (120, then an unlabeled step to 100 at 4) and Andante labels 8–12 (60). Reversed,
         // Andante labels 0–4 and Allegro 4–12, still covering both of its tempos.
         //
-        let t60 = try #require(Tempo(uintValue: 60))
-        let t100 = try #require(Tempo(uintValue: 100))
-        let t120 = try #require(Tempo(uintValue: 120))
+        let t60 = Tempo(60)
+        let t100 = Tempo(100)
+        let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
         part.noteTable.insert(attack: 0, duration: 12, pitch: .c4)
@@ -333,7 +333,7 @@ extension WorkReverseTests {
                         extras: Extras(elements: [Extra(name: Extra.tempoText.name, values: [.string("Andante")])]))
         tempoMap.insert(beatTime: 12, tempo: t60)
 
-        var work = Work(content: .standardBeat([part], tempoMap))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 
@@ -364,7 +364,7 @@ extension WorkReverseTests {
         tempoMap.insert(beatTime: 0, tempo: .default)
         tempoMap.insert(beatTime: 2, tempo: .default)
 
-        var work = Work(content: .standardBeat([violin, cello], tempoMap))
+        var work = Work(content: .standardBeat([violin, cello], tempoMap, MeterTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?,
                          partIDs: [violin.partID])
@@ -389,7 +389,7 @@ extension WorkReverseTests {
         tempoMap.insert(beatTime: 0, tempo: .default)
         tempoMap.insert(beatTime: 2, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?,
                          applyTo: [.dynamic, .instrument, .pan])
@@ -409,7 +409,7 @@ extension WorkReverseTests {
         tempoMap.insert(beatTime: 0, tempo: .default)
         tempoMap.insert(beatTime: 2, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 

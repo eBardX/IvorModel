@@ -19,7 +19,7 @@ extension WorkExtractNoteEventsTests {
 
         part.noteTable.insert(attack: 0, duration: 1, pitch: Frequency(440))
 
-        let work = Work(content: .absoluteBeat([part], TempoMap()))
+        let work = Work(content: .absoluteBeat([part], TempoMap(), MeterTable()))
 
         let matching: [Work.TaggedNoteEvent<BeatTime, Frequency>]? = work.extractNoteEvents()
         let mismatch1: [Work.TaggedNoteEvent<WallTime, Frequency>]? = work.extractNoteEvents()
@@ -53,7 +53,7 @@ extension WorkExtractNoteEventsTests {
 
     @Test
     func extractNoteEvents_emptyWork_returnsEmptyArrayNotNil() throws {
-        let work = Work(content: .standardBeat([], TempoMap()))
+        let work = Work(content: .standardBeat([], TempoMap(), MeterTable()))
 
         let events: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
         let unwrapped = try #require(events)
@@ -67,7 +67,7 @@ extension WorkExtractNoteEventsTests {
 
         part.noteTable.insert(attack: 0, duration: 1, pitch: NoteNumber(60))
 
-        let work = Work(content: .keyboardBeat([part], TempoMap()))
+        let work = Work(content: .keyboardBeat([part], TempoMap(), MeterTable()))
 
         let matching: [Work.TaggedNoteEvent<BeatTime, NoteNumber>]? = work.extractNoteEvents()
         let mismatch: [Work.TaggedNoteEvent<WallTime, NoteNumber>]? = work.extractNoteEvents()
@@ -107,7 +107,7 @@ extension WorkExtractNoteEventsTests {
 
         let part1ID = part1.partID
         let part2ID = part2.partID
-        let work = Work(content: .standardBeat([part1, part2], TempoMap()))
+        let work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable()))
 
         let events: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
         let unwrapped = try #require(events)
@@ -119,7 +119,7 @@ extension WorkExtractNoteEventsTests {
     @Test
     func extractNoteEvents_partWithEmptyNoteTable_returnsEmptyArrayNotNil() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let events: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
         let unwrapped = try #require(events)
@@ -137,7 +137,7 @@ extension WorkExtractNoteEventsTests {
 
         let expectedEvents = part.noteTable.extractNoteEvents()
         let partID = part.partID
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let events: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
         let unwrapped = try #require(events)
@@ -159,7 +159,7 @@ extension WorkExtractNoteEventsTests {
 
         part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let matching: [Work.TaggedNoteEvent<BeatTime, Pitch>]? = work.extractNoteEvents()
         let mismatch: [Work.TaggedNoteEvent<WallTime, Pitch>]? = work.extractNoteEvents()

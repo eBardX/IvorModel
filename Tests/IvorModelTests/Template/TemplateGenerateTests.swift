@@ -58,7 +58,7 @@ extension TemplateGenerateTests {
                                          order: 1,
                                          limit: 100)
 
-        guard case let .standardBeat(parts, _) = work.content
+        guard case let .standardBeat(parts, _, _) = work.content
         else { Issue.record("Unexpected content"); return }
 
         let generated = try #require(parts.first).noteTable

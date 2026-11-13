@@ -97,12 +97,12 @@ extension NoteTableAdvancedTests {
     func unwarped_convertsToBeatTime() {
         var table = NoteTableSW()
 
-        // 1,000,000 µs = 1 second, which at the default tempo (60 BPM) is 1 beat.
+        // 1,000,000 µs = 1 second, which at the default tempo (♩ = 60) is a quarter note.
         table.insert(attack: 1_000_000, duration: 1_000_000, pitch: .c4)
 
         let result = table.unwarped(using: TempoMap())
 
-        #expect(result.timeRange?.lowerBound == 1)
+        #expect(result.timeRange?.lowerBound == BeatTime(Number(numerator: 1, denominator: 4)))
     }
 
     @Test
@@ -155,9 +155,9 @@ extension NoteTableAdvancedTests {
 
         let result = try table.varispeeded(using: TempoMap())
 
-        // 1 beat at the default tempo (60 BPM) is 1 second, i.e. 1,000,000 µs.
+        // 1 whole note at the default tempo (♩ = 60) is 4 seconds, i.e. 4,000,000 µs.
         #expect(result.pitchRange?.lowerBound == Frequency(440))
-        #expect(result.timeRange?.lowerBound == 1_000_000)
+        #expect(result.timeRange?.lowerBound == 4_000_000)
     }
 
     @Test
@@ -168,7 +168,7 @@ extension NoteTableAdvancedTests {
 
         let result = table.warped(using: TempoMap())
 
-        // 1 beat at the default tempo (60 BPM) is 1 second, i.e. 1,000,000 µs.
-        #expect(result.timeRange?.lowerBound == 1_000_000)
+        // 1 whole note at the default tempo (♩ = 60) is 4 seconds, i.e. 4,000,000 µs.
+        #expect(result.timeRange?.lowerBound == 4_000_000)
     }
 }

@@ -56,7 +56,7 @@ extension WorkConvertTests {
     @Test
     func convert_beatToWall_keepsExtras() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
-        let work = Work(content: .standardBeat([part], TempoMap()),
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()),
                         extras: makeTimeCodeExtras())
 
         let result = try #require(try work.convert(timeBasis: .wall,
@@ -69,7 +69,7 @@ extension WorkConvertTests {
     @Test
     func convert_beatToWall_keepsInfo() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        let work = Work(content: .standardBeat([part], TempoMap()),
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()),
                         info: makeWorkInfo())
 
         let result = try #require(try work.convert(timeBasis: .wall,
@@ -85,7 +85,7 @@ extension WorkConvertTests {
     func convert_keepsNameAndSMPTEStartTime() throws {
         let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps24))
         let work = Work(name: "My Work",
-                        content: .standardBeat([], TempoMap()),
+                        content: .standardBeat([], TempoMap(), MeterTable()),
                         smpteStartTime: startTime)
 
         let result = try #require(try work.convert(timeBasis: .beat,
@@ -98,7 +98,7 @@ extension WorkConvertTests {
     @Test
     func convert_keepsPartExtrasAcrossPitchNotations() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let result = try #require(try work.convert(timeBasis: .beat,
                                                    pitchNotation: .absolute))
@@ -108,7 +108,7 @@ extension WorkConvertTests {
 
     @Test
     func convert_lockedWork_convertsPitchNotation() throws {
-        var work = Work(content: .standardBeat([], TempoMap()))
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable()))
 
         work.isLocked = true
 
@@ -123,7 +123,7 @@ extension WorkConvertTests {
 
     @Test
     func convert_lockedWork_convertsTimeBasis() throws {
-        var work = Work(content: .standardBeat([], TempoMap()))
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable()))
 
         work.isLocked = true
 
@@ -142,7 +142,7 @@ extension WorkConvertTests {
         table.insert(attack: 0, duration: 1, pitch: .a4)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
         let context = Work.ConvertContext()
             .pitchStandard(.a440)
             .tuningSystem(EqualTemperament.edo12)
@@ -161,7 +161,7 @@ extension WorkConvertTests {
         table.insert(attack: 0, duration: 1, pitch: .a4)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
         let context = Work.ConvertContext().tuningSystem(EqualTemperament.edo12)
 
         #expect(throws: Work.Error.missingPitchStandard) {
@@ -178,7 +178,7 @@ extension WorkConvertTests {
         table.insert(attack: 0, duration: 1, pitch: .a4)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         #expect(throws: Work.Error.missingTuningSystem) {
             try work.convert(timeBasis: .beat,
@@ -189,7 +189,7 @@ extension WorkConvertTests {
 
     @Test
     func convert_noOp_returnsNil() throws {
-        let work = Work(content: .standardBeat([], TempoMap()))
+        let work = Work(content: .standardBeat([], TempoMap(), MeterTable()))
 
         let result = try work.convert(timeBasis: work.timeBasis,
                                       pitchNotation: work.pitchNotation)
@@ -200,7 +200,7 @@ extension WorkConvertTests {
     @Test
     func convert_pitchNotation_keepsInfo() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        let work = Work(content: .standardBeat([part], TempoMap()),
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()),
                         info: makeWorkInfo())
 
         let result = try #require(try work.convert(timeBasis: .beat,
@@ -219,7 +219,7 @@ extension WorkConvertTests {
         soft.insert(time: 2, level: .down)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.soft: soft])
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let result = try #require(try work.convert(timeBasis: .beat,
                                                    pitchNotation: .absolute))
@@ -229,7 +229,7 @@ extension WorkConvertTests {
 
     @Test
     func convert_returnsNewWorkID() throws {
-        let work = Work(content: .standardBeat([], TempoMap()))
+        let work = Work(content: .standardBeat([], TempoMap(), MeterTable()))
 
         let result = try #require(try work.convert(timeBasis: .wall,
                                                    pitchNotation: .absolute))
@@ -244,12 +244,12 @@ extension WorkConvertTests {
         table.insert(attack: 0, duration: 1, pitch: .a4)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let result = try #require(try work.convert(timeBasis: .beat,
                                                    pitchNotation: .absolute))
 
-        guard case let .absoluteBeat(parts, _) = result.content
+        guard case let .absoluteBeat(parts, _, _) = result.content
         else {
             Issue.record("Expected absolute-beat content")
             return
@@ -266,12 +266,12 @@ extension WorkConvertTests {
         table.insert(attack: 1, duration: 1, pitch: "B#3")
 
         let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let result = try #require(try work.convert(timeBasis: .beat,
                                                    pitchNotation: .keyboard))
 
-        guard case let .keyboardBeat(parts, _) = result.content
+        guard case let .keyboardBeat(parts, _, _) = result.content
         else {
             Issue.record("Expected keyboard-beat content")
             return
@@ -352,7 +352,7 @@ extension WorkConvertTests {
         table.insert(attack: 0, duration: 1, pitch: .a4)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let result = try #require(try work.convert(timeBasis: .wall,
                                                    pitchNotation: .standard))
@@ -375,7 +375,7 @@ extension WorkConvertTests {
         sustain.insert(time: 5, level: .up)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", pedals: [.sustain: sustain])
-        let work = Work(content: .standardBeat([part], tempoMap))
+        let work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
         let timeConverter = TimeConverter(tempoMap: tempoMap)
 
         let wall = try #require(try work.convert(timeBasis: .wall,

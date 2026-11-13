@@ -25,7 +25,7 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap):
+        case let .absoluteBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, Frequency>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: Self.selected(parts, partIDs: partIDs))
@@ -36,7 +36,7 @@ extension Work {
                 try part.invert(around: resolvedRange)
             }
 
-            content = .absoluteBeat(newParts, tempoMap)
+            content = .absoluteBeat(newParts, tempoMap, meterTable)
 
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
@@ -73,7 +73,7 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .keyboardBeat(parts, tempoMap):
+        case let .keyboardBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: Self.selected(parts, partIDs: partIDs))
@@ -84,7 +84,7 @@ extension Work {
                 try part.invert(around: resolvedRange)
             }
 
-            content = .keyboardBeat(newParts, tempoMap)
+            content = .keyboardBeat(newParts, tempoMap, meterTable)
 
         case let .keyboardWall(parts):
             typealias PartType = Part<WallTime, NoteNumber>
@@ -121,7 +121,7 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .standardBeat(parts, tempoMap):
+        case let .standardBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, Pitch>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: Self.selected(parts, partIDs: partIDs))
@@ -132,7 +132,7 @@ extension Work {
                 try part.invert(around: resolvedRange)
             }
 
-            content = .standardBeat(newParts, tempoMap)
+            content = .standardBeat(newParts, tempoMap, meterTable)
 
         case let .standardWall(parts):
             typealias PartType = Part<WallTime, Pitch>

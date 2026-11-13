@@ -3,7 +3,7 @@
 public import XestiTools
 
 // The names of every `Extra` Ivor attaches to the model — a note, a
-// dynamic, pan, or tempo map entry, an instrument table entry, a part, or the work
+// dynamic, pan, or tempo map entry, an instrument or meter table entry, a part, or the work
 // itself — gathered in one place so that a name is never claimed twice. Each one’s documentation says which
 // entries it’s attached to, and what its payload holds.
 extension Extra {
@@ -75,6 +75,11 @@ extension Extra {
     /// payload.
     public static let marcato = Self(name: "marcato")
 
+    /// The display symbol of a ``MeterTable`` entry’s meter: `"common"` for C (common time,
+    /// 4/4) or `"cut"` for ¢ (cut time, 2/2). It’s for display only, and never part of the
+    /// ``Meter`` itself. Payload: a single `.string`.
+    public static let meterSymbol = Self(name: "meterSymbol")
+
     /// The MIDI bank number in effect for an ``InstrumentTable`` entry, as the
     /// combined 14-bit Bank Select value (Control Change 0 MSB × 128 +
     /// Control Change 32 LSB), 0–16,383 — the value sent, and the same
@@ -104,11 +109,6 @@ extension Extra {
     /// instrument=` directive use. Payload: a single `.int`.
     public static let midiProgram = Self(name: "midiProgram")
 
-    /// The exact microseconds-per-quarter-note value of a MIDI tempo meta
-    /// event, before it’s rounded to an integer BPM for a ``TempoMap``
-    /// entry’s ``Tempo`` value. Payload: a single `.int`.
-    public static let midiTempo = Self(name: "midiTempo")
-
     /// The SMPTE time division of a Standard MIDI File whose event times are
     /// measured in frames rather than beats. It describes the whole file, so
     /// it’s attached to the work itself, in ``Work/extras``, whatever the
@@ -116,6 +116,12 @@ extension Extra {
     /// `SMPTEFrameRate` description, such as `"25"` or `"29.97DF"`), then an
     /// `.int` holding the number of ticks per frame.
     public static let midiTimeCode = Self(name: "midiTimeCode")
+
+    /// The two MIDI time signature meta event fields that don’t describe the meter itself,
+    /// attached to the ``MeterTable`` entry the event became: the MIDI clocks per metronome click,
+    /// then the number of notated 32nd notes in a MIDI quarter note (24 clocks). It never affects
+    /// timing. Payload: two `.int`s, in that order.
+    public static let midiTimeSignature = Self(name: "midiTimeSignature")
 
     /// The MIDI note number (1–128, MusicXML’s 1-based convention) an
     /// unpitched ``InstrumentTable`` entry plays, as MusicXML’s
@@ -135,19 +141,19 @@ extension Extra {
     /// payload.
     public static let pizzicato = Self(name: "pizzicato")
 
-    /// The duration (in beats) of a JohnnySonic tempo ramp, attached to the
-    /// ``TempoMap`` entry at the ramp’s start beat. Payload: a single
+    /// The duration (in whole notes) of a JohnnySonic tempo ramp, attached
+    /// to the ``TempoMap`` entry at the ramp’s start. Payload: a single
     /// `.double`.
     public static let rampDuration = Self(name: "rampDuration")
 
-    /// The ending tempo (BPM) of a JohnnySonic tempo ramp, attached to the
-    /// ``TempoMap`` entry at the ramp’s start beat. Payload: a single
-    /// `.double`.
+    /// The ending tempo of a JohnnySonic tempo ramp, in JohnnySonic’s own
+    /// quarter notes per minute, attached to the ``TempoMap`` entry at the
+    /// ramp’s start. Payload: a single `.double`.
     public static let rampEndTempo = Self(name: "rampEndTempo")
 
-    /// The starting tempo (BPM) of a JohnnySonic tempo ramp, attached to the
-    /// ``TempoMap`` entry at the ramp’s start beat. Payload: a single
-    /// `.double`.
+    /// The starting tempo of a JohnnySonic tempo ramp, in JohnnySonic’s own
+    /// quarter notes per minute, attached to the ``TempoMap`` entry at the
+    /// ramp’s start. Payload: a single `.double`.
     public static let rampStartTempo = Self(name: "rampStartTempo")
 
     /// The exact key velocity (1–127, MIDI-style scale) a ``NoteTable`` note

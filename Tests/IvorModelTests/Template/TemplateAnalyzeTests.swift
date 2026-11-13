@@ -22,7 +22,7 @@ extension TemplateAnalyzeTests {
         // swiftlint:disable:next force_unwrapping
         noteTable.insert(attack: 0, duration: 1, pitch: NoteNumber(uintValue: 60)!)
 
-        let keyboard = Work(content: .keyboardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap()))
+        let keyboard = Work(content: .keyboardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable()))
 
         #expect(throws: Template.Error.incompatibleOptions) {
             try template.adding(partAt: 0, of: keyboard, name: "Mixed")
@@ -120,7 +120,7 @@ extension TemplateAnalyzeTests {
         noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: noteTable)
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         #expect(throws: Template.Error.self) {
             try Template.analyzeNoteEvents(in: work,
@@ -133,7 +133,7 @@ extension TemplateAnalyzeTests {
     @Test
     func analyzeNoteEvents_partNotFound() {
         let part = Part<BeatTime, Pitch>(name: "Piano")
-        let work = Work(content: .standardBeat([part], TempoMap()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
 
         #expect(throws: Template.Error.self) {
             try Template.analyzeNoteEvents(in: work,
@@ -151,7 +151,7 @@ extension TemplateAnalyzeTests {
         table.insert(attack: 1, duration: 1, pitch: .e4)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
-        let work = Work(name: "My Work", content: .standardBeat([part], TempoMap()))
+        let work = Work(name: "My Work", content: .standardBeat([part], TempoMap(), MeterTable()))
 
         let tmpl = try Template.analyzeNoteEvents(in: work,
                                                   at: 0,

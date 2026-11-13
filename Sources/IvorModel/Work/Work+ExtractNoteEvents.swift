@@ -14,7 +14,7 @@ extension Work {
     /// - Returns:  The tagged note events, or `nil` if this work’s content is not
     ///             beat-time, absolute-pitch content.
     public func extractNoteEvents() -> [TaggedNoteEvent<BeatTime, Frequency>]? {
-        guard case let .absoluteBeat(parts, _) = content
+        guard case let .absoluteBeat(parts, _, _) = content
         else { return nil }
 
         return Self._extractNoteEvents(from: parts)
@@ -40,7 +40,7 @@ extension Work {
     /// - Returns:  The tagged note events, or `nil` if this work’s content is not
     ///             beat-time, keyboard-pitch content.
     public func extractNoteEvents() -> [TaggedNoteEvent<BeatTime, NoteNumber>]? {
-        guard case let .keyboardBeat(parts, _) = content
+        guard case let .keyboardBeat(parts, _, _) = content
         else { return nil }
 
         return Self._extractNoteEvents(from: parts)
@@ -66,7 +66,7 @@ extension Work {
     /// - Returns:  The tagged note events, or `nil` if this work’s content is not
     ///             beat-time, standard-pitch content.
     public func extractNoteEvents() -> [TaggedNoteEvent<BeatTime, Pitch>]? {
-        guard case let .standardBeat(parts, _) = content
+        guard case let .standardBeat(parts, _, _) = content
         else { return nil }
 
         return Self._extractNoteEvents(from: parts)

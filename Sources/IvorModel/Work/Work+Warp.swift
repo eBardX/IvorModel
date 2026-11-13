@@ -12,7 +12,8 @@ extension Work {
     /// tempo map — a fixed-media export at the tempo curve currently in effect. `nil` for
     /// wall-time content, which has no tempo map to convert with. The new work keeps this
     /// work’s ``Work/smpteStartTime``, ``Work/info``, ``Work/extras``, and
-    /// ``Work/realizations``, and its parts keep their IDs and extras.
+    /// ``Work/realizations``, and its parts keep their IDs and extras. The meter table is
+    /// dropped, since wall time has no bars.
     ///
     /// Always succeeds, even on a locked work: this returns an independent, unlocked copy rather
     /// than mutating `self`, so ``Work/isLocked`` — which only protects `self` from being
@@ -35,7 +36,7 @@ extension Work {
 
     private static func _warped(_ content: Content) -> Content? {
         switch content {
-        case let .absoluteBeat(parts, tempoMap):
+        case let .absoluteBeat(parts, tempoMap, _):
             let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             return .absoluteWall(parts.map { part in
@@ -43,7 +44,7 @@ extension Work {
                                  using: timeConverter)
             })
 
-        case let .keyboardBeat(parts, tempoMap):
+        case let .keyboardBeat(parts, tempoMap, _):
             let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             return .keyboardWall(parts.map { part in
@@ -51,7 +52,7 @@ extension Work {
                                  using: timeConverter)
             })
 
-        case let .standardBeat(parts, tempoMap):
+        case let .standardBeat(parts, tempoMap, _):
             let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             return .standardWall(parts.map { part in
@@ -81,7 +82,8 @@ extension Work {
     /// wall-to-beat conversion, which always produces content backed by a fresh, empty tempo map,
     /// the beat-time content this method returns carries `tempoMap` itself forward as its own tempo
     /// map — the point of this method is to hand back editable beat-time content that stays
-    /// coherent with the very tempo curve used to derive its beat positions.
+    /// coherent with the very tempo curve used to derive its beat positions. Its meter table
+    /// starts out empty.
     ///
     /// Always succeeds, even on a locked work — see ``warped()``’s doc comment for why.
     ///
@@ -113,21 +115,24 @@ extension Work {
                 convertWallTimes(in: part,
                                  using: timeConverter)
             },
-                                 tempoMap)
+                                 tempoMap,
+                                 MeterTable())
 
         case let .keyboardWall(parts):
             return .keyboardBeat(parts.map { part in
                 convertWallTimes(in: part,
                                  using: timeConverter)
             },
-                                 tempoMap)
+                                 tempoMap,
+                                 MeterTable())
 
         case let .standardWall(parts):
             return .standardBeat(parts.map { part in
                 convertWallTimes(in: part,
                                  using: timeConverter)
             },
-                                 tempoMap)
+                                 tempoMap,
+                                 MeterTable())
 
         default:
             return nil
@@ -164,7 +169,7 @@ extension Work {
     ///             ``Work/TransformKind/varispeed`` if shifting any note’s pitch by the tempo
     ///             ratio in effect produces a frequency outside the representable range.
     public func varispeeded(normalTempo: Tempo = .default) throws(Error) -> Work? {
-        guard case let .absoluteBeat(parts, tempoMap) = content
+        guard case let .absoluteBeat(parts, tempoMap, _) = content
         else { return nil }
 
         let timeConverter = TimeConverter(tempoMap: tempoMap)

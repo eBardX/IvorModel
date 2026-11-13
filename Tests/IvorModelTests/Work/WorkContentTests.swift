@@ -15,7 +15,8 @@ extension WorkContentTests {
     @Test
     func codable_beat() throws {
         let original: Work.Content = .standardBeat([Part<BeatTime, Pitch>(name: "Piano")],
-                                                   TempoMap())
+                                                   TempoMap(),
+                                                   MeterTable())
         let data = try JSONEncoder().encode(original)
         let decoded = try JSONDecoder().decode(Work.Content.self,
                                                from: data)
@@ -71,7 +72,7 @@ extension WorkContentTests {
 
     @Test
     func timeBasis_beat() {
-        let content: Work.Content = .standardBeat([], TempoMap())
+        let content: Work.Content = .standardBeat([], TempoMap(), MeterTable())
 
         #expect(content.timeBasis == .beat)
     }

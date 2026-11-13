@@ -207,6 +207,30 @@ extension ExtraIvorTests {
     }
 
     @Test
+    func meterSymbol() {
+        #expect(Extra.meterSymbol.name == "meterSymbol")
+        #expect(Extra.meterSymbol.values.isEmpty)
+    }
+
+    @Test
+    func meterSymbolAndMidiTimeSignature_roundTripThroughMeterTableEntry() throws {
+        var meterTable = MeterTable()
+
+        try meterTable.insert(beatTime: 0,
+                              meter: meter("4/4"),
+                              extras: Extras(elements: [Extra(name: Extra.meterSymbol.name,
+                                                              values: [.string("common")]),
+                                                        Extra(name: Extra.midiTimeSignature.name,
+                                                              values: [.int(24), .int(8)])]))
+
+        let data = try JSONEncoder().encode(meterTable)
+        let entry = try #require(try JSONDecoder().decode(MeterTable.self, from: data).first)
+
+        #expect(extraValues(Extra.meterSymbol, in: entry.extras) == [.string("common")])
+        #expect(extraValues(Extra.midiTimeSignature, in: entry.extras) == [.int(24), .int(8)])
+    }
+
+    @Test
     func midiBank() {
         #expect(Extra.midiBank.name == "midiBank")
         #expect(Extra.midiBank.values.isEmpty)
@@ -297,15 +321,15 @@ extension ExtraIvorTests {
     }
 
     @Test
-    func midiTempo() {
-        #expect(Extra.midiTempo.name == "midiTempo")
-        #expect(Extra.midiTempo.values.isEmpty)
-    }
-
-    @Test
     func midiTimeCode() {
         #expect(Extra.midiTimeCode.name == "midiTimeCode")
         #expect(Extra.midiTimeCode.values.isEmpty)
+    }
+
+    @Test
+    func midiTimeSignature() {
+        #expect(Extra.midiTimeSignature.name == "midiTimeSignature")
+        #expect(Extra.midiTimeSignature.values.isEmpty)
     }
 
     @Test
@@ -385,7 +409,7 @@ extension ExtraIvorTests {
         var tempoMap = TempoMap()
 
         tempoMap.insert(beatTime: 1,
-                        tempo: 120,
+                        tempo: Tempo(120),
                         extras: Extras(elements: [Extra(name: Extra.tempoText.name,
                                                         values: [.string("Allegro")])]))
 

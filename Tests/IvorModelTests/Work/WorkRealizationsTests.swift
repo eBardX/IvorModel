@@ -71,7 +71,7 @@ extension WorkRealizationsTests {
     func convert_keepsPartIDsAndRealizations() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         let realization = try Realization(partTables: [part.partID: makeOrganPatchTable()])
-        let work = Work(content: .standardBeat([part], TempoMap()),
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()),
                         realizations: [realization])
 
         let result = try #require(try work.convert(timeBasis: .wall,
@@ -233,7 +233,7 @@ extension WorkRealizationsTests {
     func warped_keepsPartIDsAndRealizations() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         let realization = try Realization(partTables: [part.partID: makeOrganPatchTable()])
-        let work = Work(content: .standardBeat([part], TempoMap()),
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable()),
                         realizations: [realization])
 
         let result = try #require(work.warped())

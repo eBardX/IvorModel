@@ -1,5 +1,5 @@
 {
-  "originHash" : "7dd951907851166a6b825b2850b2af887ceafa6e150167bffa3b27036e58d77d",
+  "originHash" : "81799a2e1b4700455c903b208ea0cd948ad271b97e6e207e6f54a9af82bf7350",
   "pins" : [
     {
       "identity" : "bigint",
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/IvorTiming.git",
       "state" : {
-        "revision" : "541b4454a1eb79717965362bfe8c911563f87e15",
-        "version" : "0.18.1"
+        "revision" : "903f83130ea1962dae03a25a556714a5208081d3",
+        "version" : "0.19.0"
       }
     },
     {
@@ -60,8 +60,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eBardX/XestiMarkov.git",
       "state" : {
-        "revision" : "dfd96819e700b6de3f28a4158b8d4dc1a22532ae",
-        "version" : "4.0.0"
+        "revision" : "e433803de67fa99ed74192a6cd8640cf31f0cb1d",
+        "version" : "4.0.1"
       }
     },
     {

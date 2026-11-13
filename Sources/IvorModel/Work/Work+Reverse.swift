@@ -12,15 +12,19 @@ extension Work {
 
     /// Reverses the order of notes within a beat-time range across the beat-time parts in this work
     /// that `partIDs` names, along with any parameter maps selected by `applyTo` and, when
-    /// `applyTo` contains ``TransformTargets/tempo``, the work’s own tempo map. The tempo map is work-wide, so it is carried
-    /// along whichever parts are targeted.
+    /// `applyTo` contains ``TransformTargets/tempo`` or ``TransformTargets/meter``, the work’s own
+    /// tempo map or meter table. Both are work-wide, so they’re carried along whichever parts are
+    /// targeted.
+    ///
+    /// The meter table’s bars within the range are reversed as ``MeterTable/reverse(within:)``
+    /// describes, and the grid after the range is kept.
     ///
     /// - Parameter timeRange:  The beat-time range to mirror attack times around. `nil` resolves
     ///                         to the span of everything being reversed: the targeted parts’
     ///                         notes and the entries of every map `applyTo` selects, including
-    ///                         the tempo map.
-    /// - Parameter applyTo:    The parameter maps (and tempo map) to reverse along with every note
-    ///                         table. Defaults to every map.
+    ///                         the tempo map and the meter table.
+    /// - Parameter applyTo:    The parameter maps (and tempo map and meter table) to reverse
+    ///                         along with every note table. Defaults to every map.
     /// - Parameter partIDs:    The IDs of the parts to transform, or `nil` (the default) for every
     ///                         part. IDs naming no part are ignored.
     ///
@@ -34,11 +38,12 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap):
+        case let .absoluteBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, Frequency>
 
             let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
                                                                      tempoMap: tempoMap,
+                                                                     meterTable: meterTable,
                                                                      applyTo: applyTo)
             let newParts = try Self.transformed(parts: parts,
                                                 partIDs: partIDs,
@@ -59,14 +64,22 @@ extension Work {
                                     reversedFrom: original,
                                     within: resolvedRange)
             }
+            let newMeterTable = try Self.carried(meterTable: meterTable,
+                                                 applyTo: applyTo,
+                                                 kind: .reverse) { (meter: inout MeterTable) throws(MeterTable.Error) in
+                if let resolvedRange {
+                    meter.reverse(within: resolvedRange)
+                }
+            }
 
-            content = .absoluteBeat(newParts, newTempoMap)
+            content = .absoluteBeat(newParts, newTempoMap, newMeterTable)
 
-        case let .keyboardBeat(parts, tempoMap):
+        case let .keyboardBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
                                                                      tempoMap: tempoMap,
+                                                                     meterTable: meterTable,
                                                                      applyTo: applyTo)
             let newParts = try Self.transformed(parts: parts,
                                                 partIDs: partIDs,
@@ -88,14 +101,22 @@ extension Work {
                                     reversedFrom: original,
                                     within: resolvedRange)
             }
+            let newMeterTable = try Self.carried(meterTable: meterTable,
+                                                 applyTo: applyTo,
+                                                 kind: .reverse) { (meter: inout MeterTable) throws(MeterTable.Error) in
+                if let resolvedRange {
+                    meter.reverse(within: resolvedRange)
+                }
+            }
 
-            content = .keyboardBeat(newParts, newTempoMap)
+            content = .keyboardBeat(newParts, newTempoMap, newMeterTable)
 
-        case let .standardBeat(parts, tempoMap):
+        case let .standardBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, Pitch>
 
             let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
                                                                      tempoMap: tempoMap,
+                                                                     meterTable: meterTable,
                                                                      applyTo: applyTo)
             let newParts = try Self.transformed(parts: parts,
                                                 partIDs: partIDs,
@@ -117,8 +138,15 @@ extension Work {
                                     reversedFrom: original,
                                     within: resolvedRange)
             }
+            let newMeterTable = try Self.carried(meterTable: meterTable,
+                                                 applyTo: applyTo,
+                                                 kind: .reverse) { (meter: inout MeterTable) throws(MeterTable.Error) in
+                if let resolvedRange {
+                    meter.reverse(within: resolvedRange)
+                }
+            }
 
-            content = .standardBeat(newParts, newTempoMap)
+            content = .standardBeat(newParts, newTempoMap, newMeterTable)
 
         default:
             throw Error.timeBasisMismatch(expected: .beat)
@@ -197,9 +225,9 @@ extension Work {
 
     //
     // The JohnnySonic ramp extras (`rampStartTempo`, `rampEndTempo` and `rampDuration`) describe
-    // a ramp that starts at their entry and runs `rampDuration` beats, and the exporter trusts
-    // them over the map. Reversing mirrors entry times, which leaves them where the ramp now
-    // *ends*, still running the old way. `TempoMap.reverse` only accepts a range that holds every
+    // a ramp that starts at their entry and runs `rampDuration` whole notes, and the exporter
+    // trusts them over the map. Reversing mirrors entry times, which leaves them where the ramp
+    // now *ends*, still running the old way. `TempoMap.reverse` only accepts a range that holds every
     // entry, so every ramp starts within it. A ramp that also ends within it is mirrored whole:
     // its extras move to the last entry at its new start, with the start and end tempos swapped,
     // inserting an entry that holds the tempo already in effect if there's none there. A ramp

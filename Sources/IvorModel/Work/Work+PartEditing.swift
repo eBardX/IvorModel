@@ -26,13 +26,13 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap):
+        case let .absoluteBeat(parts, tempoMap, meterTable):
             let part = Part<BeatTime, Frequency>(name: name)
             var newParts = parts
 
             newParts.append(part)
 
-            content = .absoluteBeat(newParts, tempoMap)
+            content = .absoluteBeat(newParts, tempoMap, meterTable)
 
             return part.partID
 
@@ -46,13 +46,13 @@ extension Work {
 
             return part.partID
 
-        case let .keyboardBeat(parts, tempoMap):
+        case let .keyboardBeat(parts, tempoMap, meterTable):
             let part = Part<BeatTime, NoteNumber>(name: name)
             var newParts = parts
 
             newParts.append(part)
 
-            content = .keyboardBeat(newParts, tempoMap)
+            content = .keyboardBeat(newParts, tempoMap, meterTable)
 
             return part.partID
 
@@ -66,13 +66,13 @@ extension Work {
 
             return part.partID
 
-        case let .standardBeat(parts, tempoMap):
+        case let .standardBeat(parts, tempoMap, meterTable):
             let part = Part<BeatTime, Pitch>(name: name)
             var newParts = parts
 
             newParts.append(part)
 
-            content = .standardBeat(newParts, tempoMap)
+            content = .standardBeat(newParts, tempoMap, meterTable)
 
             return part.partID
 
@@ -103,7 +103,7 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap):
+        case let .absoluteBeat(parts, tempoMap, meterTable):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return nil }
 
@@ -113,7 +113,7 @@ extension Work {
             newParts.insert(duplicate,
                             at: index + 1)
 
-            content = .absoluteBeat(newParts, tempoMap)
+            content = .absoluteBeat(newParts, tempoMap, meterTable)
 
             copyPartTables(from: partID,
                            to: duplicate.partID)
@@ -137,7 +137,7 @@ extension Work {
 
             return duplicate.partID
 
-        case let .keyboardBeat(parts, tempoMap):
+        case let .keyboardBeat(parts, tempoMap, meterTable):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return nil }
 
@@ -147,7 +147,7 @@ extension Work {
             newParts.insert(duplicate,
                             at: index + 1)
 
-            content = .keyboardBeat(newParts, tempoMap)
+            content = .keyboardBeat(newParts, tempoMap, meterTable)
 
             copyPartTables(from: partID,
                            to: duplicate.partID)
@@ -171,7 +171,7 @@ extension Work {
 
             return duplicate.partID
 
-        case let .standardBeat(parts, tempoMap):
+        case let .standardBeat(parts, tempoMap, meterTable):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return nil }
 
@@ -181,7 +181,7 @@ extension Work {
             newParts.insert(duplicate,
                             at: index + 1)
 
-            content = .standardBeat(newParts, tempoMap)
+            content = .standardBeat(newParts, tempoMap, meterTable)
 
             copyPartTables(from: partID,
                            to: duplicate.partID)
@@ -215,19 +215,19 @@ extension Work {
     ///             such part is found.
     public func index(ofPartID partID: PartID) -> Int? {
         switch content {
-        case let .absoluteBeat(parts, _):
+        case let .absoluteBeat(parts, _, _):
             parts.firstIndex { $0.partID == partID }
 
         case let .absoluteWall(parts):
             parts.firstIndex { $0.partID == partID }
 
-        case let .keyboardBeat(parts, _):
+        case let .keyboardBeat(parts, _, _):
             parts.firstIndex { $0.partID == partID }
 
         case let .keyboardWall(parts):
             parts.firstIndex { $0.partID == partID }
 
-        case let .standardBeat(parts, _):
+        case let .standardBeat(parts, _, _):
             parts.firstIndex { $0.partID == partID }
 
         case let .standardWall(parts):
@@ -245,7 +245,7 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap):
+        case let .absoluteBeat(parts, tempoMap, meterTable):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return }
 
@@ -253,7 +253,7 @@ extension Work {
 
             newParts.remove(at: index)
 
-            content = .absoluteBeat(newParts, tempoMap)
+            content = .absoluteBeat(newParts, tempoMap, meterTable)
 
         case let .absoluteWall(parts):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
@@ -265,7 +265,7 @@ extension Work {
 
             content = .absoluteWall(newParts)
 
-        case let .keyboardBeat(parts, tempoMap):
+        case let .keyboardBeat(parts, tempoMap, meterTable):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return }
 
@@ -273,7 +273,7 @@ extension Work {
 
             newParts.remove(at: index)
 
-            content = .keyboardBeat(newParts, tempoMap)
+            content = .keyboardBeat(newParts, tempoMap, meterTable)
 
         case let .keyboardWall(parts):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
@@ -285,7 +285,7 @@ extension Work {
 
             content = .keyboardWall(newParts)
 
-        case let .standardBeat(parts, tempoMap):
+        case let .standardBeat(parts, tempoMap, meterTable):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return }
 
@@ -293,7 +293,7 @@ extension Work {
 
             newParts.remove(at: index)
 
-            content = .standardBeat(newParts, tempoMap)
+            content = .standardBeat(newParts, tempoMap, meterTable)
 
         case let .standardWall(parts):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
@@ -318,7 +318,7 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap):
+        case let .absoluteBeat(parts, tempoMap, meterTable):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return }
 
@@ -326,7 +326,7 @@ extension Work {
 
             newParts[index].name = name
 
-            content = .absoluteBeat(newParts, tempoMap)
+            content = .absoluteBeat(newParts, tempoMap, meterTable)
 
         case let .absoluteWall(parts):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
@@ -338,7 +338,7 @@ extension Work {
 
             content = .absoluteWall(newParts)
 
-        case let .keyboardBeat(parts, tempoMap):
+        case let .keyboardBeat(parts, tempoMap, meterTable):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return }
 
@@ -346,7 +346,7 @@ extension Work {
 
             newParts[index].name = name
 
-            content = .keyboardBeat(newParts, tempoMap)
+            content = .keyboardBeat(newParts, tempoMap, meterTable)
 
         case let .keyboardWall(parts):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
@@ -358,7 +358,7 @@ extension Work {
 
             content = .keyboardWall(newParts)
 
-        case let .standardBeat(parts, tempoMap):
+        case let .standardBeat(parts, tempoMap, meterTable):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return }
 
@@ -366,7 +366,7 @@ extension Work {
 
             newParts[index].name = name
 
-            content = .standardBeat(newParts, tempoMap)
+            content = .standardBeat(newParts, tempoMap, meterTable)
 
         case let .standardWall(parts):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
@@ -392,7 +392,7 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap):
+        case let .absoluteBeat(parts, tempoMap, meterTable):
             guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
             else { return }
 
@@ -402,7 +402,7 @@ extension Work {
             newParts.insert(part,
                             at: Self._clamp(index, to: newParts.count))
 
-            content = .absoluteBeat(newParts, tempoMap)
+            content = .absoluteBeat(newParts, tempoMap, meterTable)
 
         case let .absoluteWall(parts):
             guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
@@ -416,7 +416,7 @@ extension Work {
 
             content = .absoluteWall(newParts)
 
-        case let .keyboardBeat(parts, tempoMap):
+        case let .keyboardBeat(parts, tempoMap, meterTable):
             guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
             else { return }
 
@@ -426,7 +426,7 @@ extension Work {
             newParts.insert(part,
                             at: Self._clamp(index, to: newParts.count))
 
-            content = .keyboardBeat(newParts, tempoMap)
+            content = .keyboardBeat(newParts, tempoMap, meterTable)
 
         case let .keyboardWall(parts):
             guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
@@ -440,7 +440,7 @@ extension Work {
 
             content = .keyboardWall(newParts)
 
-        case let .standardBeat(parts, tempoMap):
+        case let .standardBeat(parts, tempoMap, meterTable):
             guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })
             else { return }
 
@@ -450,7 +450,7 @@ extension Work {
             newParts.insert(part,
                             at: Self._clamp(index, to: newParts.count))
 
-            content = .standardBeat(newParts, tempoMap)
+            content = .standardBeat(newParts, tempoMap, meterTable)
 
         case let .standardWall(parts):
             guard let currentIndex = parts.firstIndex(where: { $0.partID == partID })

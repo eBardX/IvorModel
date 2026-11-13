@@ -14,6 +14,9 @@ extension Work {
     /// ``TransformTargets/tempo``, the work’s own tempo map. The tempo map is work-wide, so it is carried
     /// along whichever parts are targeted.
     ///
+    /// The work’s meter table is never quantized, whatever `applyTo` holds: meter entries mark
+    /// notation, not sound.
+    ///
     /// - Parameter factors:    An array of positive integer subdivision factors.
     /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize every
     ///                         note in the targeted parts.
@@ -36,7 +39,7 @@ extension Work {
         let quantizer = try Self._quantizer(factors)
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap):
+        case let .absoluteBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, Frequency>
 
             let newParts = try Self.transformed(parts: parts,
@@ -50,9 +53,10 @@ extension Work {
             content = .absoluteBeat(newParts,
                                     Self._quantized(tempoMap: tempoMap,
                                                     using: quantizer,
-                                                    applyTo: applyTo))
+                                                    applyTo: applyTo),
+                                    meterTable)
 
-        case let .keyboardBeat(parts, tempoMap):
+        case let .keyboardBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let newParts = try Self.transformed(parts: parts,
@@ -66,9 +70,10 @@ extension Work {
             content = .keyboardBeat(newParts,
                                     Self._quantized(tempoMap: tempoMap,
                                                     using: quantizer,
-                                                    applyTo: applyTo))
+                                                    applyTo: applyTo),
+                                    meterTable)
 
-        case let .standardBeat(parts, tempoMap):
+        case let .standardBeat(parts, tempoMap, meterTable):
             typealias PartType = Part<BeatTime, Pitch>
 
             let newParts = try Self.transformed(parts: parts,
@@ -82,7 +87,8 @@ extension Work {
             content = .standardBeat(newParts,
                                     Self._quantized(tempoMap: tempoMap,
                                                     using: quantizer,
-                                                    applyTo: applyTo))
+                                                    applyTo: applyTo),
+                                    meterTable)
 
         default:
             throw Error.timeBasisMismatch(expected: .beat)
@@ -131,7 +137,7 @@ extension Work {
     }
 
     //
-    // The JohnnySonic `rampDuration` extra runs in beats from its entry, and the exporter
+    // The JohnnySonic `rampDuration` extra runs in whole notes from its entry, and the exporter
     // trusts it over the map. Quantizing snaps the entry but not the duration, so snap the
     // ramp's end too, as a note's release is snapped with its attack, and set the duration to
     // the distance between the snapped ends.

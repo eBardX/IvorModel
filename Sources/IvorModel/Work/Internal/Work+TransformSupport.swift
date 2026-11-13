@@ -9,6 +9,28 @@ extension Work {
     // MARK: Internal Type Methods
 
     //
+    // As for the tempo map below, but for the work's own `meterTable`, governed by `.meter`.
+    //
+    internal static func carried(meterTable: MeterTable,
+                                 applyTo: TransformTargets,
+                                 kind: TransformKind,
+                                 transform: (inout MeterTable) throws(MeterTable.Error) -> Void) throws(Error) -> MeterTable {
+        guard applyTo.contains(.meter)
+        else { return meterTable }
+
+        var newMeterTable = meterTable
+
+        do {
+            try transform(&newMeterTable)
+        } catch {
+            throw Error.meterTableTransformFailure(kind: kind,
+                                                   detail: error.message)
+        }
+
+        return newMeterTable
+    }
+
+    //
     // `applyTo` also governs whether a beat-time transform carries the work's own `tempoMap`
     // along: only when it contains `.tempo`, just as each per-part map moves only when `applyTo`
     // names it. Which parts are targeted makes no difference here. The tempo map is work-wide, so
@@ -34,7 +56,7 @@ extension Work {
     }
 
     //
-    // `rampDuration` is in beats, but `TempoMap`'s own transforms don't know about it, so
+    // `rampDuration` is in whole notes, but `TempoMap`'s own transforms don't know about it, so
     // augment and diminish scale it here, after the map itself has been scaled: by the factor
     // for augment, by its reciprocal for diminish.
     //
