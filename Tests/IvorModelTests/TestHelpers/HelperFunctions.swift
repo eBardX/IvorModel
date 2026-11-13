@@ -165,6 +165,10 @@ func dynamicTime(of entryID: EntryID,
     part.dynamicMap.first { $0.entryID == entryID }?.time
 }
 
+func earlier(_ value: Number) -> DirectedDuration<BeatDuration> {
+    DirectedDuration(duration: beats(value), direction: .backward)
+}
+
 func endCount(of template: Template,
               _ role: Template.ChainRole) throws -> UInt {
     var count: UInt = 0
@@ -189,6 +193,90 @@ func endTime(of noteEvents: some Sequence<NoteEvent<BeatTime, Pitch>>) -> BeatTi
 }
 
 //
+// Every beat time at or after `shift` (which the original grid covers) keeps its beat and
+// offset when moved by `shift`. Bar numbers may change, as the pickup does.
+//
+func expectBeatsKept(from original: MeterTable,
+                     to moved: MeterTable,
+                     by shift: BeatDuration,
+                     earlier: Bool = false,
+                     sourceLocation: SourceLocation = #_sourceLocation) {
+    for tick in 0..<480 {
+        let time = beatTime(frac(tick, 96))
+
+        if earlier {
+            guard time >= .zero + shift
+            else { continue }
+
+            let before = original.position(at: time)
+            let after = moved.position(at: time - shift)
+
+            #expect(before?.beat == after?.beat, sourceLocation: sourceLocation)
+            #expect(before?.offset == after?.offset, sourceLocation: sourceLocation)
+        } else {
+            guard let before = original.position(at: time)
+            else { continue }
+
+            let after = moved.position(at: time + shift)
+
+            #expect(before.beat == after?.beat, sourceLocation: sourceLocation)
+            #expect(before.offset == after?.offset, sourceLocation: sourceLocation)
+        }
+    }
+}
+
+//
+// Every beat time at or after `anchor` keeps its bar and beat once stretched, and its offset
+// scales with it.
+//
+func expectPositionsKept(from original: MeterTable,
+                         to scaled: MeterTable,
+                         factor: Number,
+                         anchor: BeatTime,
+                         sourceLocation: SourceLocation = #_sourceLocation) {
+    for tick in 0..<480 {
+        let time = beatTime(frac(tick, 96))
+
+        guard time >= anchor,
+              let before = original.position(at: time)
+        else { continue }
+
+        let after = scaled.position(at: anchor + (time - anchor) * factor)
+
+        #expect(after?.bar == before.bar, sourceLocation: sourceLocation)
+        #expect(after?.beat == before.beat, sourceLocation: sourceLocation)
+        #expect(after?.offset == before.offset * factor, sourceLocation: sourceLocation)
+    }
+}
+
+func expectSameBarlines(_ table1: MeterTable,
+                        _ table2: MeterTable,
+                        from start: BeatTime,
+                        to end: BeatTime,
+                        sourceLocation: SourceLocation = #_sourceLocation) {
+    let barlines1 = table1.bars(overlapping: start..<end).map(\.range.lowerBound).filter { $0 >= start }
+    let barlines2 = table2.bars(overlapping: start..<end).map(\.range.lowerBound).filter { $0 >= start }
+
+    #expect(barlines1 == barlines2, sourceLocation: sourceLocation)
+}
+
+func expectSameWallTimes(_ lhs: Work,
+                         _ rhs: Work,
+                         sourceLocation: SourceLocation = #_sourceLocation) throws {
+    let lhsTimes = try wallAttacks(of: lhs)
+    let rhsTimes = try wallAttacks(of: rhs)
+
+    #expect(lhsTimes.count == rhsTimes.count, sourceLocation: sourceLocation)
+
+    //
+    // Wall times are kept in microseconds, so allow for a rounding step either way.
+    //
+    for (lhsTime, rhsTime) in zip(lhsTimes, rhsTimes) {
+        #expect(abs(lhsTime - rhsTime) < 2e-6, "\(lhsTimes) ≠ \(rhsTimes)", sourceLocation: sourceLocation)
+    }
+}
+
+//
 // The contents of the file at `path` in a saved project's unzipped `root`.
 //
 func extraValues(_ extra: Extra,
@@ -209,6 +297,10 @@ func firstAbsolutePartID(of work: Work) throws -> PartID {
     else { Issue.record("Expected absolute-wall content"); return PartID() }
 
     return try #require(parts.first).partID
+}
+
+func firstID(of table: MeterTable) throws -> EntryID {
+    try #require(table.first).entryID
 }
 
 func firstNoteSB(_ pitch: Pitch,
@@ -248,6 +340,14 @@ func keyboardWallPitches(of work: Work?) throws -> [NoteNumber] {
     return try #require(parts.first).noteTable.map(\.startPitch)
 }
 
+func lastID(of table: MeterTable) throws -> EntryID {
+    try #require(table.last).entryID
+}
+
+func later(_ value: Number) -> DirectedDuration<BeatDuration> {
+    DirectedDuration(duration: beats(value), direction: .forward)
+}
+
 func makeAbsoluteWallWork(_ notes: [(UInt, UInt, [Double])]) throws -> Work {
     var noteTable = NoteTable<WallTime, Frequency>()
 
@@ -268,6 +368,15 @@ func makeAssignment(program: Int,
 
     return try #require(PatchTable.Assignment(patch: patch,
                                               channel: channel))
+}
+
+func makeBar(number: Int) -> MeterTable.Bar {
+    MeterTable.Bar(number: number,
+                   range: 0..<1,
+                   meter: meter("4/4"),
+                   isPickup: false,
+                   isShort: false,
+                   beatStarts: [0])
 }
 
 //
@@ -352,6 +461,11 @@ func makeLockedWorkSB() -> (work: Work, partID: PartID) {
     return (work, part.partID)
 }
 
+func makeMeteredSourceWork(_ meterTable: MeterTable) -> Work {
+    Work(name: "Metered",
+         content: .standardBeat([makePlainSourcePart()], TempoMap(), meterTable))
+}
+
 func makeMeterTable(_ entries: [(Number, String)],
                     pickup: Number = 0) throws -> MeterTable {
     var table = MeterTable()
@@ -363,6 +477,18 @@ func makeMeterTable(_ entries: [(Number, String)],
     try table.setPickup(beats(pickup))
 
     return table
+}
+
+func makeMeterWork(meterTable: MeterTable,
+                   tempoMap: TempoMap = TempoMap(),
+                   notes attacks: [Number]) throws -> Work {
+    var part = Part<BeatTime, Pitch>(name: "Piano")
+
+    for attack in attacks {
+        part.noteTable.insert(attack: beatTime(attack), duration: beats(frac(1, 8)), pitch: .c4)
+    }
+
+    return Work(content: .standardBeat([part], tempoMap, meterTable))
 }
 
 func makeNamedStandardBeatWork(_ name: String,
@@ -481,10 +607,16 @@ func makePlainSourceWork() -> Work {
          content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable()))
 }
 
-//
-// C D, a four-beat rest, E F, a one-beat rest, then G held for four beats.
+func makePosition(beat: Int?) -> MeterTable.Position {
+    MeterTable.Position(bar: 1,
+                        beat: beat,
+                        offset: .zero,
+                        beatLength: beat.map { _ in beats(frac(1, 4)) })
+}
+
 //
 // Down at 1, re-pedaled at 3, up at 5.
+//
 func makeRepedaledPedalTable() -> PedalTable<BeatTime> {
     var table = PedalTable<BeatTime>()
 
@@ -496,6 +628,9 @@ func makeRepedaledPedalTable() -> PedalTable<BeatTime> {
     return table
 }
 
+//
+// C D, a four-beat rest, E F, a one-beat rest, then G held for four beats.
+//
 func makeRestSplitTune() -> Work {
     var noteTable = NoteTable<BeatTime, Pitch>()
 
@@ -721,6 +856,19 @@ func standardWallPitches(of work: Work?) throws -> [Pitch] {
     else { Issue.record("Expected standard-wall content"); return [] }
 
     return try #require(parts.first).noteTable.map(\.startPitch)
+}
+
+func summary(of table: MeterTable) -> [String] {
+    table.map { "\($0.meter.plain)@\($0.beatTime.numberValue.simplified)" }
+}
+
+func wallAttacks(of work: Work) throws -> [Double] {
+    guard case let .standardBeat(parts, tempoMap, _) = work.content
+    else { throw Work.Error.timeBasisMismatch(expected: .beat) }
+
+    let converter = TimeConverter(tempoMap: tempoMap)
+
+    return try #require(parts.first).noteTable.map { converter.wallTime(at: $0.attack).doubleValue }
 }
 
 //

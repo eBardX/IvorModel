@@ -27,6 +27,22 @@ extension Meter {
         return BeatDuration(duration.numberValue - quotient * length.numberValue)
     }
 
+    // MARK: Internal Instance Properties
+
+    //
+    // The start of each beat of a full bar of this meter, measured from the start of the bar.
+    // Empty if this meter is free.
+    //
+    internal var beatOffsets: [BeatDuration] {
+        var start = BeatDuration.zero
+
+        return pulse.map { length in
+            defer { start += length }
+
+            return start
+        }
+    }
+
     // MARK: Internal Instance Methods
 
     //
@@ -46,19 +62,5 @@ extension Meter {
         }
 
         return nil
-    }
-
-    //
-    // The start of each beat of a full bar of this meter, measured from the start of the bar.
-    // Empty if this meter is free.
-    //
-    internal var beatOffsets: [BeatDuration] {
-        var start = BeatDuration.zero
-
-        return pulse.map { length in
-            defer { start += length }
-
-            return start
-        }
     }
 }

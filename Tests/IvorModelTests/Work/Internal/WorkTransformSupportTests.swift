@@ -14,6 +14,26 @@ struct WorkTransformSupportTests {
 
 extension WorkTransformSupportTests {
     @Test
+    func carried_failure_throwsTempoMapTransformFailure() {
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: 3, tempo: .default)
+
+        do {
+            _ = try Work.carried(tempoMap: tempoMap,
+                                 applyTo: .all,
+                                 kind: .augment) { (map: inout TempoMap) throws(TempoMap.Error) in
+                try map.augment(by: Number(numerator: 1, denominator: 2))
+            }
+
+            Issue.record("Expected an error")
+        } catch {
+            guard case .tempoMapTransformFailure(kind: .augment, detail: _) = error
+            else { Issue.record("Unexpected error: \(error)"); return }
+        }
+    }
+
+    @Test
     func carried_meterTable_failure_throwsMeterTableTransformFailure() throws {
         let meterTable = try makeMeterTable([(0, "3/4")])
 
@@ -53,26 +73,6 @@ extension WorkTransformSupportTests {
         }
 
         #expect(result == meterTable)
-    }
-
-    @Test
-    func carried_failure_throwsTempoMapTransformFailure() {
-        var tempoMap = TempoMap()
-
-        tempoMap.insert(beatTime: 3, tempo: .default)
-
-        do {
-            _ = try Work.carried(tempoMap: tempoMap,
-                                 applyTo: .all,
-                                 kind: .augment) { (map: inout TempoMap) throws(TempoMap.Error) in
-                try map.augment(by: Number(numerator: 1, denominator: 2))
-            }
-
-            Issue.record("Expected an error")
-        } catch {
-            guard case .tempoMapTransformFailure(kind: .augment, detail: _) = error
-            else { Issue.record("Unexpected error: \(error)"); return }
-        }
     }
 
     @Test

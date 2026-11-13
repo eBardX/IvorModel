@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
@@ -421,5 +422,37 @@ extension WorkReverseTests {
         // tempo entries at 0 and 2 mirror to 3 and 1 respectively:
         //
         #expect(tempoTimes.sorted() == [1, 3])
+    }
+
+    @Test
+    func reverse_withMeter_reversesTable() throws {
+        //
+        // Bars of 3/4 then 2/4, with the music ending 1/4 into the 2/4 bar, reverse to a 2/4
+        // pickup of 1/4, then 3/4 from 1/4.
+        //
+        let meterTable = try makeMeterTable([(0, "3/4"), (frac(3, 4), "2/4")])
+        var work = try makeMeterWork(meterTable: meterTable,
+                                     notes: [0, frac(1, 2), frac(3, 4)])
+        var expected = meterTable
+
+        expected.reverse(within: .zero...beatTime(1))
+
+        try work.reverse(within: .zero...beatTime(1))
+
+        #expect(work.meterTable == expected)
+        #expect(work.meterTable?.first?.meter == meter("2/4"))
+        #expect(work.meterTable?.pickup == .quarter)
+        #expect(work.meterTable?.meter(at: beatTime(frac(1, 4))) == meter("3/4"))
+    }
+
+    @Test
+    func reverse_withoutMeter_keepsTable() throws {
+        let meterTable = try makeMeterTable([(0, "3/4"), (frac(3, 4), "2/4")])
+        var work = try makeMeterWork(meterTable: meterTable,
+                                     notes: [0, frac(3, 4)])
+
+        try work.reverse(within: .zero...beatTime(1), applyTo: [.tempo])
+
+        #expect(work.meterTable == meterTable)
     }
 }

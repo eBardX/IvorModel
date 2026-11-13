@@ -11,6 +11,7 @@ import XestiNumbers
 // A template's source context: the setting its first source part started in, recorded at
 // analysis and carried over to the works it generates.
 //
+
 struct TemplateSourceContextTests {
 }
 
@@ -37,66 +38,6 @@ extension TemplateSourceContextTests {
         #expect(context.instrument == Fixtures.oboe)
         #expect(context.pan == Fixtures.leftPan)
         #expect(context.tempo == Fixtures.slowTempo)
-    }
-
-    @Test
-    func analyze_wallWork_hasNoTempo() throws {
-        var noteTable = NoteTable<WallTime, Pitch>()
-
-        // swiftlint:disable:next force_unwrapping
-        noteTable.insert(attack: .zero, duration: WallDuration(uintValue: 1_000_000)!, pitch: .c4)
-
-        var dynamicMap = DynamicMap<WallTime>()
-
-        dynamicMap.insert(time: .zero, dynamic: .pp)
-
-        let work = Work(name: "Wall",
-                        content: .standardWall([Part(name: "Voice",
-                                                     noteTable: noteTable,
-                                                     dynamicMap: dynamicMap)]))
-        let template = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1, name: "Test")
-
-        #expect(template.sourceContext.tempo == nil)
-        #expect(template.sourceContext.dynamic == .pp)
-    }
-
-    @Test
-    func generate_defaultContext_leavesMapsEmpty() throws {
-        let template = try Template.analyzeNoteEvents(in: makePlainSourceWork(), at: 0, maximumOrder: 1, name: "Test")
-
-        #expect(template.sourceContext == Template.SourceContext(tempo: .default))
-
-        let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
-
-        guard case let .standardBeat(parts, tempoMap, _) = generated.content
-        else { Issue.record("not standard beat"); return }
-
-        let part = try #require(parts.first)
-
-        #expect(part.dynamicMap.isEmpty)
-        #expect(part.instrumentTable.isEmpty)
-        #expect(part.panMap.isEmpty)
-        #expect(tempoMap.isEmpty)
-    }
-
-    @Test
-    func generate_startsInSourceContext() throws {
-        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
-        let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
-
-        guard case let .standardBeat(parts, tempoMap, _) = generated.content
-        else { Issue.record("not standard beat"); return }
-
-        let part = try #require(parts.first)
-
-        #expect(part.dynamicMap.count == 1)
-        #expect(part.dynamicMap[.zero] == .f)
-        #expect(part.instrumentTable.count == 1)
-        #expect(part.instrumentTable[.zero] == Fixtures.oboe)
-        #expect(part.panMap.count == 1)
-        #expect(part.panMap[.zero] == Fixtures.leftPan)
-        #expect(tempoMap.count == 1)
-        #expect(tempoMap[.zero] == Fixtures.slowTempo)
     }
 
     @Test
@@ -155,6 +96,46 @@ extension TemplateSourceContextTests {
 
         #expect(context.meter == nil)
         #expect(context.barPosition == .zero)
+    }
+
+    @Test
+    func analyze_wallWork_hasNoTempo() throws {
+        var noteTable = NoteTable<WallTime, Pitch>()
+
+        // swiftlint:disable:next force_unwrapping
+        noteTable.insert(attack: .zero, duration: WallDuration(uintValue: 1_000_000)!, pitch: .c4)
+
+        var dynamicMap = DynamicMap<WallTime>()
+
+        dynamicMap.insert(time: .zero, dynamic: .pp)
+
+        let work = Work(name: "Wall",
+                        content: .standardWall([Part(name: "Voice",
+                                                     noteTable: noteTable,
+                                                     dynamicMap: dynamicMap)]))
+        let template = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1, name: "Test")
+
+        #expect(template.sourceContext.tempo == nil)
+        #expect(template.sourceContext.dynamic == .pp)
+    }
+
+    @Test
+    func generate_defaultContext_leavesMapsEmpty() throws {
+        let template = try Template.analyzeNoteEvents(in: makePlainSourceWork(), at: 0, maximumOrder: 1, name: "Test")
+
+        #expect(template.sourceContext == Template.SourceContext(tempo: .default))
+
+        let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
+
+        guard case let .standardBeat(parts, tempoMap, _) = generated.content
+        else { Issue.record("not standard beat"); return }
+
+        let part = try #require(parts.first)
+
+        #expect(part.dynamicMap.isEmpty)
+        #expect(part.instrumentTable.isEmpty)
+        #expect(part.panMap.isEmpty)
+        #expect(tempoMap.isEmpty)
     }
 
     @Test
@@ -219,6 +200,26 @@ extension TemplateSourceContextTests {
     }
 
     @Test
+    func generate_startsInSourceContext() throws {
+        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
+        let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
+
+        guard case let .standardBeat(parts, tempoMap, _) = generated.content
+        else { Issue.record("not standard beat"); return }
+
+        let part = try #require(parts.first)
+
+        #expect(part.dynamicMap.count == 1)
+        #expect(part.dynamicMap[.zero] == .f)
+        #expect(part.instrumentTable.count == 1)
+        #expect(part.instrumentTable[.zero] == Fixtures.oboe)
+        #expect(part.panMap.count == 1)
+        #expect(part.panMap[.zero] == Fixtures.leftPan)
+        #expect(tempoMap.count == 1)
+        #expect(tempoMap[.zero] == Fixtures.slowTempo)
+    }
+
+    @Test
     func meterTable_onBarline_hasNoPickup() {
         let context = Template.SourceContext(meter: meter("6/8"))
         let meterTable = context.meterTable()
@@ -256,14 +257,5 @@ extension TemplateSourceContextTests {
         let loaded = try #require(Project.load(from: project.save()).fetchTemplate(template.templateID))
 
         #expect(loaded.sourceContext == template.sourceContext)
-    }
-}
-
-// MARK: - Private helpers
-
-extension TemplateSourceContextTests {
-    private func makeMeteredSourceWork(_ meterTable: MeterTable) -> Work {
-        Work(name: "Metered",
-             content: .standardBeat([makePlainSourcePart()], TempoMap(), meterTable))
     }
 }

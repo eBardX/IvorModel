@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
@@ -51,5 +52,37 @@ extension WorkMoveTests {
         let tempoTimes = work.tempoMap?.map(\.beatTime) ?? []
 
         #expect(tempoTimes == [2])
+    }
+
+    @Test
+    func move_withMeter_movesTable() throws {
+        let meterTable = try makeMeterTable([(0, "3/4"), (frac(3, 2), "2/4")])
+        var work = try makeMeterWork(meterTable: meterTable,
+                                     notes: [0, frac(3, 4)])
+        let shift = DirectedDuration(duration: BeatDuration.quarter, direction: .forward)
+        var expected = meterTable
+
+        expected.move(by: shift)
+
+        try work.move(by: shift)
+
+        #expect(work.meterTable == expected)
+        #expect(work.meterTable?.first?.beatTime == .zero)
+        #expect(work.meterTable?.pickup == .quarter)
+        #expect(work.meterTable?.position(at: beatTime(frac(1, 4)))?.bar == 1)
+        #expect(work.meterTable?.position(at: beatTime(frac(1, 4)))?.beat == 1)
+    }
+
+    @Test
+    func move_withoutMeter_keepsTable() throws {
+        let meterTable = try makeMeterTable([(0, "3/4")])
+        var work = try makeMeterWork(meterTable: meterTable,
+                                     notes: [0])
+
+        try work.move(by: DirectedDuration(duration: BeatDuration.quarter, direction: .forward),
+                      applyTo: [.tempo])
+
+        #expect(work.meterTable == meterTable)
+        #expect(work.beatTimeRange?.lowerBound == beatTime(frac(1, 4)))
     }
 }

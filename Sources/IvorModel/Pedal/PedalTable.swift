@@ -10,7 +10,7 @@ public import XestiTools
 ///
 /// Entries at the same time keep the order they were inserted in, and the last of them is the
 /// level from then on. So a re-pedal — the pedal let up and pressed again at one instant — is an
-/// Up entry followed by an Down entry at the same time, and both are kept. Only an entry identical
+/// Up entry followed by a Down entry at the same time, and both are kept. Only an entry identical
 /// to its neighbor at the same time (same level and extras) adds nothing, so inserting one folds
 /// it into that neighbor.
 public struct PedalTable<TimeType: TimeProtocol> {

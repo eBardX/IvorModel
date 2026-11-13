@@ -89,7 +89,7 @@ let file = try project.save()               // a FileWrapper
 ```
 
 See <doc:UsingIvorModel> for a full guide to works, parts, notes, parameter
-maps, meters, transforms, conversion, realizations, templates, and projects.
+maps, pedals, meters, transforms, conversion, realizations, templates, and projects.
 
 ## Topics
 
@@ -114,6 +114,11 @@ maps, meters, transforms, conversion, realizations, templates, and projects.
 - ``DynamicMap``
 - ``Pan``
 - ``PanMap``
+
+### Pedals
+
+- ``Pedal``
+- ``PedalTable``
 
 ### Meters
 

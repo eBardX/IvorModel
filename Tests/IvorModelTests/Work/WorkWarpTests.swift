@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorSMPTE
 import IvorTiming
@@ -168,6 +169,16 @@ extension WorkWarpTests {
         let work = Work(content: .standardWall([part]))
 
         #expect(work.unwarped(using: TempoMap())?.timeBasis == .beat)
+    }
+
+    @Test
+    func unwarped_startsWithEmptyTable() throws {
+        let work = try makeMeterWork(meterTable: makeMeterTable([(0, "6/8")]),
+                                     notes: [0])
+        let wall = try #require(work.warped())
+        let unwarped = try #require(wall.unwarped(using: TempoMap()))
+
+        #expect(unwarped.meterTable == MeterTable())
     }
 
     @Test
@@ -442,6 +453,14 @@ extension WorkWarpTests {
         #expect(parts[0].dynamicMap.entries.first?.time == expectedTime)
         #expect(parts[0].instrumentTable.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
+    }
+
+    @Test
+    func warped_dropsTable() throws {
+        let work = try makeMeterWork(meterTable: makeMeterTable([(0, "6/8")]),
+                                     notes: [0])
+
+        #expect(try #require(work.warped()).meterTable == nil)
     }
 
     @Test

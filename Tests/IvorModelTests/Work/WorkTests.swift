@@ -6,6 +6,7 @@ import IvorSMPTE
 import IvorTiming
 import IvorTuning
 import Testing
+import XestiNumbers
 import XestiTools
 
 struct WorkTests {
@@ -219,6 +220,13 @@ extension WorkTests {
         try work.replaceContent(with: .standardWall([part]))
 
         #expect(work.partCount == 1)
+    }
+
+    @Test
+    func meterTable_wallWork_isNil() {
+        let work = Work(content: .empty(timeBasis: .wall, pitchNotation: .standard))
+
+        #expect(work.meterTable == nil)
     }
 
     @Test

@@ -268,7 +268,7 @@ extension Meter: Codable {
     ///
     /// - Parameter encoder:    The encoder to write to.
     ///
-    /// - Throws:   `EncodingError` if the value can’t be encoded.
+    /// - Throws:   `EncodingError` if the value cannot be encoded.
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
 

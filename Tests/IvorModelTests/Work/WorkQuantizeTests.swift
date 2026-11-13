@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
@@ -47,6 +48,21 @@ extension WorkQuantizeTests {
         #expect(throws: Work.Error.timeBasisMismatch(expected: .beat)) {
             try work.quantize(to: [1])
         }
+    }
+
+    @Test
+    func quantize_leavesTableAlone() throws {
+        //
+        // An entry off the quantize grid stays put: meters mark notation, not sound.
+        //
+        let meterTable = try makeMeterTable([(0, "4/4"), (frac(1, 3), "3/4")])
+        var work = try makeMeterWork(meterTable: meterTable,
+                                     notes: [frac(1, 3)])
+
+        try work.quantize(to: [4], applyTo: .all)
+
+        #expect(work.meterTable == meterTable)
+        #expect(work.beatTimeRange?.lowerBound == beatTime(frac(1, 4)))
     }
 
     @Test

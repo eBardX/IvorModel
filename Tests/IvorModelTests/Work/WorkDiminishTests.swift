@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
@@ -13,6 +14,27 @@ struct WorkDiminishTests {
 // MARK: -
 
 extension WorkDiminishTests {
+    @Test
+    func diminish_keepingSound_preservesWallTimes() throws {
+        //
+        // 3/4 at ♩ = 240 diminished by 2 is 3/8 at ♪ = 240.
+        //
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: .zero, tempo: Tempo(240))
+
+        let work = try makeMeterWork(meterTable: makeMeterTable([(0, "3/4")]),
+                                     tempoMap: tempoMap,
+                                     notes: [0, frac(1, 4), frac(3, 4), frac(7, 4)])
+        var diminished = work
+
+        try diminished.diminish(by: 2, anchor: nil as BeatTime?, keepingSound: true)
+
+        try expectSameWallTimes(diminished, work)
+        #expect(diminished.meterTable?.map(\.meter) == [meter("3/8")])
+        #expect(diminished.tempoMap?.first?.tempo == Tempo(240, unit: .eighth))
+    }
+
     @Test
     func diminish_lockedWork_throwsAndLeavesWorkUnchanged() {
         var (work, partID) = makeLockedWorkSB()
@@ -81,6 +103,31 @@ extension WorkDiminishTests {
         #expect(entries.map(\.beatTime) == [0, 2])
 
         #expect(extraValues(.rampDuration, in: entries.first?.extras) == [.double(2)])
+    }
+
+    @Test
+    func diminish_withMeter_renotatesTable() throws {
+        let meterTable = try makeMeterTable([(0, "6/8"), (frac(3, 2), "3/4")])
+        var work = try makeMeterWork(meterTable: meterTable,
+                                     notes: [0, frac(3, 8), 2])
+        var expected = meterTable
+
+        try expected.diminish(by: 3)
+        try work.diminish(by: 3, anchor: nil as BeatTime?)
+
+        #expect(work.meterTable == expected)
+        #expect(work.meterTable?.map(\.meter) == [meter("6/24"), meter("3/12")])
+    }
+
+    @Test
+    func diminish_withoutMeter_keepsTable() throws {
+        let meterTable = try makeMeterTable([(0, "3/4")])
+        var work = try makeMeterWork(meterTable: meterTable,
+                                     notes: [0, frac(3, 4)])
+
+        try work.diminish(by: 2, anchor: nil as BeatTime?, applyTo: [.tempo])
+
+        #expect(work.meterTable == meterTable)
     }
 
     @Test

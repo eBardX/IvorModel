@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
@@ -36,6 +37,68 @@ extension WorkAugmentTests {
 
         #expect(selected.beatTimeRange == whole.beatTimeRange)
         #expect(selected.tempoMap?.map(\.beatTime) == whole.tempoMap?.map(\.beatTime))
+    }
+
+    @Test
+    func augment_defaultAnchor_includesMeterEntries() throws {
+        //
+        // The meter starts at 0 and the only note at 1. With the meter table carried, the default
+        // anchor is 0 and the rest before the note scales; without it, the anchor is the note.
+        //
+        let work = try makeMeterWork(meterTable: makeMeterTable([(0, "4/4")]),
+                                     notes: [1])
+        var carried = work
+        var notCarried = work
+
+        try carried.augment(by: 2, anchor: nil as BeatTime?)
+        try notCarried.augment(by: 2, anchor: nil as BeatTime?, applyTo: [])
+
+        #expect(carried.beatTimeRange?.lowerBound == 2)
+        #expect(notCarried.beatTimeRange?.lowerBound == 1)
+    }
+
+    @Test
+    func augment_keepingSound_preservesWallTimes() throws {
+        //
+        // 3/8 at ♪ = 240 augmented by 2 is 3/4 at ♩ = 240, and sounds the same, ramp and all.
+        //
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: .zero, tempo: Tempo(240, unit: .eighth))
+        tempoMap.insert(beatTime: beatTime(frac(3, 2)), tempo: Tempo(180, unit: .eighth))
+
+        let work = try makeMeterWork(meterTable: makeMeterTable([(0, "3/8")]),
+                                     tempoMap: tempoMap,
+                                     notes: [0, frac(1, 8), frac(3, 8), frac(3, 4), frac(9, 8), 2])
+        var augmented = work
+
+        try augmented.augment(by: 2, anchor: nil as BeatTime?, keepingSound: true)
+
+        try expectSameWallTimes(augmented, work)
+        #expect(augmented.meterTable?.map(\.meter) == [meter("3/4")])
+        #expect(augmented.tempoMap?.first?.tempo == Tempo(240, unit: .quarter))
+    }
+
+    @Test
+    func augment_keepingSound_withoutTempo_doesNothing() throws {
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: .zero, tempo: Tempo(240, unit: .eighth))
+
+        let work = try makeMeterWork(meterTable: makeMeterTable([(0, "3/8")]),
+                                     tempoMap: tempoMap,
+                                     notes: [0, frac(3, 8)])
+        let applyTo = TransformTargets.all.subtracting(.tempo)
+        var keeping = work
+        var plain = work
+
+        try keeping.augment(by: 2, anchor: nil as BeatTime?, applyTo: applyTo, keepingSound: true)
+        try plain.augment(by: 2, anchor: nil as BeatTime?, applyTo: applyTo)
+
+        #expect(keeping.tempoMap == work.tempoMap)
+        #expect(keeping.tempoMap == plain.tempoMap)
+        #expect(keeping.meterTable == plain.meterTable)
+        #expect(keeping.beatTimeRange == plain.beatTimeRange)
     }
 
     @Test
@@ -101,6 +164,26 @@ extension WorkAugmentTests {
         var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
 
         try work.augment(by: Number(2), anchor: nil as BeatTime?)
+    }
+
+    @Test
+    func augment_onePartOfTwo_withoutMeter_keepsTable() throws {
+        var violin = Part<BeatTime, Pitch>(name: "Violin")
+        var cello = Part<BeatTime, Pitch>(name: "Cello")
+
+        violin.noteTable.insert(attack: 0, duration: .quarter, pitch: .c4)
+        cello.noteTable.insert(attack: 0, duration: .quarter, pitch: .c3)
+
+        let meterTable = try makeMeterTable([(0, "3/4"), (frac(3, 2), "2/4")])
+        var work = Work(content: .standardBeat([violin, cello], TempoMap(), meterTable))
+
+        try work.augment(by: 2,
+                         anchor: nil as BeatTime?,
+                         applyTo: TransformTargets.all.subtracting([.tempo, .meter]),
+                         partIDs: [violin.partID])
+
+        #expect(work.meterTable == meterTable)
+        #expect(work.part(violin.partID, as: Part<BeatTime, Pitch>.self)?.noteTable.first?.duration == .half)
     }
 
     @Test
@@ -331,6 +414,46 @@ extension WorkAugmentTests {
         #expect(throws: Work.Error.timeBasisMismatch(expected: .beat)) {
             try work.augment(by: Number(2), anchor: nil as BeatTime?)
         }
+    }
+
+    @Test
+    func augment_withMeter_invalidFactor_throwsMeterTableTransformFailure() throws {
+        var work = try makeMeterWork(meterTable: makeMeterTable([(0, "3/4")]),
+                                     notes: [])
+
+        #expect(throws: Work.Error.meterTableTransformFailure(kind: .augment,
+                                                              detail: MeterTable.Error.invalidAugmentationFactor(frac(1, 2)).message)) {
+            try work.augment(by: frac(1, 2), anchor: nil as BeatTime?, applyTo: [.meter], partIDs: [])
+        }
+    }
+
+    @Test
+    func augment_withMeter_renotatesTable() throws {
+        let meterTable = try makeMeterTable([(0, "3/4"), (frac(3, 2), "2+2+3/8")],
+                                            pickup: frac(1, 4))
+        var work = try makeMeterWork(meterTable: meterTable,
+                                     notes: [0, frac(1, 4), 1, 2])
+        var expected = meterTable
+
+        try expected.augment(by: frac(3, 2))
+        try work.augment(by: frac(3, 2), anchor: nil as BeatTime?)
+
+        #expect(work.meterTable == expected)
+        #expect(work.meterTable?.map(\.meter) == [meter("9/8"), meter("6+6+9/16")])
+        #expect(work.meterTable?.pickup == beats(frac(3, 8)))
+    }
+
+    @Test
+    func augment_withoutMeter_keepsTable() throws {
+        let meterTable = try makeMeterTable([(0, "3/4")])
+        var work = try makeMeterWork(meterTable: meterTable,
+                                     notes: [0, frac(3, 4)])
+
+        try work.augment(by: 2, anchor: nil as BeatTime?, applyTo: TransformTargets.all.subtracting(.meter))
+
+        #expect(work.meterTable == meterTable)
+        #expect(work.beatTimeRange?.lowerBound == .zero)
+        #expect(work.beatTimeRange?.upperBound == beatTime(frac(7, 4)))
     }
 
     @Test

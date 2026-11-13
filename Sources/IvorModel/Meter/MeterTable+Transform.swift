@@ -76,8 +76,8 @@ extension MeterTable {
         let distance = directedDuration.duration
 
         switch directedDuration.direction {
-        case .same:
-            return
+        case .backward:
+            _moveEarlier(by: distance)
 
         case .forward:
             let firstStays = first.beatTime == .zero
@@ -95,8 +95,8 @@ extension MeterTable {
                 }
             }
 
-        case .backward:
-            _moveEarlier(by: distance)
+        case .same:
+            return
         }
 
         normalizePickup()

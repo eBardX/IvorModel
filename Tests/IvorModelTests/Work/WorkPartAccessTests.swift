@@ -1,5 +1,6 @@
 // © 2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
@@ -12,6 +13,40 @@ struct WorkPartAccessTests {
 // MARK: -
 
 extension WorkPartAccessTests {
+    @Test
+    func modifyMeterTable_editsTable() throws {
+        var work = Work()
+
+        let entryID = try work.modifyMeterTable { table in
+            try? table.insert(beatTime: .zero, meter: meter("5/8"))
+        }
+
+        #expect(entryID != nil)
+        #expect(work.meterTable?.map(\.meter) == [meter("5/8")])
+    }
+
+    @Test
+    func modifyMeterTable_lockedWork_throws() {
+        var work = Work()
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.modifyMeterTable { _ in }
+        }
+    }
+
+    @Test
+    func modifyMeterTable_wallWork_returnsNilWithoutCallingBody() throws {
+        var work = Work(content: .empty(timeBasis: .wall, pitchNotation: .standard))
+        var called = false
+
+        let result: Void? = try work.modifyMeterTable { _ in called = true }
+
+        #expect(result == nil)
+        #expect(!called)
+    }
+
     @Test
     func modifyPart_editsOnlyMatchingPart() throws {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")

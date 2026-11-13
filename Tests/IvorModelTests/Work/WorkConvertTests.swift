@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorSMPTE
 import IvorTiming
@@ -213,6 +214,16 @@ extension WorkConvertTests {
     }
 
     @Test
+    func convert_pitchNotation_keepsTable() throws {
+        let meterTable = try makeMeterTable([(0, "6/8")])
+        let work = try makeMeterWork(meterTable: meterTable,
+                                     notes: [0])
+        let converted = try #require(try work.convert(timeBasis: .beat, pitchNotation: .keyboard))
+
+        #expect(converted.meterTable == meterTable)
+    }
+
+    @Test
     func convert_pitchNotationKeepsPedals() throws {
         var soft = PedalTable<BeatTime>()
 
@@ -416,6 +427,17 @@ extension WorkConvertTests {
 
         #expect(result.timeBasis == .beat)
         #expect(result.partCount == 1)
+    }
+
+    @Test
+    func convert_wallAndBack_startsWithEmptyTable() throws {
+        let work = try makeMeterWork(meterTable: makeMeterTable([(0, "6/8")]),
+                                     notes: [0])
+        let wall = try #require(try work.convert(timeBasis: .wall, pitchNotation: .standard))
+        let beat = try #require(try wall.convert(timeBasis: .beat, pitchNotation: .standard))
+
+        #expect(wall.meterTable == nil)
+        #expect(beat.meterTable == MeterTable())
     }
 
     @Test

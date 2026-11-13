@@ -15,7 +15,8 @@ Project
 │  │     ├─ noteTable:     NoteTable
 │  │     ├─ dynamicMap:      DynamicMap
 │  │     ├─ instrumentTable: InstrumentTable
-│  │     └─ panMap:          PanMap
+│  │     ├─ panMap:          PanMap
+│  │     └─ pedals:          [Pedal: PedalTable]
 │  ├─ info:         Work.Info          // titles, credits, rights, remarks
 │  └─ realizations: [Realization]      // how instruments sound when played
 └─ templates: [Template]               // analyses that generate new works
@@ -70,8 +71,8 @@ always be set.
 
 ## Parts
 
-A ``Part`` is a named line of music: a note table, two parameter maps, and an
-instrument table, plus ``Part/extras`` for format-specific data about the part as a whole, such as
+A ``Part`` is a named line of music: a note table, two parameter maps, an
+instrument table, and its pedal tables, plus ``Part/extras`` for format-specific data about the part as a whole, such as
 the ``Extra/midiChannel`` it came from. A work’s parts all share its time and pitch types, so reading or editing one
 means naming its concrete type:
 
@@ -148,6 +149,48 @@ entry.
 An ``Instrument`` only designates an instrument; what it sounds like when the
 part plays is up to a realization (see [Realizations](#Realizations)).
 
+## Pedals
+
+A part’s ``Part/pedals`` is a dictionary of ``PedalTable`` values keyed by
+``Pedal``: the sustain, sostenuto, and soft pedals, and the legato and
+portamento footswitches. Each pedal has its own timeline, so one can stay down
+while another changes. A pedal with no table is up throughout, and an empty
+table is dropped when it is assigned.
+
+```swift
+try work.modifyPart(melody, as: Part<BeatTime, Pitch>.self) { part in
+    var sustain = PedalTable<BeatTime>()
+
+    sustain.insert(time: 0, level: .down)
+    sustain.insert(time: 1, level: .up)       // a re-pedal: up, then down again
+    sustain.insert(time: 1, level: .down)
+    sustain.insert(time: 2, level: Pedal.Level(plain: "1/2")!)   // half-pedal
+
+    part.pedals[.sustain] = sustain
+}
+```
+
+Like an instrument table, a pedal table doesn’t interpolate: each entry is a
+step whose ``Pedal/Level`` holds until the next entry, and the pedal is up
+before the first. A level runs from ``Pedal/Level/up`` (0) to
+``Pedal/Level/down`` (1); a level in between is a partly lowered pedal, such
+as a half-pedaled damper, and counts as down (``Pedal/Level/isDown``) from
+1/2. Subscripting a table with a time gives the level in effect there.
+
+Entries at the same time keep the order they were inserted in, and the last of
+them sets the level from then on. So a re-pedal — the pedal let up and pressed
+again at one instant — is an up entry followed by a down entry at the same
+time, and both are kept. ``PedalTable/insert(time:level:extras:before:)`` adds
+the up entry ahead of an existing down entry. An entry identical to its
+neighbor at the same time adds nothing, so it is folded into that neighbor.
+
+A pedal table recorded from a controller can hold many small steps.
+``PedalTable/simplify(_:)`` reduces them without changing when the pedal goes
+down or comes up: ``Pedal/SimplifyMode/snap`` leaves a plain down/up switch,
+and ``Pedal/SimplifyMode/merge(tolerance:)`` keeps a gradual sweep, with a step
+for about every `tolerance` of travel. It returns the IDs of the entries it
+removed.
+
 ## Meters
 
 A beat-time work’s ``MeterTable`` says where its barlines and felt beats fall.
@@ -193,7 +236,7 @@ try work.augment(by: 2, anchor: BeatTime.zero)  // twice as slow, from the start
 
 The time transforms come in a beat-time and a wall-time form, so give the anchor
 (or the duration, or the range) in the work’s own time type. They move a part’s
-parameter maps and instrument table along with its notes, and the work’s own
+parameter maps, instrument table, and pedal tables along with its notes, and the work’s own
 tempo map and meter table with them; `applyTo` takes a ``TransformTargets`` set
 to choose which of these go along. When the meter table goes along, the meter is
 re-notated so that every note keeps its bar and beat: 3/4 augmented by 2 becomes
@@ -204,6 +247,14 @@ whose interval or time type doesn’t match the work throws
 ``Work/Error/pitchNotationMismatch(expected:)`` or
 ``Work/Error/timeBasisMismatch(expected:)``. Parts and note tables have the same
 transforms, for working on one at a time.
+
+A part’s time transforms can also take `noteIDs`, to transform only the selected
+notes. The map and table entries carried with them are then only those within
+the selected notes’ time range, with one addition for pedals: if a pedal is
+still down at the end of that range, the next entry in its table, which ends
+the press, is carried too. Otherwise, moving the selection would leave its
+release behind, and the pedal would stay down from the moved notes’ end until
+wherever the old release was.
 
 ## Converting a work
 

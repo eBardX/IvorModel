@@ -7,6 +7,48 @@ extension Work {
 
     // MARK: Public Instance Methods
 
+    /// Edits the meter table of this work in place.
+    ///
+    /// - Parameter body:   A closure that edits the meter table in place, and whose result is
+    ///                     returned.
+    ///
+    /// - Returns:  The result of `body`, or `nil` (without calling `body`) if this work has
+    ///             wall-time content, which has no meter table.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked, whatever its time basis.
+    @discardableResult
+    public mutating func modifyMeterTable<R>(_ body: (inout MeterTable) -> R) throws(Error) -> R? {
+        try ensureUnlocked()
+
+        switch content {
+        case .absoluteBeat(let parts, let tempoMap, var meterTable):
+            let result = body(&meterTable)
+
+            content = .absoluteBeat(parts, tempoMap, meterTable)
+
+            return result
+
+        case .absoluteWall,
+             .keyboardWall,
+             .standardWall:
+            return nil
+
+        case .keyboardBeat(let parts, let tempoMap, var meterTable):
+            let result = body(&meterTable)
+
+            content = .keyboardBeat(parts, tempoMap, meterTable)
+
+            return result
+
+        case .standardBeat(let parts, let tempoMap, var meterTable):
+            let result = body(&meterTable)
+
+            content = .standardBeat(parts, tempoMap, meterTable)
+
+            return result
+        }
+    }
+
     /// Edits one part of this work in place.
     ///
     /// The caller names the part’s concrete type, which must match this work’s time basis and
@@ -75,48 +117,6 @@ extension Work {
             content = .standardWall(modified.parts)
 
             return modified.result
-        }
-    }
-
-    /// Edits the meter table of this work in place.
-    ///
-    /// - Parameter body:   A closure that edits the meter table in place, and whose result is
-    ///                     returned.
-    ///
-    /// - Returns:  The result of `body`, or `nil` (without calling `body`) if this work has
-    ///             wall-time content, which has no meter table.
-    ///
-    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked, whatever its time basis.
-    @discardableResult
-    public mutating func modifyMeterTable<R>(_ body: (inout MeterTable) -> R) throws(Error) -> R? {
-        try ensureUnlocked()
-
-        switch content {
-        case .absoluteBeat(let parts, let tempoMap, var meterTable):
-            let result = body(&meterTable)
-
-            content = .absoluteBeat(parts, tempoMap, meterTable)
-
-            return result
-
-        case .absoluteWall,
-             .keyboardWall,
-             .standardWall:
-            return nil
-
-        case .keyboardBeat(let parts, let tempoMap, var meterTable):
-            let result = body(&meterTable)
-
-            content = .keyboardBeat(parts, tempoMap, meterTable)
-
-            return result
-
-        case .standardBeat(let parts, let tempoMap, var meterTable):
-            let result = body(&meterTable)
-
-            content = .standardBeat(parts, tempoMap, meterTable)
-
-            return result
         }
     }
 

@@ -5,6 +5,7 @@ import Foundation
 import IvorTiming
 import IvorTuning
 import Testing
+import XestiNumbers
 
 struct WorkContentTests {
 }
@@ -34,6 +35,45 @@ extension WorkContentTests {
 
         #expect(decoded.pitchNotation == original.pitchNotation)
         #expect(decoded.timeBasis == original.timeBasis)
+    }
+
+    @Test
+    func content_codable_roundTripsNonEmptyTable() throws {
+        let meterTable = try makeMeterTable([(0, "3/4"), (frac(7, 4), "2+2+3/8")],
+                                            pickup: frac(1, 4))
+        let content = Work.Content.standardBeat([], TempoMap(), meterTable)
+        let data = try JSONEncoder().encode(content)
+        let decoded = try JSONDecoder().decode(Work.Content.self, from: data)
+
+        guard case let .standardBeat(_, _, decodedTable) = decoded
+        else { Issue.record("not standard beat"); return }
+
+        #expect(decodedTable == meterTable)
+        #expect(decodedTable.pickup == beats(frac(1, 4)))
+    }
+
+    @Test
+    func content_decode_withoutMeterTable_fails() throws {
+        let content = try Work.Content.keyboardBeat([], TempoMap(), makeMeterTable([(0, "6/8")]))
+        let data = try JSONEncoder().encode(content)
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        #expect(object.removeValue(forKey: "meterTable") != nil)
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(Work.Content.self, from: stripped)
+        }
+    }
+
+    @Test
+    func content_empty_beat_hasEmptyMeterTable() {
+        for pitchNotation in [PitchNotation.absolute, .keyboard, .standard] {
+            let work = Work(content: .empty(timeBasis: .beat, pitchNotation: pitchNotation))
+
+            #expect(work.meterTable == MeterTable())
+        }
     }
 
     @Test(arguments: [TimeBasis.beat, .wall],
