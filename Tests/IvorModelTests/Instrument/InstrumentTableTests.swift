@@ -139,6 +139,27 @@ extension InstrumentTableTests {
     }
 
     @Test
+    func insert_duplicateWithinRunOfSameTime() {
+        var table = InstrumentTable<BeatTime>()
+
+        table.insert(time: 0, instrument: guitar)
+
+        let first = table.insert(time: 1, instrument: guitar)
+        let second = table.insert(time: 1, instrument: piano)
+
+        table.insert(time: 2, instrument: piano)
+
+        let firstAgain = table.insert(time: 1, instrument: guitar)
+        let secondAgain = table.insert(time: 1, instrument: piano)
+
+        #expect(!firstAgain.inserted)
+        #expect(firstAgain.entryID == first.entryID)
+        #expect(!secondAgain.inserted)
+        #expect(secondAgain.entryID == second.entryID)
+        #expect(table.count == 4)
+    }
+
+    @Test
     func insert_new() {
         var table = InstrumentTable<BeatTime>()
 

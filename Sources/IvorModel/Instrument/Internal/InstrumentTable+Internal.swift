@@ -32,15 +32,20 @@ extension InstrumentTable {
         entries.firstIndex { $0.entryID == entryID }
     }
 
+    //
+    // Entries are sorted by time, so only the run of entries at `time` can match.
+    //
     internal func firstIndex(time: TimeType,
                              instrument: Instrument,
                              extras: Extras?) -> Int? {
-        entries.firstIndex {
-            (time, instrument, extras) == ($0.time, $0.instrument, $0.extras)
+        let start = entries.partitioningIndex { time <= $0.time }
+
+        return entries[start...].prefix { $0.time == time }.firstIndex {
+            (instrument, extras) == ($0.instrument, $0.extras)
         }
     }
 
     internal func insertionIndex(for time: TimeType) -> Int {
-        entries.firstIndex { time < $0.time } ?? entries.endIndex
+        entries.partitioningIndex { time < $0.time }
     }
 }

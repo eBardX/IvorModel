@@ -149,7 +149,9 @@ extension MeterTable {
     }
 
     internal func entryIndex(at beatTime: BeatTime) -> Int? {
-        entries.firstIndex { $0.beatTime == beatTime }
+        let index = entries.partitioningIndex { beatTime <= $0.beatTime }
+
+        return index < entries.endIndex && entries[index].beatTime == beatTime ? index : nil
     }
 
     internal func firstIndex(entryID: EntryID) -> Int? {
@@ -160,11 +162,13 @@ extension MeterTable {
     // The index of the entry in effect at `beatTime`: the last at or before it.
     //
     internal func governingIndex(at beatTime: BeatTime) -> Int? {
-        entries.lastIndex { $0.beatTime <= beatTime }
+        let index = entries.partitioningIndex { beatTime < $0.beatTime }
+
+        return index > entries.startIndex ? index - 1 : nil
     }
 
     internal func insertionIndex(for beatTime: BeatTime) -> Int {
-        entries.firstIndex { beatTime < $0.beatTime } ?? entries.endIndex
+        entries.partitioningIndex { beatTime < $0.beatTime }
     }
 
     //

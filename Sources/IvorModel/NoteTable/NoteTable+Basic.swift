@@ -2,6 +2,8 @@
 
 public import XestiTools
 
+private import IvorTiming
+
 extension NoteTable {
 
     // MARK: Public Instance Methods
@@ -107,6 +109,8 @@ extension NoteTable {
 
         let note = notes.remove(at: position)
 
+        _recomputeSummaries()
+
         _insert(noteID: noteID,
                 attack: attack,
                 duration: note.duration,
@@ -135,6 +139,8 @@ extension NoteTable {
         else { return false }
 
         let note = notes.remove(at: position)
+
+        _recomputeSummaries()
 
         _insert(noteID: noteID,
                 attack: note.attack,
@@ -165,6 +171,8 @@ extension NoteTable {
 
         let note = notes.remove(at: position)
 
+        _recomputeSummaries()
+
         _insert(noteID: noteID,
                 attack: note.attack,
                 duration: note.duration,
@@ -193,6 +201,8 @@ extension NoteTable {
         else { return false }
 
         let note = notes.remove(at: position)
+
+        _recomputeSummaries()
 
         _insert(noteID: noteID,
                 attack: note.attack,
@@ -226,9 +236,7 @@ extension NoteTable {
             hasPortamento = Self.hasPortamento(in: notes)
         }
 
-        isMonophonic = Self.isMonophonic(in: notes)
-        pitchRange = Self.pitchRange(in: notes)
-        timeRange = Self.timeRange(in: notes)
+        _recomputeSummaries()
 
         return true
     }
@@ -278,16 +286,27 @@ extension NoteTable {
                                   startPitch: PitchType,
                                   endPitch: PitchType,
                                   extras: Extras?) {
-        notes.insert(StoredNote(noteID: noteID,
-                                attack: attack,
-                                duration: duration,
-                                startPitch: startPitch,
-                                endPitch: endPitch,
-                                extras: extras),
-                     at: insertionIndex(for: attack,
-                                        duration: duration,
-                                        startPitch: startPitch,
-                                        endPitch: endPitch))
+        let note = StoredNote(noteID: noteID,
+                              attack: attack,
+                              duration: duration,
+                              startPitch: startPitch,
+                              endPitch: endPitch,
+                              extras: extras)
+        let index = insertionIndex(for: attack,
+                                   duration: duration,
+                                   startPitch: startPitch,
+                                   endPitch: endPitch)
+
+        // The other notes are already sorted and, if monophonic, free of overlaps, so the new
+        // note can only break monophony against its neighbours.
+        if isMonophonic {
+            let followsPrevious = index > notes.startIndex ? notes[index - 1].release <= attack : attack >= TimeType.zero
+            let precedesNext = index < notes.endIndex ? note.release <= notes[index].attack : true
+
+            isMonophonic = followsPrevious && precedesNext
+        }
+
+        notes.insert(note, at: index)
 
         if extras != nil {
             hasExtras = true
@@ -297,6 +316,16 @@ extension NoteTable {
             hasPortamento = true
         }
 
+        let notePitchRange = note.minimumPitch...note.maximumPitch
+        let noteTimeRange = note.attack...note.release
+
+        pitchRange = pitchRange.map { Self.mergePitchRanges($0, notePitchRange) } ?? notePitchRange
+        timeRange = timeRange.map { Self.mergeTimeRanges($0, noteTimeRange) } ?? noteTimeRange
+    }
+
+    // Recomputes the summaries that `_insert` updates incrementally, after a note has been
+    // removed and they may have shrunk.
+    private mutating func _recomputeSummaries() {
         isMonophonic = Self.isMonophonic(in: notes)
         pitchRange = Self.pitchRange(in: notes)
         timeRange = Self.timeRange(in: notes)

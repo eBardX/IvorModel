@@ -87,6 +87,33 @@ extension NoteTableBasicTests {
     }
 
     @Test
+    func insert_outOfOrder_matchesInOrder() {
+        let notes: [(attack: BeatTime, duration: BeatDuration, pitch: Pitch)] = [(0, 1, .c4),
+                                                                                 (0, 1, .e4),
+                                                                                 (0, 2, .c4),
+                                                                                 (1, 1, .g4),
+                                                                                 (1, 1, .c4),
+                                                                                 (2, 1, .e4),
+                                                                                 (2, 1, .e4)]
+        var inOrder = NoteTableSB()
+        var reversed = NoteTableSB()
+
+        for note in notes {
+            inOrder.insert(attack: note.attack, duration: note.duration, pitch: note.pitch)
+        }
+
+        for note in notes.reversed() {
+            reversed.insert(attack: note.attack, duration: note.duration, pitch: note.pitch)
+        }
+
+        #expect(reversed.map(\.attack) == inOrder.map(\.attack))
+        #expect(reversed.map(\.duration) == inOrder.map(\.duration))
+        #expect(reversed.map(\.startPitch) == inOrder.map(\.startPitch))
+        #expect(reversed.pitchRange == inOrder.pitchRange)
+        #expect(reversed.timeRange == inOrder.timeRange)
+    }
+
+    @Test
     func isEmpty_afterInsert() {
         var table = NoteTableSB()
 
@@ -103,6 +130,27 @@ extension NoteTableBasicTests {
     }
 
     @Test
+    func isMonophonic_gapFilledOutOfOrder() {
+        var table = NoteTableSB()
+
+        table.insert(attack: 2, duration: 1, pitch: .c4)
+        table.insert(attack: 0, duration: 1, pitch: .e4)
+        table.insert(attack: 1, duration: 1, pitch: .g4)
+
+        #expect(table.isMonophonic)
+    }
+
+    @Test
+    func isMonophonic_overlapInsertedBefore() {
+        var table = NoteTableSB()
+
+        table.insert(attack: 2, duration: 1, pitch: .c4)
+        table.insert(attack: 0, duration: 3, pitch: .e4)
+
+        #expect(!table.isMonophonic)
+    }
+
+    @Test
     func isMonophonic_overlapping() {
         var table = NoteTableSB()
 
@@ -110,6 +158,22 @@ extension NoteTableBasicTests {
         table.insert(attack: 1, duration: 2, pitch: .e4)
 
         #expect(!table.isMonophonic)
+    }
+
+    @Test
+    func isMonophonic_restoredByMoveDuration() {
+        var table = NoteTableSB()
+
+        let noteID = table.insert(attack: 0, duration: 2, pitch: .c4)
+
+        table.insert(attack: 1, duration: 1, pitch: .e4)
+
+        #expect(!table.isMonophonic)
+
+        let moved = table.moveDuration(noteID: noteID, to: 1)
+
+        #expect(moved)
+        #expect(table.isMonophonic)
     }
 
     @Test
@@ -375,6 +439,18 @@ extension NoteTableBasicTests {
 
         #expect(table.timeRange?.lowerBound == 0)
         #expect(table.timeRange?.upperBound == 4)
+    }
+
+    @Test
+    func timeRange_outOfOrderInserts() {
+        var table = NoteTableSB()
+
+        table.insert(attack: 2, duration: 1, pitch: .c4)
+        table.insert(attack: 1, duration: 4, pitch: .e4)
+        table.insert(attack: 0, duration: 1, pitch: .g4)
+
+        #expect(table.timeRange?.lowerBound == 0)
+        #expect(table.timeRange?.upperBound == 5)
     }
 
     @Test

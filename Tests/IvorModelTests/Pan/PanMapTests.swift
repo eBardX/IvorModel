@@ -105,6 +105,30 @@ extension PanMapTests {
     }
 
     @Test
+    func insert_duplicateWithinRunOfSameTime() {
+        var map = PanMap<BeatTime>()
+
+        map.insert(time: 0, pan: .left)
+
+        let first = map.insert(time: 1, pan: .left)
+        let second = map.insert(time: 1, pan: .right)
+
+        map.insert(time: 2, pan: .right)
+
+        let firstAgain = map.insert(time: 1, pan: .left)
+        let secondAgain = map.insert(time: 1, pan: .right)
+
+        #expect(!firstAgain.inserted)
+        #expect(firstAgain.entryID == first.entryID)
+        #expect(!secondAgain.inserted)
+        #expect(secondAgain.entryID == second.entryID)
+        let other = map.insert(time: 1, pan: .center)
+
+        #expect(other.inserted)
+        #expect(map.count == 5)
+    }
+
+    @Test
     func insert_new() {
         var map = PanMap<BeatTime>()
 

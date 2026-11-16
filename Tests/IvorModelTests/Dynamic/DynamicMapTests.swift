@@ -125,6 +125,30 @@ extension DynamicMapTests {
     }
 
     @Test
+    func insert_duplicateWithinRunOfSameTime() {
+        var map = DynamicMap<BeatTime>()
+
+        map.insert(time: 0, dynamic: .p)
+
+        let first = map.insert(time: 1, dynamic: .p)
+        let second = map.insert(time: 1, dynamic: .f)
+
+        map.insert(time: 2, dynamic: .f)
+
+        let firstAgain = map.insert(time: 1, dynamic: .p)
+        let secondAgain = map.insert(time: 1, dynamic: .f)
+
+        #expect(!firstAgain.inserted)
+        #expect(firstAgain.entryID == first.entryID)
+        #expect(!secondAgain.inserted)
+        #expect(secondAgain.entryID == second.entryID)
+        let other = map.insert(time: 1, dynamic: .mf)
+
+        #expect(other.inserted)
+        #expect(map.count == 5)
+    }
+
+    @Test
     func insert_new() {
         var map = DynamicMap<BeatTime>()
 

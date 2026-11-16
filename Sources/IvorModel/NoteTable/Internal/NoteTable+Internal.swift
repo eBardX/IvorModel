@@ -94,8 +94,8 @@ extension NoteTable {
                                  duration: DurationType,
                                  startPitch: PitchType,
                                  endPitch: PitchType) -> Int {
-        notes.firstIndex {
+        notes.partitioningIndex {
             (attack, duration, $0.startPitch, $0.endPitch) < ($0.attack, $0.duration, startPitch, endPitch)
-        } ?? notes.endIndex
+        }
     }
 }

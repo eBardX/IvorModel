@@ -34,7 +34,7 @@ extension PedalTable {
     }
 
     internal func insertionIndex(for time: TimeType) -> Int {
-        entries.firstIndex { time < $0.time } ?? entries.endIndex
+        entries.partitioningIndex { time < $0.time }
     }
 
     //
