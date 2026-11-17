@@ -18,8 +18,8 @@ public struct Work {
     /// - Parameter name:           The display name of the work. Its whitespace is normalized
     ///                             to a single line. Defaults to an empty string.
     /// - Parameter content:        The ``Work/Content`` holding the parts. Defaults to an empty
-    ///                             standard-beat content with an empty tempo map and an
-    ///                             empty meter table.
+    ///                             standard-beat content with an empty tempo map, an empty
+    ///                             meter table and an empty key signature table.
     /// - Parameter smpteStartTime: The SMPTE timecode at which the work’s wall time zero falls.
     ///                             Defaults to ``defaultSMPTEStartTime``.
     /// - Parameter info:           The descriptive ``Work/Info`` of the work. Defaults to
@@ -46,7 +46,8 @@ public struct Work {
 
         self.unsafeContent = content ?? .standardBeat([],
                                                       TempoMap(),
-                                                      MeterTable())
+                                                      MeterTable(),
+                                                      KeySignatureTable())
         self.extras = Self._normalized(extras)
         self.generation = generation
         self.info = info
@@ -151,13 +152,13 @@ extension Work {
     /// The beat-time range spanned by all beat-time parts, or `nil` for wall-time content.
     public var beatTimeRange: ClosedRange<BeatTime>? {
         switch content {
-        case let .absoluteBeat(parts, _, _):
+        case let .absoluteBeat(parts, _, _, _):
             Self.aggregateTimeRange(of: parts)
 
-        case let .keyboardBeat(parts, _, _):
+        case let .keyboardBeat(parts, _, _, _):
             Self.aggregateTimeRange(of: parts)
 
-        case let .standardBeat(parts, _, _):
+        case let .standardBeat(parts, _, _, _):
             Self.aggregateTimeRange(of: parts)
 
         default:
@@ -183,12 +184,26 @@ extension Work {
         }
     }
 
+    /// The key signature table associated with beat-time content, or `nil` for wall-time
+    /// content.
+    public var keySignatureTable: KeySignatureTable? {
+        switch content {
+        case let .absoluteBeat(_, _, _, ktable),
+             let .keyboardBeat(_, _, _, ktable),
+             let .standardBeat(_, _, _, ktable):
+            ktable
+
+        default:
+            nil
+        }
+    }
+
     /// The meter table associated with beat-time content, or `nil` for wall-time content.
     public var meterTable: MeterTable? {
         switch content {
-        case let .absoluteBeat(_, _, mtable),
-             let .keyboardBeat(_, _, mtable),
-             let .standardBeat(_, _, mtable):
+        case let .absoluteBeat(_, _, mtable, _),
+             let .keyboardBeat(_, _, mtable, _),
+             let .standardBeat(_, _, mtable, _):
             mtable
 
         default:
@@ -199,19 +214,19 @@ extension Work {
     /// The total number of notes across all parts in this work.
     public var noteCount: Int {
         switch content {
-        case let .absoluteBeat(parts, _, _):
+        case let .absoluteBeat(parts, _, _, _):
             parts.reduce(0) { $0 + $1.noteCount }
 
         case let .absoluteWall(parts):
             parts.reduce(0) { $0 + $1.noteCount }
 
-        case let .keyboardBeat(parts, _, _):
+        case let .keyboardBeat(parts, _, _, _):
             parts.reduce(0) { $0 + $1.noteCount }
 
         case let .keyboardWall(parts):
             parts.reduce(0) { $0 + $1.noteCount }
 
-        case let .standardBeat(parts, _, _):
+        case let .standardBeat(parts, _, _, _):
             parts.reduce(0) { $0 + $1.noteCount }
 
         case let .standardWall(parts):
@@ -222,19 +237,19 @@ extension Work {
     /// The number of parts in this work.
     public var partCount: Int {
         switch content {
-        case let .absoluteBeat(parts, _, _):
+        case let .absoluteBeat(parts, _, _, _):
             parts.count
 
         case let .absoluteWall(parts):
             parts.count
 
-        case let .keyboardBeat(parts, _, _):
+        case let .keyboardBeat(parts, _, _, _):
             parts.count
 
         case let .keyboardWall(parts):
             parts.count
 
-        case let .standardBeat(parts, _, _):
+        case let .standardBeat(parts, _, _, _):
             parts.count
 
         case let .standardWall(parts):
@@ -253,19 +268,19 @@ extension Work {
     /// ``NoteNumber``, or ``Pitch`` — as determined by ``pitchNotation``.
     public var pitchRange: (lowerBound: any PitchProtocol, upperBound: any PitchProtocol)? {
         switch content {
-        case let .absoluteBeat(parts, _, _):
+        case let .absoluteBeat(parts, _, _, _):
             Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
 
         case let .absoluteWall(parts):
             Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
 
-        case let .keyboardBeat(parts, _, _):
+        case let .keyboardBeat(parts, _, _, _):
             Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
 
         case let .keyboardWall(parts):
             Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
 
-        case let .standardBeat(parts, _, _):
+        case let .standardBeat(parts, _, _, _):
             Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
 
         case let .standardWall(parts):
@@ -276,9 +291,9 @@ extension Work {
     /// The tempo map associated with beat-time content, or `nil` for wall-time content.
     public var tempoMap: TempoMap? {
         switch content {
-        case let .absoluteBeat(_, tmap, _),
-            let .keyboardBeat(_, tmap, _),
-            let .standardBeat(_, tmap, _):
+        case let .absoluteBeat(_, tmap, _, _),
+            let .keyboardBeat(_, tmap, _, _),
+            let .standardBeat(_, tmap, _, _):
             tmap
 
         default:
@@ -363,19 +378,19 @@ extension Work {
     /// - Returns:  The name of the part at `index`.
     public func partName(at index: Int) -> String {
         switch content {
-        case let .absoluteBeat(parts, _, _):
+        case let .absoluteBeat(parts, _, _, _):
             parts[index].name
 
         case let .absoluteWall(parts):
             parts[index].name
 
-        case let .keyboardBeat(parts, _, _):
+        case let .keyboardBeat(parts, _, _, _):
             parts[index].name
 
         case let .keyboardWall(parts):
             parts[index].name
 
-        case let .standardBeat(parts, _, _):
+        case let .standardBeat(parts, _, _, _):
             parts[index].name
 
         case let .standardWall(parts):
@@ -480,12 +495,14 @@ extension Work {
     //
     // The one range a beat-time work's augment, diminish or reverse resolves its default from:
     // the targeted parts' own transform ranges (notes, plus every map `applyTo` selects), widened
-    // by the tempo map's entries and the meter table's entries when `applyTo` carries them.
+    // by the tempo map's, meter table's and key signature table's entries when `applyTo` carries
+    // them.
     // Everything that moves then scales or mirrors about the same point.
     //
     internal static func transformTimeRange(of parts: [Part<BeatTime, some PitchProtocol>],
                                             tempoMap: TempoMap,
                                             meterTable: MeterTable,
+                                            keySignatureTable: KeySignatureTable,
                                             applyTo: TransformTargets) -> ClosedRange<BeatTime>? {
         var range = transformTimeRange(of: parts,
                                        applyTo: applyTo)
@@ -500,6 +517,13 @@ extension Work {
         if applyTo.contains(.meter),
            let first = meterTable.first,
            let last = meterTable.last {
+            range = Self._widened(range,
+                                  by: first.beatTime...last.beatTime)
+        }
+
+        if applyTo.contains(.keySignature),
+           let first = keySignatureTable.first,
+           let last = keySignatureTable.last {
             range = Self._widened(range,
                                   by: first.beatTime...last.beatTime)
         }

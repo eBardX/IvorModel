@@ -2,7 +2,7 @@
 
 /// A set of the time-keyed collections that a time-based transform should carry along with the
 /// notes: a part’s parameter maps, instrument table and dictionary of pedal tables, and the
-/// work’s own tempo map and meter table.
+/// work’s own tempo map, meter table and key signature table.
 public struct TransformTargets {
 
     // MARK: Public Initializers
@@ -27,14 +27,22 @@ extension TransformTargets {
     // MARK: Public Type Properties
 
     /// Every target: the parameter maps, the instrument table, the dictionary of pedal tables, and
-    /// the work’s own tempo map and meter table.
-    public static let all: Self = [.dynamic, .instrument, .meter, .pan, .pedal, .tempo]
+    /// the work’s own tempo map, meter table and key signature table.
+    public static let all: Self = [.dynamic, .instrument, .keySignature, .meter, .pan, .pedal, .tempo]
 
     /// The dynamic map.
     public static let dynamic = Self(rawValue: 1 << 0)
 
     /// The instrument table.
     public static let instrument = Self(rawValue: 1 << 1)
+
+    /// The work’s own key signature table. Only meaningful to a whole-work transform — a `Part`
+    /// has no key signature table of its own, so this target is ignored wherever
+    /// `TransformTargets` selects among a single part’s maps and table.
+    ///
+    /// Quantize never carries the key signature table, as it never carries the meter table: key
+    /// signatures mark notation, not sound.
+    public static let keySignature = Self(rawValue: 1 << 6)
 
     /// The work’s own meter table. Only meaningful to a whole-work transform — a `Part` has no
     /// meter table of its own, so this target is ignored wherever `TransformTargets` selects among

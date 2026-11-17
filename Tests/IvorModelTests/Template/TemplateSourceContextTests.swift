@@ -127,7 +127,7 @@ extension TemplateSourceContextTests {
 
         let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
 
-        guard case let .standardBeat(parts, tempoMap, _) = generated.content
+        guard case let .standardBeat(parts, tempoMap, _, _) = generated.content
         else { Issue.record("not standard beat"); return }
 
         let part = try #require(parts.first)
@@ -204,7 +204,7 @@ extension TemplateSourceContextTests {
         let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
         let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
 
-        guard case let .standardBeat(parts, tempoMap, _) = generated.content
+        guard case let .standardBeat(parts, tempoMap, _, _) = generated.content
         else { Issue.record("not standard beat"); return }
 
         let part = try #require(parts.first)
@@ -257,5 +257,83 @@ extension TemplateSourceContextTests {
         let loaded = try #require(Project.load(from: project.save()).fetchTemplate(template.templateID))
 
         #expect(loaded.sourceContext == template.sourceContext)
+    }
+}
+
+// MARK: -
+
+extension TemplateSourceContextTests {
+    // The plain source part's first attack is at 2.
+    private func keyedSourceWork(_ entries: [(Number, Int)]) throws -> Work {
+        try Work(name: "Keyed",
+                 content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable(), makeKeySignatureTable(entries)))
+    }
+
+    @Test
+    func analyze_allTwelveTranspositions_hasNoKeySignature() throws {
+        let variants = Template.AnalysisOptions.Variants(transpositions: (1...11).map { ascending(UInt($0)) })
+        let work = try keyedSourceWork([(0, 2)])
+        let converted = try #require(try work.convert(timeBasis: .beat, pitchNotation: .keyboard))
+        let template = try analyzeVariantsTemplate(converted, variants: variants)
+
+        #expect(template.sourceContext.keySignature == nil)
+    }
+
+    @Test
+    func analyze_inversions_hasNoKeySignature() throws {
+        let template = try analyzeVariantsTemplate(keyedSourceWork([(0, 2)]),
+                                                   variants: .init(inverts: true))
+
+        #expect(template.sourceContext.keySignature == nil)
+    }
+
+    @Test
+    func analyze_octavesAndRetrogrades_keepKeySignature() throws {
+        let variants = Template.AnalysisOptions.Variants(transpositions: [ascending(.perfect8)],
+                                                         retrogrades: true)
+        let template = try analyzeVariantsTemplate(keyedSourceWork([(0, 2)]), variants: variants)
+
+        #expect(template.sourceContext.keySignature == keySignature(2))
+    }
+
+    @Test
+    func analyze_recordsKeySignatureAtFirstAttack() throws {
+        let template = try Template.analyzeNoteEvents(in: keyedSourceWork([(0, 2), (2, -3), (4, 1)]),
+                                                      at: 0,
+                                                      maximumOrder: 1,
+                                                      name: "Test")
+
+        #expect(template.sourceContext.keySignature == keySignature(-3))
+    }
+
+    @Test
+    func analyze_firstAttackBeforeFirstKeyEntry_hasNoKeySignature() throws {
+        let template = try Template.analyzeNoteEvents(in: keyedSourceWork([(3, 2)]),
+                                                      at: 0,
+                                                      maximumOrder: 1,
+                                                      name: "Test")
+
+        #expect(template.sourceContext.keySignature == nil)
+    }
+
+    @Test
+    func generate_writesSourceKeySignatureAtZero() throws {
+        var table = KeySignatureTable()
+
+        try table.insert(beatTime: 0, keySignature: keySignature(-2), extras: modeExtras("minor"))
+
+        let work = Work(content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable(), table))
+        let template = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1, name: "Test")
+        let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
+
+        // The mode extra isn't carried, so the generated key has no name.
+        #expect(try generated.keySignatureTable == makeKeySignatureTable([(0, -2)]))
+    }
+
+    @Test
+    func keySignatureTable_emptyWithoutKeySignature() {
+        #expect(Template.SourceContext().keySignatureTable().isEmpty)
+        #expect(Template.SourceContext(keySignature: keySignature(4)).keySignatureTable()
+                    == (try? makeKeySignatureTable([(0, 4)])))
     }
 }

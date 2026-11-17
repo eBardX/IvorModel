@@ -70,7 +70,8 @@ extension Template {
                     sources: Source(work: work,
                                     index: index).map { [$0] } ?? [],
                     sourceContext: SourceContext(content: work.content,
-                                                 index: index))
+                                                 index: index,
+                                                 keepsKeySignature: options.variants.keepsKeySignatures))
     }
 
     /// Returns how many sequences analyzing a specific part of a work with the given recipe would
@@ -94,7 +95,7 @@ extension Template {
         try options.validate()
 
         switch work.content {
-        case let .absoluteBeat(parts, _, _):
+        case let .absoluteBeat(parts, _, _, _):
             return try _splitForms(of: parts,
                                    at: index,
                                    options: options,
@@ -110,7 +111,7 @@ extension Template {
                                    splitting: _wallSplitting(options.restSplit),
                                    transposing: _ratioTransposing).forms.reduce(0) { $0 + $1.count }
 
-        case let .keyboardBeat(parts, _, _):
+        case let .keyboardBeat(parts, _, _, _):
             return try _splitForms(of: parts,
                                    at: index,
                                    options: options,
@@ -126,7 +127,7 @@ extension Template {
                                    splitting: _wallSplitting(options.restSplit),
                                    transposing: _noteDistanceTransposing).forms.reduce(0) { $0 + $1.count }
 
-        case let .standardBeat(parts, _, _):
+        case let .standardBeat(parts, _, _, _):
             return try _splitForms(of: parts,
                                    at: index,
                                    options: options,
@@ -204,7 +205,7 @@ extension Template {
                                            at index: Int,
                                            options: AnalysisOptions) throws(Error) -> (Self.Content, AnalysisSummary) {
         switch content {
-        case let .absoluteBeat(parts, _, _):
+        case let .absoluteBeat(parts, _, _, _):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
                                                           at: index,
                                                           options: options,
@@ -228,7 +229,7 @@ extension Template {
 
             return (.absoluteWall(model), summary)
 
-        case let .keyboardBeat(parts, _, _):
+        case let .keyboardBeat(parts, _, _, _):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
                                                           at: index,
                                                           options: options,
@@ -252,7 +253,7 @@ extension Template {
 
             return (.keyboardWall(model), summary)
 
-        case let .standardBeat(parts, _, _):
+        case let .standardBeat(parts, _, _, _):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
                                                           at: index,
                                                           options: options,

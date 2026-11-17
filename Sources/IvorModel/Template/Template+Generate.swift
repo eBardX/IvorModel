@@ -373,7 +373,8 @@ extension Template {
                                                                                     rounding: frequencyRounding(pitches),
                                                                                     seed: seed))],
                               sourceContext.tempoMap(),
-                              sourceContext.meterTable())
+                              sourceContext.meterTable(),
+                              sourceContext.keySignatureTable())
 
         case let (.absoluteWall(model), .absoluteWall(options)):
             try .absoluteWall([sourceContext.part(name: partName,
@@ -399,7 +400,8 @@ extension Template {
                                                                                     rounding: exactRounding(pitches),
                                                                                     seed: seed))],
                               sourceContext.tempoMap(),
-                              sourceContext.meterTable())
+                              sourceContext.meterTable(),
+                              sourceContext.keySignatureTable())
 
         case let (.keyboardWall(model), .keyboardWall(options)):
             try .keyboardWall([sourceContext.part(name: partName,
@@ -425,7 +427,8 @@ extension Template {
                                                                                     rounding: exactRounding(pitches),
                                                                                     seed: seed))],
                               sourceContext.tempoMap(),
-                              sourceContext.meterTable())
+                              sourceContext.meterTable(),
+                              sourceContext.keySignatureTable())
 
         case let (.standardWall(model), .standardWall(options)):
             try .standardWall([sourceContext.part(name: partName,

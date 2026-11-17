@@ -99,6 +99,14 @@ extension Template.AnalysisOptions.Variants {
         return result
     }
 
+    //
+    // Whether every variant keeps the part's key signatures: no inversion, and no transposition
+    // other than by octaves. Only then does a template's source key suit what it learns.
+    //
+    internal var keepsKeySignatures: Bool {
+        !inverts && transpositions.allSatisfy(\.keepsKeySignatures)
+    }
+
     // MARK: Internal Instance Methods
 
     internal func validate() throws(Template.Error) {

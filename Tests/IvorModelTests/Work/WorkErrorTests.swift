@@ -93,3 +93,15 @@ extension WorkErrorTests {
         #expect(!Work.Error.workIsLocked.message.isEmpty)
     }
 }
+
+// MARK: -
+
+extension WorkErrorTests {
+    @Test
+    func message_keySignatureTableTransformFailure() {
+        let msg = Work.Error.keySignatureTableTransformFailure(kind: .augment, detail: "boom").message
+
+        #expect(msg.contains("Key signature table"))
+        #expect(msg.contains("boom"))
+    }
+}

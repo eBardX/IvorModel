@@ -333,6 +333,11 @@ func jointNoteEvents(of template: Template) throws -> [NoteEvent<BeatTime, Pitch
     return try makeNoteEvents(#require(model.chains.chain(for: .joint)).states)
 }
 
+func keySignature(_ fifths: Int) -> KeySignature {
+    // swiftlint:disable:next force_unwrapping
+    KeySignature(fifths: fifths)!
+}
+
 func keyboardWallPitches(of work: Work?) throws -> [NoteNumber] {
     guard case let .keyboardWall(parts) = try #require(work).content
     else { Issue.record("Expected keyboard-wall content"); return [] }
@@ -446,7 +451,28 @@ func makeKeyboardBeatWork(_ noteNumbers: [UInt]) -> Work {
                          pitch: NoteNumber(uintValue: noteNumber)!)
     }
 
-    return Work(content: .keyboardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable()))
+    return Work(content: .keyboardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeySignatureTable()))
+}
+
+func makeKeySignatureTable(_ entries: [(Number, Int)]) throws -> KeySignatureTable {
+    var table = KeySignatureTable()
+
+    for (time, fifths) in entries {
+        try table.insert(beatTime: beatTime(time), keySignature: keySignature(fifths))
+    }
+
+    return table
+}
+
+func makeKeySignatureWork(_ keySignatureTable: KeySignatureTable,
+                          pitches: [Pitch] = [.c4, .g4]) -> Work {
+    var part = Part<BeatTime, Pitch>(name: "Piano")
+
+    for (index, pitch) in pitches.enumerated() {
+        part.noteTable.insert(attack: beatTime(Number(index)), duration: 1, pitch: pitch)
+    }
+
+    return Work(content: .standardBeat([part], TempoMap(), MeterTable(), keySignatureTable))
 }
 
 func makeLockedWorkSB() -> (work: Work, partID: PartID) {
@@ -454,7 +480,7 @@ func makeLockedWorkSB() -> (work: Work, partID: PartID) {
 
     part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
-    var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
+    var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
 
     work.isLocked = true
 
@@ -463,7 +489,7 @@ func makeLockedWorkSB() -> (work: Work, partID: PartID) {
 
 func makeMeteredSourceWork(_ meterTable: MeterTable) -> Work {
     Work(name: "Metered",
-         content: .standardBeat([makePlainSourcePart()], TempoMap(), meterTable))
+         content: .standardBeat([makePlainSourcePart()], TempoMap(), meterTable, KeySignatureTable()))
 }
 
 func makeMeterTable(_ entries: [(Number, String)],
@@ -488,7 +514,7 @@ func makeMeterWork(meterTable: MeterTable,
         part.noteTable.insert(attack: beatTime(attack), duration: beats(frac(1, 8)), pitch: .c4)
     }
 
-    return Work(content: .standardBeat([part], tempoMap, meterTable))
+    return Work(content: .standardBeat([part], tempoMap, meterTable, KeySignatureTable()))
 }
 
 func makeNamedStandardBeatWork(_ name: String,
@@ -504,7 +530,7 @@ func makeNamedStandardBeatWork(_ name: String,
     }
 
     return Work(name: name,
-                content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable()))
+                content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeySignatureTable()))
 }
 
 //
@@ -574,7 +600,7 @@ func makeOneBeatWork(_ pitches: [Pitch]) -> Work {
     }
 
     return Work(name: name,
-                content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable()))
+                content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeySignatureTable()))
 }
 
 func makeOrganPatch() throws -> Patch {
@@ -604,7 +630,7 @@ func makePlainSourcePart() -> Part<BeatTime, Pitch> {
 
 func makePlainSourceWork() -> Work {
     Work(name: "Plain",
-         content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable()))
+         content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable(), KeySignatureTable()))
 }
 
 func makePosition(beat: Int?) -> MeterTable.Position {
@@ -642,7 +668,7 @@ func makeRestSplitTune() -> Work {
     }
 
     return Work(name: "Tune",
-                content: .standardBeat([Part(name: "Flute", noteTable: noteTable)], TempoMap(), MeterTable()))
+                content: .standardBeat([Part(name: "Flute", noteTable: noteTable)], TempoMap(), MeterTable(), KeySignatureTable()))
 }
 
 //
@@ -664,7 +690,7 @@ func makeSourceContextWork(instrument: Instrument = Fixtures.oboe) -> Work {
     tempoMap.insert(beatTime: beatTime(1), tempo: Fixtures.slowTempo)
 
     return Work(name: "Tune",
-                content: .standardBeat([part], tempoMap, MeterTable()))
+                content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
 }
 
 func makeStandardBeatWork(_ notes: [(Number, Number, Pitch)]) -> Work {
@@ -678,7 +704,7 @@ func makeStandardBeatWork(_ notes: [(Number, Number, Pitch)]) -> Work {
                          pitch: pitch)
     }
 
-    return Work(content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable()))
+    return Work(content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeySignatureTable()))
 }
 
 func makeTimeCodeExtras() -> Extras {
@@ -720,6 +746,10 @@ func makeWorkInfo() -> Work.Info {
 func meter(_ plain: String) -> Meter {
     // swiftlint:disable:next force_unwrapping
     Meter(plain: plain)!
+}
+
+func modeExtras(_ mode: String) -> Extras {
+    Extras(elements: [Extra(name: Extra.keySignatureMode.name, values: [.string(mode)])])
 }
 
 func pedalLevel(_ numerator: Int,
@@ -781,28 +811,28 @@ func standardBeatNoteEvents(of work: Work) throws -> [NoteEvent<BeatTime, Pitch>
 }
 
 func standardBeatNoteEventsOrEmpty(of work: Work) -> [NoteEvent<BeatTime, Pitch>] {
-    guard case let .standardBeat(parts, _, _) = work.content
+    guard case let .standardBeat(parts, _, _, _) = work.content
     else { return [] }
 
     return parts.first?.noteTable.extractNoteEvents() ?? []
 }
 
 func standardBeatNoteTable(of work: Work) throws -> NoteTable<BeatTime, Pitch> {
-    guard case let .standardBeat(parts, _, _) = work.content
+    guard case let .standardBeat(parts, _, _, _) = work.content
     else { throw Template.Error.incompatibleOptions }
 
     return try #require(parts.first).noteTable
 }
 
 func standardBeatNoteTriples(of work: Work) throws -> [NoteTripleSB] {
-    guard case let .standardBeat(parts, _, _) = work.content
+    guard case let .standardBeat(parts, _, _, _) = work.content
     else { throw Template.Error.incompatibleOptions }
 
     return try makeNoteTriplesSB(#require(parts.first).noteTable)
 }
 
 func standardBeatPitches(of work: Work) throws -> [Pitch] {
-    guard case let .standardBeat(parts, _, _) = work.content
+    guard case let .standardBeat(parts, _, _, _) = work.content
     else { throw Template.Error.incompatibleOptions }
 
     return try makeNoteTriplesSB(#require(parts.first).noteTable).map(\.pitch)
@@ -863,7 +893,7 @@ func summary(of table: MeterTable) -> [String] {
 }
 
 func wallAttacks(of work: Work) throws -> [Double] {
-    guard case let .standardBeat(parts, tempoMap, _) = work.content
+    guard case let .standardBeat(parts, tempoMap, _, _) = work.content
     else { throw Work.Error.timeBasisMismatch(expected: .beat) }
 
     let converter = TimeConverter(tempoMap: tempoMap)

@@ -11,8 +11,17 @@ extension Work {
     /// Transposes note pitches by a directed ratio across the parts in this work that `partIDs`
     /// names.
     ///
+    /// In beat time, the work’s key signatures move too, unless `movesKeySignatures` is `false`:
+    /// a ratio within 25 cents of a whole number of semitones moves them by that many key steps,
+    /// assuming 12 to the octave. Any other ratio leaves the music between keys, so they’re all
+    /// removed, as they are if any key signature can’t be transposed.
+    ///
     /// - Parameter directedInterval:   The directed ratio by which to transpose the targeted parts’
     ///                                 pitches.
+    /// - Parameter movesKeySignatures: Whether to transpose the work’s key signatures too.
+    ///                                 Leave it on when every part is transposed; transposing
+    ///                                 only some may or may not change the key. Defaults to
+    ///                                 `true`.
     /// - Parameter partIDs:            The IDs of the parts to transform, or `nil` (the default)
     ///                                 for every part. IDs naming no part are ignored.
     ///
@@ -21,11 +30,12 @@ extension Work {
     ///             absolute (frequency) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(kind:partID:detail:)`` naming the part that failed.
     public mutating func transpose(by directedInterval: DirectedInterval<Ratio>,
+                                   movesKeySignatures: Bool = true,
                                    partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable):
+        case let .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable):
             typealias PartType = Part<BeatTime, Frequency>
 
             let newParts = try Self.transformed(parts: parts,
@@ -34,7 +44,13 @@ extension Work {
                 try part.transpose(by: directedInterval)
             }
 
-            content = .absoluteBeat(newParts, tempoMap, meterTable)
+            var newKeySignatureTable = keySignatureTable
+
+            if movesKeySignatures {
+                newKeySignatureTable.transpose(by: directedInterval)
+            }
+
+            content = .absoluteBeat(newParts, tempoMap, meterTable, newKeySignatureTable)
 
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
@@ -53,8 +69,16 @@ extension Work {
     /// Transposes note pitches by a directed note distance across the parts in this work that
     /// `partIDs` names.
     ///
+    /// In beat time, the work’s key signatures move too, unless `movesKeySignatures` is `false`:
+    /// each key step count as its usual interval, assuming 12 to the octave (see
+    /// ``KeySignatureTable``). If any key signature can’t be transposed, they’re all removed.
+    ///
     /// - Parameter directedInterval:   The directed note distance by which to transpose every
     ///                                 part’s pitches.
+    /// - Parameter movesKeySignatures: Whether to transpose the work’s key signatures too.
+    ///                                 Leave it on when every part is transposed; transposing
+    ///                                 only some may or may not change the key. Defaults to
+    ///                                 `true`.
     /// - Parameter partIDs:            The IDs of the parts to transform, or `nil` (the default)
     ///                                 for every part. IDs naming no part are ignored.
     ///
@@ -63,11 +87,12 @@ extension Work {
     ///             keyboard (MIDI note number) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(kind:partID:detail:)`` naming the part that failed.
     public mutating func transpose(by directedInterval: DirectedInterval<NoteDistance>,
+                                   movesKeySignatures: Bool = true,
                                    partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 
         switch content {
-        case let .keyboardBeat(parts, tempoMap, meterTable):
+        case let .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable):
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let newParts = try Self.transformed(parts: parts,
@@ -76,7 +101,13 @@ extension Work {
                 try part.transpose(by: directedInterval)
             }
 
-            content = .keyboardBeat(newParts, tempoMap, meterTable)
+            var newKeySignatureTable = keySignatureTable
+
+            if movesKeySignatures {
+                newKeySignatureTable.transpose(by: directedInterval)
+            }
+
+            content = .keyboardBeat(newParts, tempoMap, meterTable, newKeySignatureTable)
 
         case let .keyboardWall(parts):
             typealias PartType = Part<WallTime, NoteNumber>
@@ -95,8 +126,15 @@ extension Work {
     /// Transposes note pitches by a directed interval across the parts in this work that `partIDs`
     /// names.
     ///
+    /// In beat time, the work’s key signatures move too, unless `movesKeySignatures` is `false`,
+    /// exactly by the interval. If any key signature can’t be transposed, they’re all removed.
+    ///
     /// - Parameter directedInterval:   The directed interval by which to transpose the targeted
     ///                                 parts’ pitches.
+    /// - Parameter movesKeySignatures: Whether to transpose the work’s key signatures too.
+    ///                                 Leave it on when every part is transposed; transposing
+    ///                                 only some may or may not change the key. Defaults to
+    ///                                 `true`.
     /// - Parameter partIDs:            The IDs of the parts to transform, or `nil` (the default)
     ///                                 for every part. IDs naming no part are ignored.
     ///
@@ -105,11 +143,12 @@ extension Work {
     ///             standard (staff) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(kind:partID:detail:)`` naming the part that failed.
     public mutating func transpose(by directedInterval: DirectedInterval<Interval>,
+                                   movesKeySignatures: Bool = true,
                                    partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 
         switch content {
-        case let .standardBeat(parts, tempoMap, meterTable):
+        case let .standardBeat(parts, tempoMap, meterTable, keySignatureTable):
             typealias PartType = Part<BeatTime, Pitch>
 
             let newParts = try Self.transformed(parts: parts,
@@ -118,7 +157,13 @@ extension Work {
                 try part.transpose(by: directedInterval)
             }
 
-            content = .standardBeat(newParts, tempoMap, meterTable)
+            var newKeySignatureTable = keySignatureTable
+
+            if movesKeySignatures {
+                newKeySignatureTable.transpose(by: directedInterval)
+            }
+
+            content = .standardBeat(newParts, tempoMap, meterTable, newKeySignatureTable)
 
         case let .standardWall(parts):
             typealias PartType = Part<WallTime, Pitch>

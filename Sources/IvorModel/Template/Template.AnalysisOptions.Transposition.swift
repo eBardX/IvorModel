@@ -41,6 +41,26 @@ extension Template.AnalysisOptions.Transposition {
             directedInterval.interval.isUnison
         }
     }
+
+    //
+    // Whether this transposition leaves every key signature as it was: an octave, or several, in
+    // key signature terms (see `KeySignature.transposed(by:)`).
+    //
+    internal var keepsKeySignatures: Bool {
+        guard let cMajor = KeySignature(fifths: 0)
+        else { return false }
+
+        return switch self {
+        case let .interval(directedInterval):
+            cMajor.transposed(by: directedInterval) == cMajor
+
+        case let .noteDistance(directedInterval):
+            cMajor.transposed(by: directedInterval) == cMajor
+
+        case let .ratio(directedInterval):
+            cMajor.transposed(by: directedInterval) == cMajor
+        }
+    }
 }
 
 // MARK: - Codable

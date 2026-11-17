@@ -9,23 +9,23 @@ extension Work {
 
     /// The musical content of a work, parameterized by pitch notation and time basis.
     public enum Content {
-        /// Beat-time parts using absolute (frequency) pitch notation, with an associated tempo map and
-        /// meter table.
-        case absoluteBeat([Part<BeatTime, Frequency>], TempoMap, MeterTable)
+        /// Beat-time parts using absolute (frequency) pitch notation, with an associated tempo map,
+        /// meter table and key signature table.
+        case absoluteBeat([Part<BeatTime, Frequency>], TempoMap, MeterTable, KeySignatureTable)
 
         /// Wall-time parts using absolute (frequency) pitch notation.
         case absoluteWall([Part<WallTime, Frequency>])
 
-        /// Beat-time parts using keyboard (MIDI note number) pitch notation, with an associated tempo map and
-        /// meter table.
-        case keyboardBeat([Part<BeatTime, NoteNumber>], TempoMap, MeterTable)
+        /// Beat-time parts using keyboard (MIDI note number) pitch notation, with an associated tempo map,
+        /// meter table and key signature table.
+        case keyboardBeat([Part<BeatTime, NoteNumber>], TempoMap, MeterTable, KeySignatureTable)
 
         /// Wall-time parts using keyboard (MIDI note number) pitch notation.
         case keyboardWall([Part<WallTime, NoteNumber>])
 
-        /// Beat-time parts using standard (staff) pitch notation, with an associated tempo map and
-        /// meter table.
-        case standardBeat([Part<BeatTime, Pitch>], TempoMap, MeterTable)
+        /// Beat-time parts using standard (staff) pitch notation, with an associated tempo map,
+        /// meter table and key signature table.
+        case standardBeat([Part<BeatTime, Pitch>], TempoMap, MeterTable, KeySignatureTable)
 
         /// Wall-time parts using standard (staff) pitch notation.
         case standardWall([Part<WallTime, Pitch>])
@@ -40,8 +40,8 @@ extension Work.Content {
 
     /// Returns content with no parts in the given time basis and pitch notation.
     ///
-    /// Beat-time content gets an empty tempo map with the default tempo and an empty meter
-    /// table.
+    /// Beat-time content gets an empty tempo map with the default tempo, an empty meter table and
+    /// an empty key signature table.
     ///
     /// - Parameter timeBasis:      The time basis of the content.
     /// - Parameter pitchNotation:  The pitch notation of the content.
@@ -51,19 +51,19 @@ extension Work.Content {
                              pitchNotation: PitchNotation) -> Self {
         switch (pitchNotation, timeBasis) {
         case (.absolute, .beat):
-            .absoluteBeat([], TempoMap(), MeterTable())
+            .absoluteBeat([], TempoMap(), MeterTable(), KeySignatureTable())
 
         case (.absolute, .wall):
             .absoluteWall([])
 
         case (.keyboard, .beat):
-            .keyboardBeat([], TempoMap(), MeterTable())
+            .keyboardBeat([], TempoMap(), MeterTable(), KeySignatureTable())
 
         case (.keyboard, .wall):
             .keyboardWall([])
 
         case (.standard, .beat):
-            .standardBeat([], TempoMap(), MeterTable())
+            .standardBeat([], TempoMap(), MeterTable(), KeySignatureTable())
 
         case (.standard, .wall):
             .standardWall([])
@@ -83,19 +83,19 @@ extension Work.Content {
 
     internal var partIDs: [PartID] {
         switch self {
-        case let .absoluteBeat(parts, _, _):
+        case let .absoluteBeat(parts, _, _, _):
             parts.map(\.partID)
 
         case let .absoluteWall(parts):
             parts.map(\.partID)
 
-        case let .keyboardBeat(parts, _, _):
+        case let .keyboardBeat(parts, _, _, _):
             parts.map(\.partID)
 
         case let .keyboardWall(parts):
             parts.map(\.partID)
 
-        case let .standardBeat(parts, _, _):
+        case let .standardBeat(parts, _, _, _):
             parts.map(\.partID)
 
         case let .standardWall(parts):
@@ -161,7 +161,9 @@ extension Work.Content: Codable {
                                      container.decode(TempoMap.self,
                                                       forKey: .tempoMap),
                                      container.decode(MeterTable.self,
-                                                      forKey: .meterTable))
+                                                      forKey: .meterTable),
+                                     container.decode(KeySignatureTable.self,
+                                                      forKey: .keySignatureTable))
 
         case (.absolute, .wall):
             self = try .absoluteWall(container.decode([Part<WallTime, Frequency>].self,
@@ -173,7 +175,9 @@ extension Work.Content: Codable {
                                      container.decode(TempoMap.self,
                                                       forKey: .tempoMap),
                                      container.decode(MeterTable.self,
-                                                      forKey: .meterTable))
+                                                      forKey: .meterTable),
+                                     container.decode(KeySignatureTable.self,
+                                                      forKey: .keySignatureTable))
 
         case (.keyboard, .wall):
             self = try .keyboardWall(container.decode([Part<WallTime, NoteNumber>].self,
@@ -185,7 +189,9 @@ extension Work.Content: Codable {
                                      container.decode(TempoMap.self,
                                                       forKey: .tempoMap),
                                      container.decode(MeterTable.self,
-                                                      forKey: .meterTable))
+                                                      forKey: .meterTable),
+                                     container.decode(KeySignatureTable.self,
+                                                      forKey: .keySignatureTable))
 
         case (.standard, .wall):
             self = try .standardWall(container.decode([Part<WallTime, Pitch>].self,
@@ -213,7 +219,7 @@ extension Work.Content: Codable {
                              forKey: .timeBasis)
 
         switch self {
-        case let .absoluteBeat(parts, tempoMap, meterTable):
+        case let .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable):
             try container.encode(parts,
                                  forKey: .parts)
 
@@ -222,12 +228,15 @@ extension Work.Content: Codable {
 
             try container.encode(meterTable,
                                  forKey: .meterTable)
+
+            try container.encode(keySignatureTable,
+                                 forKey: .keySignatureTable)
 
         case let .absoluteWall(parts):
             try container.encode(parts,
                                  forKey: .parts)
 
-        case let .keyboardBeat(parts, tempoMap, meterTable):
+        case let .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable):
             try container.encode(parts,
                                  forKey: .parts)
 
@@ -236,12 +245,15 @@ extension Work.Content: Codable {
 
             try container.encode(meterTable,
                                  forKey: .meterTable)
+
+            try container.encode(keySignatureTable,
+                                 forKey: .keySignatureTable)
 
         case let .keyboardWall(parts):
             try container.encode(parts,
                                  forKey: .parts)
 
-        case let .standardBeat(parts, tempoMap, meterTable):
+        case let .standardBeat(parts, tempoMap, meterTable, keySignatureTable):
             try container.encode(parts,
                                  forKey: .parts)
 
@@ -250,6 +262,9 @@ extension Work.Content: Codable {
 
             try container.encode(meterTable,
                                  forKey: .meterTable)
+
+            try container.encode(keySignatureTable,
+                                 forKey: .keySignatureTable)
 
         case let .standardWall(parts):
             try container.encode(parts,
@@ -260,6 +275,7 @@ extension Work.Content: Codable {
     // MARK: Private Nested Types
 
     private enum CodingKeys: String, CodingKey {
+        case keySignatureTable
         case meterTable
         case parts
         case pitchNotation

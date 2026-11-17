@@ -451,3 +451,13 @@ extension ExtraIvorTests {
         #expect(Extra.upBow.values.isEmpty)
     }
 }
+
+// MARK: -
+
+extension ExtraIvorTests {
+    @Test
+    func keySignatureMode() {
+        #expect(Extra.keySignatureMode.name == "keySignatureMode")
+        #expect(Extra.keySignatureMode.values.isEmpty)
+    }
+}

@@ -36,7 +36,7 @@ extension WorkTransposeTests {
 
         part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
 
         let interval = try #require(Pitch.c4.interval(to: .e4))
 
@@ -47,12 +47,90 @@ extension WorkTransposeTests {
 
     @Test
     func transpose_wrongPitchNotationThrows() {
-        var work = Work(content: .keyboardBeat([], TempoMap(), MeterTable()))
+        var work = Work(content: .keyboardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
 
         let interval = DirectedInterval(interval: Interval.unison, direction: .same)
 
         #expect(throws: Work.Error.pitchNotationMismatch(expected: .standard)) {
             try work.transpose(by: interval)
         }
+    }
+}
+
+// MARK: -
+
+extension WorkTransposeTests {
+    @Test
+    func transpose_absolute_justFifthMovesKeys() throws {
+        var work = try absoluteKeyWork()
+        let fifth = try DirectedInterval(interval: #require(Ratio(numberValue: frac(3, 2))), direction: .ascending)
+
+        try work.transpose(by: fifth)
+
+        #expect(work.keySignatureTable?.map(\.keySignature) == [keySignature(3)])
+    }
+
+    @Test
+    func transpose_absolute_offSemitoneRemovesKeys() throws {
+        for ratio in [frac(7, 4), Ratio(cents: 50).numberValue] {
+            var work = try absoluteKeyWork()
+            let interval = try DirectedInterval(interval: #require(Ratio(numberValue: ratio)), direction: .ascending)
+
+            try work.transpose(by: interval)
+
+            #expect(work.keySignatureTable?.isEmpty == true)
+        }
+    }
+
+    @Test
+    func transpose_absolute_flagOffKeepsKeys() throws {
+        var work = try absoluteKeyWork()
+        let interval = try DirectedInterval(interval: #require(Ratio(numberValue: frac(7, 4))), direction: .ascending)
+
+        try work.transpose(by: interval, movesKeySignatures: false)
+
+        #expect(work.keySignatureTable?.map(\.keySignature) == [keySignature(2)])
+    }
+
+    @Test
+    func transpose_keyboard_movesKeysByKeySteps() throws {
+        var work = try Work(content: .keyboardBeat([], TempoMap(), MeterTable(), makeKeySignatureTable([(0, -1)])))
+        let up = try DirectedInterval(interval: #require(NoteDistance(uintValue: 1)), direction: .ascending)
+
+        try work.transpose(by: up)
+
+        #expect(work.keySignatureTable?.map(\.keySignature) == [keySignature(-6)])
+    }
+
+    @Test
+    func transpose_standard_movesKeysKeepingMode() throws {
+        var table = KeySignatureTable()
+
+        try table.insert(beatTime: 0, keySignature: keySignature(-3), extras: modeExtras("minor"))
+
+        var work = makeKeySignatureWork(table)
+
+        try work.transpose(by: #require(Pitch.c4.interval(to: .d4)))
+
+        #expect(work.keySignatureTable?.first?.keySignature == keySignature(-1))
+        #expect(work.keySignatureTable?.first?.extras == modeExtras("minor"))
+    }
+
+    @Test
+    func transpose_standard_flagOffKeepsKeys() throws {
+        var work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2)]))
+
+        try work.transpose(by: #require(Pitch.c4.interval(to: .d4)), movesKeySignatures: false)
+
+        #expect(try work.keySignatureTable == makeKeySignatureTable([(0, 2)]))
+        #expect(work.pitchRange?.lowerBound as? Pitch == .d4)
+    }
+
+    private func absoluteKeyWork() throws -> Work {
+        var part = Part<BeatTime, Frequency>(name: "Sine")
+
+        part.noteTable.insert(attack: 0, duration: 1, pitch: 440)
+
+        return try Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), makeKeySignatureTable([(0, 2)])))
     }
 }

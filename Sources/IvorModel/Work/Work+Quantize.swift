@@ -14,8 +14,8 @@ extension Work {
     /// ``TransformTargets/tempo``, the work’s own tempo map. The tempo map is work-wide, so it is carried
     /// along whichever parts are targeted.
     ///
-    /// The work’s meter table is never quantized, whatever `applyTo` holds: meter entries mark
-    /// notation, not sound.
+    /// The work’s meter table and key signature table are never quantized, whatever `applyTo`
+    /// holds: their entries mark notation, not sound.
     ///
     /// - Parameter factors:    An array of positive integer subdivision factors.
     /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize every
@@ -39,7 +39,7 @@ extension Work {
         let quantizer = try Self._quantizer(factors)
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable):
+        case let .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable):
             typealias PartType = Part<BeatTime, Frequency>
 
             let newParts = try Self.transformed(parts: parts,
@@ -54,9 +54,10 @@ extension Work {
                                     Self._quantized(tempoMap: tempoMap,
                                                     using: quantizer,
                                                     applyTo: applyTo),
-                                    meterTable)
+                                    meterTable,
+                                    keySignatureTable)
 
-        case let .keyboardBeat(parts, tempoMap, meterTable):
+        case let .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable):
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let newParts = try Self.transformed(parts: parts,
@@ -71,9 +72,10 @@ extension Work {
                                     Self._quantized(tempoMap: tempoMap,
                                                     using: quantizer,
                                                     applyTo: applyTo),
-                                    meterTable)
+                                    meterTable,
+                                    keySignatureTable)
 
-        case let .standardBeat(parts, tempoMap, meterTable):
+        case let .standardBeat(parts, tempoMap, meterTable, keySignatureTable):
             typealias PartType = Part<BeatTime, Pitch>
 
             let newParts = try Self.transformed(parts: parts,
@@ -88,7 +90,8 @@ extension Work {
                                     Self._quantized(tempoMap: tempoMap,
                                                     using: quantizer,
                                                     applyTo: applyTo),
-                                    meterTable)
+                                    meterTable,
+                                    keySignatureTable)
 
         default:
             throw Error.timeBasisMismatch(expected: .beat)

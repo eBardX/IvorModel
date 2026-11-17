@@ -12,8 +12,8 @@ extension Work {
     /// tempo map — a fixed-media export at the tempo curve currently in effect. `nil` for
     /// wall-time content, which has no tempo map to convert with. The new work keeps this
     /// work’s ``Work/smpteStartTime``, ``Work/info``, ``Work/extras``, and
-    /// ``Work/realizations``, and its parts keep their IDs and extras. The meter table is
-    /// dropped, since wall time has no bars.
+    /// ``Work/realizations``, and its parts keep their IDs and extras. The meter table and key
+    /// signature table are dropped, since wall time has no bars.
     ///
     /// Always succeeds, even on a locked work: this returns an independent, unlocked copy rather
     /// than mutating `self`, so ``Work/isLocked`` — which only protects `self` from being
@@ -21,7 +21,7 @@ extension Work {
     ///
     /// - Returns:  The converted work, or `nil` for wall-time content.
     public func warped() -> Work? {
-        guard let newContent = Self._warped(content)
+        guard let newContent = Self.warpedContent(content)
         else { return nil }
 
         return Work(name: name,
@@ -32,11 +32,15 @@ extension Work {
                     realizations: realizations)
     }
 
-    // MARK: Private Type Methods
+    // MARK: Internal Type Methods
 
-    private static func _warped(_ content: Content) -> Content? {
+    //
+    // `content` converted to wall time with its own tempo map, or `nil` if it's already in wall
+    // time. `convert(timeBasis:pitchNotation:context:dropsUnconvertibleNotes:)` uses it too.
+    //
+    internal static func warpedContent(_ content: Content) -> Content? {
         switch content {
-        case let .absoluteBeat(parts, tempoMap, _):
+        case let .absoluteBeat(parts, tempoMap, _, _):
             let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             return .absoluteWall(parts.map { part in
@@ -44,7 +48,7 @@ extension Work {
                                  using: timeConverter)
             })
 
-        case let .keyboardBeat(parts, tempoMap, _):
+        case let .keyboardBeat(parts, tempoMap, _, _):
             let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             return .keyboardWall(parts.map { part in
@@ -52,7 +56,7 @@ extension Work {
                                  using: timeConverter)
             })
 
-        case let .standardBeat(parts, tempoMap, _):
+        case let .standardBeat(parts, tempoMap, _, _):
             let timeConverter = TimeConverter(tempoMap: tempoMap)
 
             return .standardWall(parts.map { part in
@@ -82,8 +86,8 @@ extension Work {
     /// wall-to-beat conversion, which always produces content backed by a fresh, empty tempo map,
     /// the beat-time content this method returns carries `tempoMap` itself forward as its own tempo
     /// map — the point of this method is to hand back editable beat-time content that stays
-    /// coherent with the very tempo curve used to derive its beat positions. Its meter table
-    /// starts out empty.
+    /// coherent with the very tempo curve used to derive its beat positions. Its meter table and
+    /// key signature table start out empty.
     ///
     /// Always succeeds, even on a locked work — see ``warped()``’s doc comment for why.
     ///
@@ -91,8 +95,8 @@ extension Work {
     ///
     /// - Returns:  The converted work, or `nil` for beat-time content.
     public func unwarped(using tempoMap: TempoMap) -> Work? {
-        guard let newContent = Self._unwarped(content,
-                                              using: tempoMap)
+        guard let newContent = Self.unwarpedContent(content,
+                                                    using: tempoMap)
         else { return nil }
 
         return Work(name: name,
@@ -103,10 +107,15 @@ extension Work {
                     realizations: realizations)
     }
 
-    // MARK: Private Type Methods
+    // MARK: Internal Type Methods
 
-    private static func _unwarped(_ content: Content,
-                                  using tempoMap: TempoMap) -> Content? {
+    //
+    // `content` converted to beat time with `tempoMap`, or `nil` if it's already in beat time.
+    // `convert(timeBasis:pitchNotation:context:dropsUnconvertibleNotes:)` uses it too, with a
+    // fresh, empty tempo map.
+    //
+    internal static func unwarpedContent(_ content: Content,
+                                         using tempoMap: TempoMap) -> Content? {
         let timeConverter = TimeConverter(tempoMap: tempoMap)
 
         switch content {
@@ -116,7 +125,8 @@ extension Work {
                                  using: timeConverter)
             },
                                  tempoMap,
-                                 MeterTable())
+                                 MeterTable(),
+                                 KeySignatureTable())
 
         case let .keyboardWall(parts):
             return .keyboardBeat(parts.map { part in
@@ -124,7 +134,8 @@ extension Work {
                                  using: timeConverter)
             },
                                  tempoMap,
-                                 MeterTable())
+                                 MeterTable(),
+                                 KeySignatureTable())
 
         case let .standardWall(parts):
             return .standardBeat(parts.map { part in
@@ -132,7 +143,8 @@ extension Work {
                                  using: timeConverter)
             },
                                  tempoMap,
-                                 MeterTable())
+                                 MeterTable(),
+                                 KeySignatureTable())
 
         default:
             return nil
@@ -169,7 +181,7 @@ extension Work {
     ///             ``Work/TransformKind/varispeed`` if shifting any note’s pitch by the tempo
     ///             ratio in effect produces a frequency outside the representable range.
     public func varispeeded(normalTempo: Tempo = .default) throws(Error) -> Work? {
-        guard case let .absoluteBeat(parts, tempoMap, _) = content
+        guard case let .absoluteBeat(parts, tempoMap, _, _) = content
         else { return nil }
 
         let timeConverter = TimeConverter(tempoMap: tempoMap)

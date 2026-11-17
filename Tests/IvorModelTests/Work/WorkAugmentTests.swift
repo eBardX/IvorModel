@@ -26,7 +26,7 @@ extension WorkAugmentTests {
 
         tempoMap.insert(beatTime: 3, tempo: .default)
 
-        var selected = Work(content: .standardBeat([violin, cello], tempoMap, MeterTable()))
+        var selected = Work(content: .standardBeat([violin, cello], tempoMap, MeterTable(), KeySignatureTable()))
         var whole = selected
 
         try selected.augment(by: Number(2),
@@ -116,7 +116,7 @@ extension WorkAugmentTests {
 
         tempoMap.insert(beatTime: 0, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
 
         try work.augment(by: Number(2), anchor: nil as BeatTime?)
 
@@ -161,7 +161,7 @@ extension WorkAugmentTests {
 
         tempoMap.insert(beatTime: 0, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
 
         try work.augment(by: Number(2), anchor: nil as BeatTime?)
     }
@@ -175,7 +175,7 @@ extension WorkAugmentTests {
         cello.noteTable.insert(attack: 0, duration: .quarter, pitch: .c3)
 
         let meterTable = try makeMeterTable([(0, "3/4"), (frac(3, 2), "2/4")])
-        var work = Work(content: .standardBeat([violin, cello], TempoMap(), meterTable))
+        var work = Work(content: .standardBeat([violin, cello], TempoMap(), meterTable, KeySignatureTable()))
 
         try work.augment(by: 2,
                          anchor: nil as BeatTime?,
@@ -195,7 +195,7 @@ extension WorkAugmentTests {
         badPart.noteTable.insert(attack: 5, duration: 1, pitch: .e4)
 
         let partIDs: Set<PartID> = [goodPart.partID, badPart.partID]
-        var work = Work(content: .standardBeat([goodPart, badPart], TempoMap(), MeterTable()))
+        var work = Work(content: .standardBeat([goodPart, badPart], TempoMap(), MeterTable(), KeySignatureTable()))
 
         //
         // An explicit anchor of 3 is later than `goodPart`'s own range (0...1), so its
@@ -229,7 +229,7 @@ extension WorkAugmentTests {
                                                   Extra(name: Extra.rampDuration.name, values: [.double(4)])]))
         tempoMap.insert(beatTime: 4, tempo: t120)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
 
         try work.augment(by: Number(2), anchor: nil as BeatTime?)
 
@@ -243,7 +243,7 @@ extension WorkAugmentTests {
     @Test
     func augment_singlePart_missingID_isNoOp() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
 
         try work.augment(by: Number(2), anchor: nil as BeatTime?, partIDs: [PartID()])
 
@@ -259,7 +259,7 @@ extension WorkAugmentTests {
         part2.noteTable.insert(attack: 0, duration: 1, pitch: .e4)
 
         let targetID = part1.partID
-        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable()))
+        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeySignatureTable()))
 
         try work.augment(by: Number(2), anchor: nil as BeatTime?, partIDs: [targetID])
 
@@ -287,7 +287,7 @@ extension WorkAugmentTests {
         tempoMap.insert(beatTime: 0, tempo: .default)
         tempoMap.insert(beatTime: 2, tempo: .default)
 
-        var work = Work(content: .standardBeat([part1, part2], tempoMap, MeterTable()))
+        var work = Work(content: .standardBeat([part1, part2], tempoMap, MeterTable(), KeySignatureTable()))
 
         try work.augment(by: Number(2), anchor: nil as BeatTime?, applyTo: .all)
 
@@ -296,7 +296,7 @@ extension WorkAugmentTests {
         // tempo map, all scaled consistently relative to the same anchor (the aggregate
         // beat-time range's lower bound, 0).
         //
-        guard case let .standardBeat(parts, newTempoMap, _) = work.content
+        guard case let .standardBeat(parts, newTempoMap, _, _) = work.content
         else { Issue.record("Expected .standardBeat content."); return }
 
         #expect(parts.count == 2)
@@ -345,7 +345,7 @@ extension WorkAugmentTests {
         tempoMap.insert(beatTime: 0, tempo: .default)
         tempoMap.insert(beatTime: 2, tempo: .default)
 
-        var work = Work(content: .standardBeat([], tempoMap, MeterTable()))
+        var work = Work(content: .standardBeat([], tempoMap, MeterTable(), KeySignatureTable()))
 
         try work.augment(by: Number(2), anchor: nil as BeatTime?, applyTo: [])
 
@@ -370,7 +370,7 @@ extension WorkAugmentTests {
         tempoMap.insert(beatTime: 0, tempo: .default)
         tempoMap.insert(beatTime: 2, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
 
         try work.augment(by: Number(2),
                          anchor: nil as BeatTime?,
@@ -396,7 +396,7 @@ extension WorkAugmentTests {
         tempoMap.insert(beatTime: 0, tempo: .default)
         tempoMap.insert(beatTime: 2, tempo: .default)
 
-        var work = Work(content: .standardBeat([part1, part2], tempoMap, MeterTable()))
+        var work = Work(content: .standardBeat([part1, part2], tempoMap, MeterTable(), KeySignatureTable()))
 
         try work.augment(by: Number(2), anchor: nil as BeatTime?)
 
@@ -465,7 +465,7 @@ extension WorkAugmentTests {
 
         let partID = part.partID
         let detail = "Invalid anchor: does not contain the range of entries it is being applied to"
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
 
         #expect(throws: Work.Error.dynamicMapTransformFailure(kind: .augment,
                                                               partID: partID,
@@ -485,7 +485,7 @@ extension WorkAugmentTests {
 
         let partID = part.partID
         let detail = "Invalid anchor: does not contain the range of entries it is being applied to"
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
 
         #expect(throws: Work.Error.instrumentTableTransformFailure(kind: .augment,
                                                                    partID: partID,
@@ -505,7 +505,7 @@ extension WorkAugmentTests {
 
         let partID = part.partID
         let detail = "Invalid anchor: does not contain the range of entries it is being applied to"
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
 
         #expect(throws: Work.Error.panMapTransformFailure(kind: .augment,
                                                           partID: partID,
@@ -514,5 +514,37 @@ extension WorkAugmentTests {
         }
 
         #expect(work.beatTimeRange == BeatTime(5)...BeatTime(6))
+    }
+}
+
+// MARK: -
+
+extension WorkAugmentTests {
+    @Test
+    func augment_carriesKeysOnlyWithKeySignatureTarget() throws {
+        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (1, -1)]))
+        var carried = work
+        var left = work
+
+        try carried.augment(by: 2, anchor: BeatTime.zero)
+        try left.augment(by: 2, anchor: BeatTime.zero, applyTo: [.dynamic])
+
+        #expect(carried.keySignatureTable?.map(\.beatTime) == [0, 2])
+        #expect(left.keySignatureTable?.map(\.beatTime) == [0, 1])
+    }
+
+    @Test
+    func augment_defaultAnchorIncludesKeyEntries() throws {
+        var part = Part<BeatTime, Pitch>(name: "Piano")
+
+        part.noteTable.insert(attack: 2, duration: 1, pitch: .c4)
+
+        var work = try Work(content: .standardBeat([part], TempoMap(), MeterTable(), makeKeySignatureTable([(1, 2)])))
+
+        try work.augment(by: 2, anchor: nil as BeatTime?)
+
+        // The anchor resolves to the key entry at 1, before the first note.
+        #expect(work.keySignatureTable?.map(\.beatTime) == [1])
+        #expect(work.beatTimeRange?.lowerBound == 3)
     }
 }

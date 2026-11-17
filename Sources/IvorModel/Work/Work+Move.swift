@@ -10,15 +10,16 @@ extension Work {
 
     /// Moves note attack times by a directed duration across the beat-time parts in this work that
     /// `partIDs` names, along with any parameter maps selected by `applyTo` and, when `applyTo`
-    /// contains ``TransformTargets/tempo`` or ``TransformTargets/meter``, the work’s own tempo map
-    /// or meter table. Both are work-wide, so they’re carried along whichever parts are targeted.
+    /// contains ``TransformTargets/tempo``, ``TransformTargets/meter`` or
+    /// ``TransformTargets/keySignature``, the work’s own tempo map, meter table or key signature
+    /// table. All three are work-wide, so they’re carried along whichever parts are targeted.
     ///
     /// The meter table moves as ``MeterTable/move(by:)`` describes: every barline stays where the
     /// music takes it, and a meter that started at 0 still does.
     ///
     /// - Parameter directedDuration:   The directed duration by which to move the targeted parts’
     ///                                 note attack times.
-    /// - Parameter applyTo:            The parameter maps (and tempo map and meter table) to move
+    /// - Parameter applyTo:            The parameter maps (and the work-wide tables) to move
     ///                                 along with each targeted note table. Defaults to every map.
     /// - Parameter partIDs:            The IDs of the parts to transform, or `nil` (the default)
     ///                                 for every part. IDs naming no part are ignored.
@@ -33,7 +34,7 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable):
+        case let .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable):
             typealias PartType = Part<BeatTime, Frequency>
 
             let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .move) { (part: inout PartType) throws(PartType.Error) in
@@ -47,10 +48,15 @@ extension Work {
                                                  kind: .move) { (meter: inout MeterTable) throws(MeterTable.Error) in
                 meter.move(by: directedDuration)
             }
+            let newKeySignatureTable = try Self.carried(keySignatureTable: keySignatureTable,
+                                                        applyTo: applyTo,
+                                                        kind: .move) { (keySignature: inout KeySignatureTable) throws(KeySignatureTable.Error) in
+                keySignature.move(by: directedDuration)
+            }
 
-            content = .absoluteBeat(newParts, newTempoMap, newMeterTable)
+            content = .absoluteBeat(newParts, newTempoMap, newMeterTable, newKeySignatureTable)
 
-        case let .keyboardBeat(parts, tempoMap, meterTable):
+        case let .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable):
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .move) { (part: inout PartType) throws(PartType.Error) in
@@ -64,10 +70,15 @@ extension Work {
                                                  kind: .move) { (meter: inout MeterTable) throws(MeterTable.Error) in
                 meter.move(by: directedDuration)
             }
+            let newKeySignatureTable = try Self.carried(keySignatureTable: keySignatureTable,
+                                                        applyTo: applyTo,
+                                                        kind: .move) { (keySignature: inout KeySignatureTable) throws(KeySignatureTable.Error) in
+                keySignature.move(by: directedDuration)
+            }
 
-            content = .keyboardBeat(newParts, newTempoMap, newMeterTable)
+            content = .keyboardBeat(newParts, newTempoMap, newMeterTable, newKeySignatureTable)
 
-        case let .standardBeat(parts, tempoMap, meterTable):
+        case let .standardBeat(parts, tempoMap, meterTable, keySignatureTable):
             typealias PartType = Part<BeatTime, Pitch>
 
             let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .move) { (part: inout PartType) throws(PartType.Error) in
@@ -81,8 +92,13 @@ extension Work {
                                                  kind: .move) { (meter: inout MeterTable) throws(MeterTable.Error) in
                 meter.move(by: directedDuration)
             }
+            let newKeySignatureTable = try Self.carried(keySignatureTable: keySignatureTable,
+                                                        applyTo: applyTo,
+                                                        kind: .move) { (keySignature: inout KeySignatureTable) throws(KeySignatureTable.Error) in
+                keySignature.move(by: directedDuration)
+            }
 
-            content = .standardBeat(newParts, newTempoMap, newMeterTable)
+            content = .standardBeat(newParts, newTempoMap, newMeterTable, newKeySignatureTable)
 
         default:
             throw Error.timeBasisMismatch(expected: .beat)

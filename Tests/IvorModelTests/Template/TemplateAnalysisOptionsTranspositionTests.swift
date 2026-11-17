@@ -62,3 +62,21 @@ extension TemplateAnalysisOptionsTranspositionTests {
                                                                                direction: .ascending)).isUnison)
     }
 }
+
+// MARK: -
+
+extension TemplateAnalysisOptionsTranspositionTests {
+    @Test
+    func keepsKeySignatures_octavesOnly() throws {
+        let septimal = try DirectedInterval(interval: #require(Ratio(numberValue: frac(7, 4))), direction: .ascending)
+        let octave = DirectedInterval(interval: Ratio.octave, direction: .ascending)
+
+        #expect(ascending(.perfect8).keepsKeySignatures)
+        #expect(ascending(12).keepsKeySignatures)
+        #expect(ascending(24).keepsKeySignatures)
+        #expect(Template.AnalysisOptions.Transposition.ratio(octave).keepsKeySignatures)
+        #expect(!ascending(.perfect5).keepsKeySignatures)
+        #expect(!ascending(7).keepsKeySignatures)
+        #expect(!Template.AnalysisOptions.Transposition.ratio(septimal).keepsKeySignatures)
+    }
+}

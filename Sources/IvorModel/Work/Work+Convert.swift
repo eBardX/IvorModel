@@ -14,6 +14,10 @@ extension Work {
     /// work’s ``Work/name``, ``Work/smpteStartTime``, ``Work/info``, ``Work/extras``, and
     /// ``Work/realizations``; its parts keep their IDs and extras.
     ///
+    /// Converting between pitch notations keeps the tempo map, meter table and key signature
+    /// table. Converting beat time to wall time drops all three, and wall time to beat time starts
+    /// them out empty.
+    ///
     /// Always permitted, even on a locked work: this returns an independent copy rather than
     /// mutating `self`, so ``Work/isLocked`` does not apply.
     ///
@@ -266,21 +270,23 @@ extension Work {
                                               with context: ConvertContext,
                                               dropsUnconvertibleNotes: Bool) throws -> Content {
         switch (content, targetNotation) {
-        case let (.absoluteBeat(parts, tempoMap, meterTable), .keyboard):
+        case let (.absoluteBeat(parts, tempoMap, meterTable, keySignatureTable), .keyboard):
             // Absolute/Beat → Keyboard/Beat
             try .keyboardBeat(_convertPitches(in: parts,
                                               using: _makeAbsoluteToKeyboardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap,
-                              meterTable)
+                              meterTable,
+                              keySignatureTable)
 
-        case let (.absoluteBeat(parts, tempoMap, meterTable), .standard):
+        case let (.absoluteBeat(parts, tempoMap, meterTable, keySignatureTable), .standard):
             // Absolute/Beat → Standard/Beat
             try .standardBeat(_convertPitches(in: parts,
                                               using: _makeAbsoluteToStandardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap,
-                              meterTable)
+                              meterTable,
+                              keySignatureTable)
 
         case let (.absoluteWall(parts), .keyboard):
             // Absolute/Wall → Keyboard/Wall
@@ -294,21 +300,23 @@ extension Work {
                                               using: _makeAbsoluteToStandardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes))
 
-        case let (.keyboardBeat(parts, tempoMap, meterTable), .absolute):
+        case let (.keyboardBeat(parts, tempoMap, meterTable, keySignatureTable), .absolute):
             // Keyboard/Beat → Absolute/Beat
             try .absoluteBeat(_convertPitches(in: parts,
                                               using: _makeKeyboardToAbsolutePitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap,
-                              meterTable)
+                              meterTable,
+                              keySignatureTable)
 
-        case let (.keyboardBeat(parts, tempoMap, meterTable), .standard):
+        case let (.keyboardBeat(parts, tempoMap, meterTable, keySignatureTable), .standard):
             // Keyboard/Beat → Standard/Beat
             try .standardBeat(_convertPitches(in: parts,
                                               using: _makeKeyboardToStandardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap,
-                              meterTable)
+                              meterTable,
+                              keySignatureTable)
 
         case let (.keyboardWall(parts), .absolute):
             // Keyboard/Wall → Absolute/Wall
@@ -322,21 +330,23 @@ extension Work {
                                               using: _makeKeyboardToStandardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes))
 
-        case let (.standardBeat(parts, tempoMap, meterTable), .absolute):
+        case let (.standardBeat(parts, tempoMap, meterTable, keySignatureTable), .absolute):
             // Standard/Beat → Absolute/Beat
             try .absoluteBeat(_convertPitches(in: parts,
                                               using: _makeStandardToAbsolutePitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap,
-                              meterTable)
+                              meterTable,
+                              keySignatureTable)
 
-        case let (.standardBeat(parts, tempoMap, meterTable), .keyboard):
+        case let (.standardBeat(parts, tempoMap, meterTable, keySignatureTable), .keyboard):
             // Standard/Beat → Keyboard/Beat
             try .keyboardBeat(_convertPitches(in: parts,
                                               using: _makeStandardToKeyboardPitchConverter(with: context),
                                               dropsUnconvertibleNotes: dropsUnconvertibleNotes),
                               tempoMap,
-                              meterTable)
+                              meterTable,
+                              keySignatureTable)
 
         case let (.standardWall(parts), .absolute):
             // Standard/Wall → Absolute/Wall
@@ -357,72 +367,13 @@ extension Work {
 
     private static func _convertTimeBasis(of content: Content,
                                           to targetBasis: TimeBasis) -> Content {
-        switch (content, targetBasis) {
-        case let (.absoluteBeat(parts, tempoMap, _), .wall):
-            let timeConverter = TimeConverter(tempoMap: tempoMap)
+        switch targetBasis {
+        case .beat:
+            unwarpedContent(content,
+                            using: TempoMap()) ?? content
 
-            let convertedParts = parts.map {
-                convertBeatTimes(in: $0,
-                                 using: timeConverter)
-            }
-
-            return .absoluteWall(convertedParts)
-
-        case let (.absoluteWall(parts), .beat):
-            let tempoMap = TempoMap()
-            let timeConverter = TimeConverter(tempoMap: tempoMap)
-
-            let convertedParts = parts.map {
-                convertWallTimes(in: $0,
-                                 using: timeConverter)
-            }
-
-            return .absoluteBeat(convertedParts, tempoMap, MeterTable())
-
-        case let (.keyboardBeat(parts, tempoMap, _), .wall):
-            let timeConverter = TimeConverter(tempoMap: tempoMap)
-
-            let convertedParts = parts.map {
-                convertBeatTimes(in: $0,
-                                 using: timeConverter)
-            }
-
-            return .keyboardWall(convertedParts)
-
-        case let (.keyboardWall(parts), .beat):
-            let tempoMap = TempoMap()
-            let timeConverter = TimeConverter(tempoMap: tempoMap)
-
-            let convertedParts = parts.map {
-                convertWallTimes(in: $0,
-                                 using: timeConverter)
-            }
-
-            return .keyboardBeat(convertedParts, tempoMap, MeterTable())
-
-        case let (.standardBeat(parts, tempoMap, _), .wall):
-            let timeConverter = TimeConverter(tempoMap: tempoMap)
-
-            let convertedParts = parts.map {
-                convertBeatTimes(in: $0,
-                                 using: timeConverter)
-            }
-
-            return .standardWall(convertedParts)
-
-        case let (.standardWall(parts), .beat):
-            let tempoMap = TempoMap()
-            let timeConverter = TimeConverter(tempoMap: tempoMap)
-
-            let convertedParts = parts.map {
-                convertWallTimes(in: $0,
-                                 using: timeConverter)
-            }
-
-            return .standardBeat(convertedParts, tempoMap, MeterTable())
-
-        default:
-            return content
+        case .wall:
+            warpedContent(content) ?? content
         }
     }
 

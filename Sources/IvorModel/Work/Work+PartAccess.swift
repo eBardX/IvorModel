@@ -7,6 +7,48 @@ extension Work {
 
     // MARK: Public Instance Methods
 
+    /// Edits the key signature table of this work in place.
+    ///
+    /// - Parameter body:   A closure that edits the key signature table in place, and whose result
+    ///                     is returned.
+    ///
+    /// - Returns:  The result of `body`, or `nil` (without calling `body`) if this work has
+    ///             wall-time content, which has no key signature table.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked, whatever its time basis.
+    @discardableResult
+    public mutating func modifyKeySignatureTable<R>(_ body: (inout KeySignatureTable) -> R) throws(Error) -> R? {
+        try ensureUnlocked()
+
+        switch content {
+        case .absoluteBeat(let parts, let tempoMap, let meterTable, var keySignatureTable):
+            let result = body(&keySignatureTable)
+
+            content = .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable)
+
+            return result
+
+        case .absoluteWall,
+             .keyboardWall,
+             .standardWall:
+            return nil
+
+        case .keyboardBeat(let parts, let tempoMap, let meterTable, var keySignatureTable):
+            let result = body(&keySignatureTable)
+
+            content = .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable)
+
+            return result
+
+        case .standardBeat(let parts, let tempoMap, let meterTable, var keySignatureTable):
+            let result = body(&keySignatureTable)
+
+            content = .standardBeat(parts, tempoMap, meterTable, keySignatureTable)
+
+            return result
+        }
+    }
+
     /// Edits the meter table of this work in place.
     ///
     /// - Parameter body:   A closure that edits the meter table in place, and whose result is
@@ -21,10 +63,10 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case .absoluteBeat(let parts, let tempoMap, var meterTable):
+        case .absoluteBeat(let parts, let tempoMap, var meterTable, let keySignatureTable):
             let result = body(&meterTable)
 
-            content = .absoluteBeat(parts, tempoMap, meterTable)
+            content = .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable)
 
             return result
 
@@ -33,17 +75,17 @@ extension Work {
              .standardWall:
             return nil
 
-        case .keyboardBeat(let parts, let tempoMap, var meterTable):
+        case .keyboardBeat(let parts, let tempoMap, var meterTable, let keySignatureTable):
             let result = body(&meterTable)
 
-            content = .keyboardBeat(parts, tempoMap, meterTable)
+            content = .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable)
 
             return result
 
-        case .standardBeat(let parts, let tempoMap, var meterTable):
+        case .standardBeat(let parts, let tempoMap, var meterTable, let keySignatureTable):
             let result = body(&meterTable)
 
-            content = .standardBeat(parts, tempoMap, meterTable)
+            content = .standardBeat(parts, tempoMap, meterTable, keySignatureTable)
 
             return result
         }
@@ -70,11 +112,11 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable):
+        case let .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable):
             guard let modified = Self._modifying(parts, partID: partID, as: type, body)
             else { return nil }
 
-            content = .absoluteBeat(modified.parts, tempoMap, meterTable)
+            content = .absoluteBeat(modified.parts, tempoMap, meterTable, keySignatureTable)
 
             return modified.result
 
@@ -86,11 +128,11 @@ extension Work {
 
             return modified.result
 
-        case let .keyboardBeat(parts, tempoMap, meterTable):
+        case let .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable):
             guard let modified = Self._modifying(parts, partID: partID, as: type, body)
             else { return nil }
 
-            content = .keyboardBeat(modified.parts, tempoMap, meterTable)
+            content = .keyboardBeat(modified.parts, tempoMap, meterTable, keySignatureTable)
 
             return modified.result
 
@@ -102,11 +144,11 @@ extension Work {
 
             return modified.result
 
-        case let .standardBeat(parts, tempoMap, meterTable):
+        case let .standardBeat(parts, tempoMap, meterTable, keySignatureTable):
             guard let modified = Self._modifying(parts, partID: partID, as: type, body)
             else { return nil }
 
-            content = .standardBeat(modified.parts, tempoMap, meterTable)
+            content = .standardBeat(modified.parts, tempoMap, meterTable, keySignatureTable)
 
             return modified.result
 
@@ -134,10 +176,10 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case .absoluteBeat(let parts, var tempoMap, let meterTable):
+        case .absoluteBeat(let parts, var tempoMap, let meterTable, let keySignatureTable):
             let result = body(&tempoMap)
 
-            content = .absoluteBeat(parts, tempoMap, meterTable)
+            content = .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable)
 
             return result
 
@@ -146,17 +188,17 @@ extension Work {
              .standardWall:
             return nil
 
-        case .keyboardBeat(let parts, var tempoMap, let meterTable):
+        case .keyboardBeat(let parts, var tempoMap, let meterTable, let keySignatureTable):
             let result = body(&tempoMap)
 
-            content = .keyboardBeat(parts, tempoMap, meterTable)
+            content = .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable)
 
             return result
 
-        case .standardBeat(let parts, var tempoMap, let meterTable):
+        case .standardBeat(let parts, var tempoMap, let meterTable, let keySignatureTable):
             let result = body(&tempoMap)
 
-            content = .standardBeat(parts, tempoMap, meterTable)
+            content = .standardBeat(parts, tempoMap, meterTable, keySignatureTable)
 
             return result
         }
@@ -175,19 +217,19 @@ extension Work {
     public func part<T: TimeProtocol, P: PitchProtocol>(_ partID: PartID,
                                                         as type: Part<T, P>.Type) -> Part<T, P>? {
         switch content {
-        case let .absoluteBeat(parts, _, _):
+        case let .absoluteBeat(parts, _, _, _):
             Self._part(partID, in: parts, as: type)
 
         case let .absoluteWall(parts):
             Self._part(partID, in: parts, as: type)
 
-        case let .keyboardBeat(parts, _, _):
+        case let .keyboardBeat(parts, _, _, _):
             Self._part(partID, in: parts, as: type)
 
         case let .keyboardWall(parts):
             Self._part(partID, in: parts, as: type)
 
-        case let .standardBeat(parts, _, _):
+        case let .standardBeat(parts, _, _, _):
             Self._part(partID, in: parts, as: type)
 
         case let .standardWall(parts):

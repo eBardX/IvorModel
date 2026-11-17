@@ -125,6 +125,10 @@ maps, pedals, meters, transforms, conversion, realizations, templates, and proje
 - ``Meter``
 - ``MeterTable``
 
+### Key signatures
+
+- ``KeySignatureTable``
+
 ### Instruments
 
 - ``Instrument``
