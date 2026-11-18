@@ -148,7 +148,7 @@ extension NoteTable.StoredNote: Codable {
         let duration = try container.decode(NoteTable.DurationType.self)
         let startPitch = try container.decode(PitchType.self)
         let endPitch = try container.decodeIfPresent(PitchType.self)
-        let extras = try container.decodeIfPresent(Extras.self)
+        let extras = try container.decodeIfPresent(Extras.self)?.normalizingNames()
 
         self.init(attack: attack,
                   duration: duration,

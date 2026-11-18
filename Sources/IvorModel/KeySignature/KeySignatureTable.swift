@@ -125,12 +125,6 @@ extension KeySignatureTable {
         return true
     }
 
-    /// Removes every entry from this key signature table, leaving no key signature anywhere.
-    public mutating func removeAll() {
-        entries.removeAll()
-        hasExtras = false
-    }
-
     /// Removes the key signature entry with the given identity, if present.
     ///
     /// - Parameter entryID:    The identity of the entry to remove. An identity naming no entry is
@@ -147,6 +141,12 @@ extension KeySignatureTable {
         hasExtras = Self.hasExtras(in: entries)
 
         return true
+    }
+
+    /// Removes every entry from this key signature table, leaving no key signature anywhere.
+    public mutating func removeAll() {
+        entries.removeAll()
+        hasExtras = false
     }
 
     /// Replaces the key signature and extras of the entry with the given identity, in place,

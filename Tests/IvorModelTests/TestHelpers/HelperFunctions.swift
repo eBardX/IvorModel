@@ -353,6 +353,14 @@ func later(_ value: Number) -> DirectedDuration<BeatDuration> {
     DirectedDuration(duration: beats(value), direction: .forward)
 }
 
+func makeAbsoluteKeyWork() throws -> Work {
+    var part = Part<BeatTime, Frequency>(name: "Sine")
+
+    part.noteTable.insert(attack: 0, duration: 1, pitch: 440)
+
+    return try Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), makeKeySignatureTable([(0, 2)])))
+}
+
 func makeAbsoluteWallWork(_ notes: [(UInt, UInt, [Double])]) throws -> Work {
     var noteTable = NoteTable<WallTime, Frequency>()
 
@@ -452,6 +460,12 @@ func makeKeyboardBeatWork(_ noteNumbers: [UInt]) -> Work {
     }
 
     return Work(content: .keyboardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeySignatureTable()))
+}
+
+// The plain source part's first attack is at 2.
+func makeKeyedSourceWork(_ entries: [(Number, Int)]) throws -> Work {
+    try Work(name: "Keyed",
+             content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable(), makeKeySignatureTable(entries)))
 }
 
 func makeKeySignatureTable(_ entries: [(Number, Int)]) throws -> KeySignatureTable {

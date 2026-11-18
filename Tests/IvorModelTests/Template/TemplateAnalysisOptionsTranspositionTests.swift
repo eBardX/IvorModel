@@ -61,11 +61,7 @@ extension TemplateAnalysisOptionsTranspositionTests {
         #expect(!Template.AnalysisOptions.Transposition.ratio(DirectedInterval(interval: .octave,
                                                                                direction: .ascending)).isUnison)
     }
-}
 
-// MARK: -
-
-extension TemplateAnalysisOptionsTranspositionTests {
     @Test
     func keepsKeySignatures_octavesOnly() throws {
         let septimal = try DirectedInterval(interval: #require(Ratio(numberValue: frac(7, 4))), direction: .ascending)

@@ -88,7 +88,7 @@ extension PedalTable.StoredEntry: Codable {
 
         let time = try container.decode(TimeType.self)
         let level = try container.decode(Pedal.Level.self)
-        let extras = try container.decodeIfPresent(Extras.self)
+        let extras = try container.decodeIfPresent(Extras.self)?.normalizingNames()
 
         self.init(time: time,
                   level: level,

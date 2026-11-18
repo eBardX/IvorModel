@@ -14,6 +14,20 @@ struct WorkMoveTests {
 
 extension WorkMoveTests {
     @Test
+    func move_carriesKeysOnlyWithKeySignatureTarget() throws {
+        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (2, -1)]))
+        let later = DirectedDuration(duration: beats(1), direction: .forward)
+        var carried = work
+        var left = work
+
+        try carried.move(by: later)
+        try left.move(by: later, applyTo: TransformTargets.all.subtracting(.keySignature))
+
+        #expect(carried.keySignatureTable?.map(\.beatTime) == [1, 3])
+        #expect(left.keySignatureTable?.map(\.beatTime) == [0, 2])
+    }
+
+    @Test
     func move_lockedWork_throwsAndLeavesWorkUnchanged() throws {
         var (work, partID) = makeLockedWorkSB()
         let directedDuration = try #require(BeatTime(0).duration(to: 2))
@@ -84,23 +98,5 @@ extension WorkMoveTests {
 
         #expect(work.meterTable == meterTable)
         #expect(work.beatTimeRange?.lowerBound == beatTime(frac(1, 4)))
-    }
-}
-
-// MARK: -
-
-extension WorkMoveTests {
-    @Test
-    func move_carriesKeysOnlyWithKeySignatureTarget() throws {
-        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (2, -1)]))
-        let later = DirectedDuration(duration: beats(1), direction: .forward)
-        var carried = work
-        var left = work
-
-        try carried.move(by: later)
-        try left.move(by: later, applyTo: TransformTargets.all.subtracting(.keySignature))
-
-        #expect(carried.keySignatureTable?.map(\.beatTime) == [1, 3])
-        #expect(left.keySignatureTable?.map(\.beatTime) == [0, 2])
     }
 }

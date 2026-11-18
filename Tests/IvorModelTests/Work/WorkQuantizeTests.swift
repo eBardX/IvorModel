@@ -83,6 +83,16 @@ extension WorkQuantizeTests {
     }
 
     @Test
+    func quantize_neverTouchesKeySignatureTable() throws {
+        let table = try makeKeySignatureTable([(0, 2), (frac(1, 3), -1)])
+        var work = makeKeySignatureWork(table)
+
+        try work.quantize(to: [4])
+
+        #expect(work.keySignatureTable == table)
+    }
+
+    @Test
     func quantize_noteIDs_restrictsAffectedNotes() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
@@ -350,19 +360,5 @@ extension WorkQuantizeTests {
         #expect(throws: Work.Error.timeBasisMismatch(expected: .beat)) {
             try work.quantize(to: [1])
         }
-    }
-}
-
-// MARK: -
-
-extension WorkQuantizeTests {
-    @Test
-    func quantize_neverTouchesKeySignatureTable() throws {
-        let table = try makeKeySignatureTable([(0, 2), (frac(1, 3), -1)])
-        var work = makeKeySignatureWork(table)
-
-        try work.quantize(to: [4])
-
-        #expect(work.keySignatureTable == table)
     }
 }

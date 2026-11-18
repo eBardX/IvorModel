@@ -88,7 +88,7 @@ extension InstrumentTable.StoredEntry: Codable {
 
         let time = try container.decode(TimeType.self)
         let instrument = try container.decode(Instrument.self)
-        let extras = try container.decodeIfPresent(Extras.self)
+        let extras = try container.decodeIfPresent(Extras.self)?.normalizingNames()
 
         self.init(time: time,
                   instrument: instrument,

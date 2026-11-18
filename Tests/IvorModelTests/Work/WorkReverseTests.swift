@@ -15,6 +15,22 @@ struct WorkReverseTests {
 
 extension WorkReverseTests {
     @Test
+    func reverse_carriesKeysOnlyWithKeySignatureTarget() throws {
+        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (1, -1)]))
+        var carried = work
+        var left = work
+
+        let range: ClosedRange<BeatTime> = 0...2
+
+        try carried.reverse(within: range)
+        try left.reverse(within: range, applyTo: [.dynamic])
+
+        #expect(carried.keySignatureTable?.map(\.keySignature) == [keySignature(-1), keySignature(2), keySignature(-1)])
+        #expect(carried.keySignatureTable?.map(\.beatTime) == [0, 1, 2])
+        #expect(try left.keySignatureTable == makeKeySignatureTable([(0, 2), (1, -1)]))
+    }
+
+    @Test
     func reverse_dropsRampExtrasWhenRampRunsPastRange() throws {
         //
         // A 60→120 ramp from 0 lasting 4 beats, with tempo entries only at 0 and 2, reversed
@@ -454,25 +470,5 @@ extension WorkReverseTests {
         try work.reverse(within: .zero...beatTime(1), applyTo: [.tempo])
 
         #expect(work.meterTable == meterTable)
-    }
-}
-
-// MARK: -
-
-extension WorkReverseTests {
-    @Test
-    func reverse_carriesKeysOnlyWithKeySignatureTarget() throws {
-        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (1, -1)]))
-        var carried = work
-        var left = work
-
-        let range: ClosedRange<BeatTime> = 0...2
-
-        try carried.reverse(within: range)
-        try left.reverse(within: range, applyTo: [.dynamic])
-
-        #expect(carried.keySignatureTable?.map(\.keySignature) == [keySignature(-1), keySignature(2), keySignature(-1)])
-        #expect(carried.keySignatureTable?.map(\.beatTime) == [0, 1, 2])
-        #expect(try left.keySignatureTable == makeKeySignatureTable([(0, 2), (1, -1)]))
     }
 }

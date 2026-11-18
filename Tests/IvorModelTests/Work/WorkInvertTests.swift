@@ -14,50 +14,6 @@ struct WorkInvertTests {
 
 extension WorkInvertTests {
     @Test
-    func invert_lockedWork_throwsAndLeavesWorkUnchanged() {
-        var (work, partID) = makeLockedWorkSB()
-        let beatTimeRange = work.beatTimeRange
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.invert(around: nil as ClosedRange<Pitch>?, partIDs: [partID])
-        }
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.invert(around: nil as ClosedRange<Pitch>?)
-        }
-
-        #expect(work.beatTimeRange == beatTimeRange)
-        #expect(work.pitchRange?.lowerBound as? Pitch == .c4)
-    }
-
-    @Test
-    func invert_wholeWork_invertsEveryPart() throws {
-        var part = Part<BeatTime, Pitch>(name: "Violin")
-
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .e4)
-
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
-
-        try work.invert(around: nil as ClosedRange<Pitch>?)
-
-        #expect(work.pitchRange != nil)
-    }
-
-    @Test
-    func invert_wrongPitchNotationThrows() {
-        var work = Work(content: .keyboardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
-
-        #expect(throws: Work.Error.pitchNotationMismatch(expected: .standard)) {
-            try work.invert(around: nil as ClosedRange<Pitch>?)
-        }
-    }
-}
-
-// MARK: -
-
-extension WorkInvertTests {
-    @Test
     func invert_absolute_removesKeys() throws {
         var part = Part<BeatTime, Frequency>(name: "Sine")
 
@@ -93,6 +49,32 @@ extension WorkInvertTests {
     }
 
     @Test
+    func invert_lockedWork_throwsAndLeavesWorkUnchanged() {
+        var (work, partID) = makeLockedWorkSB()
+        let beatTimeRange = work.beatTimeRange
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.invert(around: nil as ClosedRange<Pitch>?, partIDs: [partID])
+        }
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.invert(around: nil as ClosedRange<Pitch>?)
+        }
+
+        #expect(work.beatTimeRange == beatTimeRange)
+        #expect(work.pitchRange?.lowerBound as? Pitch == .c4)
+    }
+
+    @Test
+    func invert_standard_flagOffKeepsKeys() throws {
+        var work = try makeKeySignatureWork(makeKeySignatureTable([(0, 1)]))
+
+        try work.invert(around: Pitch.c4...Pitch.g4, movesKeySignatures: false)
+
+        #expect(work.keySignatureTable?.map(\.keySignature) == [keySignature(1)])
+    }
+
+    @Test
     func invert_standard_invertsKeysAndDropsMode() throws {
         var table = KeySignatureTable()
 
@@ -104,15 +86,6 @@ extension WorkInvertTests {
 
         #expect(work.keySignatureTable?.first?.keySignature == keySignature(-4))
         #expect(work.keySignatureTable?.first?.extras == nil)
-    }
-
-    @Test
-    func invert_standard_flagOffKeepsKeys() throws {
-        var work = try makeKeySignatureWork(makeKeySignatureTable([(0, 1)]))
-
-        try work.invert(around: Pitch.c4...Pitch.g4, movesKeySignatures: false)
-
-        #expect(work.keySignatureTable?.map(\.keySignature) == [keySignature(1)])
     }
 
     @Test
@@ -132,5 +105,28 @@ extension WorkInvertTests {
 
         #expect(moved.keySignatureTable?.map(\.keySignature) == [keySignature(-3)])
         #expect(kept.keySignatureTable?.map(\.keySignature) == [keySignature(0)])
+    }
+
+    @Test
+    func invert_wholeWork_invertsEveryPart() throws {
+        var part = Part<BeatTime, Pitch>(name: "Violin")
+
+        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.noteTable.insert(attack: 0, duration: 1, pitch: .e4)
+
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+
+        try work.invert(around: nil as ClosedRange<Pitch>?)
+
+        #expect(work.pitchRange != nil)
+    }
+
+    @Test
+    func invert_wrongPitchNotationThrows() {
+        var work = Work(content: .keyboardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+
+        #expect(throws: Work.Error.pitchNotationMismatch(expected: .standard)) {
+            try work.invert(around: nil as ClosedRange<Pitch>?)
+        }
     }
 }

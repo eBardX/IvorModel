@@ -34,6 +34,14 @@ extension WorkErrorTests {
     }
 
     @Test
+    func message_keySignatureTableTransformFailure() {
+        let msg = Work.Error.keySignatureTableTransformFailure(kind: .augment, detail: "boom").message
+
+        #expect(msg.contains("Key signature table"))
+        #expect(msg.contains("boom"))
+    }
+
+    @Test
     func message_meterTableTransformFailure() {
         let msg = Work.Error.meterTableTransformFailure(kind: .augment,
                                                         detail: "boom").message
@@ -91,17 +99,5 @@ extension WorkErrorTests {
     @Test
     func message_workIsLocked() {
         #expect(!Work.Error.workIsLocked.message.isEmpty)
-    }
-}
-
-// MARK: -
-
-extension WorkErrorTests {
-    @Test
-    func message_keySignatureTableTransformFailure() {
-        let msg = Work.Error.keySignatureTableTransformFailure(kind: .augment, detail: "boom").message
-
-        #expect(msg.contains("Key signature table"))
-        #expect(msg.contains("boom"))
     }
 }

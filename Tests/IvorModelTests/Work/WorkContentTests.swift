@@ -39,6 +39,21 @@ extension WorkContentTests {
     }
 
     @Test
+    func content_codable_roundTripsKeySignatureTable() throws {
+        var table = try makeKeySignatureTable([(0, 2)])
+
+        try table.insert(beatTime: 4, keySignature: keySignature(-3), extras: modeExtras("minor"))
+
+        let content = Work.Content.keyboardBeat([], TempoMap(), MeterTable(), table)
+        let decoded = try JSONDecoder().decode(Work.Content.self, from: JSONEncoder().encode(content))
+
+        guard case let .keyboardBeat(_, _, _, decodedTable) = decoded
+        else { Issue.record("not keyboard beat"); return }
+
+        #expect(decodedTable == table)
+    }
+
+    @Test
     func content_codable_roundTripsNonEmptyTable() throws {
         let meterTable = try makeMeterTable([(0, "3/4"), (frac(7, 4), "2+2+3/8")],
                                             pickup: frac(1, 4))
@@ -51,6 +66,21 @@ extension WorkContentTests {
 
         #expect(decodedTable == meterTable)
         #expect(decodedTable.pickup == beats(frac(1, 4)))
+    }
+
+    @Test
+    func content_decode_withoutKeySignatureTable_fails() throws {
+        let content = Work.Content.standardBeat([], TempoMap(), MeterTable(), KeySignatureTable())
+        let data = try JSONEncoder().encode(content)
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        object["keySignatureTable"] = nil
+
+        let stripped = try JSONSerialization.data(withJSONObject: object)
+
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(Work.Content.self, from: stripped)
+        }
     }
 
     @Test
@@ -75,6 +105,14 @@ extension WorkContentTests {
 
             #expect(work.meterTable == MeterTable())
         }
+    }
+
+    @Test
+    func content_empty_hasEmptyKeySignatureTable() {
+        guard case let .absoluteBeat(_, _, _, table) = Work.Content.empty(timeBasis: .beat, pitchNotation: .absolute)
+        else { Issue.record("not absolute beat"); return }
+
+        #expect(table.isEmpty)
     }
 
     @Test(arguments: [TimeBasis.beat, .wall],
@@ -123,47 +161,5 @@ extension WorkContentTests {
         let content: Work.Content = .standardWall([])
 
         #expect(content.timeBasis == .wall)
-    }
-}
-
-// MARK: -
-
-extension WorkContentTests {
-    @Test
-    func content_codable_roundTripsKeySignatureTable() throws {
-        var table = try makeKeySignatureTable([(0, 2)])
-
-        try table.insert(beatTime: 4, keySignature: keySignature(-3), extras: modeExtras("minor"))
-
-        let content = Work.Content.keyboardBeat([], TempoMap(), MeterTable(), table)
-        let decoded = try JSONDecoder().decode(Work.Content.self, from: JSONEncoder().encode(content))
-
-        guard case let .keyboardBeat(_, _, _, decodedTable) = decoded
-        else { Issue.record("not keyboard beat"); return }
-
-        #expect(decodedTable == table)
-    }
-
-    @Test
-    func content_decode_withoutKeySignatureTable_fails() throws {
-        let content = Work.Content.standardBeat([], TempoMap(), MeterTable(), KeySignatureTable())
-        let data = try JSONEncoder().encode(content)
-        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-
-        object["keySignatureTable"] = nil
-
-        let stripped = try JSONSerialization.data(withJSONObject: object)
-
-        #expect(throws: DecodingError.self) {
-            try JSONDecoder().decode(Work.Content.self, from: stripped)
-        }
-    }
-
-    @Test
-    func content_empty_hasEmptyKeySignatureTable() {
-        guard case let .absoluteBeat(_, _, _, table) = Work.Content.empty(timeBasis: .beat, pitchNotation: .absolute)
-        else { Issue.record("not absolute beat"); return }
-
-        #expect(table.isEmpty)
     }
 }

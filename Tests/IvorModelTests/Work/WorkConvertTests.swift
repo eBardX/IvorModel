@@ -224,6 +224,15 @@ extension WorkConvertTests {
     }
 
     @Test
+    func convert_pitchNotationKeepsKeys() throws {
+        let table = try makeKeySignatureTable([(0, 2), (1, -1)])
+        let work = makeKeySignatureWork(table)
+        let converted = try #require(try work.convert(timeBasis: .beat, pitchNotation: .keyboard))
+
+        #expect(converted.keySignatureTable == table)
+    }
+
+    @Test
     func convert_pitchNotationKeepsPedals() throws {
         var soft = PedalTable<BeatTime>()
 
@@ -430,6 +439,16 @@ extension WorkConvertTests {
     }
 
     @Test
+    func convert_timeBasisDropsOrStartsEmpty() throws {
+        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2)]))
+        let wall = try #require(try work.convert(timeBasis: .wall, pitchNotation: .standard))
+        let beat = try #require(try wall.convert(timeBasis: .beat, pitchNotation: .standard))
+
+        #expect(wall.keySignatureTable == nil)
+        #expect(beat.keySignatureTable == KeySignatureTable())
+    }
+
+    @Test
     func convert_wallAndBack_startsWithEmptyTable() throws {
         let work = try makeMeterWork(meterTable: makeMeterTable([(0, "6/8")]),
                                      notes: [0])
@@ -561,28 +580,5 @@ extension WorkConvertTests {
                              pitchNotation: .keyboard,
                              context: context)
         }
-    }
-}
-
-// MARK: -
-
-extension WorkConvertTests {
-    @Test
-    func convert_pitchNotationKeepsKeys() throws {
-        let table = try makeKeySignatureTable([(0, 2), (1, -1)])
-        let work = makeKeySignatureWork(table)
-        let converted = try #require(try work.convert(timeBasis: .beat, pitchNotation: .keyboard))
-
-        #expect(converted.keySignatureTable == table)
-    }
-
-    @Test
-    func convert_timeBasisDropsOrStartsEmpty() throws {
-        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2)]))
-        let wall = try #require(try work.convert(timeBasis: .wall, pitchNotation: .standard))
-        let beat = try #require(try wall.convert(timeBasis: .beat, pitchNotation: .standard))
-
-        #expect(wall.keySignatureTable == nil)
-        #expect(beat.keySignatureTable == KeySignatureTable())
     }
 }

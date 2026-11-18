@@ -14,6 +14,43 @@ struct WorkPartAccessTests {
 
 extension WorkPartAccessTests {
     @Test
+    func modifyKeySignatureTable_beatWork() throws {
+        var work = makeKeySignatureWork(KeySignatureTable())
+
+        let result = try work.modifyKeySignatureTable { table in
+            try? table.insert(beatTime: 0, keySignature: keySignature(3))
+
+            return table.count
+        }
+
+        #expect(result == 1)
+        #expect(work.keySignatureTable?.first?.keySignature == keySignature(3))
+    }
+
+    @Test
+    func modifyKeySignatureTable_lockedThrows() {
+        var work = makeKeySignatureWork(KeySignatureTable())
+
+        work.isLocked = true
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.modifyKeySignatureTable { _ in }
+        }
+    }
+
+    @Test
+    func modifyKeySignatureTable_wallWorkReturnsNil() throws {
+        var work = makeC4WallWork([(0, 1)])
+        var called = false
+
+        let result: Void? = try work.modifyKeySignatureTable { _ in called = true }
+
+        #expect(result == nil)
+        #expect(!called)
+        #expect(work.keySignatureTable == nil)
+    }
+
+    @Test
     func modifyMeterTable_editsTable() throws {
         var work = Work()
 
@@ -187,46 +224,5 @@ extension WorkPartAccessTests {
         let work = Work(content: .keyboardWall([part]))
 
         #expect(work.part(part.partID, as: Part<WallTime, Pitch>.self) == nil)
-    }
-}
-
-// MARK: -
-
-extension WorkPartAccessTests {
-    @Test
-    func modifyKeySignatureTable_beatWork() throws {
-        var work = makeKeySignatureWork(KeySignatureTable())
-
-        let result = try work.modifyKeySignatureTable { table in
-            try? table.insert(beatTime: 0, keySignature: keySignature(3))
-
-            return table.count
-        }
-
-        #expect(result == 1)
-        #expect(work.keySignatureTable?.first?.keySignature == keySignature(3))
-    }
-
-    @Test
-    func modifyKeySignatureTable_lockedThrows() {
-        var work = makeKeySignatureWork(KeySignatureTable())
-
-        work.isLocked = true
-
-        #expect(throws: Work.Error.workIsLocked) {
-            try work.modifyKeySignatureTable { _ in }
-        }
-    }
-
-    @Test
-    func modifyKeySignatureTable_wallWorkReturnsNil() throws {
-        var work = makeC4WallWork([(0, 1)])
-        var called = false
-
-        let result: Void? = try work.modifyKeySignatureTable { _ in called = true }
-
-        #expect(result == nil)
-        #expect(!called)
-        #expect(work.keySignatureTable == nil)
     }
 }

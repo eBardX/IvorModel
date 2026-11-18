@@ -87,7 +87,7 @@ extension PanMap.StoredEntry: Codable {
 
         let time = try container.decode(TimeType.self)
         let pan = try container.decode(Pan.self)
-        let extras = try container.decodeIfPresent(Extras.self)
+        let extras = try container.decodeIfPresent(Extras.self)?.normalizingNames()
 
         self.init(time: time,
                   pan: pan,

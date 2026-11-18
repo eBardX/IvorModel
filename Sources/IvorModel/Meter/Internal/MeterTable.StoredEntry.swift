@@ -100,7 +100,7 @@ extension MeterTable.StoredEntry: Codable {
 
         let beatTime = try container.decode(BeatTime.self)
         let meter = try container.decode(Meter.self)
-        let extras = try container.decodeIfPresent(Extras.self)
+        let extras = try container.decodeIfPresent(Extras.self)?.normalizingNames()
 
         self.init(beatTime: beatTime,
                   meter: meter,

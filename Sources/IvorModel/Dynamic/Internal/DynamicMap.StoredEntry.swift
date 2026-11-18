@@ -88,7 +88,7 @@ extension DynamicMap.StoredEntry: Codable {
 
         let time = try container.decode(TimeType.self)
         let dynamic = try container.decode(Dynamic.self)
-        let extras = try container.decodeIfPresent(Extras.self)
+        let extras = try container.decodeIfPresent(Extras.self)?.normalizingNames()
 
         self.init(time: time,
                   dynamic: dynamic,

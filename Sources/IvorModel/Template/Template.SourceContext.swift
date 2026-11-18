@@ -23,9 +23,9 @@ extension Template {
         ///
         /// Each value defaults to the one an empty map of its kind gives.
         ///
-        /// - Parameter dynamic:    The dynamic level. Defaults to `.mp`.
-        /// - Parameter instrument: The instrument. Defaults to `.vanilla`.
-        /// - Parameter pan:        The pan position. Defaults to `.center`.
+        /// - Parameter dynamic:        The dynamic level. Defaults to `.mp`.
+        /// - Parameter instrument:     The instrument. Defaults to `.vanilla`.
+        /// - Parameter pan:            The pan position. Defaults to `.center`.
         /// - Parameter tempo:          The tempo, or `nil` for a wall-time source. Defaults to
         ///                             `nil`.
         /// - Parameter meter:          The meter, or `nil` for a source with no meter there.

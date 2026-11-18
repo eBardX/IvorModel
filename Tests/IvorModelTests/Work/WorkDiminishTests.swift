@@ -15,6 +15,19 @@ struct WorkDiminishTests {
 
 extension WorkDiminishTests {
     @Test
+    func diminish_carriesKeysOnlyWithKeySignatureTarget() throws {
+        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (2, -1)]))
+        var carried = work
+        var left = work
+
+        try carried.diminish(by: 2, anchor: BeatTime.zero)
+        try left.diminish(by: 2, anchor: BeatTime.zero, applyTo: [.meter, .tempo])
+
+        #expect(carried.keySignatureTable?.map(\.beatTime) == [0, 1])
+        #expect(left.keySignatureTable?.map(\.beatTime) == [0, 2])
+    }
+
+    @Test
     func diminish_keepingSound_preservesWallTimes() throws {
         //
         // 3/4 at ♩ = 240 diminished by 2 is 3/8 at ♪ = 240.
@@ -137,22 +150,5 @@ extension WorkDiminishTests {
         #expect(throws: Work.Error.timeBasisMismatch(expected: .beat)) {
             try work.diminish(by: Number(2), anchor: nil as BeatTime?)
         }
-    }
-}
-
-// MARK: -
-
-extension WorkDiminishTests {
-    @Test
-    func diminish_carriesKeysOnlyWithKeySignatureTarget() throws {
-        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (2, -1)]))
-        var carried = work
-        var left = work
-
-        try carried.diminish(by: 2, anchor: BeatTime.zero)
-        try left.diminish(by: 2, anchor: BeatTime.zero, applyTo: [.meter, .tempo])
-
-        #expect(carried.keySignatureTable?.map(\.beatTime) == [0, 1])
-        #expect(left.keySignatureTable?.map(\.beatTime) == [0, 2])
     }
 }

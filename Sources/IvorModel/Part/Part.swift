@@ -219,7 +219,7 @@ extension Part: Codable {
                                               forKey: .dynamicMap)
 
         let extras = try container.decodeIfPresent(Extras.self,
-                                                   forKey: .extras)
+                                                   forKey: .extras)?.normalizingNames()
 
         let instrumentTable = try container.decode(InstrumentTable<TimeType>.self,
                                                    forKey: .instrumentTable)

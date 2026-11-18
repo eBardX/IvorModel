@@ -201,6 +201,12 @@ extension ExtraIvorTests {
     }
 
     @Test
+    func keySignatureMode() {
+        #expect(Extra.keySignatureMode.name == "keySignatureMode")
+        #expect(Extra.keySignatureMode.values.isEmpty)
+    }
+
+    @Test
     func marcato() {
         #expect(Extra.marcato.name == "marcato")
         #expect(Extra.marcato.values.isEmpty)
@@ -449,15 +455,5 @@ extension ExtraIvorTests {
     func upBow() {
         #expect(Extra.upBow.name == "upBow")
         #expect(Extra.upBow.values.isEmpty)
-    }
-}
-
-// MARK: -
-
-extension ExtraIvorTests {
-    @Test
-    func keySignatureMode() {
-        #expect(Extra.keySignatureMode.name == "keySignatureMode")
-        #expect(Extra.keySignatureMode.values.isEmpty)
     }
 }

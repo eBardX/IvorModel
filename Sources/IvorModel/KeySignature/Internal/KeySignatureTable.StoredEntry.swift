@@ -118,7 +118,7 @@ extension KeySignatureTable.StoredEntry: Codable {
 
         let beatTime = try container.decode(BeatTime.self)
         let keySignature = try container.decode(KeySignature.self)
-        let extras = try container.decodeIfPresent(Extras.self)
+        let extras = try container.decodeIfPresent(Extras.self)?.normalizingNames()
 
         self.init(beatTime: beatTime,
                   keySignature: keySignature,

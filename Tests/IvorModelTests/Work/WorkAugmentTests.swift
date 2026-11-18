@@ -40,6 +40,19 @@ extension WorkAugmentTests {
     }
 
     @Test
+    func augment_carriesKeysOnlyWithKeySignatureTarget() throws {
+        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (1, -1)]))
+        var carried = work
+        var left = work
+
+        try carried.augment(by: 2, anchor: BeatTime.zero)
+        try left.augment(by: 2, anchor: BeatTime.zero, applyTo: [.dynamic])
+
+        #expect(carried.keySignatureTable?.map(\.beatTime) == [0, 2])
+        #expect(left.keySignatureTable?.map(\.beatTime) == [0, 1])
+    }
+
+    @Test
     func augment_defaultAnchor_includesMeterEntries() throws {
         //
         // The meter starts at 0 and the only note at 1. With the meter table carried, the default
@@ -55,6 +68,21 @@ extension WorkAugmentTests {
 
         #expect(carried.beatTimeRange?.lowerBound == 2)
         #expect(notCarried.beatTimeRange?.lowerBound == 1)
+    }
+
+    @Test
+    func augment_defaultAnchorIncludesKeyEntries() throws {
+        var part = Part<BeatTime, Pitch>(name: "Piano")
+
+        part.noteTable.insert(attack: 2, duration: 1, pitch: .c4)
+
+        var work = try Work(content: .standardBeat([part], TempoMap(), MeterTable(), makeKeySignatureTable([(1, 2)])))
+
+        try work.augment(by: 2, anchor: nil as BeatTime?)
+
+        // The anchor resolves to the key entry at 1, before the first note.
+        #expect(work.keySignatureTable?.map(\.beatTime) == [1])
+        #expect(work.beatTimeRange?.lowerBound == 3)
     }
 
     @Test
@@ -514,37 +542,5 @@ extension WorkAugmentTests {
         }
 
         #expect(work.beatTimeRange == BeatTime(5)...BeatTime(6))
-    }
-}
-
-// MARK: -
-
-extension WorkAugmentTests {
-    @Test
-    func augment_carriesKeysOnlyWithKeySignatureTarget() throws {
-        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (1, -1)]))
-        var carried = work
-        var left = work
-
-        try carried.augment(by: 2, anchor: BeatTime.zero)
-        try left.augment(by: 2, anchor: BeatTime.zero, applyTo: [.dynamic])
-
-        #expect(carried.keySignatureTable?.map(\.beatTime) == [0, 2])
-        #expect(left.keySignatureTable?.map(\.beatTime) == [0, 1])
-    }
-
-    @Test
-    func augment_defaultAnchorIncludesKeyEntries() throws {
-        var part = Part<BeatTime, Pitch>(name: "Piano")
-
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .c4)
-
-        var work = try Work(content: .standardBeat([part], TempoMap(), MeterTable(), makeKeySignatureTable([(1, 2)])))
-
-        try work.augment(by: 2, anchor: nil as BeatTime?)
-
-        // The anchor resolves to the key entry at 1, before the first note.
-        #expect(work.keySignatureTable?.map(\.beatTime) == [1])
-        #expect(work.beatTimeRange?.lowerBound == 3)
     }
 }

@@ -409,6 +409,16 @@ extension WorkWarpTests {
     }
 
     @Test
+    func warp_dropsKeysAndUnwarpStartsEmpty() throws {
+        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2)]))
+        let warped = try #require(work.warped())
+        let unwarped = try #require(warped.unwarped(using: TempoMap()))
+
+        #expect(warped.keySignatureTable == nil)
+        #expect(unwarped.keySignatureTable == KeySignatureTable())
+    }
+
+    @Test
     func warped_absoluteBeat() throws {
         var tempoMap = TempoMap()
 
@@ -556,19 +566,5 @@ extension WorkWarpTests {
 
         #expect(roundTrippedParts[0].noteTable.notes.first?.attack == originalParts[0].noteTable.notes.first?.attack)
         #expect(roundTrippedParts[0].noteTable.notes.first?.duration == originalParts[0].noteTable.notes.first?.duration)
-    }
-}
-
-// MARK: -
-
-extension WorkWarpTests {
-    @Test
-    func warp_dropsKeysAndUnwarpStartsEmpty() throws {
-        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2)]))
-        let warped = try #require(work.warped())
-        let unwarped = try #require(warped.unwarped(using: TempoMap()))
-
-        #expect(warped.keySignatureTable == nil)
-        #expect(unwarped.keySignatureTable == KeySignatureTable())
     }
 }

@@ -580,7 +580,7 @@ extension Work: Codable {
                                                   forKey: .content)
 
         self.extras = try Self._normalized(container.decodeIfPresent(Extras.self,
-                                                                     forKey: .extras))
+                                                                     forKey: .extras)?.normalizingNames())
 
         self.generation = try container.decodeIfPresent(Generation.self,
                                                         forKey: .generation)

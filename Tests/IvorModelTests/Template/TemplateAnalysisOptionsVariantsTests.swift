@@ -145,6 +145,16 @@ extension TemplateAnalysisOptionsVariantsTests {
     }
 
     @Test
+    func keepsKeySignatures() {
+        #expect(Template.AnalysisOptions.Variants.none.keepsKeySignatures)
+        #expect(Template.AnalysisOptions.Variants(transpositions: [ascending(12)],
+                                                  retrogrades: true,
+                                                  timeFactors: [2]).keepsKeySignatures)
+        #expect(!Template.AnalysisOptions.Variants(transpositions: [ascending(12), ascending(5)]).keepsKeySignatures)
+        #expect(!Template.AnalysisOptions.Variants(inverts: true).keepsKeySignatures)
+    }
+
+    @Test
     func sequenceCount_isProductOfChoices() {
         typealias Variants = Template.AnalysisOptions.Variants
 
@@ -179,19 +189,5 @@ extension TemplateAnalysisOptionsVariantsTests {
             try analyzeVariantsTemplate(makeStandardBeatWork(Fixtures.threeNoteMelody),
                                         variants: variants)
         }
-    }
-}
-
-// MARK: -
-
-extension TemplateAnalysisOptionsVariantsTests {
-    @Test
-    func keepsKeySignatures() {
-        #expect(Template.AnalysisOptions.Variants.none.keepsKeySignatures)
-        #expect(Template.AnalysisOptions.Variants(transpositions: [ascending(12)],
-                                                  retrogrades: true,
-                                                  timeFactors: [2]).keepsKeySignatures)
-        #expect(!Template.AnalysisOptions.Variants(transpositions: [ascending(12), ascending(5)]).keepsKeySignatures)
-        #expect(!Template.AnalysisOptions.Variants(inverts: true).keepsKeySignatures)
     }
 }
