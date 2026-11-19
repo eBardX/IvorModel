@@ -86,7 +86,7 @@ extension WorkTests {
     @Test
     func duplicated() {
         let part = Part<BeatTime, Pitch>(name: "Viola")
-        let original = Work(name: "Quartet", content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        let original = Work(name: "Quartet", content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
         let duplicate = original.duplicated()
 
         #expect(duplicate.workID != original.workID)
@@ -292,7 +292,7 @@ extension WorkTests {
 
     @Test
     func partCount_empty() {
-        let work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+        let work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(work.partCount == 0)
     }
@@ -300,7 +300,7 @@ extension WorkTests {
     @Test
     func partCount_nonEmpty() {
         let part = Part<BeatTime, Pitch>(name: "Piano")
-        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(work.partCount == 1)
     }
@@ -308,7 +308,7 @@ extension WorkTests {
     @Test
     func partName() {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(work.partName(at: 0) == "Violin")
     }
@@ -329,7 +329,7 @@ extension WorkTests {
 
     @Test
     func pitchNotation_standard() {
-        let work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+        let work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(work.pitchNotation == .standard)
     }
@@ -479,7 +479,7 @@ extension WorkTests {
 
     @Test
     func tempoMap_beat() {
-        let work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+        let work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(work.tempoMap != nil)
     }
@@ -493,7 +493,7 @@ extension WorkTests {
 
     @Test
     func timeBasis_beat() {
-        let work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+        let work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(work.timeBasis == .beat)
     }

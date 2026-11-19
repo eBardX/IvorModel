@@ -100,11 +100,11 @@ extension Template.AnalysisOptions.Variants {
     }
 
     //
-    // Whether every variant keeps the part's key signatures: no inversion, and no transposition
+    // Whether every variant keeps the part's keys: no inversion, and no transposition
     // other than by octaves. Only then does a template's source key suit what it learns.
     //
-    internal var keepsKeySignatures: Bool {
-        !inverts && transpositions.allSatisfy(\.keepsKeySignatures)
+    internal var keepsKeys: Bool {
+        !inverts && transpositions.allSatisfy(\.keepsKeys)
     }
 
     // MARK: Internal Instance Methods

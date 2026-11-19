@@ -11,15 +11,15 @@ extension Work {
     /// Inverts note pitches around a frequency range across the parts in this work that `partIDs`
     /// names.
     ///
-    /// In beat time, the work’s key signatures are removed, unless `movesKeySignatures` is
+    /// In beat time, the work’s keys are removed, unless `movesKeys` is
     /// `false`: inverting them would need an assignment of frequencies to pitch classes, which an
     /// absolute-pitch work doesn’t have.
     ///
     /// - Parameter pitchRange:         The frequency range to invert pitches around. `nil`
     ///                                 resolves to the aggregate frequency range spanned by the
     ///                                 targeted parts.
-    /// - Parameter movesKeySignatures: Whether to invert (or, in absolute pitch, remove) the
-    ///                                 work’s key signatures too. Defaults to `true`.
+    /// - Parameter movesKeys:          Whether to invert (or, in absolute pitch, remove) the
+    ///                                 work’s keys too. Defaults to `true`.
     /// - Parameter partIDs:            The IDs of the parts to transform, or `nil` (the default)
     ///                                 for every part. IDs naming no part are ignored.
     ///
@@ -28,12 +28,12 @@ extension Work {
     ///             absolute (frequency) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(kind:partID:detail:)`` naming the part that failed.
     public mutating func invert(around pitchRange: ClosedRange<Frequency>? = nil,
-                                movesKeySignatures: Bool = true,
+                                movesKeys: Bool = true,
                                 partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
             typealias PartType = Part<BeatTime, Frequency>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: Self.selected(parts, partIDs: partIDs))
@@ -44,18 +44,18 @@ extension Work {
                 try part.invert(around: resolvedRange)
             }
 
-            var newKeySignatureTable = keySignatureTable
+            var newKeyTable = keyTable
 
             //
-            // Inverting key signatures needs an assignment of frequencies to pitch classes, which
+            // Inverting keys needs an assignment of frequencies to pitch classes, which
             // an absolute-pitch work doesn't have, so they're removed instead.
             //
-            if movesKeySignatures,
+            if movesKeys,
                resolvedRange != nil {
-                newKeySignatureTable.removeAll()
+                newKeyTable.removeAll()
             }
 
-            content = .absoluteBeat(newParts, tempoMap, meterTable, newKeySignatureTable)
+            content = .absoluteBeat(newParts, tempoMap, meterTable, newKeyTable)
 
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
@@ -78,15 +78,15 @@ extension Work {
     /// Inverts note pitches around a MIDI note number range across the parts in this work that
     /// `partIDs` names.
     ///
-    /// In beat time, the work’s key signatures are inverted too, unless `movesKeySignatures` is
-    /// `false`, assuming 12 keys to the octave, and lose their ``Extra/keySignatureMode``. If any
-    /// key signature can’t be inverted, they’re all removed.
+    /// In beat time, the work’s keys are inverted too, unless `movesKeys` is `false`, assuming
+    /// 12 keys to the octave; a diatonic key’s mode is mapped. If any key can’t be inverted,
+    /// they’re all removed.
     ///
     /// - Parameter pitchRange:         The note number range to invert pitches around. `nil`
     ///                                 resolves to the aggregate note number range spanned by the
     ///                                 targeted parts.
-    /// - Parameter movesKeySignatures: Whether to invert (or, in absolute pitch, remove) the
-    ///                                 work’s key signatures too. Defaults to `true`.
+    /// - Parameter movesKeys:          Whether to invert (or, in absolute pitch, remove) the
+    ///                                 work’s keys too. Defaults to `true`.
     /// - Parameter partIDs:            The IDs of the parts to transform, or `nil` (the default)
     ///                                 for every part. IDs naming no part are ignored.
     ///
@@ -95,12 +95,12 @@ extension Work {
     ///             keyboard (MIDI note number) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(kind:partID:detail:)`` naming the part that failed.
     public mutating func invert(around pitchRange: ClosedRange<NoteNumber>? = nil,
-                                movesKeySignatures: Bool = true,
+                                movesKeys: Bool = true,
                                 partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 
         switch content {
-        case let .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: Self.selected(parts, partIDs: partIDs))
@@ -111,14 +111,14 @@ extension Work {
                 try part.invert(around: resolvedRange)
             }
 
-            var newKeySignatureTable = keySignatureTable
+            var newKeyTable = keyTable
 
-            if movesKeySignatures,
+            if movesKeys,
                let resolvedRange {
-                newKeySignatureTable.invert(around: resolvedRange)
+                newKeyTable.invert(around: resolvedRange)
             }
 
-            content = .keyboardBeat(newParts, tempoMap, meterTable, newKeySignatureTable)
+            content = .keyboardBeat(newParts, tempoMap, meterTable, newKeyTable)
 
         case let .keyboardWall(parts):
             typealias PartType = Part<WallTime, NoteNumber>
@@ -141,15 +141,14 @@ extension Work {
     /// Inverts note pitches around a pitch range across the parts in this work that `partIDs`
     /// names.
     ///
-    /// In beat time, the work’s key signatures are inverted too, unless `movesKeySignatures` is
-    /// `false`, exactly, and lose their ``Extra/keySignatureMode``. If any key signature can’t be
-    /// inverted, they’re all removed.
+    /// In beat time, the work’s keys are inverted too, unless `movesKeys` is `false`, exactly; a
+    /// diatonic key’s mode is mapped. If any key can’t be inverted, they’re all removed.
     ///
     /// - Parameter pitchRange:         The pitch range to invert pitches around. `nil`
     ///                                 resolves to the aggregate pitch range spanned by the
     ///                                 targeted parts.
-    /// - Parameter movesKeySignatures: Whether to invert (or, in absolute pitch, remove) the
-    ///                                 work’s key signatures too. Defaults to `true`.
+    /// - Parameter movesKeys:          Whether to invert (or, in absolute pitch, remove) the
+    ///                                 work’s keys too. Defaults to `true`.
     /// - Parameter partIDs:            The IDs of the parts to transform, or `nil` (the default)
     ///                                 for every part. IDs naming no part are ignored.
     ///
@@ -158,12 +157,12 @@ extension Work {
     ///             standard (staff) pitch notation; otherwise,
     ///             ``Work/Error/transformFailure(kind:partID:detail:)`` naming the part that failed.
     public mutating func invert(around pitchRange: ClosedRange<Pitch>? = nil,
-                                movesKeySignatures: Bool = true,
+                                movesKeys: Bool = true,
                                 partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 
         switch content {
-        case let .standardBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
             typealias PartType = Part<BeatTime, Pitch>
 
             let resolvedRange = pitchRange ?? Self.aggregatePitchRange(of: Self.selected(parts, partIDs: partIDs))
@@ -174,14 +173,14 @@ extension Work {
                 try part.invert(around: resolvedRange)
             }
 
-            var newKeySignatureTable = keySignatureTable
+            var newKeyTable = keyTable
 
-            if movesKeySignatures,
+            if movesKeys,
                let resolvedRange {
-                newKeySignatureTable.invert(around: resolvedRange)
+                newKeyTable.invert(around: resolvedRange)
             }
 
-            content = .standardBeat(newParts, tempoMap, meterTable, newKeySignatureTable)
+            content = .standardBeat(newParts, tempoMap, meterTable, newKeyTable)
 
         case let .standardWall(parts):
             typealias PartType = Part<WallTime, Pitch>

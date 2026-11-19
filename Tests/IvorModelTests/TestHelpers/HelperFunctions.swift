@@ -333,9 +333,10 @@ func jointNoteEvents(of template: Template) throws -> [NoteEvent<BeatTime, Pitch
     return try makeNoteEvents(#require(model.chains.chain(for: .joint)).states)
 }
 
-func keySignature(_ fifths: Int) -> KeySignature {
+func key(_ fifths: Int,
+         _ mode: Key.Mode? = nil) -> Key {
     // swiftlint:disable:next force_unwrapping
-    KeySignature(fifths: fifths)!
+    Key.diatonic(fifths: fifths, mode: mode)!
 }
 
 func keyboardWallPitches(of work: Work?) throws -> [NoteNumber] {
@@ -358,7 +359,7 @@ func makeAbsoluteKeyWork() throws -> Work {
 
     part.noteTable.insert(attack: 0, duration: 1, pitch: 440)
 
-    return try Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), makeKeySignatureTable([(0, 2)])))
+    return try Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), makeKeyTable([(0, 2)])))
 }
 
 func makeAbsoluteWallWork(_ notes: [(UInt, UInt, [Double])]) throws -> Work {
@@ -459,34 +460,34 @@ func makeKeyboardBeatWork(_ noteNumbers: [UInt]) -> Work {
                          pitch: NoteNumber(uintValue: noteNumber)!)
     }
 
-    return Work(content: .keyboardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeySignatureTable()))
+    return Work(content: .keyboardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeyTable()))
 }
 
 // The plain source part's first attack is at 2.
 func makeKeyedSourceWork(_ entries: [(Number, Int)]) throws -> Work {
     try Work(name: "Keyed",
-             content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable(), makeKeySignatureTable(entries)))
+             content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable(), makeKeyTable(entries)))
 }
 
-func makeKeySignatureTable(_ entries: [(Number, Int)]) throws -> KeySignatureTable {
-    var table = KeySignatureTable()
+func makeKeyTable(_ entries: [(Number, Int)]) throws -> KeyTable {
+    var table = KeyTable()
 
     for (time, fifths) in entries {
-        try table.insert(beatTime: beatTime(time), keySignature: keySignature(fifths))
+        try table.insert(beatTime: beatTime(time), key: key(fifths))
     }
 
     return table
 }
 
-func makeKeySignatureWork(_ keySignatureTable: KeySignatureTable,
-                          pitches: [Pitch] = [.c4, .g4]) -> Work {
+func makeKeyWork(_ keyTable: KeyTable,
+                 pitches: [Pitch] = [.c4, .g4]) -> Work {
     var part = Part<BeatTime, Pitch>(name: "Piano")
 
     for (index, pitch) in pitches.enumerated() {
         part.noteTable.insert(attack: beatTime(Number(index)), duration: 1, pitch: pitch)
     }
 
-    return Work(content: .standardBeat([part], TempoMap(), MeterTable(), keySignatureTable))
+    return Work(content: .standardBeat([part], TempoMap(), MeterTable(), keyTable))
 }
 
 func makeLockedWorkSB() -> (work: Work, partID: PartID) {
@@ -494,7 +495,7 @@ func makeLockedWorkSB() -> (work: Work, partID: PartID) {
 
     part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
-    var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+    var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
     work.isLocked = true
 
@@ -503,7 +504,7 @@ func makeLockedWorkSB() -> (work: Work, partID: PartID) {
 
 func makeMeteredSourceWork(_ meterTable: MeterTable) -> Work {
     Work(name: "Metered",
-         content: .standardBeat([makePlainSourcePart()], TempoMap(), meterTable, KeySignatureTable()))
+         content: .standardBeat([makePlainSourcePart()], TempoMap(), meterTable, KeyTable()))
 }
 
 func makeMeterTable(_ entries: [(Number, String)],
@@ -528,7 +529,7 @@ func makeMeterWork(meterTable: MeterTable,
         part.noteTable.insert(attack: beatTime(attack), duration: beats(frac(1, 8)), pitch: .c4)
     }
 
-    return Work(content: .standardBeat([part], tempoMap, meterTable, KeySignatureTable()))
+    return Work(content: .standardBeat([part], tempoMap, meterTable, KeyTable()))
 }
 
 func makeNamedStandardBeatWork(_ name: String,
@@ -544,7 +545,7 @@ func makeNamedStandardBeatWork(_ name: String,
     }
 
     return Work(name: name,
-                content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeySignatureTable()))
+                content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeyTable()))
 }
 
 //
@@ -614,7 +615,7 @@ func makeOneBeatWork(_ pitches: [Pitch]) -> Work {
     }
 
     return Work(name: name,
-                content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeySignatureTable()))
+                content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeyTable()))
 }
 
 func makeOrganPatch() throws -> Patch {
@@ -644,7 +645,7 @@ func makePlainSourcePart() -> Part<BeatTime, Pitch> {
 
 func makePlainSourceWork() -> Work {
     Work(name: "Plain",
-         content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable(), KeySignatureTable()))
+         content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable(), KeyTable()))
 }
 
 func makePosition(beat: Int?) -> MeterTable.Position {
@@ -682,7 +683,7 @@ func makeRestSplitTune() -> Work {
     }
 
     return Work(name: "Tune",
-                content: .standardBeat([Part(name: "Flute", noteTable: noteTable)], TempoMap(), MeterTable(), KeySignatureTable()))
+                content: .standardBeat([Part(name: "Flute", noteTable: noteTable)], TempoMap(), MeterTable(), KeyTable()))
 }
 
 //
@@ -704,7 +705,7 @@ func makeSourceContextWork(instrument: Instrument = Fixtures.oboe) -> Work {
     tempoMap.insert(beatTime: beatTime(1), tempo: Fixtures.slowTempo)
 
     return Work(name: "Tune",
-                content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+                content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 }
 
 func makeStandardBeatWork(_ notes: [(Number, Number, Pitch)]) -> Work {
@@ -718,7 +719,7 @@ func makeStandardBeatWork(_ notes: [(Number, Number, Pitch)]) -> Work {
                          pitch: pitch)
     }
 
-    return Work(content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeySignatureTable()))
+    return Work(content: .standardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeyTable()))
 }
 
 func makeTimeCodeExtras() -> Extras {
@@ -762,8 +763,8 @@ func meter(_ plain: String) -> Meter {
     Meter(plain: plain)!
 }
 
-func modeExtras(_ mode: String) -> Extras {
-    Extras(elements: [Extra(name: Extra.keySignatureMode.name, values: [.string(mode)])])
+func sampleExtras(_ value: String) -> Extras {
+    Extras(elements: [Extra(name: "sample", values: [.string(value)])])
 }
 
 func pedalLevel(_ numerator: Int,

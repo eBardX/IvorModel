@@ -34,9 +34,9 @@ extension Work {
         /// A quantization factor that is not a positive integer.
         case invalidQuantizationFactor(Int)
 
-        /// A failure that occurred in the work’s key signature table while carrying it along with
+        /// A failure that occurred in the work’s key table while carrying it along with
         /// a whole-work transform.
-        case keySignatureTableTransformFailure(kind: TransformKind, detail: String)
+        case keyTableTransformFailure(kind: TransformKind, detail: String)
 
         /// A failure that occurred in the work’s meter table while carrying it along with a
         /// whole-work transform.
@@ -131,8 +131,8 @@ extension Work.Error: EnhancedError {
         case let .invalidQuantizationFactor(factor):
             "Invalid quantization factor: \(factor)"
 
-        case let .keySignatureTableTransformFailure(kind, detail):
-            "Key signature table failure during \(kind): \(detail)"
+        case let .keyTableTransformFailure(kind, detail):
+            "Key table failure during \(kind): \(detail)"
 
         case let .meterTableTransformFailure(kind, detail):
             "Meter table failure during \(kind): \(detail)"

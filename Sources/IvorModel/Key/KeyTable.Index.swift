@@ -1,15 +1,15 @@
 // © 2026 John Gary Pusey (see LICENSE.md)
 
-extension KeySignatureTable {
+extension KeyTable {
 
     // MARK: Public Nested Types
 
-    /// A position of an entry in a ``KeySignatureTable``.
+    /// A position of an entry in a ``KeyTable``.
     ///
     /// Opaque rather than a plain `Int`, so that a position is never mistaken for a bar number or a
-    /// beat time. Like an array index, a position is valid only until the key signature table is
+    /// beat time. Like an array index, a position is valid only until the key table is
     /// next modified; to keep addressing an entry across edits, use its
-    /// ``KeySignatureTable/Entry/entryID``.
+    /// ``KeyTable/Entry/entryID``.
     public struct Index {
 
         // MARK: Internal Initializers
@@ -26,7 +26,7 @@ extension KeySignatureTable {
 
 // MARK: - Comparable
 
-extension KeySignatureTable.Index: Comparable {
+extension KeyTable.Index: Comparable {
 
     // MARK: Public Type Methods
 
@@ -44,10 +44,10 @@ extension KeySignatureTable.Index: Comparable {
 
 // MARK: - Hashable
 
-extension KeySignatureTable.Index: Hashable {
+extension KeyTable.Index: Hashable {
 }
 
 // MARK: - Sendable
 
-extension KeySignatureTable.Index: Sendable {
+extension KeyTable.Index: Sendable {
 }

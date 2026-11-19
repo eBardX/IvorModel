@@ -25,7 +25,7 @@ extension WorkQuantizeTests {
 
     @Test
     func quantize_emptyFactorsThrowsEmptyQuantizationFactors() {
-        var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(throws: Work.Error.emptyQuantizationFactors) {
             try work.quantize(to: [])
@@ -34,7 +34,7 @@ extension WorkQuantizeTests {
 
     @Test
     func quantize_invalidFactorThrowsInvalidQuantizationFactor() {
-        var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(throws: Work.Error.invalidQuantizationFactor(0)) {
             try work.quantize(to: [0])
@@ -83,13 +83,13 @@ extension WorkQuantizeTests {
     }
 
     @Test
-    func quantize_neverTouchesKeySignatureTable() throws {
-        let table = try makeKeySignatureTable([(0, 2), (frac(1, 3), -1)])
-        var work = makeKeySignatureWork(table)
+    func quantize_neverTouchesKeyTable() throws {
+        let table = try makeKeyTable([(0, 2), (frac(1, 3), -1)])
+        var work = makeKeyWork(table)
 
         try work.quantize(to: [4])
 
-        #expect(work.keySignatureTable == table)
+        #expect(work.keyTable == table)
     }
 
     @Test
@@ -100,7 +100,7 @@ extension WorkQuantizeTests {
         let noteID2 = part.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
 
         let targetID = part.partID
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         try work.quantize(to: [1], noteIDs: [noteID1], partIDs: [targetID])
 
@@ -124,7 +124,7 @@ extension WorkQuantizeTests {
         part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
 
         let partIDs: Set<PartID> = [part.partID]
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(throws: Work.Error.emptyQuantizationFactors) {
             try work.quantize(to: [], partIDs: partIDs)
@@ -145,7 +145,7 @@ extension WorkQuantizeTests {
         part2.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .e4)
 
         let partIDs: Set<PartID> = [part1.partID]
-        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeyTable()))
 
         try work.quantize(to: [1], partIDs: partIDs)
 
@@ -159,7 +159,7 @@ extension WorkQuantizeTests {
     @Test
     func quantize_singlePart_missingID_isNoOp() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         try work.quantize(to: [1], partIDs: [PartID()])
 
@@ -175,7 +175,7 @@ extension WorkQuantizeTests {
         part2.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .e4)
 
         let targetID = part1.partID
-        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeyTable()))
 
         try work.quantize(to: [1], partIDs: [targetID])
 
@@ -204,7 +204,7 @@ extension WorkQuantizeTests {
                                                   Extra(name: Extra.rampDuration.name, values: [.double(1.5)])]))
         tempoMap.insert(beatTime: BeatTime(1.75), tempo: t120)
 
-        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap, MeterTable(), KeyTable()))
 
         try work.quantize(to: [1], applyTo: .tempo)
 
@@ -222,7 +222,7 @@ extension WorkQuantizeTests {
 
         part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: Frequency(440))
 
-        var work = Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         try work.quantize(to: [1])
 
@@ -236,7 +236,7 @@ extension WorkQuantizeTests {
         part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0.49, dynamic: .mp)
 
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         try work.quantize(to: [1], applyTo: .dynamic)
 
@@ -262,7 +262,7 @@ extension WorkQuantizeTests {
 
         tempoMap.insert(beatTime: BeatTime(0.49), tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.quantize(to: [1], applyTo: .tempo)
 
@@ -285,7 +285,7 @@ extension WorkQuantizeTests {
         part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0.49, dynamic: .mp)
 
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         try work.quantize(to: [1])
 
@@ -311,7 +311,7 @@ extension WorkQuantizeTests {
 
         tempoMap.insert(beatTime: BeatTime(0.49), tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.quantize(to: [1])
 
@@ -333,7 +333,7 @@ extension WorkQuantizeTests {
 
         part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: NoteNumber(60))
 
-        var work = Work(content: .keyboardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .keyboardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         try work.quantize(to: [1])
 
@@ -346,7 +346,7 @@ extension WorkQuantizeTests {
 
         part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
 
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         try work.quantize(to: [1])
 

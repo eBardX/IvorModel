@@ -44,7 +44,6 @@ extension ExtraDefinitionsTests {
                                    .harmonic,
                                    .instrumentAbbreviation,
                                    .instrumentName,
-                                   .keySignatureMode,
                                    .marcato,
                                    .meterSymbol,
                                    .midiBank,
@@ -91,16 +90,6 @@ extension ExtraDefinitionsTests {
                                                                     Extra.midiTimeSignature.name])
         #expect(Extra.definitions(for: .pedalEntry).isEmpty)
         #expect(Extra.definitions(for: .note).contains { $0.name == Extra.accent.name })
-    }
-
-    @Test
-    func keySignatureMode_acceptsModeNames() throws {
-        let mode = try #require(Extra.definition(named: Extra.keySignatureMode.name))
-
-        #expect(mode.accepts([.string("dorian")]))
-        #expect(mode.accepts([.string("none")]))
-        #expect(!mode.accepts([.string("Dorian")]))
-        #expect(!mode.accepts([]))
     }
 
     @Test

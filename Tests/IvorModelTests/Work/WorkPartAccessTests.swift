@@ -14,40 +14,40 @@ struct WorkPartAccessTests {
 
 extension WorkPartAccessTests {
     @Test
-    func modifyKeySignatureTable_beatWork() throws {
-        var work = makeKeySignatureWork(KeySignatureTable())
+    func modifyKeyTable_beatWork() throws {
+        var work = makeKeyWork(KeyTable())
 
-        let result = try work.modifyKeySignatureTable { table in
-            try? table.insert(beatTime: 0, keySignature: keySignature(3))
+        let result = try work.modifyKeyTable { table in
+            try? table.insert(beatTime: 0, key: key(3))
 
             return table.count
         }
 
         #expect(result == 1)
-        #expect(work.keySignatureTable?.first?.keySignature == keySignature(3))
+        #expect(work.keyTable?.first?.key == key(3))
     }
 
     @Test
-    func modifyKeySignatureTable_lockedThrows() {
-        var work = makeKeySignatureWork(KeySignatureTable())
+    func modifyKeyTable_lockedThrows() {
+        var work = makeKeyWork(KeyTable())
 
         work.isLocked = true
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.modifyKeySignatureTable { _ in }
+            try work.modifyKeyTable { _ in }
         }
     }
 
     @Test
-    func modifyKeySignatureTable_wallWorkReturnsNil() throws {
+    func modifyKeyTable_wallWorkReturnsNil() throws {
         var work = makeC4WallWork([(0, 1)])
         var called = false
 
-        let result: Void? = try work.modifyKeySignatureTable { _ in called = true }
+        let result: Void? = try work.modifyKeyTable { _ in called = true }
 
         #expect(result == nil)
         #expect(!called)
-        #expect(work.keySignatureTable == nil)
+        #expect(work.keyTable == nil)
     }
 
     @Test
@@ -88,7 +88,7 @@ extension WorkPartAccessTests {
     func modifyPart_editsOnlyMatchingPart() throws {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")
-        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeyTable()))
 
         let noteID = try work.modifyPart(part2.partID, as: Part<BeatTime, Pitch>.self) {
             $0.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
@@ -103,7 +103,7 @@ extension WorkPartAccessTests {
     @Test
     func modifyPart_lockedWork_throws() {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
         var bodyCalled = false
 
         work.isLocked = true
@@ -121,7 +121,7 @@ extension WorkPartAccessTests {
     @Test
     func modifyPart_missingID_returnsNil() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
         var bodyCalled = false
 
         let result: Void? = try work.modifyPart(PartID(), as: Part<BeatTime, Pitch>.self) { _ in
@@ -147,7 +147,7 @@ extension WorkPartAccessTests {
     @Test
     func modifyPart_wrongType_returnsNil() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
         var bodyCalled = false
 
         let result: Void? = try work.modifyPart(part.partID, as: Part<WallTime, Pitch>.self) { _ in
@@ -161,7 +161,7 @@ extension WorkPartAccessTests {
 
     @Test
     func modifyTempoMap_beatContent_editsTempoMap() throws {
-        var work = Work(content: .keyboardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .keyboardBeat([], TempoMap(), MeterTable(), KeyTable()))
 
         let inserted = try work.modifyTempoMap {
             $0.insert(beatTime: 1, tempo: .default)
@@ -175,7 +175,7 @@ extension WorkPartAccessTests {
 
     @Test
     func modifyTempoMap_lockedWork_throws() {
-        var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
         var bodyCalled = false
 
         work.isLocked = true

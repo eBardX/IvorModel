@@ -8,7 +8,7 @@ extension Template {
     // MARK: Public Nested Types
 
     /// The setting a template’s first source part started in: its dynamic level, instrument and
-    /// pan position, and — in beat time — its work’s tempo, meter and key signature, and where in
+    /// pan position, and — in beat time — its work’s tempo, meter and key, and where in
     /// the bar it started.
     ///
     /// Analysis learns only pitches and durations; the source context carries the rest of the
@@ -30,8 +30,8 @@ extension Template {
         ///                             `nil`.
         /// - Parameter meter:          The meter, or `nil` for a source with no meter there.
         ///                             Defaults to `nil`.
-        /// - Parameter keySignature:   The key signature, or `nil` for a source with no key
-        ///                             signature there. Defaults to `nil`.
+        /// - Parameter key:            The key, or `nil` for a source with no key
+        ///                             there. Defaults to `nil`.
         /// - Parameter barPosition:    The distance from the start of the bar to the first
         ///                             attack, in whole notes. Defaults to 0.
         public init(dynamic: Dynamic = DynamicMap<BeatTime>().defaultDynamic,
@@ -39,12 +39,12 @@ extension Template {
                     pan: Pan = PanMap<BeatTime>().defaultPan,
                     tempo: Tempo? = nil,
                     meter: Meter? = nil,
-                    keySignature: KeySignature? = nil,
+                    key: Key? = nil,
                     barPosition: BeatDuration = .zero) {
             self.barPosition = barPosition
             self.dynamic = dynamic
             self.instrument = instrument
-            self.keySignature = keySignature
+            self.key = key
             self.meter = meter
             self.pan = pan
             self.tempo = tempo
@@ -63,10 +63,10 @@ extension Template {
         /// The instrument.
         public let instrument: Instrument
 
-        /// The key signature in effect at the first attack: `nil` for a wall-time source, a source
-        /// with no key signature there, or one analyzed with variants that change its key
+        /// The key in effect at the first attack: `nil` for a wall-time source, a source
+        /// with no key there, or one analyzed with variants that change its key
         /// (inverted, or transposed other than by octaves), whose template then fits no one key.
-        public let keySignature: KeySignature?
+        public let key: Key?
 
         /// The meter in effect at the first attack: `nil` for a wall-time source, a source with
         /// an empty meter table, or one whose first attack comes before the table’s first entry.
@@ -88,71 +88,71 @@ extension Template.SourceContext {
 
     //
     // The setting of the part at `index` of `content` at its first attack — or the defaults, if
-    // there's no such part. The key signature is left out unless `keepsKeySignature` is set.
+    // there's no such part. The key is left out unless `keepsKey` is set.
     //
     internal init(content: Work.Content,
                   index: Int,
-                  keepsKeySignature: Bool = true) {
+                  keepsKey: Bool = true) {
         switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
             self.init(parts: parts,
                       index: index,
                       tempo: { tempoMap[$0] },
                       barOffset: { meterTable.barOffset(at: $0) },
-                      keySignature: { keepsKeySignature ? keySignatureTable.keySignature(at: $0) : nil })
+                      key: { keepsKey ? keyTable.key(at: $0) : nil })
 
         case let .absoluteWall(parts):
             self.init(parts: parts,
                       index: index,
                       tempo: { _ in nil },
                       barOffset: { _ in nil },
-                      keySignature: { _ in nil })
+                      key: { _ in nil })
 
-        case let .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
             self.init(parts: parts,
                       index: index,
                       tempo: { tempoMap[$0] },
                       barOffset: { meterTable.barOffset(at: $0) },
-                      keySignature: { keepsKeySignature ? keySignatureTable.keySignature(at: $0) : nil })
+                      key: { keepsKey ? keyTable.key(at: $0) : nil })
 
         case let .keyboardWall(parts):
             self.init(parts: parts,
                       index: index,
                       tempo: { _ in nil },
                       barOffset: { _ in nil },
-                      keySignature: { _ in nil })
+                      key: { _ in nil })
 
-        case let .standardBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
             self.init(parts: parts,
                       index: index,
                       tempo: { tempoMap[$0] },
                       barOffset: { meterTable.barOffset(at: $0) },
-                      keySignature: { keepsKeySignature ? keySignatureTable.keySignature(at: $0) : nil })
+                      key: { keepsKey ? keyTable.key(at: $0) : nil })
 
         case let .standardWall(parts):
             self.init(parts: parts,
                       index: index,
                       tempo: { _ in nil },
                       barOffset: { _ in nil },
-                      keySignature: { _ in nil })
+                      key: { _ in nil })
         }
     }
 
     // MARK: Internal Instance Methods
 
     //
-    // A key signature table with this setting's key signature at 0, or an empty one if it has
+    // A key table with this setting's key at 0, or an empty one if it has
     // none.
     //
-    internal func keySignatureTable() -> KeySignatureTable {
-        var keySignatureTable = KeySignatureTable()
+    internal func keyTable() -> KeyTable {
+        var keyTable = KeyTable()
 
-        if let keySignature {
-            _ = try? keySignatureTable.insert(beatTime: .zero,
-                                              keySignature: keySignature)
+        if let key {
+            _ = try? keyTable.insert(beatTime: .zero,
+                                     key: key)
         }
 
-        return keySignatureTable
+        return keyTable
     }
 
     //
@@ -232,13 +232,13 @@ extension Template.SourceContext {
 
     //
     // `tempo` gives the tempo in effect at a time, `barOffset` the meter and the distance from
-    // the start of its bar, and `keySignature` the key signature; each gives `nil` in wall time.
+    // the start of its bar, and `key` the key; each gives `nil` in wall time.
     //
     private init<T>(parts: [Part<T, some Any>],
                     index: Int,
                     tempo: (T) -> Tempo?,
                     barOffset: (T) -> (meter: Meter, offset: BeatDuration)?,
-                    keySignature: (T) -> KeySignature?) {
+                    key: (T) -> Key?) {
         let part = parts.indices.contains(index) ? parts[index] : nil
         let time = part?.timeRange?.lowerBound ?? .zero
         let meterContext = barOffset(time)
@@ -247,7 +247,7 @@ extension Template.SourceContext {
         else {
             self.init(tempo: tempo(time),
                       meter: meterContext?.meter,
-                      keySignature: keySignature(time),
+                      key: key(time),
                       barPosition: meterContext?.offset ?? .zero)
             return
         }
@@ -257,7 +257,7 @@ extension Template.SourceContext {
                   pan: part.panMap[time],
                   tempo: tempo(time),
                   meter: meterContext?.meter,
-                  keySignature: keySignature(time),
+                  key: key(time),
                   barPosition: meterContext?.offset ?? .zero)
     }
 }

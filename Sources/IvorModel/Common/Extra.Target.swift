@@ -15,8 +15,8 @@ extension Extra {
         /// An entry in an ``InstrumentTable``.
         case instrumentEntry
 
-        /// An entry in a ``KeySignatureTable``.
-        case keySignatureEntry
+        /// An entry in a ``KeyTable``.
+        case keyEntry
 
         /// An entry in a ``MeterTable``.
         case meterEntry

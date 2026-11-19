@@ -3,7 +3,7 @@
 public import XestiTools
 
 // The names of every `Extra` Ivor attaches to the model — a note, a dynamic, pan, or tempo map
-// entry, an instrument, meter or key signature table entry, a part, or the work itself — gathered
+// entry, an instrument, meter or key table entry, a part, or the work itself — gathered
 // in one place so that a name is never claimed twice. Each one’s documentation says which
 // entries it’s attached to, and what its payload holds.
 extension Extra {
@@ -70,16 +70,6 @@ extension Extra {
     /// single `.string`, which whoever creates the entry normalizes with
     /// `normalizingWhitespace()`.
     public static let instrumentName = Self(name: "instrumentName")
-
-    /// The mode of a diatonic ``KeySignatureTable`` entry’s key signature, as its source named
-    /// it, so that the key has a name (“A major”) and exports write the mode back. It’s for naming
-    /// and round-tripping only, and never part of the `KeySignature` itself; a custom signature
-    /// gets none. Transposition keeps it, since the mode is still right; inversion drops it.
-    /// Payload: a single `.string`, one of the mode names the formats share: `"major"`,
-    /// `"minor"`, `"ionian"`, `"dorian"`, `"phrygian"`, `"lydian"`, `"mixolydian"`,
-    /// `"aeolian"`, `"locrian"`, or `"none"` (MusicXML’s `mode none` and ABC’s `K:none`, which
-    /// import as no sharps or flats).
-    public static let keySignatureMode = Self(name: "keySignatureMode")
 
     /// A marcato articulation on a ``NoteTable`` note. Bare flag, no
     /// payload.

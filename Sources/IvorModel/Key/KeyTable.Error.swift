@@ -4,11 +4,11 @@ public import IvorTiming
 public import XestiNumbers
 public import XestiTools
 
-extension KeySignatureTable {
+extension KeyTable {
 
     // MARK: Public Nested Types
 
-    /// An error thrown by ``KeySignatureTable`` operations.
+    /// An error thrown by ``KeyTable`` operations.
     public enum Error {
         /// An entry that would land on a beat time another entry already occupies.
         case entryExists(BeatTime)
@@ -23,7 +23,7 @@ extension KeySignatureTable {
 
 // MARK: - EnhancedError
 
-extension KeySignatureTable.Error: EnhancedError {
+extension KeyTable.Error: EnhancedError {
 
     // MARK: Public Instance Properties
 
@@ -36,7 +36,7 @@ extension KeySignatureTable.Error: EnhancedError {
     public var message: String {
         switch self {
         case let .entryExists(beatTime):
-            "Key signature table entry already exists, beat time: \(beatTime)"
+            "Key table entry already exists, beat time: \(beatTime)"
 
         case let .invalidAugmentationFactor(factor):
             "Invalid augmentation factor: \(factor)"
@@ -49,10 +49,10 @@ extension KeySignatureTable.Error: EnhancedError {
 
 // MARK: - Equatable
 
-extension KeySignatureTable.Error: Equatable {
+extension KeyTable.Error: Equatable {
 }
 
 // MARK: - Sendable
 
-extension KeySignatureTable.Error: Sendable {
+extension KeyTable.Error: Sendable {
 }

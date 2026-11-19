@@ -13,7 +13,7 @@ extension Work {
     /// wall-time content, which has no tempo map to convert with. The new work keeps this
     /// work’s ``Work/smpteStartTime``, ``Work/info``, ``Work/extras``, and
     /// ``Work/realizations``, and its parts keep their IDs and extras. The meter table and key
-    /// signature table are dropped, since wall time has no bars.
+    /// table are dropped, since wall time has no bars.
     ///
     /// Always succeeds, even on a locked work: this returns an independent, unlocked copy rather
     /// than mutating `self`, so ``Work/isLocked`` — which only protects `self` from being
@@ -87,7 +87,7 @@ extension Work {
     /// the beat-time content this method returns carries `tempoMap` itself forward as its own tempo
     /// map — the point of this method is to hand back editable beat-time content that stays
     /// coherent with the very tempo curve used to derive its beat positions. Its meter table and
-    /// key signature table start out empty.
+    /// key table start out empty.
     ///
     /// Always succeeds, even on a locked work — see ``warped()``’s doc comment for why.
     ///
@@ -126,7 +126,7 @@ extension Work {
             },
                                  tempoMap,
                                  MeterTable(),
-                                 KeySignatureTable())
+                                 KeyTable())
 
         case let .keyboardWall(parts):
             return .keyboardBeat(parts.map { part in
@@ -135,7 +135,7 @@ extension Work {
             },
                                  tempoMap,
                                  MeterTable(),
-                                 KeySignatureTable())
+                                 KeyTable())
 
         case let .standardWall(parts):
             return .standardBeat(parts.map { part in
@@ -144,7 +144,7 @@ extension Work {
             },
                                  tempoMap,
                                  MeterTable(),
-                                 KeySignatureTable())
+                                 KeyTable())
 
         default:
             return nil

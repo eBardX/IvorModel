@@ -69,9 +69,9 @@ extension WorkWarpTests {
     func unwarped_beatTimeContent_returnsNil() {
         let tempoMap = TempoMap()
 
-        #expect(try Work(content: .absoluteBeat([], tempoMap, MeterTable(), KeySignatureTable())).unwarped(using: tempoMap) == nil)
-        #expect(try Work(content: .keyboardBeat([], tempoMap, MeterTable(), KeySignatureTable())).unwarped(using: tempoMap) == nil)
-        #expect(try Work(content: .standardBeat([], tempoMap, MeterTable(), KeySignatureTable())).unwarped(using: tempoMap) == nil)
+        #expect(try Work(content: .absoluteBeat([], tempoMap, MeterTable(), KeyTable())).unwarped(using: tempoMap) == nil)
+        #expect(try Work(content: .keyboardBeat([], tempoMap, MeterTable(), KeyTable())).unwarped(using: tempoMap) == nil)
+        #expect(try Work(content: .standardBeat([], tempoMap, MeterTable(), KeyTable())).unwarped(using: tempoMap) == nil)
     }
 
     @Test
@@ -210,7 +210,7 @@ extension WorkWarpTests {
                                              dynamicMap: dynamicMap,
                                              instrumentTable: instrumentTable,
                                              panMap: panMap)
-        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
@@ -248,7 +248,7 @@ extension WorkWarpTests {
         let part = Part<BeatTime, Frequency>(name: "Piano",
                                              noteTable: table,
                                              pedals: [.sustain: sustain])
-        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
@@ -262,7 +262,7 @@ extension WorkWarpTests {
     @Test
     func varispeeded_keepsExtras() throws {
         let part = Part<BeatTime, Frequency>(name: "Violin", extras: makeChannelExtras(3))
-        let work = Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), KeySignatureTable()),
+        let work = Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), KeyTable()),
                         extras: makeTimeCodeExtras())
 
         let result = try #require(try work.varispeeded())
@@ -274,7 +274,7 @@ extension WorkWarpTests {
     @Test
     func varispeeded_keepsInfo() throws {
         let part = Part<BeatTime, Frequency>(name: "Violin")
-        let work = Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), KeySignatureTable()),
+        let work = Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), KeyTable()),
                         info: makeWorkInfo())
 
         let result = try #require(try work.varispeeded())
@@ -288,7 +288,7 @@ extension WorkWarpTests {
     @Test
     func varispeeded_keepsSMPTEStartTime() throws {
         let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps24))
-        let work = Work(content: .absoluteBeat([], TempoMap(), MeterTable(), KeySignatureTable()),
+        let work = Work(content: .absoluteBeat([], TempoMap(), MeterTable(), KeyTable()),
                         smpteStartTime: startTime)
 
         #expect(try work.varispeeded()?.smpteStartTime == startTime)
@@ -296,7 +296,7 @@ extension WorkWarpTests {
 
     @Test
     func varispeeded_lockedWork_returnsUnlockedResult() throws {
-        var work = Work(content: .absoluteBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .absoluteBeat([], TempoMap(), MeterTable(), KeyTable()))
 
         work.isLocked = true
 
@@ -308,9 +308,9 @@ extension WorkWarpTests {
     @Test
     func varispeeded_nonAbsoluteBeatContent_returnsNil() throws {
         #expect(try Work(content: .absoluteWall([])).varispeeded() == nil)
-        #expect(try Work(content: .keyboardBeat([], TempoMap(), MeterTable(), KeySignatureTable())).varispeeded() == nil)
+        #expect(try Work(content: .keyboardBeat([], TempoMap(), MeterTable(), KeyTable())).varispeeded() == nil)
         #expect(try Work(content: .keyboardWall([])).varispeeded() == nil)
-        #expect(try Work(content: .standardBeat([], TempoMap(), MeterTable(), KeySignatureTable())).varispeeded() == nil)
+        #expect(try Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable())).varispeeded() == nil)
         #expect(try Work(content: .standardWall([])).varispeeded() == nil)
     }
 
@@ -325,7 +325,7 @@ extension WorkWarpTests {
         try table.insert(attack: 0, duration: 1, pitch: #require(Frequency(uintValue: 1)))
 
         let part = Part<BeatTime, Frequency>(name: "Piano", noteTable: table)
-        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         do {
             _ = try work.varispeeded(normalTempo: Tempo(60))
@@ -352,7 +352,7 @@ extension WorkWarpTests {
         table.insert(attack: 0, duration: 1, pitch: Frequency(440))
 
         let part = Part<BeatTime, Frequency>(name: "Piano", noteTable: table)
-        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
@@ -375,7 +375,7 @@ extension WorkWarpTests {
         table.insert(attack: 0, duration: 1, pitch: Frequency(440))
 
         let part = Part<BeatTime, Frequency>(name: "Piano", noteTable: table)
-        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
@@ -398,7 +398,7 @@ extension WorkWarpTests {
         table.insert(attack: 0, duration: 1, pitch: Frequency(440))
 
         let part = Part<BeatTime, Frequency>(name: "Piano", noteTable: table)
-        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        let work = Work(content: .absoluteBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
@@ -410,12 +410,12 @@ extension WorkWarpTests {
 
     @Test
     func warp_dropsKeysAndUnwarpStartsEmpty() throws {
-        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2)]))
+        let work = try makeKeyWork(makeKeyTable([(0, 2)]))
         let warped = try #require(work.warped())
         let unwarped = try #require(warped.unwarped(using: TempoMap()))
 
-        #expect(warped.keySignatureTable == nil)
-        #expect(unwarped.keySignatureTable == KeySignatureTable())
+        #expect(warped.keyTable == nil)
+        #expect(unwarped.keyTable == KeyTable())
     }
 
     @Test
@@ -447,7 +447,7 @@ extension WorkWarpTests {
                                              dynamicMap: dynamicMap,
                                              instrumentTable: instrumentTable,
                                              panMap: panMap)
-        let work = Work(name: "Test", content: .absoluteBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        let work = Work(name: "Test", content: .absoluteBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         let result = try #require(work.warped())
 
@@ -476,7 +476,7 @@ extension WorkWarpTests {
     @Test
     func warped_keepsInfo() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
-        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()),
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()),
                         info: makeWorkInfo())
 
         let result = try #require(work.warped())
@@ -490,7 +490,7 @@ extension WorkWarpTests {
     @Test
     func warped_keepsSMPTEStartTime() throws {
         let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps24))
-        let work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeySignatureTable()),
+        let work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()),
                         smpteStartTime: startTime)
 
         #expect(work.warped()?.smpteStartTime == startTime)
@@ -503,14 +503,14 @@ extension WorkWarpTests {
         table.insert(attack: 1, duration: 1, pitch: NoteNumber(uintValue: 69).require())
 
         let part = Part<BeatTime, NoteNumber>(name: "Piano", noteTable: table)
-        let work = Work(content: .keyboardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        let work = Work(content: .keyboardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(work.warped()?.timeBasis == .wall)
     }
 
     @Test
     func warped_lockedWork_returnsUnlockedResult() throws {
-        var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
 
         work.isLocked = true
 
@@ -526,7 +526,7 @@ extension WorkWarpTests {
         table.insert(attack: 1, duration: 1, pitch: .a4)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
-        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        let work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(work.warped()?.timeBasis == .wall)
     }
@@ -553,7 +553,7 @@ extension WorkWarpTests {
         table.insert(attack: 1, duration: 1, pitch: .a4)
 
         let part = Part<BeatTime, Pitch>(name: "Piano", noteTable: table)
-        let work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        let work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         let warped = try #require(work.warped())
         let roundTripped = try #require(warped.unwarped(using: tempoMap))

@@ -5,15 +5,15 @@ import IvorTiming
 import Testing
 import XestiNumbers
 
-struct KeySignatureTableInternalTests {
+struct KeyTableInternalTests {
 }
 
 // MARK: -
 
-extension KeySignatureTableInternalTests {
+extension KeyTableInternalTests {
     @Test
     func entryIndex_at() throws {
-        let table = try makeKeySignatureTable([(0, 0), (1, 2)])
+        let table = try makeKeyTable([(0, 0), (1, 2)])
 
         #expect(table.entryIndex(at: 1) == 1)
         #expect(table.entryIndex(at: beatTime(frac(1, 2))) == nil)
@@ -21,7 +21,7 @@ extension KeySignatureTableInternalTests {
 
     @Test
     func firstIndex_entryID() throws {
-        let table = try makeKeySignatureTable([(0, 0), (1, 2)])
+        let table = try makeKeyTable([(0, 0), (1, 2)])
         let entryID = try #require(table.last).entryID
         let unknownIndex = table.firstIndex(entryID: EntryID())
 
@@ -31,7 +31,7 @@ extension KeySignatureTableInternalTests {
 
     @Test
     func governingIndex_at() throws {
-        let table = try makeKeySignatureTable([(1, 0), (2, 2)])
+        let table = try makeKeyTable([(1, 0), (2, 2)])
 
         #expect(table.governingIndex(at: 0) == nil)
         #expect(table.governingIndex(at: beatTime(frac(3, 2))) == 0)
@@ -41,21 +41,21 @@ extension KeySignatureTableInternalTests {
 
     @Test
     func hasExtras_in() {
-        let plain = KeySignatureTable.StoredEntry(beatTime: 0,
-                                                  keySignature: keySignature(0),
-                                                  extras: nil)
-        let extended = KeySignatureTable.StoredEntry(beatTime: 1,
-                                                     keySignature: keySignature(0),
-                                                     extras: modeExtras("major"))
+        let plain = KeyTable.StoredEntry(beatTime: 0,
+                                         key: key(0),
+                                         extras: nil)
+        let extended = KeyTable.StoredEntry(beatTime: 1,
+                                            key: key(0),
+                                            extras: sampleExtras("major"))
 
-        #expect(!KeySignatureTable.hasExtras(in: []))
-        #expect(!KeySignatureTable.hasExtras(in: [plain]))
-        #expect(KeySignatureTable.hasExtras(in: [plain, extended]))
+        #expect(!KeyTable.hasExtras(in: []))
+        #expect(!KeyTable.hasExtras(in: [plain]))
+        #expect(KeyTable.hasExtras(in: [plain, extended]))
     }
 
     @Test
     func insertionIndex_for() throws {
-        let table = try makeKeySignatureTable([(0, 0), (1, 2)])
+        let table = try makeKeyTable([(0, 0), (1, 2)])
 
         #expect(table.insertionIndex(for: 0) == 1)
         #expect(table.insertionIndex(for: beatTime(frac(1, 2))) == 1)

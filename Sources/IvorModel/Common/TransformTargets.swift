@@ -2,7 +2,7 @@
 
 /// A set of the time-keyed collections that a time-based transform should carry along with the
 /// notes: a part’s parameter maps, instrument table and dictionary of pedal tables, and the
-/// work’s own tempo map, meter table and key signature table.
+/// work’s own tempo map, meter table and key table.
 public struct TransformTargets {
 
     // MARK: Public Initializers
@@ -27,8 +27,8 @@ extension TransformTargets {
     // MARK: Public Type Properties
 
     /// Every target: the parameter maps, the instrument table, the dictionary of pedal tables, and
-    /// the work’s own tempo map, meter table and key signature table.
-    public static let all: Self = [.dynamic, .instrument, .keySignature, .meter, .pan, .pedal, .tempo]
+    /// the work’s own tempo map, meter table and key table.
+    public static let all: Self = [.dynamic, .instrument, .key, .meter, .pan, .pedal, .tempo]
 
     /// The dynamic map.
     public static let dynamic = Self(rawValue: 1 << 0)
@@ -36,13 +36,13 @@ extension TransformTargets {
     /// The instrument table.
     public static let instrument = Self(rawValue: 1 << 1)
 
-    /// The work’s own key signature table. Only meaningful to a whole-work transform — a `Part`
-    /// has no key signature table of its own, so this target is ignored wherever
+    /// The work’s own key table. Only meaningful to a whole-work transform — a `Part`
+    /// has no key table of its own, so this target is ignored wherever
     /// `TransformTargets` selects among a single part’s maps and table.
     ///
-    /// Quantize never carries the key signature table, as it never carries the meter table: key
-    /// signatures mark notation, not sound.
-    public static let keySignature = Self(rawValue: 1 << 6)
+    /// Quantize never carries the key table, as it never carries the meter table: keys
+    /// mark notation, not sound.
+    public static let key = Self(rawValue: 1 << 6)
 
     /// The work’s own meter table. Only meaningful to a whole-work transform — a `Part` has no
     /// meter table of its own, so this target is ignored wherever `TransformTargets` selects among

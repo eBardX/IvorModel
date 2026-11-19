@@ -374,7 +374,7 @@ extension Template {
                                                                                     seed: seed))],
                               sourceContext.tempoMap(),
                               sourceContext.meterTable(),
-                              sourceContext.keySignatureTable())
+                              sourceContext.keyTable())
 
         case let (.absoluteWall(model), .absoluteWall(options)):
             try .absoluteWall([sourceContext.part(name: partName,
@@ -401,7 +401,7 @@ extension Template {
                                                                                     seed: seed))],
                               sourceContext.tempoMap(),
                               sourceContext.meterTable(),
-                              sourceContext.keySignatureTable())
+                              sourceContext.keyTable())
 
         case let (.keyboardWall(model), .keyboardWall(options)):
             try .keyboardWall([sourceContext.part(name: partName,
@@ -428,7 +428,7 @@ extension Template {
                                                                                     seed: seed))],
                               sourceContext.tempoMap(),
                               sourceContext.meterTable(),
-                              sourceContext.keySignatureTable())
+                              sourceContext.keyTable())
 
         case let (.standardWall(model), .standardWall(options)):
             try .standardWall([sourceContext.part(name: partName,

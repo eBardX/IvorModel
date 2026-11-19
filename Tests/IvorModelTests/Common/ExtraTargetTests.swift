@@ -14,7 +14,7 @@ extension ExtraTargetTests {
     func allCases() {
         #expect(Extra.Target.allCases == [.dynamicEntry,
                                           .instrumentEntry,
-                                          .keySignatureEntry,
+                                          .keyEntry,
                                           .meterEntry,
                                           .note,
                                           .panEntry,
@@ -25,10 +25,10 @@ extension ExtraTargetTests {
     }
 
     @Test
-    func allCases_eachTargetedByADefinitionExceptPedalEntry() {
+    func allCases_eachTargetedByADefinitionExceptKeyAndPedalEntries() {
         let targeted = Set(Extra.definitions.flatMap(\.targets))
 
-        #expect(targeted == Set(Extra.Target.allCases).subtracting([.pedalEntry]))
+        #expect(targeted == Set(Extra.Target.allCases).subtracting([.keyEntry, .pedalEntry]))
     }
 
     @Test

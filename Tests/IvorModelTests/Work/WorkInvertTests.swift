@@ -20,17 +20,17 @@ extension WorkInvertTests {
         part.noteTable.insert(attack: 0, duration: 1, pitch: 440)
         part.noteTable.insert(attack: 1, duration: 1, pitch: 660)
 
-        let content = try Work.Content.absoluteBeat([part], TempoMap(), MeterTable(), makeKeySignatureTable([(0, 2)]))
+        let content = try Work.Content.absoluteBeat([part], TempoMap(), MeterTable(), makeKeyTable([(0, 2)]))
         var removed = Work(content: content)
         var kept = Work(content: content)
 
         let range: ClosedRange<Frequency> = 440...660
 
         try removed.invert(around: range)
-        try kept.invert(around: range, movesKeySignatures: false)
+        try kept.invert(around: range, movesKeys: false)
 
-        #expect(removed.keySignatureTable?.isEmpty == true)
-        #expect(kept.keySignatureTable?.map(\.keySignature) == [keySignature(2)])
+        #expect(removed.keyTable?.isEmpty == true)
+        #expect(kept.keyTable?.map(\.key) == [key(2)])
     }
 
     @Test
@@ -40,12 +40,12 @@ extension WorkInvertTests {
         part.noteTable.insert(attack: 0, duration: 1, pitch: 60)
         part.noteTable.insert(attack: 1, duration: 1, pitch: 67)
 
-        var work = try Work(content: .keyboardBeat([part], TempoMap(), MeterTable(), makeKeySignatureTable([(0, 1)])))
+        var work = try Work(content: .keyboardBeat([part], TempoMap(), MeterTable(), makeKeyTable([(0, 1)])))
         let range: ClosedRange<NoteNumber> = 60...67
 
         try work.invert(around: range)
 
-        #expect(work.keySignatureTable?.map(\.keySignature) == [keySignature(-4)])
+        #expect(work.keyTable?.map(\.key) == [key(-4)])
     }
 
     @Test
@@ -67,25 +67,25 @@ extension WorkInvertTests {
 
     @Test
     func invert_standard_flagOffKeepsKeys() throws {
-        var work = try makeKeySignatureWork(makeKeySignatureTable([(0, 1)]))
+        var work = try makeKeyWork(makeKeyTable([(0, 1)]))
 
-        try work.invert(around: Pitch.c4...Pitch.g4, movesKeySignatures: false)
+        try work.invert(around: Pitch.c4...Pitch.g4, movesKeys: false)
 
-        #expect(work.keySignatureTable?.map(\.keySignature) == [keySignature(1)])
+        #expect(work.keyTable?.map(\.key) == [key(1)])
     }
 
     @Test
-    func invert_standard_invertsKeysAndDropsMode() throws {
-        var table = KeySignatureTable()
+    func invert_standard_invertsKeysAndMapsMode() throws {
+        var table = KeyTable()
 
-        try table.insert(beatTime: 0, keySignature: keySignature(1), extras: modeExtras("major"))
+        try table.insert(beatTime: 0, key: key(1, .major), extras: sampleExtras("kept"))
 
-        var work = makeKeySignatureWork(table, pitches: [.c4, .g4])
+        var work = makeKeyWork(table, pitches: [.c4, .g4])
 
         try work.invert(around: Pitch.c4...Pitch.g4)
 
-        #expect(work.keySignatureTable?.first?.keySignature == keySignature(-4))
-        #expect(work.keySignatureTable?.first?.extras == nil)
+        #expect(work.keyTable?.first?.key == key(-4, .phrygian))
+        #expect(work.keyTable?.first?.extras == sampleExtras("kept"))
     }
 
     @Test
@@ -96,15 +96,15 @@ extension WorkInvertTests {
         bass.noteTable.insert(attack: 0, duration: 1, pitch: .c3)
         treble.noteTable.insert(attack: 0, duration: 1, pitch: .g4)
 
-        let content = try Work.Content.standardBeat([bass, treble], TempoMap(), MeterTable(), makeKeySignatureTable([(0, 0)]))
+        let content = try Work.Content.standardBeat([bass, treble], TempoMap(), MeterTable(), makeKeyTable([(0, 0)]))
         var moved = Work(content: content)
         var kept = Work(content: content)
 
         try moved.invert(around: Pitch.c4...Pitch.g4, partIDs: [treble.partID])
-        try kept.invert(around: Pitch.c4...Pitch.g4, movesKeySignatures: false, partIDs: [treble.partID])
+        try kept.invert(around: Pitch.c4...Pitch.g4, movesKeys: false, partIDs: [treble.partID])
 
-        #expect(moved.keySignatureTable?.map(\.keySignature) == [keySignature(-3)])
-        #expect(kept.keySignatureTable?.map(\.keySignature) == [keySignature(0)])
+        #expect(moved.keyTable?.map(\.key) == [key(-3)])
+        #expect(kept.keyTable?.map(\.key) == [key(0)])
     }
 
     @Test
@@ -114,7 +114,7 @@ extension WorkInvertTests {
         part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
         part.noteTable.insert(attack: 0, duration: 1, pitch: .e4)
 
-        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         try work.invert(around: nil as ClosedRange<Pitch>?)
 
@@ -123,7 +123,7 @@ extension WorkInvertTests {
 
     @Test
     func invert_wrongPitchNotationThrows() {
-        var work = Work(content: .keyboardBeat([], TempoMap(), MeterTable(), KeySignatureTable()))
+        var work = Work(content: .keyboardBeat([], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(throws: Work.Error.pitchNotationMismatch(expected: .standard)) {
             try work.invert(around: nil as ClosedRange<Pitch>?)

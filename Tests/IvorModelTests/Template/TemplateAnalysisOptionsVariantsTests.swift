@@ -145,13 +145,13 @@ extension TemplateAnalysisOptionsVariantsTests {
     }
 
     @Test
-    func keepsKeySignatures() {
-        #expect(Template.AnalysisOptions.Variants.none.keepsKeySignatures)
+    func keepsKeys() {
+        #expect(Template.AnalysisOptions.Variants.none.keepsKeys)
         #expect(Template.AnalysisOptions.Variants(transpositions: [ascending(12)],
                                                   retrogrades: true,
-                                                  timeFactors: [2]).keepsKeySignatures)
-        #expect(!Template.AnalysisOptions.Variants(transpositions: [ascending(12), ascending(5)]).keepsKeySignatures)
-        #expect(!Template.AnalysisOptions.Variants(inverts: true).keepsKeySignatures)
+                                                  timeFactors: [2]).keepsKeys)
+        #expect(!Template.AnalysisOptions.Variants(transpositions: [ascending(12), ascending(5)]).keepsKeys)
+        #expect(!Template.AnalysisOptions.Variants(inverts: true).keepsKeys)
     }
 
     @Test

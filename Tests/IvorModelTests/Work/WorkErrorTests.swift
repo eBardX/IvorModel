@@ -34,10 +34,10 @@ extension WorkErrorTests {
     }
 
     @Test
-    func message_keySignatureTableTransformFailure() {
-        let msg = Work.Error.keySignatureTableTransformFailure(kind: .augment, detail: "boom").message
+    func message_keyTableTransformFailure() {
+        let msg = Work.Error.keyTableTransformFailure(kind: .augment, detail: "boom").message
 
-        #expect(msg.contains("Key signature table"))
+        #expect(msg.contains("Key table"))
         #expect(msg.contains("boom"))
     }
 

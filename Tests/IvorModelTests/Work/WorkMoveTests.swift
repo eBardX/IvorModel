@@ -14,17 +14,17 @@ struct WorkMoveTests {
 
 extension WorkMoveTests {
     @Test
-    func move_carriesKeysOnlyWithKeySignatureTarget() throws {
-        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (2, -1)]))
+    func move_carriesKeysOnlyWithKeyTarget() throws {
+        let work = try makeKeyWork(makeKeyTable([(0, 2), (2, -1)]))
         let later = DirectedDuration(duration: beats(1), direction: .forward)
         var carried = work
         var left = work
 
         try carried.move(by: later)
-        try left.move(by: later, applyTo: TransformTargets.all.subtracting(.keySignature))
+        try left.move(by: later, applyTo: TransformTargets.all.subtracting(.key))
 
-        #expect(carried.keySignatureTable?.map(\.beatTime) == [1, 3])
-        #expect(left.keySignatureTable?.map(\.beatTime) == [0, 2])
+        #expect(carried.keyTable?.map(\.beatTime) == [1, 3])
+        #expect(left.keyTable?.map(\.beatTime) == [0, 2])
     }
 
     @Test
@@ -55,7 +55,7 @@ extension WorkMoveTests {
 
         tempoMap.insert(beatTime: 0, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         let directedDuration = try #require(BeatTime(0).duration(to: 2))
 

@@ -15,8 +15,8 @@ struct WorkReverseTests {
 
 extension WorkReverseTests {
     @Test
-    func reverse_carriesKeysOnlyWithKeySignatureTarget() throws {
-        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (1, -1)]))
+    func reverse_carriesKeysOnlyWithKeyTarget() throws {
+        let work = try makeKeyWork(makeKeyTable([(0, 2), (1, -1)]))
         var carried = work
         var left = work
 
@@ -25,9 +25,9 @@ extension WorkReverseTests {
         try carried.reverse(within: range)
         try left.reverse(within: range, applyTo: [.dynamic])
 
-        #expect(carried.keySignatureTable?.map(\.keySignature) == [keySignature(-1), keySignature(2), keySignature(-1)])
-        #expect(carried.keySignatureTable?.map(\.beatTime) == [0, 1, 2])
-        #expect(try left.keySignatureTable == makeKeySignatureTable([(0, 2), (1, -1)]))
+        #expect(carried.keyTable?.map(\.key) == [key(-1), key(2), key(-1)])
+        #expect(carried.keyTable?.map(\.beatTime) == [0, 1, 2])
+        #expect(try left.keyTable == makeKeyTable([(0, 2), (1, -1)]))
     }
 
     @Test
@@ -49,7 +49,7 @@ extension WorkReverseTests {
                                                   Extra(name: Extra.rampDuration.name, values: [.double(4)])]))
         tempoMap.insert(beatTime: 2, tempo: t90)
 
-        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap, MeterTable(), KeyTable()))
 
         try work.reverse(within: BeatTime(0)...BeatTime(2))
 
@@ -78,7 +78,7 @@ extension WorkReverseTests {
         tempoMap.insert(beatTime: 0, tempo: t60)
         tempoMap.insert(beatTime: 4, tempo: t120)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()),
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()),
                         extras: makeTimeCodeExtras())
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
@@ -127,7 +127,7 @@ extension WorkReverseTests {
 
         tempoMap.insert(beatTime: 0, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 
@@ -173,7 +173,7 @@ extension WorkReverseTests {
 
         tempoMap.insert(beatTime: 0, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
     }
@@ -200,7 +200,7 @@ extension WorkReverseTests {
                                                   Extra(name: Extra.rampDuration.name, values: [.double(4)])]))
         tempoMap.insert(beatTime: 4, tempo: t120)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 
@@ -231,7 +231,7 @@ extension WorkReverseTests {
                                                   Extra(name: Extra.rampDuration.name, values: [.double(3)])]))
         tempoMap.insert(beatTime: 4, tempo: t120)
 
-        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([Part<BeatTime, Pitch>(name: "Violin")], tempoMap, MeterTable(), KeyTable()))
 
         try work.reverse(within: BeatTime(0)...BeatTime(4))
 
@@ -271,7 +271,7 @@ extension WorkReverseTests {
                         extras: Extras(elements: [Extra(name: Extra.tempoText.name, values: [.string("Allegro")])]))
         tempoMap.insert(beatTime: 8, tempo: t120)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 
@@ -309,7 +309,7 @@ extension WorkReverseTests {
                         tempo: t120,
                         extras: Extras(elements: [Extra(name: Extra.tempoText.name, values: [.string("Allegro")])]))
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 
@@ -350,7 +350,7 @@ extension WorkReverseTests {
                         extras: Extras(elements: [Extra(name: Extra.tempoText.name, values: [.string("Andante")])]))
         tempoMap.insert(beatTime: 12, tempo: t60)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 
@@ -381,7 +381,7 @@ extension WorkReverseTests {
         tempoMap.insert(beatTime: 0, tempo: .default)
         tempoMap.insert(beatTime: 2, tempo: .default)
 
-        var work = Work(content: .standardBeat([violin, cello], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([violin, cello], tempoMap, MeterTable(), KeyTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?,
                          partIDs: [violin.partID])
@@ -406,7 +406,7 @@ extension WorkReverseTests {
         tempoMap.insert(beatTime: 0, tempo: .default)
         tempoMap.insert(beatTime: 2, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?,
                          applyTo: [.dynamic, .instrument, .pan])
@@ -426,7 +426,7 @@ extension WorkReverseTests {
         tempoMap.insert(beatTime: 0, tempo: .default)
         tempoMap.insert(beatTime: 2, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?)
 

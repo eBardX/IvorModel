@@ -37,7 +37,7 @@ notes in whole notes and standard pitch.
 A ``Work`` holds its parts as ``Work/Content``, an enumeration with one case per
 combination of time basis and pitch notation. The three beat-time cases also
 carry the work’s `TempoMap`, its ``MeterTable`` (see [Meters](#Meters)), and its
-``KeySignatureTable`` (see [Key signatures](#Key-signatures)).
+``KeyTable`` (see [Keys](#Keys)).
 
 ```swift
 var work = Work(name: "Etude",
@@ -92,8 +92,8 @@ work’s content. ``Work/addPart(name:)``, ``Work/duplicatePart(_:)``,
 ``Work/removePart(_:)``, ``Work/renamePart(_:to:)``, and
 ``Work/shiftPart(_:to:)`` edit the list of parts, and ``Work/partIDs`` lists
 them in order. ``Work/modifyTempoMap(_:)``, ``Work/modifyMeterTable(_:)`` and
-``Work/modifyKeySignatureTable(_:)`` edit a beat-time work’s tempo map, meter
-table and key signature table.
+``Work/modifyKeyTable(_:)`` edit a beat-time work’s tempo map, meter
+table and key table.
 
 A part can also find its notes: ``Part/attackingIn(_:)`` (attacked within a
 time range), ``Part/soundingIn(_:)`` (sounding at any point within it), and
@@ -218,37 +218,32 @@ answers where a time falls (``MeterTable/position(at:)``), the reverse
 (``MeterTable/bars(overlapping:)``). An entry that cuts the bar before it short
 is a restart (``MeterTable/isRestart(entryID:)``).
 
-## Key signatures
+## Keys
 
-A beat-time work’s ``KeySignatureTable`` says which key signature is in effect
-where. Each entry is a `KeySignature` (from IvorTuning): one flat, natural or
-sharp per letter, so it can be one of the 15 usual diatonic signatures or a
-custom one such as {B♭, F♯}. A key signature is descriptive: it never changes
-how a note is spelled or played. Before the first entry there’s no key
-signature at all, and entries can fall anywhere, not only on barlines.
+A beat-time work’s ``KeyTable`` says which key is in effect where. Each entry
+is a `Key` (from IvorTuning): atonal, diatonic (one of the 15 diatonic
+signatures, with a mode such as F♯ minor or without one), or custom (any other
+signature, such as {B♭, F♯}). A key is descriptive: it never changes how a note
+is spelled or played. Before the first entry nothing is said about the key, and
+entries can fall anywhere, not only on barlines.
 
 ```swift
-try work.modifyKeySignatureTable { table in
+try work.modifyKeyTable { table in
     _ = try? table.insert(beatTime: .zero,
-                          keySignature: KeySignature(fifths: 3)!,
-                          extras: Extras(elements: [Extra(name: Extra.keySignatureMode.name,
-                                                          values: [.string("minor")])]))
+                          key: Key.diatonic(tonic: .fSharp, mode: .minor)!)
 }
 
-work.keySignatureTable?.keySignature(at: 4)   // 3♯
+work.keyTable?.key(at: 4)   // F♯ minor
 ```
-
-The key signature itself has no mode. An ``Extra/keySignatureMode`` extra keeps
-the source’s, so that the key has a name (F♯ minor) and exports write it back.
 
 ## Transforming a work
 
 A work transforms its parts in place. Each transform applies to every part, or
 to the ones whose IDs you pass in `partIDs`:
 
-- **Pitch:** `transpose(by:movesKeySignatures:partIDs:)`, by an interval of the
+- **Pitch:** `transpose(by:movesKeys:partIDs:)`, by an interval of the
   work’s own pitch notation — an `Interval`, a `Ratio`, or a `NoteDistance` — and
-  `invert(around:movesKeySignatures:partIDs:)`, which mirrors pitches within a
+  `invert(around:movesKeys:partIDs:)`, which mirrors pitches within a
   range.
 - **Time:** `augment(by:anchor:applyTo:partIDs:)`,
   `diminish(by:anchor:applyTo:partIDs:)`, `move(by:applyTo:partIDs:)`,
@@ -263,17 +258,17 @@ try work.augment(by: 2, anchor: BeatTime.zero)  // twice as slow, from the start
 The time transforms come in a beat-time and a wall-time form, so give the anchor
 (or the duration, or the range) in the work’s own time type. They move a part’s
 parameter maps, instrument table, and pedal tables along with its notes, and the work’s own
-tempo map, meter table and key signature table with them; `applyTo` takes a
+tempo map, meter table and key table with them; `applyTo` takes a
 ``TransformTargets`` set to choose which of these go along. When the meter table goes along, the meter is
 re-notated so that every note keeps its bar and beat: 3/4 augmented by 2 becomes
 3/2. Augment and diminish can also keep the sound (`keepingSound`), by scaling
 each tempo’s unit with the music: 3/8 at ♪ = 240, augmented by 2, becomes 3/4 at
-♩ = 240. Quantize never moves the meter table or the key signature table. The
-pitch transforms move the key signatures too, unless `movesKeySignatures` is
+♩ = 240. Quantize never moves the meter table or the key table. The
+pitch transforms move the keys too, unless `movesKeys` is
 `false`: transposing only some parts may or may not change the key, so the
-caller decides. Where a key signature can’t follow — a transposition by a ratio
+caller decides. Where a key can’t follow — a transposition by a ratio
 more than 25 cents from a whole number of semitones, or any inversion of
-absolute pitch — the key signatures are removed. A transform
+absolute pitch — the keys are removed. A transform
 whose interval or time type doesn’t match the work throws
 ``Work/Error/pitchNotationMismatch(expected:)`` or
 ``Work/Error/timeBasisMismatch(expected:)``. Parts and note tables have the same
@@ -462,7 +457,7 @@ Thrown errors conform to `EnhancedError` (from
  ``NoteTable/Error``             | ``NoteTable`` transforms
  ``DynamicMap/Error``, ``InstrumentTable/Error``, ``PanMap/Error`` | The parameter-map and instrument-table transforms
  ``MeterTable/Error``            | Editing and scaling a meter table
- ``KeySignatureTable/Error``     | Editing and scaling a key signature table
+ ``KeyTable/Error``     | Editing and scaling a key table
  ``Template/Error``              | Analysis, generation, and renaming a locked template
  ``Project/Error``               | Loading, saving, and removing locked works and templates
 

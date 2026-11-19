@@ -6,20 +6,20 @@ public import XestiNumbers
 
 private import XestiTools
 
-extension KeySignatureTable {
+extension KeyTable {
 
     // MARK: Public Instance Methods
 
-    /// Augments this key signature table by a rational factor, so that each key signature change
+    /// Augments this key table by a rational factor, so that each key change
     /// stays with the music.
     ///
     /// Entries before `anchor` don’t change. Every entry at or after `anchor` moves to
     /// `anchor + (time − anchor) × factor`.
     ///
-    /// - Parameter factor: A rational number ≥ 1 by which to stretch the key signature table.
+    /// - Parameter factor: A rational number ≥ 1 by which to stretch the key table.
     /// - Parameter anchor: The beat time to stretch relative to. Defaults to 0.
     ///
-    /// - Throws:   ``KeySignatureTable/Error/invalidAugmentationFactor(_:)`` if `factor` is not a
+    /// - Throws:   ``KeyTable/Error/invalidAugmentationFactor(_:)`` if `factor` is not a
     ///             rational number ≥ 1.
     public mutating func augment(by factor: Number,
                                  anchor: BeatTime = .zero) throws(Error) {
@@ -31,16 +31,16 @@ extension KeySignatureTable {
                anchor: anchor)
     }
 
-    /// Diminishes this key signature table by a rational factor, so that each key signature
+    /// Diminishes this key table by a rational factor, so that each key
     /// change stays with the music.
     ///
     /// This is the same as augmenting by the reciprocal of `factor`; see
     /// ``augment(by:anchor:)``.
     ///
-    /// - Parameter factor: A rational number ≥ 1 by which to compress the key signature table.
+    /// - Parameter factor: A rational number ≥ 1 by which to compress the key table.
     /// - Parameter anchor: The beat time to compress relative to. Defaults to 0.
     ///
-    /// - Throws:   ``KeySignatureTable/Error/invalidDiminutionFactor(_:)`` if `factor` is not a
+    /// - Throws:   ``KeyTable/Error/invalidDiminutionFactor(_:)`` if `factor` is not a
     ///             rational number ≥ 1.
     public mutating func diminish(by factor: Number,
                                   anchor: BeatTime = .zero) throws(Error) {
@@ -52,12 +52,12 @@ extension KeySignatureTable {
                anchor: anchor)
     }
 
-    /// Inverts every key signature in this key signature table around a range of pitches, as
-    /// `KeySignature.inverted(around:)` does, dropping each entry’s ``Extra/keySignatureMode``,
-    /// which no longer fits.
+    /// Inverts every key in this key table around a range of pitches, as
+    /// `Key.inverted(around:)` does, keeping each entry’s extras. A diatonic key’s mode is
+    /// mapped (C major inverted around C is C phrygian).
     ///
-    /// If any entry’s key signature can’t be inverted, the whole table is emptied, since dropping
-    /// one entry would let the key signature before it run on.
+    /// If any entry’s key can’t be inverted, the whole table is emptied, since dropping
+    /// one entry would let the key before it run on.
     ///
     /// - Parameter pitchRange: The range of pitches to invert around.
     ///
@@ -65,15 +65,15 @@ extension KeySignatureTable {
     ///             otherwise, `false`.
     @discardableResult
     public mutating func invert(around pitchRange: ClosedRange<Pitch>) -> Bool {
-        _mapKeySignatures(droppingMode: true) { $0.inverted(around: pitchRange) }
+        _mapKeys { $0.inverted(around: pitchRange) }
     }
 
-    /// Inverts every key signature in this key signature table around a range of MIDI note
-    /// numbers, as `KeySignature.inverted(around:)` does, dropping each entry’s
-    /// ``Extra/keySignatureMode``, which no longer fits. This assumes 12 keys to the octave.
+    /// Inverts every key in this key table around a range of MIDI note numbers, as
+    /// `Key.inverted(around:)` does, keeping each entry’s extras. A diatonic key’s mode is
+    /// mapped. This assumes 12 keys to the octave.
     ///
-    /// If any entry’s key signature can’t be inverted, the whole table is emptied, since dropping
-    /// one entry would let the key signature before it run on.
+    /// If any entry’s key can’t be inverted, the whole table is emptied, since dropping
+    /// one entry would let the key before it run on.
     ///
     /// - Parameter noteRange:  The range of note numbers to invert around.
     ///
@@ -81,13 +81,13 @@ extension KeySignatureTable {
     ///             otherwise, `false`.
     @discardableResult
     public mutating func invert(around noteRange: ClosedRange<NoteNumber>) -> Bool {
-        _mapKeySignatures(droppingMode: true) { $0.inverted(around: noteRange) }
+        _mapKeys { $0.inverted(around: noteRange) }
     }
 
-    /// Moves every entry of this key signature table by a directed duration.
+    /// Moves every entry of this key table by a directed duration.
     ///
     /// Moving earlier, of the entries that would land before time 0, only the last is kept,
-    /// placed at 0, since its key signature is the one in effect there; the others, and their
+    /// placed at 0, since its key is the one in effect there; the others, and their
     /// extras, are dropped. If an entry lands exactly on 0, it wins, and those before it are all
     /// dropped. Unlike the part tables’ moves, this never fails.
     ///
@@ -121,22 +121,22 @@ extension KeySignatureTable {
         hasExtras = Self.hasExtras(in: entries)
     }
 
-    /// Reverses the key signatures of this key signature table within a beat-time range,
+    /// Reverses the keys of this key table within a beat-time range,
     /// mirroring them as the music in that range is mirrored.
     ///
-    /// Each entry is a step: its key signature holds until the next entry. So reversing mirrors
+    /// Each entry is a step: its key holds until the next entry. So reversing mirrors
     /// the stretch each entry in the range governs — up to the next entry, or to the range’s
     /// upper bound — and moves the entry to that stretch’s new start. The stretch before the first
-    /// entry in the range, which holds the key signature in effect before the range, moves to the
-    /// end of the range, and a new entry with that key signature and its extras begins it there.
-    /// (When no key signature is in effect before the range, there’s nothing to begin it with, so
-    /// the last mirrored key signature runs on over it.) Finally, the key signature in effect
+    /// entry in the range, which holds the key in effect before the range, moves to the
+    /// end of the range, and a new entry with that key and its extras begins it there.
+    /// (When no key is in effect before the range, there’s nothing to begin it with, so
+    /// the last mirrored key runs on over it.) Finally, the key in effect
     /// after the range is restated at its upper bound, unless it’s already in effect there.
     ///
     /// For example, D major at 0 and B♭ major at 4, reversed within 0…8, gives B♭ major at 0 and
     /// D major at 4, then B♭ major again at 8, since it was in effect after the range.
     ///
-    /// - Parameter beatTimeRange:  The beat-time range to mirror the key signatures within.
+    /// - Parameter beatTimeRange:  The beat-time range to mirror the keys within.
     public mutating func reverse(within beatTimeRange: ClosedRange<BeatTime>) {
         let lower = beatTimeRange.lowerBound
         let upper = beatTimeRange.upperBound
@@ -163,7 +163,7 @@ extension KeySignatureTable {
 
             newEntries.append(StoredEntry(beatTime: Self._mirrored(firstTime,
                                                                    within: beatTimeRange),
-                                          keySignature: leading.keySignature,
+                                          key: leading.key,
                                           extras: leading.extras))
         }
 
@@ -176,9 +176,9 @@ extension KeySignatureTable {
             let after = original.entries[afterIndex]
             let current = result.governingIndex(at: upper).map { result.entries[$0] }
 
-            if current?.keySignature != after.keySignature || current?.extras != after.extras {
+            if current?.key != after.key || current?.extras != after.extras {
                 result.entries.insert(StoredEntry(beatTime: upper,
-                                                  keySignature: after.keySignature,
+                                                  key: after.key,
                                                   extras: after.extras),
                                       at: result.insertionIndex(for: upper))
             }
@@ -189,27 +189,27 @@ extension KeySignatureTable {
         self = result
     }
 
-    /// Transposes every key signature in this key signature table by a directed frequency ratio,
-    /// as `KeySignature.transposed(by:)` does, keeping each entry’s extras.
+    /// Transposes every key in this key table by a directed frequency ratio,
+    /// as `Key.transposed(by:)` does, keeping each entry’s extras.
     ///
     /// If the ratio is more than 25 cents from a whole number of semitones, or any entry’s key
-    /// signature can’t be transposed, the whole table is emptied, since the music then sits
-    /// between keys, and dropping one entry would let the key signature before it run on.
+    /// can’t be transposed, the whole table is emptied, since the music then sits
+    /// between keys, and dropping one entry would let the key before it run on.
     ///
     /// - Parameter directedInterval:   The directed ratio to transpose by.
     ///
     /// - Returns:  `true` if the table was emptied; otherwise, `false`.
     @discardableResult
     public mutating func transpose(by directedInterval: DirectedInterval<Ratio>) -> Bool {
-        _mapKeySignatures(droppingMode: false) { $0.transposed(by: directedInterval) }
+        _mapKeys { $0.transposed(by: directedInterval) }
     }
 
-    /// Transposes every key signature in this key signature table by a directed distance in key
-    /// steps, as `KeySignature.transposed(by:)` does, keeping each entry’s extras. This assumes 12
+    /// Transposes every key in this key table by a directed distance in key
+    /// steps, as `Key.transposed(by:)` does, keeping each entry’s extras. This assumes 12
     /// keys to the octave.
     ///
-    /// If any entry’s key signature can’t be transposed, the whole table is emptied, since
-    /// dropping one entry would let the key signature before it run on.
+    /// If any entry’s key can’t be transposed, the whole table is emptied, since
+    /// dropping one entry would let the key before it run on.
     ///
     /// - Parameter directedInterval:   The directed distance to transpose by.
     ///
@@ -217,14 +217,14 @@ extension KeySignatureTable {
     ///             otherwise, `false`.
     @discardableResult
     public mutating func transpose(by directedInterval: DirectedInterval<NoteDistance>) -> Bool {
-        _mapKeySignatures(droppingMode: false) { $0.transposed(by: directedInterval) }
+        _mapKeys { $0.transposed(by: directedInterval) }
     }
 
-    /// Transposes every key signature in this key signature table by a directed interval, as
-    /// `KeySignature.transposed(by:)` does, keeping each entry’s extras.
+    /// Transposes every key in this key table by a directed interval, as
+    /// `Key.transposed(by:)` does, keeping each entry’s extras.
     ///
-    /// If any entry’s key signature can’t be transposed, the whole table is emptied, since
-    /// dropping one entry would let the key signature before it run on.
+    /// If any entry’s key can’t be transposed, the whole table is emptied, since
+    /// dropping one entry would let the key before it run on.
     ///
     /// - Parameter directedInterval:   The directed interval to transpose by.
     ///
@@ -232,7 +232,7 @@ extension KeySignatureTable {
     ///             otherwise, `false`.
     @discardableResult
     public mutating func transpose(by directedInterval: DirectedInterval<Interval>) -> Bool {
-        _mapKeySignatures(droppingMode: false) { $0.transposed(by: directedInterval) }
+        _mapKeys { $0.transposed(by: directedInterval) }
     }
 
     // MARK: Private Type Methods
@@ -249,22 +249,20 @@ extension KeySignatureTable {
     // MARK: Private Instance Methods
 
     //
-    // Replaces every entry's key signature with `transform`'s result, or empties the table if any
+    // Replaces every entry's key with `transform`'s result, or empties the table if any
     // result is `nil`. Returns whether the table was emptied.
     //
-    private mutating func _mapKeySignatures(droppingMode: Bool,
-                                            _ transform: (KeySignature) -> KeySignature?) -> Bool {
+    private mutating func _mapKeys(_ transform: (Key) -> Key?) -> Bool {
         var newEntries: [StoredEntry] = []
 
         for entry in entries {
-            guard let keySignature = transform(entry.keySignature)
+            guard let key = transform(entry.key)
             else {
                 removeAll()
                 return true
             }
 
-            newEntries.append(entry.with(keySignature,
-                                         droppingMode: droppingMode))
+            newEntries.append(entry.with(key))
         }
 
         entries = newEntries

@@ -9,26 +9,26 @@ extension Work {
     // MARK: Internal Type Methods
 
     //
-    // As for the tempo map below, but for the work's own `keySignatureTable`, governed by
-    // `.keySignature`.
+    // As for the tempo map below, but for the work's own `keyTable`, governed by
+    // `.key`.
     //
-    internal static func carried(keySignatureTable: KeySignatureTable,
+    internal static func carried(keyTable: KeyTable,
                                  applyTo: TransformTargets,
                                  kind: TransformKind,
-                                 transform: (inout KeySignatureTable) throws(KeySignatureTable.Error) -> Void) throws(Error) -> KeySignatureTable {
-        guard applyTo.contains(.keySignature)
-        else { return keySignatureTable }
+                                 transform: (inout KeyTable) throws(KeyTable.Error) -> Void) throws(Error) -> KeyTable {
+        guard applyTo.contains(.key)
+        else { return keyTable }
 
-        var newKeySignatureTable = keySignatureTable
+        var newKeyTable = keyTable
 
         do {
-            try transform(&newKeySignatureTable)
+            try transform(&newKeyTable)
         } catch {
-            throw Error.keySignatureTableTransformFailure(kind: kind,
-                                                          detail: error.message)
+            throw Error.keyTableTransformFailure(kind: kind,
+                                                 detail: error.message)
         }
 
-        return newKeySignatureTable
+        return newKeyTable
     }
 
     //

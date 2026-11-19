@@ -4,30 +4,30 @@ internal import IvorTiming
 internal import IvorTuning
 internal import XestiTools
 
-extension KeySignatureTable {
+extension KeyTable {
 
     // MARK: Internal Nested Types
 
     internal enum StoredEntry {
-        case extended(EntryID, BeatTime, KeySignature, Extras)
-        case simple(EntryID, BeatTime, KeySignature)
+        case extended(EntryID, BeatTime, Key, Extras)
+        case simple(EntryID, BeatTime, Key)
 
         // MARK: Internal Initializers
 
         //
         // `entryID` defaults to a fresh identity — the common case, a newly inserted or
         // decoded entry. Passing one explicitly keeps an existing identity across a content
-        // change, as `update(entryID:keySignature:extras:)`, `move(entryID:to:)` and the
+        // change, as `update(entryID:key:extras:)`, `move(entryID:to:)` and the
         // transforms do.
         //
         internal init(entryID: EntryID = EntryID(),
                       beatTime: BeatTime,
-                      keySignature: KeySignature,
+                      key: Key,
                       extras: Extras?) {
             if let extras, !extras.isEmpty {
-                self = .extended(entryID, beatTime, keySignature, extras)
+                self = .extended(entryID, beatTime, key, extras)
             } else {
-                self = .simple(entryID, beatTime, keySignature)
+                self = .simple(entryID, beatTime, key)
             }
         }
     }
@@ -35,7 +35,7 @@ extension KeySignatureTable {
 
 // MARK: -
 
-extension KeySignatureTable.StoredEntry {
+extension KeyTable.StoredEntry {
 
     // MARK: Internal Instance Properties
 
@@ -65,46 +65,40 @@ extension KeySignatureTable.StoredEntry {
         }
     }
 
-    internal var keySignature: KeySignature {
+    internal var key: Key {
         switch self {
-        case let .extended(_, _, keySignature, _),
-            let .simple(_, _, keySignature):
-            keySignature
+        case let .extended(_, _, key, _),
+            let .simple(_, _, key):
+            key
         }
     }
 
     // MARK: Internal Instance Methods
 
     //
-    // This entry, keeping its identity, key signature and extras, at another beat time.
+    // This entry, keeping its identity, key and extras, at another beat time.
     //
     internal func moved(to beatTime: BeatTime) -> Self {
         Self(entryID: entryID,
              beatTime: beatTime,
-             keySignature: keySignature,
+             key: key,
              extras: extras)
     }
 
     //
-    // This entry, keeping its identity, beat time and extras, with another key signature, and
-    // without its mode extra if `droppingMode` is set.
+    // This entry, keeping its identity, beat time and extras, with another key.
     //
-    internal func with(_ keySignature: KeySignature,
-                       droppingMode: Bool) -> Self {
-        let newExtras = droppingMode
-            ? extras.map { Extras(elements: $0.elements.filter { $0.name != Extra.keySignatureMode.name }) }
-            : extras
-
-        return Self(entryID: entryID,
-                    beatTime: beatTime,
-                    keySignature: keySignature,
-                    extras: newExtras)
+    internal func with(_ key: Key) -> Self {
+        Self(entryID: entryID,
+             beatTime: beatTime,
+             key: key,
+             extras: extras)
     }
 }
 
 // MARK: - Codable
 
-extension KeySignatureTable.StoredEntry: Codable {
+extension KeyTable.StoredEntry: Codable {
 
     // MARK: Internal Initializers
 
@@ -117,11 +111,11 @@ extension KeySignatureTable.StoredEntry: Codable {
         var container = try decoder.unkeyedContainer()
 
         let beatTime = try container.decode(BeatTime.self)
-        let keySignature = try container.decode(KeySignature.self)
+        let key = try container.decode(Key.self)
         let extras = try container.decodeIfPresent(Extras.self)?.normalizingNames()
 
         self.init(beatTime: beatTime,
-                  keySignature: keySignature,
+                  key: key,
                   extras: extras)
     }
 
@@ -131,7 +125,7 @@ extension KeySignatureTable.StoredEntry: Codable {
         var container = encoder.unkeyedContainer()
 
         try container.encode(beatTime)
-        try container.encode(keySignature)
+        try container.encode(key)
 
         if let extras {
             try container.encode(extras)
@@ -141,22 +135,22 @@ extension KeySignatureTable.StoredEntry: Codable {
 
 // MARK: - Equatable
 
-extension KeySignatureTable.StoredEntry: Equatable {
+extension KeyTable.StoredEntry: Equatable {
 
     // MARK: Internal Type Methods
 
     //
     // Identity is deliberately excluded: two entries are equal here exactly when they carry
-    // the same beat time, key signature, and extras, regardless of which `EntryID` each holds —
-    // so two key signature tables with the same content compare equal.
+    // the same beat time, key, and extras, regardless of which `EntryID` each holds —
+    // so two key tables with the same content compare equal.
     //
     internal static func == (lhs: Self,
                              rhs: Self) -> Bool {
-        (lhs.beatTime, lhs.keySignature, lhs.extras) == (rhs.beatTime, rhs.keySignature, rhs.extras)
+        (lhs.beatTime, lhs.key, lhs.extras) == (rhs.beatTime, rhs.key, rhs.extras)
     }
 }
 
 // MARK: - Sendable
 
-extension KeySignatureTable.StoredEntry: Sendable {
+extension KeyTable.StoredEntry: Sendable {
 }

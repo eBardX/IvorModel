@@ -13,7 +13,7 @@ extension Work {
     /// Reverses the order of notes within a beat-time range across the beat-time parts in this work
     /// that `partIDs` names, along with any parameter maps selected by `applyTo` and, when
     /// `applyTo` contains ``TransformTargets/tempo``, ``TransformTargets/meter`` or
-    /// ``TransformTargets/keySignature``, the work’s own tempo map, meter table or key signature
+    /// ``TransformTargets/key``, the work’s own tempo map, meter table or key
     /// table. All three are work-wide, so they’re carried along whichever parts are targeted.
     ///
     /// The meter table’s bars within the range are reversed as ``MeterTable/reverse(within:)``
@@ -21,7 +21,7 @@ extension Work {
     ///
     /// - Parameter timeRange:  The beat-time range to mirror attack times around. `nil` resolves
     /// to the span of everything being reversed: the targeted parts’ notes and the entries of every
-    /// map `applyTo` selects, including the tempo map, the meter table and the key signature table.
+    /// map `applyTo` selects, including the tempo map, the meter table and the key table.
     /// - Parameter applyTo:    The parameter maps (and the work-wide tables) to reverse
     ///                         along with every note table. Defaults to every map.
     /// - Parameter partIDs:    The IDs of the parts to transform, or `nil` (the default) for every
@@ -37,34 +37,34 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
             typealias PartType = Part<BeatTime, Frequency>
 
             let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
                                                                      tempoMap: tempoMap,
                                                                      meterTable: meterTable,
-                                                                     keySignatureTable: keySignatureTable,
+                                                                     keyTable: keyTable,
                                                                      applyTo: applyTo)
             let newParts = try Self.transformed(parts: parts,
                                                 partIDs: partIDs,
                                                 kind: .reverse) { (part: inout PartType) throws(PartType.Error) in
                 try part.reverse(within: resolvedRange, applyTo: applyTo)
             }
-            let (newTempoMap, newMeterTable, newKeySignatureTable) = try Self._reversedTables(tempoMap: tempoMap,
-                                                                                              meterTable: meterTable,
-                                                                                              keySignatureTable: keySignatureTable,
-                                                                                              within: resolvedRange,
-                                                                                              applyTo: applyTo)
+            let (newTempoMap, newMeterTable, newKeyTable) = try Self._reversedTables(tempoMap: tempoMap,
+                                                                                     meterTable: meterTable,
+                                                                                     keyTable: keyTable,
+                                                                                     within: resolvedRange,
+                                                                                     applyTo: applyTo)
 
-            content = .absoluteBeat(newParts, newTempoMap, newMeterTable, newKeySignatureTable)
+            content = .absoluteBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
 
-        case let .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
                                                                      tempoMap: tempoMap,
                                                                      meterTable: meterTable,
-                                                                     keySignatureTable: keySignatureTable,
+                                                                     keyTable: keyTable,
                                                                      applyTo: applyTo)
             let newParts = try Self.transformed(parts: parts,
                                                 partIDs: partIDs,
@@ -72,21 +72,21 @@ extension Work {
                 try part.reverse(within: resolvedRange,
                                  applyTo: applyTo)
             }
-            let (newTempoMap, newMeterTable, newKeySignatureTable) = try Self._reversedTables(tempoMap: tempoMap,
-                                                                                              meterTable: meterTable,
-                                                                                              keySignatureTable: keySignatureTable,
-                                                                                              within: resolvedRange,
-                                                                                              applyTo: applyTo)
+            let (newTempoMap, newMeterTable, newKeyTable) = try Self._reversedTables(tempoMap: tempoMap,
+                                                                                     meterTable: meterTable,
+                                                                                     keyTable: keyTable,
+                                                                                     within: resolvedRange,
+                                                                                     applyTo: applyTo)
 
-            content = .keyboardBeat(newParts, newTempoMap, newMeterTable, newKeySignatureTable)
+            content = .keyboardBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
 
-        case let .standardBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
             typealias PartType = Part<BeatTime, Pitch>
 
             let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
                                                                      tempoMap: tempoMap,
                                                                      meterTable: meterTable,
-                                                                     keySignatureTable: keySignatureTable,
+                                                                     keyTable: keyTable,
                                                                      applyTo: applyTo)
             let newParts = try Self.transformed(parts: parts,
                                                 partIDs: partIDs,
@@ -94,13 +94,13 @@ extension Work {
                 try part.reverse(within: resolvedRange,
                                  applyTo: applyTo)
             }
-            let (newTempoMap, newMeterTable, newKeySignatureTable) = try Self._reversedTables(tempoMap: tempoMap,
-                                                                                              meterTable: meterTable,
-                                                                                              keySignatureTable: keySignatureTable,
-                                                                                              within: resolvedRange,
-                                                                                              applyTo: applyTo)
+            let (newTempoMap, newMeterTable, newKeyTable) = try Self._reversedTables(tempoMap: tempoMap,
+                                                                                     meterTable: meterTable,
+                                                                                     keyTable: keyTable,
+                                                                                     within: resolvedRange,
+                                                                                     applyTo: applyTo)
 
-            content = .standardBeat(newParts, newTempoMap, newMeterTable, newKeySignatureTable)
+            content = .standardBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
 
         default:
             throw Error.timeBasisMismatch(expected: .beat)
@@ -315,13 +315,13 @@ extension Work {
 
     //
     // The work-wide tables a beat-time reverse carries along: the tempo map, meter table and key
-    // signature table, each only when `applyTo` names it.
+    // table, each only when `applyTo` names it.
     //
     private static func _reversedTables(tempoMap: TempoMap,
                                         meterTable: MeterTable,
-                                        keySignatureTable: KeySignatureTable,
+                                        keyTable: KeyTable,
                                         within resolvedRange: ClosedRange<BeatTime>?,
-                                        applyTo: TransformTargets) throws(Error) -> (TempoMap, MeterTable, KeySignatureTable) {
+                                        applyTo: TransformTargets) throws(Error) -> (TempoMap, MeterTable, KeyTable) {
         let newTempoMap = try Self.carried(tempoMap: tempoMap,
                                            applyTo: applyTo,
                                            kind: .reverse) { (tempo: inout TempoMap) throws(TempoMap.Error) in
@@ -343,14 +343,14 @@ extension Work {
                 meter.reverse(within: resolvedRange)
             }
         }
-        let newKeySignatureTable = try Self.carried(keySignatureTable: keySignatureTable,
-                                                    applyTo: applyTo,
-                                                    kind: .reverse) { (keySignature: inout KeySignatureTable) throws(KeySignatureTable.Error) in
+        let newKeyTable = try Self.carried(keyTable: keyTable,
+                                           applyTo: applyTo,
+                                           kind: .reverse) { (key: inout KeyTable) throws(KeyTable.Error) in
             if let resolvedRange {
-                keySignature.reverse(within: resolvedRange)
+                key.reverse(within: resolvedRange)
             }
         }
 
-        return (newTempoMap, newMeterTable, newKeySignatureTable)
+        return (newTempoMap, newMeterTable, newKeyTable)
     }
 }

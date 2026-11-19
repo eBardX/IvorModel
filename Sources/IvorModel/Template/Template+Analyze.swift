@@ -71,7 +71,7 @@ extension Template {
                                     index: index).map { [$0] } ?? [],
                     sourceContext: SourceContext(content: work.content,
                                                  index: index,
-                                                 keepsKeySignature: options.variants.keepsKeySignatures))
+                                                 keepsKey: options.variants.keepsKeys))
     }
 
     /// Returns how many sequences analyzing a specific part of a work with the given recipe would

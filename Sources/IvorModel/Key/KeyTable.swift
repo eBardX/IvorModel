@@ -4,32 +4,32 @@ public import IvorTiming
 public import IvorTuning
 public import XestiTools
 
-/// A beat-time table of key signatures: where each key signature takes effect.
+/// A beat-time table of keys: where each key takes effect.
 ///
-/// Each entry’s `KeySignature` is in effect from its beat time until the next entry. Before the
-/// first entry there’s no key signature at all, which is distinct from one with no sharps or
-/// flats. The first entry needn’t be at time 0.
+/// Each entry’s `Key` is in effect from its beat time until the next entry. Before the
+/// first entry nothing is said about the key, which is distinct from an atonal key and from a
+/// key with no sharps or flats. The first entry needn’t be at time 0.
 ///
-/// A key signature is descriptive: it never decides how a note is spelled, shown or played, and
+/// A key is descriptive: it never decides how a note is spelled, shown or played, and
 /// nothing checks that notes fit it. It’s work-wide and at concert pitch, and, like the meter
 /// table, it lives on the work, not on a part, and only in beat time. Entries may fall at any beat
 /// time, with nothing tying them to the meter table’s barlines, and an entry may repeat the key
-/// signature before it.
+/// before it.
 ///
 /// Its one invariant holds after every mutating method, and decoding rejects a table that breaks
 /// it: there’s at most one entry per beat time.
-public struct KeySignatureTable {
+public struct KeyTable {
 
     // MARK: Public Initializers
 
-    /// Creates a new, empty key signature table.
+    /// Creates a new, empty key table.
     public init() {
         self.init(entries: [])
     }
 
     // MARK: Public Instance Properties
 
-    /// A Boolean value indicating whether any entry in this key signature table carries extra
+    /// A Boolean value indicating whether any entry in this key table carries extra
     /// data.
     public internal(set) var hasExtras: Bool
 
@@ -47,30 +47,29 @@ public struct KeySignatureTable {
 
 // MARK: -
 
-extension KeySignatureTable {
+extension KeyTable {
 
     // MARK: Public Instance Methods
 
-    /// Inserts a key signature entry into this key signature table at the given beat time.
+    /// Inserts a key entry into this key table at the given beat time.
     ///
-    /// - Parameter beatTime:       The beat time at which the key signature takes effect.
-    /// - Parameter keySignature:   The key signature to insert.
-    /// - Parameter extras:         Optional extra data attached to the entry, such as
-    ///                             ``Extra/keySignatureMode``. Defaults to `nil`.
+    /// - Parameter beatTime:       The beat time at which the key takes effect.
+    /// - Parameter key:            The key to insert.
+    /// - Parameter extras:         Optional extra data attached to the entry. Defaults to `nil`.
     ///
     /// - Returns:  The identity of the new entry.
     ///
-    /// - Throws:   ``KeySignatureTable/Error/entryExists(_:)`` if an entry already sits at
+    /// - Throws:   ``KeyTable/Error/entryExists(_:)`` if an entry already sits at
     ///             `beatTime`.
     @discardableResult
     public mutating func insert(beatTime: BeatTime,
-                                keySignature: KeySignature,
+                                key: Key,
                                 extras: Extras? = nil) throws(Error) -> EntryID {
         guard entryIndex(at: beatTime) == nil
         else { throw Error.entryExists(beatTime) }
 
         let entry = StoredEntry(beatTime: beatTime,
-                                keySignature: keySignature,
+                                key: key,
                                 extras: extras)
 
         entries.insert(entry,
@@ -83,18 +82,18 @@ extension KeySignatureTable {
         return entry.entryID
     }
 
-    /// Returns the key signature in effect at the given beat time.
+    /// Returns the key in effect at the given beat time.
     ///
-    /// - Parameter beatTime:   The beat time at which to query the key signature.
+    /// - Parameter beatTime:   The beat time at which to query the key.
     ///
-    /// - Returns:  The key signature of the last entry at or before `beatTime`, or `nil` if
+    /// - Returns:  The key of the last entry at or before `beatTime`, or `nil` if
     ///             there’s none.
-    public func keySignature(at beatTime: BeatTime) -> KeySignature? {
-        governingIndex(at: beatTime).map { entries[$0].keySignature }
+    public func key(at beatTime: BeatTime) -> Key? {
+        governingIndex(at: beatTime).map { entries[$0].key }
     }
 
-    /// Moves the key signature entry with the given identity to a new beat time, keeping its
-    /// identity, key signature and extras.
+    /// Moves the key entry with the given identity to a new beat time, keeping its
+    /// identity, key and extras.
     ///
     /// - Parameter entryID:    The identity of the entry to move.
     /// - Parameter beatTime:   The new beat time for the entry.
@@ -102,7 +101,7 @@ extension KeySignatureTable {
     /// - Returns:  `true` if `entryID` identified an entry, `false` if it named no entry and
     ///             nothing happened.
     ///
-    /// - Throws:   ``KeySignatureTable/Error/entryExists(_:)`` if another entry already sits at
+    /// - Throws:   ``KeyTable/Error/entryExists(_:)`` if another entry already sits at
     ///             `beatTime`.
     @discardableResult
     public mutating func move(entryID: EntryID,
@@ -125,7 +124,7 @@ extension KeySignatureTable {
         return true
     }
 
-    /// Removes the key signature entry with the given identity, if present.
+    /// Removes the key entry with the given identity, if present.
     ///
     /// - Parameter entryID:    The identity of the entry to remove. An identity naming no entry is
     ///                         ignored.
@@ -143,31 +142,31 @@ extension KeySignatureTable {
         return true
     }
 
-    /// Removes every entry from this key signature table, leaving no key signature anywhere.
+    /// Removes every entry from this key table, leaving no key anywhere.
     public mutating func removeAll() {
         entries.removeAll()
         hasExtras = false
     }
 
-    /// Replaces the key signature and extras of the entry with the given identity, in place,
+    /// Replaces the key and extras of the entry with the given identity, in place,
     /// keeping its identity and beat time.
     ///
     /// - Parameter entryID:        The identity of the entry to update.
-    /// - Parameter keySignature:   The new key signature for the entry.
+    /// - Parameter key:            The new key for the entry.
     /// - Parameter extras:         The new optional extra data for the entry. Defaults to `nil`.
     ///
     /// - Returns:  `true` if `entryID` identified an entry and it was updated, `false` if it named
     ///             no entry and nothing happened.
     @discardableResult
     public mutating func update(entryID: EntryID,
-                                keySignature: KeySignature,
+                                key: Key,
                                 extras: Extras? = nil) -> Bool {
         guard let position = firstIndex(entryID: entryID)
         else { return false }
 
         entries[position] = StoredEntry(entryID: entryID,
                                         beatTime: entries[position].beatTime,
-                                        keySignature: keySignature,
+                                        key: key,
                                         extras: extras)
         hasExtras = Self.hasExtras(in: entries)
 
@@ -177,11 +176,11 @@ extension KeySignatureTable {
 
 // MARK: - Codable
 
-extension KeySignatureTable: Codable {
+extension KeyTable: Codable {
 
     // MARK: Public Initializers
 
-    /// Creates a key signature table by decoding from the provided decoder.
+    /// Creates a key table by decoding from the provided decoder.
     ///
     /// - Parameter decoder:    The decoder to read from.
     ///
@@ -196,14 +195,14 @@ extension KeySignatureTable: Codable {
         guard zip(decodedEntries, decodedEntries.dropFirst()).allSatisfy({ $0.beatTime < $1.beatTime })
         else { throw DecodingError.dataCorruptedError(forKey: .entries,
                                                       in: container,
-                                                      debugDescription: "Key signature table entries out of order or sharing a beat time") }
+                                                      debugDescription: "Key table entries out of order or sharing a beat time") }
 
         self.init(entries: decodedEntries)
     }
 
     // MARK: Public Instance Methods
 
-    /// Encodes this key signature table into the provided encoder.
+    /// Encodes this key table into the provided encoder.
     ///
     /// - Parameter encoder:    The encoder to write to.
     ///
@@ -224,16 +223,16 @@ extension KeySignatureTable: Codable {
 
 // MARK: - Equatable
 
-extension KeySignatureTable: Equatable {
+extension KeyTable: Equatable {
 
     // MARK: Public Type Methods
 
-    /// Returns a Boolean value indicating whether two key signature tables have the same content:
-    /// the same entries — beat times, key signatures and extras — in the same order. Entry
+    /// Returns a Boolean value indicating whether two key tables have the same content:
+    /// the same entries — beat times, keys and extras — in the same order. Entry
     /// identities aren’t compared.
     ///
-    /// - Parameter lhs:    The left-hand key signature table.
-    /// - Parameter rhs:    The right-hand key signature table.
+    /// - Parameter lhs:    The left-hand key table.
+    /// - Parameter rhs:    The right-hand key table.
     ///
     /// - Returns:  `true` if `lhs` and `rhs` have the same content.
     public static func == (lhs: Self,
@@ -244,38 +243,38 @@ extension KeySignatureTable: Equatable {
 
 // MARK: - Hashable
 
-extension KeySignatureTable: Hashable {
+extension KeyTable: Hashable {
 
     // MARK: Public Instance Methods
 
-    /// Hashes the content of this key signature table — its entries’ beat times and key
-    /// signatures — into the given hasher.
+    /// Hashes the content of this key table — its entries’ beat times and keys — into
+    /// the given hasher.
     ///
-    /// - Parameter hasher: The hasher to use when combining the components of this key signature
+    /// - Parameter hasher: The hasher to use when combining the components of this key
     ///                     table.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(entries.count)
 
         for entry in entries {
             hasher.combine(entry.beatTime)
-            hasher.combine(entry.keySignature)
+            hasher.combine(entry.key)
         }
     }
 }
 
 // MARK: - RandomAccessCollection
 
-extension KeySignatureTable: RandomAccessCollection {
+extension KeyTable: RandomAccessCollection {
 
     // MARK: Public Instance Properties
 
-    /// The position one past the last entry in this key signature table.
+    /// The position one past the last entry in this key table.
     public var endIndex: Index {
         Index(entries.endIndex)
     }
 
-    /// The position of the first entry in this key signature table, or ``endIndex`` if this key
-    /// signature table is empty.
+    /// The position of the first entry in this key table, or ``endIndex`` if this key
+    /// table is empty.
     public var startIndex: Index {
         Index(entries.startIndex)
     }
@@ -284,7 +283,7 @@ extension KeySignatureTable: RandomAccessCollection {
 
     /// Returns the entry at the given position.
     ///
-    /// - Parameter position:   A valid position in this key signature table, other than
+    /// - Parameter position:   A valid position in this key table, other than
     ///                         ``endIndex``.
     ///
     /// - Returns:  The ``Entry`` at `position`.
@@ -294,10 +293,10 @@ extension KeySignatureTable: RandomAccessCollection {
 
     // MARK: Public Instance Methods
 
-    /// Returns the number of positions between two positions in this key signature table.
+    /// Returns the number of positions between two positions in this key table.
     ///
-    /// - Parameter start:  A valid position in this key signature table.
-    /// - Parameter end:    Another valid position in this key signature table.
+    /// - Parameter start:  A valid position in this key table.
+    /// - Parameter end:    Another valid position in this key table.
     ///
     /// - Returns:  The distance from `start` to `end`, negative if `end` precedes `start`.
     public func distance(from start: Index,
@@ -307,7 +306,7 @@ extension KeySignatureTable: RandomAccessCollection {
 
     /// Returns a position offset by the given distance from the given position.
     ///
-    /// - Parameter index:      A valid position in this key signature table.
+    /// - Parameter index:      A valid position in this key table.
     /// - Parameter distance:   The distance to offset `index` by.
     ///
     /// - Returns:  The position `distance` positions from `index`.
@@ -318,7 +317,7 @@ extension KeySignatureTable: RandomAccessCollection {
 
     /// Returns the position immediately after the given position.
     ///
-    /// - Parameter index:  A valid position in this key signature table, other than ``endIndex``.
+    /// - Parameter index:  A valid position in this key table, other than ``endIndex``.
     ///
     /// - Returns:  The position after `index`.
     public func index(after index: Index) -> Index {
@@ -327,7 +326,7 @@ extension KeySignatureTable: RandomAccessCollection {
 
     /// Returns the position immediately before the given position.
     ///
-    /// - Parameter index:  A valid position in this key signature table, other than
+    /// - Parameter index:  A valid position in this key table, other than
     ///                     ``startIndex``.
     ///
     /// - Returns:  The position before `index`.
@@ -338,5 +337,5 @@ extension KeySignatureTable: RandomAccessCollection {
 
 // MARK: - Sendable
 
-extension KeySignatureTable: Sendable {
+extension KeyTable: Sendable {
 }

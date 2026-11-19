@@ -40,9 +40,6 @@ extension Extra {
         /// The text of a mark, as of ``Extra/dynamicMark``.
         case mark
 
-        /// A mode name, as of ``Extra/keySignatureMode``.
-        case mode
-
         /// A name, as of ``Extra/instrumentName``.
         case name
 

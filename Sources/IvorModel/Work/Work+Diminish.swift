@@ -12,7 +12,7 @@ extension Work {
     /// Diminishes note attack times and durations by a rational factor across the beat-time parts
     /// in this work that `partIDs` names, along with any parameter maps selected by `applyTo` and,
     /// when `applyTo` contains ``TransformTargets/tempo``, ``TransformTargets/meter`` or
-    /// ``TransformTargets/keySignature``, the work’s own tempo map, meter table or key signature
+    /// ``TransformTargets/key``, the work’s own tempo map, meter table or key
     /// table. All three are work-wide, so they’re carried along whichever parts are targeted.
     ///
     /// When the meter table is carried, the meter scales with the music (see
@@ -28,7 +28,7 @@ extension Work {
     /// - Parameter anchor:         The low beat-time bound to compress attack times relative to.
     /// `nil` resolves to the start of everything being diminished: the targeted parts’ notes and
     /// the entries of every map `applyTo` selects, including the tempo map, the meter table and the
-    /// key signature table.
+    /// key table.
     /// - Parameter applyTo:        The parameter maps (and the work-wide tables) to diminish
     ///                             along with each targeted note table. Defaults to every map.
     /// - Parameter keepingSound:   Whether to scale the tempo units too, so that the music
@@ -49,68 +49,68 @@ extension Work {
         try ensureUnlocked()
 
         switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
             typealias PartType = Part<BeatTime, Frequency>
 
             let resolvedAnchor = anchor ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
                                                                    tempoMap: tempoMap,
                                                                    meterTable: meterTable,
-                                                                   keySignatureTable: keySignatureTable,
+                                                                   keyTable: keyTable,
                                                                    applyTo: applyTo)?.lowerBound
             let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
-            let (newTempoMap, newMeterTable, newKeySignatureTable) = try Self._diminishedTables(tempoMap: tempoMap,
-                                                                                                meterTable: meterTable,
-                                                                                                keySignatureTable: keySignatureTable,
-                                                                                                by: factor,
-                                                                                                anchor: resolvedAnchor,
-                                                                                                applyTo: applyTo,
-                                                                                                keepingSound: keepingSound)
+            let (newTempoMap, newMeterTable, newKeyTable) = try Self._diminishedTables(tempoMap: tempoMap,
+                                                                                       meterTable: meterTable,
+                                                                                       keyTable: keyTable,
+                                                                                       by: factor,
+                                                                                       anchor: resolvedAnchor,
+                                                                                       applyTo: applyTo,
+                                                                                       keepingSound: keepingSound)
 
-            content = .absoluteBeat(newParts, newTempoMap, newMeterTable, newKeySignatureTable)
+            content = .absoluteBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
 
-        case let .keyboardBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
             typealias PartType = Part<BeatTime, NoteNumber>
 
             let resolvedAnchor = anchor ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
                                                                    tempoMap: tempoMap,
                                                                    meterTable: meterTable,
-                                                                   keySignatureTable: keySignatureTable,
+                                                                   keyTable: keyTable,
                                                                    applyTo: applyTo)?.lowerBound
             let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
-            let (newTempoMap, newMeterTable, newKeySignatureTable) = try Self._diminishedTables(tempoMap: tempoMap,
-                                                                                                meterTable: meterTable,
-                                                                                                keySignatureTable: keySignatureTable,
-                                                                                                by: factor,
-                                                                                                anchor: resolvedAnchor,
-                                                                                                applyTo: applyTo,
-                                                                                                keepingSound: keepingSound)
+            let (newTempoMap, newMeterTable, newKeyTable) = try Self._diminishedTables(tempoMap: tempoMap,
+                                                                                       meterTable: meterTable,
+                                                                                       keyTable: keyTable,
+                                                                                       by: factor,
+                                                                                       anchor: resolvedAnchor,
+                                                                                       applyTo: applyTo,
+                                                                                       keepingSound: keepingSound)
 
-            content = .keyboardBeat(newParts, newTempoMap, newMeterTable, newKeySignatureTable)
+            content = .keyboardBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
 
-        case let .standardBeat(parts, tempoMap, meterTable, keySignatureTable):
+        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
             typealias PartType = Part<BeatTime, Pitch>
 
             let resolvedAnchor = anchor ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
                                                                    tempoMap: tempoMap,
                                                                    meterTable: meterTable,
-                                                                   keySignatureTable: keySignatureTable,
+                                                                   keyTable: keyTable,
                                                                    applyTo: applyTo)?.lowerBound
             let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
                 try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
             }
-            let (newTempoMap, newMeterTable, newKeySignatureTable) = try Self._diminishedTables(tempoMap: tempoMap,
-                                                                                                meterTable: meterTable,
-                                                                                                keySignatureTable: keySignatureTable,
-                                                                                                by: factor,
-                                                                                                anchor: resolvedAnchor,
-                                                                                                applyTo: applyTo,
-                                                                                                keepingSound: keepingSound)
+            let (newTempoMap, newMeterTable, newKeyTable) = try Self._diminishedTables(tempoMap: tempoMap,
+                                                                                       meterTable: meterTable,
+                                                                                       keyTable: keyTable,
+                                                                                       by: factor,
+                                                                                       anchor: resolvedAnchor,
+                                                                                       applyTo: applyTo,
+                                                                                       keepingSound: keepingSound)
 
-            content = .standardBeat(newParts, newTempoMap, newMeterTable, newKeySignatureTable)
+            content = .standardBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
 
         default:
             throw Error.timeBasisMismatch(expected: .beat)
@@ -183,15 +183,15 @@ extension Work {
 
     //
     // The work-wide tables a beat-time diminish carries along: the tempo map, meter table and key
-    // signature table, each only when `applyTo` names it.
+    // table, each only when `applyTo` names it.
     //
     private static func _diminishedTables(tempoMap: TempoMap,
                                           meterTable: MeterTable,
-                                          keySignatureTable: KeySignatureTable,
+                                          keyTable: KeyTable,
                                           by factor: Number,
                                           anchor resolvedAnchor: BeatTime?,
                                           applyTo: TransformTargets,
-                                          keepingSound: Bool) throws(Error) -> (TempoMap, MeterTable, KeySignatureTable) {
+                                          keepingSound: Bool) throws(Error) -> (TempoMap, MeterTable, KeyTable) {
         let newTempoMap = try Self.carried(tempoMap: tempoMap,
                                            applyTo: applyTo,
                                            kind: .diminish) { (tempo: inout TempoMap) throws(TempoMap.Error) in
@@ -211,13 +211,13 @@ extension Work {
             try meter.diminish(by: factor,
                                anchor: resolvedAnchor ?? .zero)
         }
-        let newKeySignatureTable = try Self.carried(keySignatureTable: keySignatureTable,
-                                                    applyTo: applyTo,
-                                                    kind: .diminish) { (keySignature: inout KeySignatureTable) throws(KeySignatureTable.Error) in
-            try keySignature.diminish(by: factor,
-                                      anchor: resolvedAnchor ?? .zero)
+        let newKeyTable = try Self.carried(keyTable: keyTable,
+                                           applyTo: applyTo,
+                                           kind: .diminish) { (key: inout KeyTable) throws(KeyTable.Error) in
+            try key.diminish(by: factor,
+                             anchor: resolvedAnchor ?? .zero)
         }
 
-        return (newTempoMap, newMeterTable, newKeySignatureTable)
+        return (newTempoMap, newMeterTable, newKeyTable)
     }
 }

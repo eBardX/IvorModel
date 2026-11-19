@@ -125,9 +125,9 @@ maps, pedals, meters, transforms, conversion, realizations, templates, and proje
 - ``Meter``
 - ``MeterTable``
 
-### Key signatures
+### Keys
 
-- ``KeySignatureTable``
+- ``KeyTable``
 
 ### Instruments
 

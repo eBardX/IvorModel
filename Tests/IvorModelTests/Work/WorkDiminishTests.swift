@@ -15,16 +15,16 @@ struct WorkDiminishTests {
 
 extension WorkDiminishTests {
     @Test
-    func diminish_carriesKeysOnlyWithKeySignatureTarget() throws {
-        let work = try makeKeySignatureWork(makeKeySignatureTable([(0, 2), (2, -1)]))
+    func diminish_carriesKeysOnlyWithKeyTarget() throws {
+        let work = try makeKeyWork(makeKeyTable([(0, 2), (2, -1)]))
         var carried = work
         var left = work
 
         try carried.diminish(by: 2, anchor: BeatTime.zero)
         try left.diminish(by: 2, anchor: BeatTime.zero, applyTo: [.meter, .tempo])
 
-        #expect(carried.keySignatureTable?.map(\.beatTime) == [0, 1])
-        #expect(left.keySignatureTable?.map(\.beatTime) == [0, 2])
+        #expect(carried.keyTable?.map(\.beatTime) == [0, 1])
+        #expect(left.keyTable?.map(\.beatTime) == [0, 2])
     }
 
     @Test
@@ -82,7 +82,7 @@ extension WorkDiminishTests {
 
         tempoMap.insert(beatTime: 0, tempo: .default)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.diminish(by: Number(2), anchor: nil as BeatTime?)
     }
@@ -107,7 +107,7 @@ extension WorkDiminishTests {
                                                   Extra(name: Extra.rampDuration.name, values: [.double(4)])]))
         tempoMap.insert(beatTime: 4, tempo: t120)
 
-        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeySignatureTable()))
+        var work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
 
         try work.diminish(by: Number(2), anchor: nil as BeatTime?)
 

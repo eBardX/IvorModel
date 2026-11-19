@@ -31,7 +31,7 @@ extension ExtraNameIvorTests {
                         content: .standardBeat([Part<BeatTime, Pitch>(name: "Part 1")],
                                                tempoMap,
                                                meterTable,
-                                               KeySignatureTable()),
+                                               KeyTable()),
                         extras: Extras(elements: [Extra(name: "SMPTENote")]))
         let decoded = try JSONDecoder().decode(Work.self, from: JSONEncoder().encode(work))
 

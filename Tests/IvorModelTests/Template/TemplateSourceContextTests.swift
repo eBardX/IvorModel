@@ -30,13 +30,13 @@ extension TemplateSourceContextTests {
     }
 
     @Test
-    func analyze_allTwelveTranspositions_hasNoKeySignature() throws {
+    func analyze_allTwelveTranspositions_hasNoKey() throws {
         let variants = Template.AnalysisOptions.Variants(transpositions: (1...11).map { ascending(UInt($0)) })
         let work = try makeKeyedSourceWork([(0, 2)])
         let converted = try #require(try work.convert(timeBasis: .beat, pitchNotation: .keyboard))
         let template = try analyzeVariantsTemplate(converted, variants: variants)
 
-        #expect(template.sourceContext.keySignature == nil)
+        #expect(template.sourceContext.key == nil)
     }
 
     @Test
@@ -51,13 +51,13 @@ extension TemplateSourceContextTests {
     }
 
     @Test
-    func analyze_firstAttackBeforeFirstKeyEntry_hasNoKeySignature() throws {
+    func analyze_firstAttackBeforeFirstKeyEntry_hasNoKey() throws {
         let template = try Template.analyzeNoteEvents(in: makeKeyedSourceWork([(3, 2)]),
                                                       at: 0,
                                                       maximumOrder: 1,
                                                       name: "Test")
 
-        #expect(template.sourceContext.keySignature == nil)
+        #expect(template.sourceContext.key == nil)
     }
 
     @Test
@@ -83,11 +83,11 @@ extension TemplateSourceContextTests {
     }
 
     @Test
-    func analyze_inversions_hasNoKeySignature() throws {
+    func analyze_inversions_hasNoKey() throws {
         let template = try analyzeVariantsTemplate(makeKeyedSourceWork([(0, 2)]),
                                                    variants: .init(inverts: true))
 
-        #expect(template.sourceContext.keySignature == nil)
+        #expect(template.sourceContext.key == nil)
     }
 
     @Test
@@ -99,22 +99,22 @@ extension TemplateSourceContextTests {
     }
 
     @Test
-    func analyze_octavesAndRetrogrades_keepKeySignature() throws {
+    func analyze_octavesAndRetrogrades_keepKey() throws {
         let variants = Template.AnalysisOptions.Variants(transpositions: [ascending(.perfect8)],
                                                          retrogrades: true)
         let template = try analyzeVariantsTemplate(makeKeyedSourceWork([(0, 2)]), variants: variants)
 
-        #expect(template.sourceContext.keySignature == keySignature(2))
+        #expect(template.sourceContext.key == key(2))
     }
 
     @Test
-    func analyze_recordsKeySignatureAtFirstAttack() throws {
+    func analyze_recordsKeyAtFirstAttack() throws {
         let template = try Template.analyzeNoteEvents(in: makeKeyedSourceWork([(0, 2), (2, -3), (4, 1)]),
                                                       at: 0,
                                                       maximumOrder: 1,
                                                       name: "Test")
 
-        #expect(template.sourceContext.keySignature == keySignature(-3))
+        #expect(template.sourceContext.key == key(-3))
     }
 
     @Test
@@ -267,24 +267,24 @@ extension TemplateSourceContextTests {
     }
 
     @Test
-    func generate_writesSourceKeySignatureAtZero() throws {
-        var table = KeySignatureTable()
+    func generate_writesSourceKeyAtZero() throws {
+        var table = KeyTable()
 
-        try table.insert(beatTime: 0, keySignature: keySignature(-2), extras: modeExtras("minor"))
+        try table.insert(beatTime: 0, key: key(-2), extras: sampleExtras("minor"))
 
         let work = Work(content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable(), table))
         let template = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1, name: "Test")
         let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
 
         // The mode extra isn't carried, so the generated key has no name.
-        #expect(try generated.keySignatureTable == makeKeySignatureTable([(0, -2)]))
+        #expect(try generated.keyTable == makeKeyTable([(0, -2)]))
     }
 
     @Test
-    func keySignatureTable_emptyWithoutKeySignature() {
-        #expect(Template.SourceContext().keySignatureTable().isEmpty)
-        #expect(Template.SourceContext(keySignature: keySignature(4)).keySignatureTable()
-                    == (try? makeKeySignatureTable([(0, 4)])))
+    func keyTable_emptyWithoutKey() {
+        #expect(Template.SourceContext().keyTable().isEmpty)
+        #expect(Template.SourceContext(key: key(4)).keyTable()
+                    == (try? makeKeyTable([(0, 4)])))
     }
 
     @Test

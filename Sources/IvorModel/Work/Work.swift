@@ -19,7 +19,7 @@ public struct Work {
     ///                             to a single line. Defaults to an empty string.
     /// - Parameter content:        The ``Work/Content`` holding the parts. Defaults to an empty
     ///                             standard-beat content with an empty tempo map, an empty
-    ///                             meter table and an empty key signature table.
+    ///                             meter table and an empty key table.
     /// - Parameter smpteStartTime: The SMPTE timecode at which the work’s wall time zero falls.
     ///                             Defaults to ``defaultSMPTEStartTime``.
     /// - Parameter info:           The descriptive ``Work/Info`` of the work. Defaults to
@@ -47,7 +47,7 @@ public struct Work {
         self.unsafeContent = content ?? .standardBeat([],
                                                       TempoMap(),
                                                       MeterTable(),
-                                                      KeySignatureTable())
+                                                      KeyTable())
         self.extras = Self._normalized(extras)
         self.generation = generation
         self.info = info
@@ -184,9 +184,9 @@ extension Work {
         }
     }
 
-    /// The key signature table associated with beat-time content, or `nil` for wall-time
+    /// The key table associated with beat-time content, or `nil` for wall-time
     /// content.
-    public var keySignatureTable: KeySignatureTable? {
+    public var keyTable: KeyTable? {
         switch content {
         case let .absoluteBeat(_, _, _, ktable),
              let .keyboardBeat(_, _, _, ktable),
@@ -495,14 +495,14 @@ extension Work {
     //
     // The one range a beat-time work's augment, diminish or reverse resolves its default from:
     // the targeted parts' own transform ranges (notes, plus every map `applyTo` selects), widened
-    // by the tempo map's, meter table's and key signature table's entries when `applyTo` carries
+    // by the tempo map's, meter table's and key table's entries when `applyTo` carries
     // them.
     // Everything that moves then scales or mirrors about the same point.
     //
     internal static func transformTimeRange(of parts: [Part<BeatTime, some PitchProtocol>],
                                             tempoMap: TempoMap,
                                             meterTable: MeterTable,
-                                            keySignatureTable: KeySignatureTable,
+                                            keyTable: KeyTable,
                                             applyTo: TransformTargets) -> ClosedRange<BeatTime>? {
         var range = transformTimeRange(of: parts,
                                        applyTo: applyTo)
@@ -521,9 +521,9 @@ extension Work {
                                   by: first.beatTime...last.beatTime)
         }
 
-        if applyTo.contains(.keySignature),
-           let first = keySignatureTable.first,
-           let last = keySignatureTable.last {
+        if applyTo.contains(.key),
+           let first = keyTable.first,
+           let last = keyTable.last {
             range = Self._widened(range,
                                   by: first.beatTime...last.beatTime)
         }

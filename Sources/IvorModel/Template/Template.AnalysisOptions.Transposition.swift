@@ -43,11 +43,12 @@ extension Template.AnalysisOptions.Transposition {
     }
 
     //
-    // Whether this transposition leaves every key signature as it was: an octave, or several, in
-    // key signature terms (see `KeySignature.transposed(by:)`).
+    // Whether this transposition leaves every key as it was: an octave, or several, in terms of
+    // keys (see `Key.transposed(by:)`).
     //
-    internal var keepsKeySignatures: Bool {
-        guard let cMajor = KeySignature(fifths: 0)
+    internal var keepsKeys: Bool {
+        guard let cMajor = Key.diatonic(fifths: 0,
+                                        mode: .major)
         else { return false }
 
         return switch self {

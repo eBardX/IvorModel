@@ -3,7 +3,7 @@
 internal import IvorTiming
 internal import XestiTools
 
-extension KeySignatureTable {
+extension KeyTable {
 
     // MARK: Internal Type Methods
 
