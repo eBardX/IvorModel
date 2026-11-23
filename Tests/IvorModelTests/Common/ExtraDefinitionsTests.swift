@@ -39,7 +39,6 @@ extension ExtraDefinitionsTests {
                                    .downBow,
                                    .dynamicMark,
                                    .expressionValue,
-                                   .fermata,
                                    .fingering,
                                    .harmonic,
                                    .instrumentAbbreviation,
@@ -55,7 +54,6 @@ extension ExtraDefinitionsTests {
                                    .midiTimeSignature,
                                    .midiUnpitched,
                                    .midiVolume,
-                                   .mordent,
                                    .pizzicato,
                                    .rampDuration,
                                    .rampEndTempo,
@@ -66,7 +64,6 @@ extension ExtraDefinitionsTests {
                                    .staccato,
                                    .tempoText,
                                    .tenuto,
-                                   .trill,
                                    .turn,
                                    .upBow]
 
@@ -75,7 +72,7 @@ extension ExtraDefinitionsTests {
 
     @Test
     func definitions_flagsTakeNoValues() throws {
-        for flag in [Extra.accent, .fermata, .staccato, .upBow] {
+        for flag in [Extra.accent, .breathMark, .staccato, .upBow] {
             let definition = try #require(Extra.definition(named: flag.name))
 
             #expect(definition.targets == [.note])

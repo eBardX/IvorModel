@@ -48,9 +48,6 @@ extension Extra {
     /// Payload: a single `.int`.
     public static let expressionValue = Self(name: "expressionValue")
 
-    /// A fermata on a ``NoteTable`` note. Bare flag, no payload.
-    public static let fermata = Self(name: "fermata")
-
     /// The literal fingering text (e.g. `"1"`, `"2-3"`) on a ``NoteTable``
     /// note. Payload: a single `.string`.
     public static let fingering = Self(name: "fingering")
@@ -134,9 +131,6 @@ extension Extra {
     /// a single `.double`.
     public static let midiVolume = Self(name: "midiVolume")
 
-    /// A mordent ornament on a ``NoteTable`` note. Bare flag, no payload.
-    public static let mordent = Self(name: "mordent")
-
     /// A pizzicato articulation on a ``NoteTable`` note. Bare flag, no
     /// payload.
     public static let pizzicato = Self(name: "pizzicato")
@@ -191,9 +185,6 @@ extension Extra {
 
     /// A tenuto articulation on a ``NoteTable`` note. Bare flag, no payload.
     public static let tenuto = Self(name: "tenuto")
-
-    /// A trill ornament on a ``NoteTable`` note. Bare flag, no payload.
-    public static let trill = Self(name: "trill")
 
     /// A turn ornament on a ``NoteTable`` note. Bare flag, no payload.
     public static let turn = Self(name: "turn")

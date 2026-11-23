@@ -10,13 +10,25 @@ extension Work {
     /// Returns a new work with this work’s content converted to the provided time basis and pitch
     /// notation, or `nil` if this work already has both, so there is nothing to convert.
     ///
-    /// Like ``warped()``, the new work has a fresh ``Work/workID``, is unlocked, and keeps this
-    /// work’s ``Work/name``, ``Work/smpteStartTime``, ``Work/info``, ``Work/extras``, and
-    /// ``Work/realizations``; its parts keep their IDs and extras.
+    /// Like ``warped(appliesFermataHolds:)``, the new work has a fresh ``Work/workID``, is unlocked, and keeps this
+    /// work’s ``Work/name``, ``Work/smpteStartTime``, ``Work/info``, ``Work/extras``,
+    /// ``Work/interpretationRules`` and ``Work/realizations``; its parts keep their IDs, extras
+    /// and interpretation rules. Part marks and ornamentation convert with the notes: a
+    /// time-basis conversion converts each written length at the tempo where it starts, and a
+    /// pitch-notation conversion converts grace and written partner pitches with the note’s own.
+    /// With `dropsUnconvertibleNotes`, a grace figure or ornament with a pitch that can’t be
+    /// converted is dropped on its own, and the note keeps the rest. A written partner that
+    /// would land on or past its note’s pitch is dropped, so the partner follows its rule.
     ///
     /// Converting between pitch notations keeps the tempo map, meter table and key
     /// table. Converting beat time to wall time drops all three, and wall time to beat time starts
     /// them out empty.
+    ///
+    /// Fermatas and caesuras are kept as signs by default, for playback to realize. With
+    /// `appliesFermataHolds`, a time-basis conversion first turns their holds and pauses into time
+    /// — the tempo slowing over each hold in a beat work, as
+    /// ``RenderingOptions/FermataMode/tempoChanges`` does, or time inserted in a wall work — and
+    /// then removes them (see ``rendered(options:)``).
     ///
     /// Always permitted, even on a locked work: this returns an independent copy rather than
     /// mutating `self`, so ``Work/isLocked`` does not apply.
@@ -31,6 +43,9 @@ extension Work {
     ///                                         whose start or end pitch has no counterpart in
     ///                                         `pitchNotation`, rather than throwing. Defaults to
     ///                                         `false`.
+    /// - Parameter appliesFermataHolds:        Whether a time-basis conversion turns fermata holds
+    ///                                         and caesura pauses into time and removes their
+    ///                                         signs. Defaults to `false`.
     ///
     /// - Returns:  The converted work, or `nil` if this work already has `timeBasis` and
     ///             `pitchNotation`.
@@ -49,7 +64,8 @@ extension Work {
     public func convert(timeBasis: TimeBasis,
                         pitchNotation: PitchNotation,
                         context: ConvertContext = .default,
-                        dropsUnconvertibleNotes: Bool = false) throws(Error) -> Work? {
+                        dropsUnconvertibleNotes: Bool = false,
+                        appliesFermataHolds: Bool = false) throws(Error) -> Work? {
         guard self.timeBasis != timeBasis
               || self.pitchNotation != pitchNotation
         else { return nil }
@@ -60,6 +76,11 @@ extension Work {
                                                       to: pitchNotation) }
 
         var newContent = content
+
+        if appliesFermataHolds,
+           newContent.timeBasis != timeBasis {
+            newContent = applyingTimeline(mode: .tempoChanges).work.content
+        }
 
         if newContent.timeBasis != timeBasis {
             newContent = Self._convertTimeBasis(of: newContent,
@@ -88,6 +109,7 @@ extension Work {
                     smpteStartTime: smpteStartTime,
                     info: info,
                     extras: extras,
+                    interpretationRules: interpretationRules,
                     realizations: realizations)
     }
 
@@ -130,11 +152,13 @@ extension Work {
     }
 
     internal static func convertBeatTimes<PitchType: PitchProtocol>(in part: Part<BeatTime, PitchType>,
-                                                                    using timeConverter: TimeConverter) -> Part<WallTime, PitchType> {
+                                                                    using timeConverter: TimeConverter,
+                                                                    tempoMap: TempoMap) -> Part<WallTime, PitchType> {
         Part(partID: part.partID,
              name: part.name,
              noteTable: _convertBeatTimes(in: part.noteTable,
-                                          using: timeConverter),
+                                          using: timeConverter,
+                                          tempoMap: tempoMap),
              dynamicMap: convertBeatTimes(in: part.dynamicMap,
                                           using: timeConverter),
              instrumentTable: convertBeatTimes(in: part.instrumentTable,
@@ -142,6 +166,8 @@ extension Work {
              panMap: convertBeatTimes(in: part.panMap,
                                       using: timeConverter),
              pedals: part.pedals.mapValues { $0.mapTimes(timeConverter.wallTime(at:)) },
+             markTable: part.markTable.convertedTimes(timeConverter.wallTime(at:)),
+             interpretationRules: part.interpretationRules,
              extras: part.extras)
     }
 
@@ -158,76 +184,36 @@ extension Work {
              panMap: _convertWallTimes(in: part.panMap,
                                        using: timeConverter),
              pedals: part.pedals.mapValues { $0.mapTimes(timeConverter.beatTime(at:)) },
+             markTable: part.markTable.convertedTimes(timeConverter.beatTime(at:)),
+             interpretationRules: part.interpretationRules,
              extras: part.extras)
     }
 
     // MARK: Private Type Methods
 
     private static func _convertBeatTimes<PitchType: PitchProtocol>(in noteTable: NoteTable<BeatTime, PitchType>,
-                                                                    using timeConverter: TimeConverter) -> NoteTable<WallTime, PitchType> {
+                                                                    using timeConverter: TimeConverter,
+                                                                    tempoMap: TempoMap) -> NoteTable<WallTime, PitchType> {
+        typealias BeatNotes = NoteTable<BeatTime, PitchType>
+
         let notes = noteTable.notes.map { note in
             let wallAttack = timeConverter.wallTime(at: note.attack)
             let wallDuration = timeConverter.wallTime(at: note.release) - wallAttack
+
+            let ornamentation = BeatNotes.retimed(note.ornamentation,
+                                                  at: note.attack,
+                                                  times: timeConverter.wallTime(at:)) {
+                BeatNotes.measuredTremoloRate($0,
+                                              at: note.attack,
+                                              using: tempoMap)
+            }
 
             return NoteTable<WallTime, PitchType>.StoredNote(attack: wallAttack,
                                                              duration: wallDuration,
                                                              startPitch: note.startPitch,
                                                              endPitch: note.endPitch,
-                                                             extras: note.extras)
-        }
-
-        return NoteTable(notes: notes)
-    }
-
-    private static func _convertPitches<TimeType: TimeProtocol,
-                                        FromPitchType: PitchProtocol,
-                                        ToPitchType: PitchProtocol>(in noteTable: NoteTable<TimeType, FromPitchType>,
-                                                                    using convert: ([FromPitchType]) -> [ToPitchType?],
-                                                                    dropsUnconvertibleNotes: Bool) -> NoteTable<TimeType, ToPitchType>? {
-        let oldNotes = noteTable.notes
-
-        // A context-aware pitch speller needs the part’s pitches in performance order: by onset,
-        // then from low to high within a chord. A note with portamento contributes its end pitch
-        // right after its start pitch.
-        let order = oldNotes.indices.sorted {
-            (oldNotes[$0].attack, oldNotes[$0].startPitch) < (oldNotes[$1].attack, oldNotes[$1].startPitch)
-        }
-
-        var pitches: [FromPitchType] = []
-        var positions = Array(repeating: (start: 0, end: 0),
-                              count: oldNotes.count)
-
-        for index in order {
-            let note = oldNotes[index]
-
-            positions[index].start = pitches.count
-
-            pitches.append(note.startPitch)
-
-            if note.endPitch != note.startPitch {
-                pitches.append(note.endPitch)
-            }
-
-            positions[index].end = pitches.count - 1
-        }
-
-        let convertedPitches = convert(pitches)
-        var notes: [NoteTable<TimeType, ToPitchType>.StoredNote] = []
-
-        for (note, position) in zip(oldNotes, positions) {
-            guard let startPitch = convertedPitches[position.start],
-                  let endPitch = convertedPitches[position.end]
-            else {
-                if dropsUnconvertibleNotes { continue }
-
-                return nil
-            }
-
-            notes.append(NoteTable<TimeType, ToPitchType>.StoredNote(attack: note.attack,
-                                                                     duration: note.duration,
-                                                                     startPitch: startPitch,
-                                                                     endPitch: endPitch,
-                                                                     extras: note.extras))
+                                                             extras: note.extras,
+                                                             ornamentation: ornamentation)
         }
 
         return NoteTable(notes: notes)
@@ -238,9 +224,9 @@ extension Work {
                                         ToPitchType: PitchProtocol>(in part: Part<TimeType, FromPitchType>,
                                                                     using convert: ([FromPitchType]) -> [ToPitchType?],
                                                                     dropsUnconvertibleNotes: Bool) throws -> Part<TimeType, ToPitchType> {
-        guard let noteTable = _convertPitches(in: part.noteTable,
-                                              using: convert,
-                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes)
+        guard let noteTable = convertPitches(in: part.noteTable,
+                                             using: convert,
+                                             dropsUnconvertibleNotes: dropsUnconvertibleNotes)
         else { throw Error.unconvertiblePitch(partID: part.partID) }
 
         return Part(partID: part.partID,
@@ -250,6 +236,8 @@ extension Work {
                     instrumentTable: part.instrumentTable,
                     panMap: part.panMap,
                     pedals: part.pedals,
+                    markTable: part.markTable,
+                    interpretationRules: part.interpretationRules,
                     extras: part.extras)
     }
 
@@ -403,15 +391,22 @@ extension Work {
 
     private static func _convertWallTimes<PitchType: PitchProtocol>(in noteTable: NoteTable<WallTime, PitchType>,
                                                                     using timeConverter: TimeConverter) -> NoteTable<BeatTime, PitchType> {
-        NoteTable(notes: noteTable.notes.map { note in
+        typealias WallNotes = NoteTable<WallTime, PitchType>
+
+        return NoteTable(notes: noteTable.notes.map { note in
             let beatAttack = timeConverter.beatTime(at: note.attack)
             let beatDuration = timeConverter.beatTime(at: note.release) - beatAttack
+
+            let ornamentation = WallNotes.retimed(note.ornamentation,
+                                                  at: note.attack,
+                                                  times: timeConverter.beatTime(at:))
 
             return NoteTable<BeatTime, PitchType>.StoredNote(attack: beatAttack,
                                                              duration: beatDuration,
                                                              startPitch: note.startPitch,
                                                              endPitch: note.endPitch,
-                                                             extras: note.extras)
+                                                             extras: note.extras,
+                                                             ornamentation: ornamentation)
         })
     }
 

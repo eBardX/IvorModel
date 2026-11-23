@@ -13,7 +13,7 @@ public struct Work {
     // MARK: Public Initializers
 
     /// Creates a new work with the given name, content, SMPTE start time, descriptive information,
-    /// extras, realizations and generation record.
+    /// extras, interpretation rules, realizations and generation record.
     ///
     /// - Parameter name:           The display name of the work. Its whitespace is normalized
     ///                             to a single line. Defaults to an empty string.
@@ -26,6 +26,8 @@ public struct Work {
     ///                             empty information.
     /// - Parameter extras:         Format-specific data about the work as a whole. Empty extras
     ///                             are stored as `nil`. Defaults to `nil`.
+    /// - Parameter interpretationRules: How the work plays its ornaments, fermatas and caesuras.
+    ///                             Empty rules are stored as `nil`. Defaults to `nil`.
     /// - Parameter realizations:   The ways the work can be realized when it plays, in order.
     ///                             Must be non-empty, with distinct realization IDs. Part tables
     ///                             for parts not in `content` are dropped. Defaults to a single,
@@ -39,6 +41,7 @@ public struct Work {
                 smpteStartTime: SMPTETime = Self.defaultSMPTEStartTime,
                 info: Info = Info(),
                 extras: Extras? = nil,
+                interpretationRules: InterpretationRules? = nil,
                 realizations: [Realization] = [Realization(name: Self.defaultRealizationName)],
                 generation: Generation? = nil) {
         precondition(Self.firstRealizationError(in: realizations) == nil,
@@ -51,6 +54,7 @@ public struct Work {
         self.extras = Self._normalized(extras)
         self.generation = generation
         self.info = info
+        self.interpretationRules = Self._normalized(interpretationRules)
         self.isLocked = false
         self.name = name.normalizingWhitespace()
         self.realizations = realizations
@@ -67,7 +71,7 @@ public struct Work {
     ///
     /// It records how the work began: editing the work leaves it in place, and
     /// ``duplicated()`` keeps it. Methods that return a work with converted content, such as
-    /// ``warped()``, leave it out, since the recipe no longer reproduces that content.
+    /// ``warped(appliesFermataHolds:)``, leave it out, since the recipe no longer reproduces that content.
     public let generation: Generation?
 
     /// The file format version of the work.
@@ -79,10 +83,10 @@ public struct Work {
     /// A Boolean value indicating whether this work is locked.
     ///
     /// A locked work cannot be modified until it is unlocked. Every method that would change its
-    /// ``content``, ``extras``, ``info``, ``name`` or ``smpteStartTime`` throws ``Work/Error/workIsLocked`` instead,
+    /// ``content``, ``extras``, ``info``, ``interpretationRules``, ``name`` or ``smpteStartTime`` throws ``Work/Error/workIsLocked`` instead,
     /// and ``Project/removeWork(_:)`` refuses to remove it. The lock protects the music only: a
     /// locked work’s ``realizations`` can still be changed. Methods that return a new work, such
-    /// as ``duplicated()`` or ``warped()``, leave this work untouched and so are always permitted.
+    /// as ``duplicated()`` or ``warped(appliesFermataHolds:)``, leave this work untouched and so are always permitted.
     /// Setting `isLocked` itself is always permitted, so a locked work can always be unlocked.
     public var isLocked: Bool
 
@@ -92,6 +96,14 @@ public struct Work {
     /// It describes the whole work rather than any moment in it, so no transform moves or changes
     /// it. Empty extras are stored as `nil`. To change it, use ``modifyExtras(_:)``.
     public internal(set) var extras: Extras?
+
+    /// How this work plays its ornaments, fermatas and caesuras, or `nil` for the built-in
+    /// defaults. A part’s own ``Part/interpretationRules`` override these field by field (see
+    /// ``InterpretationRules/resolved(work:part:)``).
+    ///
+    /// Every rule is time-neutral, so no transform or conversion changes them. Empty rules are
+    /// stored as `nil`. To change them, use ``setInterpretationRules(_:)``.
+    public internal(set) var interpretationRules: InterpretationRules?
 
     /// Descriptive information about this work.
     ///
@@ -326,7 +338,8 @@ extension Work {
     // MARK: Public Instance Methods
 
     /// Returns a copy of this work with the same content, ``smpteStartTime``, ``info``,
-    /// ``extras``, ``realizations`` and ``generation`` but a distinct, freshly minted ``WorkID``.
+    /// ``extras``, ``interpretationRules``, ``realizations`` and ``generation`` but a distinct,
+    /// freshly minted ``WorkID``.
     ///
     /// The copy’s parts and realizations keep their IDs, which are unique only within a work.
     public func duplicated() -> Self {
@@ -335,6 +348,7 @@ extension Work {
              smpteStartTime: smpteStartTime,
              info: info,
              extras: extras,
+             interpretationRules: interpretationRules,
              realizations: realizations,
              generation: generation)
     }
@@ -426,6 +440,18 @@ extension Work {
         }
 
         self.content = content
+    }
+
+    /// Replaces how this work plays its ornaments, fermatas and caesuras.
+    ///
+    /// - Parameter rules:  The new rules, or `nil` for the built-in defaults. Empty rules are
+    ///                     stored as `nil`.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked.
+    public mutating func setInterpretationRules(_ rules: InterpretationRules?) throws(Error) {
+        try ensureUnlocked()
+
+        interpretationRules = Self._normalized(rules)
     }
 
     /// Changes the SMPTE timecode at which this work’s wall time zero falls.
@@ -548,6 +574,10 @@ extension Work {
         extras?.isEmpty ?? true ? nil : extras
     }
 
+    private static func _normalized(_ rules: InterpretationRules?) -> InterpretationRules? {
+        rules?.isEmpty ?? true ? nil : rules
+    }
+
     private static func _widened(_ range: ClosedRange<BeatTime>?,
                                  by other: ClosedRange<BeatTime>) -> ClosedRange<BeatTime> {
         guard let range
@@ -587,6 +617,9 @@ extension Work: Codable {
 
         self.info = try container.decode(Info.self,
                                          forKey: .info)
+
+        self.interpretationRules = try Self._normalized(container.decodeIfPresent(InterpretationRules.self,
+                                                                                  forKey: .interpretationRules))
 
         self.isLocked = try container.decode(Bool.self,
                                              forKey: .isLocked)
@@ -648,6 +681,9 @@ extension Work: Codable {
         try container.encodeIfPresent(generation,
                                       forKey: .generation)
 
+        try container.encodeIfPresent(interpretationRules,
+                                      forKey: .interpretationRules)
+
         try container.encode(realizations,
                              forKey: .realizations)
 
@@ -662,6 +698,7 @@ extension Work: Codable {
         case extras
         case generation
         case info
+        case interpretationRules
         case isLocked
         case name
         case realizations

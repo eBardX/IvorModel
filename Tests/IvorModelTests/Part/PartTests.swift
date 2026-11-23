@@ -14,6 +14,8 @@ struct PartTests {
 // MARK: -
 
 extension PartTests {
+    private typealias PartSB = Part<BeatTime, Pitch>
+
     @Test
     func attackingIn_matching() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
@@ -114,6 +116,20 @@ extension PartTests {
     }
 
     @Test
+    func codable_omitsEmptyMarksAndNilRules() throws {
+        let data = try JSONEncoder().encode(PartSB(name: "Empty"))
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        #expect(object["markTable"] == nil)
+        #expect(object["interpretationRules"] == nil)
+
+        let decoded = try JSONDecoder().decode(PartSB.self, from: data)
+
+        #expect(decoded.markTable.isEmpty)
+        #expect(decoded.interpretationRules == nil)
+    }
+
+    @Test
     func codable_pedalsRoundTrip() throws {
         var sustain = PedalTable<BeatTime>()
 
@@ -127,6 +143,19 @@ extension PartTests {
         #expect(Array(decoded.pedals.keys) == [.sustain])
         #expect(decoded.pedals[.sustain]?.map(\.time) == [1, 3, 3])
         #expect(decoded.pedals[.sustain]?.map(\.level) == [.down, .up, .down])
+    }
+
+    @Test
+    func codable_roundTrip() throws {
+        var original = markedPart()
+
+        original.interpretationRules = markedPartRules()
+
+        let decoded = try codingRoundTrip(original)
+
+        #expect(decoded.markTable.map(\.time) == original.markTable.map(\.time))
+        #expect(decoded.markTable.map(\.mark) == original.markTable.map(\.mark))
+        #expect(decoded.interpretationRules == markedPartRules())
     }
 
     @Test
@@ -146,6 +175,19 @@ extension PartTests {
         let part = Part<BeatTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
 
         #expect(part.duplicated().extras == part.extras)
+    }
+
+    @Test
+    func duplicated_keepsMarksAndRules() {
+        var original = markedPart()
+
+        original.interpretationRules = markedPartRules()
+
+        let copy = original.duplicated()
+
+        #expect(copy.partID != original.partID)
+        #expect(copy.markTable.map(\.mark) == original.markTable.map(\.mark))
+        #expect(copy.interpretationRules == markedPartRules())
     }
 
     @Test
@@ -221,6 +263,17 @@ extension PartTests {
     func init_normalizesName() {
         #expect(Part<BeatTime, Pitch>(name: "  Violin\t 1 ").name == "Violin 1")
         #expect(Part<BeatTime, Pitch>(name: "   ").name.isEmpty)
+    }
+
+    @Test
+    func interpretationRules_emptyIsStoredAsNil() {
+        var part = PartSB(name: "Test", interpretationRules: InterpretationRules())
+
+        #expect(part.interpretationRules == nil)
+
+        part.interpretationRules = InterpretationRules(grace: GraceRules())
+
+        #expect(part.interpretationRules == nil)
     }
 
     @Test

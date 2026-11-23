@@ -73,6 +73,31 @@ extension Work.Content {
     // MARK: Internal Instance Properties
 
     //
+    // The arpeggio groups any part's notes belong to.
+    //
+    internal var arpeggioGroups: Set<ArpeggioGroup> {
+        switch self {
+        case let .absoluteBeat(parts, _, _, _):
+            Set(parts.flatMap(\.noteTable.arpeggioGroups))
+
+        case let .absoluteWall(parts):
+            Set(parts.flatMap(\.noteTable.arpeggioGroups))
+
+        case let .keyboardBeat(parts, _, _, _):
+            Set(parts.flatMap(\.noteTable.arpeggioGroups))
+
+        case let .keyboardWall(parts):
+            Set(parts.flatMap(\.noteTable.arpeggioGroups))
+
+        case let .standardBeat(parts, _, _, _):
+            Set(parts.flatMap(\.noteTable.arpeggioGroups))
+
+        case let .standardWall(parts):
+            Set(parts.flatMap(\.noteTable.arpeggioGroups))
+        }
+    }
+
+    //
     // The first part ID that more than one part shares, or `nil` if every part's is distinct.
     //
     internal var firstDuplicatePartID: PartID? {

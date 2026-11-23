@@ -35,11 +35,11 @@ extension ExtrasIvorTests {
     @Test
     func normalizingNames_keepsValues() {
         let extras = Extras(elements: [Extra(name: "MIDIChannel", values: [.int(3)]),
-                                       Extra(name: "Fermata")])
+                                       Extra(name: "Staccato")])
         let normalized = extras.normalizingNames()
 
-        #expect(normalized.elements.map(\.name) == [Extra.fermata.name, Extra.midiChannel.name])
-        #expect(normalized.elements.map(\.values) == [[], [.int(3)]])
+        #expect(normalized.elements.map(\.name) == [Extra.midiChannel.name, Extra.staccato.name])
+        #expect(normalized.elements.map(\.values) == [[.int(3)], []])
     }
 
     @Test

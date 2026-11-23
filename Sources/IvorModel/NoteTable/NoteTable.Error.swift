@@ -36,6 +36,10 @@ extension NoteTable {
         /// A failure that occurred while moving a note.
         case moveFailure(TimeType, DurationType, PitchType, PitchType)
 
+        /// A note whose ornament has a written partner on the wrong side of its start pitch: a
+        /// trill’s or upper mordent’s at or below it, or a lower mordent’s at or above it.
+        case partnerOnWrongSide(TimeType, DurationType, PitchType, PitchType)
+
         /// A failure that occurred while reversing a note.
         case reverseFailure(TimeType, DurationType, PitchType, PitchType)
 
@@ -88,6 +92,9 @@ extension NoteTable.Error: EnhancedError {
 
         case let .moveFailure(attack, duration, startPitch, endPitch):
             "Unable to move note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
+
+        case let .partnerOnWrongSide(attack, duration, startPitch, endPitch):
+            "Ornament partner on the wrong side of note table note, \(_formatNote(attack, duration, startPitch, endPitch))"
 
         case let .reverseFailure(attack, duration, startPitch, endPitch):
             "Unable to reverse note table note, \(_formatNote(attack, duration, startPitch, endPitch))"

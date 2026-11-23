@@ -119,6 +119,14 @@ func assembleNoteTable(_ noteEvents: [NoteEvent<BeatTime, Pitch>]) -> NoteTable<
     return assembler.assembleNoteTable()
 }
 
+// A rendering clock for a beat work at ♩ = 60.
+func beatRenderingClock(meterTable: MeterTable = MeterTable(),
+                        keyTable: KeyTable = KeyTable()) -> RenderingClock {
+    RenderingClock(tempoMap: TempoMap(defaultTempo: Tempo(60)),
+                   meterTable: meterTable,
+                   keyTable: keyTable)
+}
+
 func beats(_ value: Number) -> BeatDuration {
     // swiftlint:disable:next force_unwrapping
     BeatDuration(numberValue: value)!
@@ -149,6 +157,26 @@ func breathMarkPitches(_ table: NoteTable<BeatTime, Pitch>) -> [Pitch] {
     table.filter { $0.extras?.contains(.breathMark) ?? false }.map(\.startPitch).sorted()
 }
 
+// A C4 at 0, lasting a beat, with `ornamentation`.
+func c4Table(_ ornamentation: BeatNotes.Ornamentation) throws -> BeatNotes {
+    var table = BeatNotes()
+
+    try table.insert(attack: 0, duration: 1, pitch: .c4, ornamentation: ornamentation)
+
+    return table
+}
+
+// `value` encoded to JSON and decoded back.
+func codingRoundTrip<Value: Codable>(_ value: Value) throws -> Value {
+    try JSONDecoder().decode(Value.self, from: JSONEncoder().encode(value))
+}
+
+// `json` decoded as `Value`.
+func decodeJSON<Value: Decodable>(_ type: Value.Type,
+                                  _ json: String) throws -> Value {
+    try JSONDecoder().decode(type, from: Data(json.utf8))
+}
+
 func descending(_ interval: Interval) -> Template.AnalysisOptions.Transposition {
     .interval(DirectedInterval(interval: interval,
                                direction: .descending))
@@ -160,6 +188,11 @@ func descending(_ semitones: UInt) -> Template.AnalysisOptions.Transposition {
                                    direction: .descending))
 }
 
+// A beat-to-beat fermata converter that doubles every length.
+func doublingFermataConverter() -> FermataConverter<BeatTime, BeatTime> {
+    FermataConverter { beats($0.numberValue * 2) }
+}
+
 func dynamicTime(of entryID: EntryID,
                  in part: Part<BeatTime, Pitch>) -> BeatTime? {
     part.dynamicMap.first { $0.entryID == entryID }?.time
@@ -167,6 +200,15 @@ func dynamicTime(of entryID: EntryID,
 
 func earlier(_ value: Number) -> DirectedDuration<BeatDuration> {
     DirectedDuration(duration: beats(value), direction: .backward)
+}
+
+// `value` encoded to JSON with sorted keys, as text.
+func encodedJSON(_ value: some Encodable) throws -> String {
+    let encoder = JSONEncoder()
+
+    encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+
+    return try #require(String(bytes: encoder.encode(value), encoding: .utf8))
 }
 
 func endCount(of template: Template,
@@ -284,6 +326,16 @@ func extraValues(_ extra: Extra,
     extras?.elements.first { $0.name == extra.name }?.values
 }
 
+func fermataMark(_ span: BeatDuration) -> PartMark<BeatTime> {
+    // swiftlint:disable:next force_unwrapping
+    .fermata(Fermata(), span: PositiveDuration(span)!)
+}
+
+func fermataStretch(_ value: Number) -> FermataStretch {
+    // swiftlint:disable:next force_unwrapping
+    FermataStretch(numberValue: value)!
+}
+
 func fileContents(of root: FileWrapper,
                   _ path: [String]) throws -> Data {
     let directory = try #require(root.fileWrappers?[path[0]])
@@ -313,6 +365,59 @@ func frac(_ numerator: Int,
     Number(numerator: numerator, denominator: denominator)
 }
 
+func fullInterpretationRules() -> InterpretationRules {
+    InterpretationRules(grace: GraceRules(slashedPlacement: .beforeBeat,
+                                          unslashedPlacement: .onBeat,
+                                          maximumShare: proportion(1, 2),
+                                          perNote: positiveSeconds(1, 25)),
+                        trill: OrnamentRules(startNote: .partner,
+                                             partnerRule: .diatonic,
+                                             rate: notesPerSecond(12),
+                                             extent: .span(proportion(3, 4))),
+                        mordent: OrnamentRules(extent: .count(AlternationCount(2))),
+                        tremolo: OrnamentRules(rate: notesPerSecond(16)),
+                        arpeggio: ArpeggioRules(direction: .down,
+                                                anchor: .lastOnBeat,
+                                                spread: .perTone(positiveSeconds(1, 20))),
+                        fermata: FermataRules(holds: [.short: .stretch(fermataStretch(frac(3, 2)))],
+                                              pauseAfter: positiveSeconds(1, 2)),
+                        caesura: positiveSeconds(2))
+}
+
+// Every slot filled, with a written duration in each but the figure after.
+func fullOrnamentation() throws -> BeatNotes.Ornamentation {
+    try BeatNotes.Ornamentation(graceBefore: graceFigure(["D5"], length: positiveBeats(1, 16)),
+                                graceAfter: graceFigure(["B4", "C5"], execution: BeatNotes.GraceExecution(fromMain: .share(proportion(1, 4)))),
+                                ornament: ornament(.trill,
+                                                   .step(.above, written: nil),
+                                                   BeatNotes.OrnamentExecution(rate: .noteValue(positiveBeats(1, 32)))),
+                                arpeggio: BeatNotes.Arpeggio(group: 1,
+                                                             execution: BeatNotes.ArpeggioExecution(spread: .perTone(positiveBeats(1, 64)))),
+                                fermata: Fermata(shape: .long,
+                                                 execution: FermataExecution(hold: .added(positiveBeats(1, 4)))))
+}
+
+// A grace event of these pitches, which must be valid.
+func graceEvent(_ pitches: [Pitch],
+                length: PositiveDuration<BeatDuration>? = nil,
+                execution: BeatNotes.GraceExecution? = nil) throws -> BeatNotes.GraceFigure.Event {
+    try #require(BeatNotes.GraceFigure.Event(pitches: pitches,
+                                             length: length,
+                                             execution: execution))
+}
+
+// A grace figure of one event per pitch, each with this length.
+func graceFigure(_ pitches: [Pitch],
+                 length: PositiveDuration<BeatDuration>? = nil,
+                 isSlashed: Bool = false,
+                 isTiedToMainNote: Bool = false,
+                 execution: BeatNotes.GraceExecution? = nil) throws -> BeatNotes.GraceFigure {
+    try #require(BeatNotes.GraceFigure(events: pitches.map { try graceEvent([$0], length: length) },
+                                       isSlashed: isSlashed,
+                                       isTiedToMainNote: isTiedToMainNote,
+                                       execution: execution))
+}
+
 func hasJointState(in template: Template,
                    where predicate: (StandardBeatState) -> Bool) throws -> Bool {
     var found = false
@@ -324,6 +429,13 @@ func hasJointState(in template: Template,
     }
 
     return found
+}
+
+// Whether two numbers agree to within a millionth, for times that pass through a tempo map's
+// rounded seconds.
+func isClose(_ lhs: Number,
+             _ rhs: Number) -> Bool {
+    abs((lhs - rhs).doubleValue) < 1e-6
 }
 
 func jointNoteEvents(of template: Template) throws -> [NoteEvent<BeatTime, Pitch>] {
@@ -339,6 +451,29 @@ func key(_ fifths: Int,
     Key.diatonic(fifths: fifths, mode: mode)!
 }
 
+// A middle C (60) at 0, lasting a beat, with a figure of one grace note before it.
+func keyboardGraceTable(grace: UInt) throws -> NoteTable<BeatTime, NoteNumber> {
+    let gracePitch = try #require(NoteNumber(uintValue: grace))
+    let event = try #require(NoteTable<BeatTime, NoteNumber>.GraceFigure.Event(pitches: [gracePitch]))
+    let figure = try #require(NoteTable<BeatTime, NoteNumber>.GraceFigure(events: [event]))
+    let middleC = try #require(NoteNumber(uintValue: 60))
+    var table = NoteTable<BeatTime, NoteNumber>()
+
+    try table.insert(attack: 0,
+                     duration: 1,
+                     pitch: middleC,
+                     ornamentation: .init(graceBefore: figure))
+
+    return table
+}
+
+func keyboardWallNotes(of work: Work) throws -> [NoteTable<WallTime, NoteNumber>.Note] {
+    guard case let .keyboardWall(parts) = work.content
+    else { throw Work.Error.unsupportedStandardConversion }
+
+    return try Array(#require(parts.first).noteTable)
+}
+
 func keyboardWallPitches(of work: Work?) throws -> [NoteNumber] {
     guard case let .keyboardWall(parts) = try #require(work).content
     else { Issue.record("Expected keyboard-wall content"); return [] }
@@ -352,6 +487,32 @@ func lastID(of table: MeterTable) throws -> EntryID {
 
 func later(_ value: Number) -> DirectedDuration<BeatDuration> {
     DirectedDuration(duration: beats(value), direction: .forward)
+}
+
+// An acciaccatura before the beat on a C4 at 0, in 4/4 with this pickup.
+func leadInRendering(pickup: Number?) throws -> Work.Rendering {
+    var meterTable = MeterTable()
+
+    try meterTable.insert(beatTime: 0, meter: #require(Meter(plain: "4/4")))
+
+    if let pickup {
+        try meterTable.setPickup(beats(pickup))
+    }
+
+    let part = try renderingPart([WrittenNote(0, frac(1, 2), .c4, BeatNotes.Ornamentation(graceBefore: graceFigure([.d4], isSlashed: true)))])
+
+    return try renderingWork([part],
+                             meterTable: meterTable,
+                             rules: InterpretationRules(grace: GraceRules(slashedPlacement: .beforeBeat))).rendered()
+}
+
+func longFermataMark(_ span: BeatDuration) -> PartMark<BeatTime> {
+    // swiftlint:disable:next force_unwrapping
+    .fermata(Fermata(shape: .long), span: PositiveDuration(span)!)
+}
+
+func lowerMordentOrnamentation(written: Pitch?) throws -> BeatNotes.Ornamentation {
+    try BeatNotes.Ornamentation(ornament: ornament(.mordent, .step(.below, written: written)))
 }
 
 func makeAbsoluteKeyWork() throws -> Work {
@@ -629,6 +790,46 @@ func makeOrganPatchTable() throws -> PatchTable {
     return PatchTable([.vanilla: assignment])
 }
 
+//
+// A standard beat work: a C4 with a figure before (D5, a sixteenth), a figure after (E4), a
+// trill with a written partner (D4), and an arpeggio in group 1; a plain D5; and an E4 in
+// group 2.
+//
+func makeOrnamentedStandardWork() throws -> Work {
+    var table = BeatNotes()
+
+    try table.insert(attack: 0,
+                     duration: 1,
+                     pitch: .c4,
+                     ornamentation: .init(graceBefore: graceFigure([.d5], length: positiveBeats(1, 16)),
+                                          graceAfter: graceFigure([.e4]),
+                                          ornament: ornament(.trill, .step(.above, written: .d4)),
+                                          arpeggio: BeatNotes.Arpeggio(group: 1)))
+    table.insert(attack: 1, duration: 1, pitch: .d5)
+    try table.insert(attack: 2,
+                     duration: 1,
+                     pitch: .e4,
+                     ornamentation: .init(arpeggio: BeatNotes.Arpeggio(group: 2)))
+
+    return Work(content: .standardBeat([Part(name: "Piano", noteTable: table)], TempoMap(), MeterTable(), KeyTable()))
+}
+
+// An A4 (440 Hz) with a figure before and a trill with a written partner.
+func makeOrnamentedWallWork(graceBefore: Frequency,
+                            partner: Frequency) throws -> Work {
+    let event = try #require(NoteTable<WallTime, Frequency>.GraceFigure.Event(pitches: [graceBefore]))
+    let figure = try #require(NoteTable<WallTime, Frequency>.GraceFigure(events: [event]))
+    let trill = try #require(NoteTable<WallTime, Frequency>.Ornament(sign: .trill, partner: .step(.above, written: partner)))
+    var table = NoteTable<WallTime, Frequency>()
+
+    try table.insert(attack: wallTime(0),
+                     duration: wallDuration(500),
+                     pitch: Frequency(440),
+                     ornamentation: .init(graceBefore: figure, ornament: trill))
+
+    return Work(content: .absoluteWall([Part(name: "Synth", noteTable: table)]))
+}
+
 func makePlainSourcePart() -> Part<BeatTime, Pitch> {
     var noteTable = NoteTable<BeatTime, Pitch>()
 
@@ -653,6 +854,18 @@ func makePosition(beat: Int?) -> MeterTable.Position {
                         beat: beat,
                         offset: .zero,
                         beatLength: beat.map { _ in beats(frac(1, 4)) })
+}
+
+// A renderer of these standard beat parts at ♩ = 60.
+func makeRenderer(_ parts: [Part<BeatTime, Pitch>],
+                  rules: InterpretationRules? = nil,
+                  meterTable: MeterTable = MeterTable(),
+                  keyTable: KeyTable = KeyTable()) -> Renderer<BeatTime, Pitch> {
+    Renderer(parts: parts,
+             workRules: rules,
+             clock: RenderingClock(tempoMap: TempoMap(defaultTempo: Tempo(60)),
+                                   meterTable: meterTable,
+                                   keyTable: keyTable))
 }
 
 //
@@ -684,6 +897,18 @@ func makeRestSplitTune() -> Work {
 
     return Work(name: "Tune",
                 content: .standardBeat([Part(name: "Flute", noteTable: noteTable)], TempoMap(), MeterTable(), KeyTable()))
+}
+
+func makeRuledWork() -> Work {
+    var part = Part<BeatTime, Pitch>(name: "Violin",
+                                     interpretationRules: ruledPartRules())
+
+    part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+    part.markTable.insert(time: 1, mark: .caesura(nil))
+
+    return Work(name: "Ruled",
+                content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()),
+                interpretationRules: ruledWorkRules())
 }
 
 //
@@ -758,13 +983,50 @@ func makeWorkInfo() -> Work.Info {
               remarks: Remark(text: "Written at dawn.", label: "history").map { [$0] } ?? [])
 }
 
+// Notes at 0 and 1 (a half note) and at 4; a fermata at 1 over a half, and a caesura at 2.
+func markedPart() -> Part<BeatTime, Pitch> {
+    var part = Part<BeatTime, Pitch>(name: "Test")
+
+    part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+    part.noteTable.insert(attack: 1, duration: 1, pitch: .d4)
+    part.noteTable.insert(attack: 4, duration: 1, pitch: .e4)
+    part.markTable.insert(time: 1, mark: longFermataMark(beats(frac(1, 2))))
+    part.markTable.insert(time: 2, mark: .caesura(nil))
+
+    return part
+}
+
+func markedPartRules() -> InterpretationRules {
+    InterpretationRules(arpeggio: ArpeggioRules(direction: .down), caesura: positiveSeconds(1))
+}
+
+// A quarter-note fermata at 1 and a caesura at 2.
+func markedTable() -> PartMarkTable<BeatTime> {
+    var table = PartMarkTable<BeatTime>()
+
+    table.insert(time: 1, mark: fermataMark(beats(frac(1, 4))))
+    table.insert(time: 2, mark: .caesura(nil))
+
+    return table
+}
+
 func meter(_ plain: String) -> Meter {
     // swiftlint:disable:next force_unwrapping
     Meter(plain: plain)!
 }
 
-func sampleExtras(_ value: String) -> Extras {
-    Extras(elements: [Extra(name: "sample", values: [.string(value)])])
+func notesPerSecond(_ value: Number) -> NotesPerSecond {
+    // swiftlint:disable:next force_unwrapping
+    NotesPerSecond(numberValue: value)!
+}
+
+// An ornament from these parts, which must fit together.
+func ornament(_ sign: BeatNotes.Ornament.Sign?,
+              _ partner: BeatNotes.Ornament.Partner,
+              _ execution: BeatNotes.OrnamentExecution? = nil) throws -> BeatNotes.Ornament {
+    try #require(BeatNotes.Ornament(sign: sign,
+                                    partner: partner,
+                                    execution: execution))
 }
 
 func pedalLevel(_ numerator: Int,
@@ -774,6 +1036,96 @@ func pedalLevel(_ numerator: Int,
 
 func pianoFrequency(of noteNumber: NoteNumber) -> Frequency {
     KeyboardToAbsolutePitchConverter().convert(noteNumber).require()
+}
+
+// A renderer's notes as plain numbers, ordered by start, then pitch.
+func plainNotes(_ notes: [Renderer<BeatTime, Pitch>.Note]) -> [RenderedNote] {
+    notes.map { RenderedNote($0.start, $0.end - $0.start, $0.startPitch, $0.endPitch) }
+        .sorted { ($0.start, $0.pitch) < ($1.start, $1.pitch) }
+}
+
+// A positive beat duration of `numerator / denominator` whole notes.
+func positiveBeats(_ numerator: Int,
+                   _ denominator: Int = 1) -> PositiveDuration<BeatDuration> {
+    // swiftlint:disable:next force_unwrapping
+    PositiveDuration(beats(frac(numerator, denominator)))!
+}
+
+// A positive wall duration of `numerator / denominator` seconds.
+func positiveSeconds(_ numerator: Int,
+                     _ denominator: Int = 1) -> PositiveDuration<WallDuration> {
+    // swiftlint:disable:next force_unwrapping
+    PositiveDuration(WallDuration(numberValue: frac(numerator, denominator))!)!
+}
+
+// A proportion of `numerator / denominator`, which must be valid.
+func proportion(_ numerator: Int,
+                _ denominator: Int) -> Proportion {
+    // swiftlint:disable:next force_unwrapping
+    Proportion(numberValue: frac(numerator, denominator))!
+}
+
+func quarterFermataMark(_ quarters: Int) -> PartMark<BeatTime> {
+    .fermata(Fermata(), span: positiveBeats(quarters, 4))
+}
+
+// The rendered notes of a one-part standard beat work of these notes.
+func render(_ notes: [WrittenNote],
+            rules: InterpretationRules? = nil,
+            meterTable: MeterTable = MeterTable(),
+            keyTable: KeyTable = KeyTable()) throws -> [RenderedNote] {
+    let work = try renderingWork([renderingPart(notes)],
+                                 meterTable: meterTable,
+                                 keyTable: keyTable,
+                                 rules: rules)
+
+    return try #require(renderedNotes(work.rendered()).first)
+}
+
+// The rendered notes of each part of a standard beat rendering, ordered by start, then pitch.
+func renderedNotes(_ rendering: Work.Rendering) throws -> [[RenderedNote]] {
+    guard case let .standardBeat(parts, _, _, _) = rendering.work.content
+    else { throw Work.Error.unsupportedStandardConversion }
+
+    return parts.map { part in
+        part.noteTable.map { RenderedNote($0.attack.numberValue, $0.duration.numberValue, $0.startPitch, $0.endPitch) }
+            .sorted { ($0.start, $0.pitch) < ($1.start, $1.pitch) }
+    }
+}
+
+// When a beat time sounds in a rendered work, in seconds, rounded to the millisecond.
+func renderedWallSeconds(_ rendering: Work.Rendering,
+                         at time: Number) throws -> Number {
+    let tempoMap = try #require(rendering.work.tempoMap)
+    let seconds = TimeConverter(tempoMap: tempoMap).wallTime(at: beatTime(time)).numberValue
+
+    return round(seconds * 1_000) / 1_000
+}
+
+// A standard beat part of these notes, with these rules.
+func renderingPart(_ notes: [WrittenNote],
+                   rules: InterpretationRules? = nil) throws -> Part<BeatTime, Pitch> {
+    var table = BeatNotes()
+
+    for note in notes {
+        try table.insert(attack: beatTime(note.attack),
+                         duration: beats(note.duration),
+                         startPitch: note.pitch,
+                         endPitch: note.endPitch ?? note.pitch,
+                         extras: note.extras,
+                         ornamentation: note.ornamentation)
+    }
+
+    return Part(name: "Part", noteTable: table, interpretationRules: rules)
+}
+
+// A standard beat work at ♩ = 60 of these parts.
+func renderingWork(_ parts: [Part<BeatTime, Pitch>],
+                   meterTable: MeterTable = MeterTable(),
+                   keyTable: KeyTable = KeyTable(),
+                   rules: InterpretationRules? = nil) -> Work {
+    Work(content: .standardBeat(parts, TempoMap(defaultTempo: Tempo(60)), meterTable, keyTable),
+         interpretationRules: rules)
 }
 
 //
@@ -793,6 +1145,34 @@ func rewriteFile(_ root: FileWrapper,
     directory.removeFileWrapper(file)
     directory.addRegularFile(withContents: Data(newText.utf8),
                              preferredFilename: path[1])
+}
+
+func rollArpeggio(_ anchor: ArpeggioAnchor) -> BeatNotes.Arpeggio {
+    BeatNotes.Arpeggio(group: 1,
+                       execution: BeatNotes.ArpeggioExecution(spread: .perTone(positiveBeats(1, 32)),
+                                                              anchor: anchor))
+}
+
+// A rolled chord tone, a thirty-second apart.
+func rollOrnamentation(group: ArpeggioGroup = 1,
+                       direction: ArpeggioDirection? = nil,
+                       anchor: ArpeggioAnchor? = nil) -> BeatNotes.Ornamentation {
+    BeatNotes.Ornamentation(arpeggio: BeatNotes.Arpeggio(group: group,
+                                                         direction: direction,
+                                                         execution: BeatNotes.ArpeggioExecution(spread: .perTone(positiveBeats(1, 32)),
+                                                                                                anchor: anchor)))
+}
+
+func ruledPartRules() -> InterpretationRules {
+    InterpretationRules(caesura: positiveSeconds(3))
+}
+
+func ruledWorkRules() -> InterpretationRules {
+    InterpretationRules(arpeggio: ArpeggioRules(direction: .down), caesura: positiveSeconds(2))
+}
+
+func sampleExtras(_ value: String) -> Extras {
+    Extras(elements: [Extra(name: "sample", values: [.string(value)])])
 }
 
 func sortedJointStates(of template: Template) throws -> [Template.State<BeatTime, Pitch>] {
@@ -844,6 +1224,13 @@ func standardBeatNoteTriples(of work: Work) throws -> [NoteTripleSB] {
     else { throw Template.Error.incompatibleOptions }
 
     return try makeNoteTriplesSB(#require(parts.first).noteTable)
+}
+
+func standardBeatParts(of work: Work) -> [Part<BeatTime, Pitch>] {
+    guard case let .standardBeat(parts, _, _, _) = work.content
+    else { return [] }
+
+    return parts
 }
 
 func standardBeatPitches(of work: Work) throws -> [Pitch] {
@@ -907,6 +1294,45 @@ func summary(of table: MeterTable) -> [String] {
     table.map { "\($0.meter.plain)@\($0.beatTime.numberValue.simplified)" }
 }
 
+// Swaps C4 and G4 and keeps every other pitch, so a mapping can reorder a
+// sorted pitch list.
+func swapCAndG(_ pitch: Pitch) -> Pitch {
+    switch pitch {
+    case "C4":
+        "G4"
+
+    case "G4":
+        "C4"
+
+    default:
+        pitch
+    }
+}
+
+// A beat-to-beat note converter that swaps C4 and G4 and doubles every length.
+func swappingNoteConverter() -> BeatNotes.Converter<BeatTime, Pitch> {
+    BeatNotes.Converter(pitch: swapCAndG) { beats($0.numberValue * 2) }
+}
+
+// A figure before (D5, a sixteenth), a figure after (E4, taking a quarter of the note), a
+// trill with a written partner (D4), and a fermata adding a quarter.
+func transformableOrnamentation() throws -> BeatNotes.Ornamentation {
+    try BeatNotes.Ornamentation(graceBefore: graceFigure([.d5], length: positiveBeats(1, 16)),
+                                graceAfter: graceFigure([.e4], execution: BeatNotes.GraceExecution(fromMain: .share(proportion(1, 4)))),
+                                ornament: ornament(.trill, .step(.above, written: .d4)),
+                                fermata: Fermata(execution: FermataExecution(hold: .added(positiveBeats(1, 4)))))
+}
+
+func trillOrnamentation(written: Pitch?) throws -> BeatNotes.Ornamentation {
+    try BeatNotes.Ornamentation(ornament: ornament(.trill, .step(.above, written: written)))
+}
+
+// A C4 half note at 0, with this fermata, and a D4 half note after it.
+func twoNotePart(_ fermata: Fermata<BeatTime>? = nil) throws -> Part<BeatTime, Pitch> {
+    try renderingPart([WrittenNote(0, frac(1, 2), .c4, fermata.map { BeatNotes.Ornamentation(fermata: $0) }),
+                       WrittenNote(frac(1, 2), frac(1, 2), .d4)])
+}
+
 func wallAttacks(of work: Work) throws -> [Double] {
     guard case let .standardBeat(parts, tempoMap, _, _) = work.content
     else { throw Work.Error.timeBasisMismatch(expected: .beat) }
@@ -926,5 +1352,3 @@ func wallDuration(_ milliseconds: UInt) -> WallDuration {
 func wallTime(_ milliseconds: UInt) -> WallTime {
     WallTime(uintValue: milliseconds * 1_000)! // swiftlint:disable:this force_unwrapping
 }
-
-// swiftlint:enable file_length

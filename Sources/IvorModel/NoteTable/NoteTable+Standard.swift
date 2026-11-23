@@ -47,7 +47,8 @@ extension NoteTable {
                   let duration = result.duration.multiplied(by: factor),
                   let newAttack = loAttack.moved(by: DirectedDuration(duration: duration,
                                                                       direction: result.direction)),
-                  let newDuration = note.duration.multiplied(by: factor)
+                  let newDuration = note.duration.multiplied(by: factor),
+                  let newOrnamentation = Self._scaled(note.ornamentation, by: factor)
             else { throw Error.augmentFailure(note.attack, note.duration, note.startPitch, note.endPitch) }
 
             notes[idx] = StoredNote(noteID: note.noteID,
@@ -55,7 +56,8 @@ extension NoteTable {
                                     duration: newDuration,
                                     startPitch: note.startPitch,
                                     endPitch: note.endPitch,
-                                    extras: note.extras)
+                                    extras: note.extras,
+                                    ornamentation: newOrnamentation)
         }
 
         timeRange = Self.timeRange(in: notes)
@@ -99,7 +101,8 @@ extension NoteTable {
                   let duration = result.duration.divided(by: factor),
                   let newAttack = loAttack.moved(by: DirectedDuration(duration: duration,
                                                                       direction: result.direction)),
-                  let newDuration = note.duration.divided(by: factor)
+                  let newDuration = note.duration.divided(by: factor),
+                  let newOrnamentation = Self._scaled(note.ornamentation, by: 1 / factor)
             else { throw Error.diminishFailure(note.attack, note.duration, note.startPitch, note.endPitch) }
 
             notes[idx] = StoredNote(noteID: note.noteID,
@@ -107,7 +110,8 @@ extension NoteTable {
                                     duration: newDuration,
                                     startPitch: note.startPitch,
                                     endPitch: note.endPitch,
-                                    extras: note.extras)
+                                    extras: note.extras,
+                                    ornamentation: newOrnamentation)
         }
 
         timeRange = Self.timeRange(in: notes)
@@ -140,18 +144,35 @@ extension NoteTable {
             guard noteIDs?.contains(note.noteID) ?? true
             else { continue }
 
-            guard let dirInt1 = note.startPitch.interval(to: hiPitch),
-                  let dirInt2 = note.endPitch.interval(to: hiPitch),
-                  let newStartPitch = loPitch.transposed(by: dirInt1),
-                  let newEndPitch = loPitch.transposed(by: dirInt2)
+            let invert = { (pitch: PitchType) -> PitchType? in
+                pitch.interval(to: hiPitch).flatMap(loPitch.transposed(by:))
+            }
+
+            guard let newStartPitch = invert(note.startPitch),
+                  let newEndPitch = invert(note.endPitch),
+                  let newOrnamentation = Self._mapped(note.ornamentation, invert)
             else { throw Error.invertFailure(note.attack, note.duration, note.startPitch, note.endPitch) }
+
+            //
+            // An inversion mirrors the written partner to the other side of the note, so the
+            // partner's side flips with it (see `Ornament.flippingPartnerSide()`).
+            //
+            let invertedOrnamentation = newOrnamentation.map {
+                Ornamentation(graceBefore: $0.graceBefore,
+                              graceAfter: $0.graceAfter,
+                              ornament: $0.ornament?.flippingPartnerSide(),
+                              arpeggio: $0.arpeggio,
+                              fermata: $0.fermata)
+            }
 
             notes[idx] = StoredNote(noteID: note.noteID,
                                     attack: note.attack,
                                     duration: note.duration,
                                     startPitch: newStartPitch,
                                     endPitch: newEndPitch,
-                                    extras: note.extras)
+                                    extras: note.extras,
+                                    ornamentation: Self.fittingPartner(invertedOrnamentation,
+                                                                       startPitch: newStartPitch))
         }
 
         notes.sort()
@@ -185,7 +206,8 @@ extension NoteTable {
                                     duration: note.duration,
                                     startPitch: note.startPitch,
                                     endPitch: note.endPitch,
-                                    extras: note.extras)
+                                    extras: note.extras,
+                                    ornamentation: note.ornamentation)
         }
 
         timeRange = Self.timeRange(in: notes)
@@ -239,7 +261,8 @@ extension NoteTable {
                                     duration: note.duration,
                                     startPitch: note.endPitch,
                                     endPitch: note.startPitch,
-                                    extras: Self._reversedExtras(note.extras))
+                                    extras: Self._reversedExtras(note.extras),
+                                    ornamentation: note.ornamentation?.reversed())
         }
 
         notes.sort()
@@ -269,7 +292,8 @@ extension NoteTable {
             else { continue }
 
             guard let newStartPitch = note.startPitch.transposed(by: directedInterval),
-                  let newEndPitch = note.endPitch.transposed(by: directedInterval)
+                  let newEndPitch = note.endPitch.transposed(by: directedInterval),
+                  let newOrnamentation = Self._mapped(note.ornamentation, { $0.transposed(by: directedInterval) })
             else { throw Error.transposeFailure(note.attack, note.duration, note.startPitch, note.endPitch) }
 
             notes[idx] = StoredNote(noteID: note.noteID,
@@ -277,7 +301,9 @@ extension NoteTable {
                                     duration: note.duration,
                                     startPitch: newStartPitch,
                                     endPitch: newEndPitch,
-                                    extras: note.extras)
+                                    extras: note.extras,
+                                    ornamentation: Self.fittingPartner(newOrnamentation,
+                                                                       startPitch: newStartPitch))
         }
 
         pitchRange = Self.pitchRange(in: notes)
@@ -305,6 +331,34 @@ extension NoteTable {
     }
 
     // MARK: Private Type Methods
+
+    //
+    // `ornamentation` with each grace and written partner pitch mapped by `transform`: `.some`
+    // of the result (`.some(nil)` for none), or `nil` if a pitch can't be mapped, which fails
+    // the whole note as its main pitches would.
+    //
+    private static func _mapped(_ ornamentation: Ornamentation?,
+                                _ transform: (PitchType) -> PitchType?) -> Ornamentation?? {
+        guard let ornamentation
+        else { return .some(nil) }
+
+        //
+        // Not `try?`, which would flatten a failure into `.some(nil)` and silently drop the
+        // ornamentation instead of failing the note.
+        //
+        do {
+            let mapped = try ornamentation.mapPitches { pitch in
+                guard let mapped = transform(pitch)
+                else { throw ConversionFailure() }
+
+                return mapped
+            }
+
+            return .some(mapped)
+        } catch {
+            return nil
+        }
+    }
 
     //
     // A slur runs the other way once its notes are reversed, so the note that ended it now
@@ -339,6 +393,19 @@ extension NoteTable {
         }
 
         return newExtras
+    }
+
+    //
+    // `ornamentation` with its written lengths scaled by `factor`: `.some` of the result
+    // (`.some(nil)` for none), or `nil` if a length can't be scaled, which fails the whole note
+    // as its own duration would.
+    //
+    private static func _scaled(_ ornamentation: Ornamentation?,
+                                by factor: Number) -> Ornamentation?? {
+        guard let ornamentation
+        else { return .some(nil) }
+
+        return ornamentation.scaled(by: factor).map { .some($0) }
     }
 
     // MARK: Private Instance Methods
@@ -383,7 +450,8 @@ extension NoteTable {
                                     duration: note.duration,
                                     startPitch: note.startPitch,
                                     endPitch: note.endPitch,
-                                    extras: newExtras)
+                                    extras: newExtras,
+                                    ornamentation: note.ornamentation)
         }
     }
 

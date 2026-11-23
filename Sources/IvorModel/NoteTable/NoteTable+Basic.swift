@@ -28,6 +28,32 @@ extension NoteTable {
                extras: extras)
     }
 
+    /// Inserts a note with a single pitch and ornamentation into the table.
+    ///
+    /// - Parameter attack:         The attack time of the note.
+    /// - Parameter duration:       The duration of the note.
+    /// - Parameter pitch:          The pitch of the note.
+    /// - Parameter extras:         Optional extra data attached to the note. Defaults to `nil`.
+    /// - Parameter ornamentation:  The ornamentation of the note, or `nil` for none.
+    ///
+    /// - Returns:  The identity of the newly inserted note.
+    ///
+    /// - Throws:   ``NoteTable/Error/partnerOnWrongSide(_:_:_:_:)`` if the ornament’s written
+    ///             partner isn’t strictly on its side of `pitch`.
+    @discardableResult
+    public mutating func insert(attack: TimeType,
+                                duration: DurationType,
+                                pitch: PitchType,
+                                extras: Extras? = nil,
+                                ornamentation: Ornamentation?) throws(Error) -> NoteID {
+        try insert(attack: attack,
+                   duration: duration,
+                   startPitch: pitch,
+                   endPitch: pitch,
+                   extras: extras,
+                   ornamentation: ornamentation)
+    }
+
     /// Inserts a note with a start pitch and an end pitch into the table.
     ///
     /// Unlike the time-keyed maps (`TempoMap`, `PanMap`, `DynamicMap`) and `InstrumentTable`, which
@@ -55,7 +81,48 @@ extension NoteTable {
                 duration: duration,
                 startPitch: startPitch,
                 endPitch: endPitch,
-                extras: extras)
+                extras: extras,
+                ornamentation: nil)
+
+        return noteID
+    }
+
+    /// Inserts a note with a start pitch, an end pitch, and ornamentation into the table.
+    ///
+    /// A step partner’s written pitch must lie strictly on its side of the note’s start pitch:
+    /// above it for a trill or upper mordent, below it for a lower mordent. A contradiction is an
+    /// error, never silently reinterpreted.
+    ///
+    /// - Parameter attack:         The attack time of the note.
+    /// - Parameter duration:       The duration of the note.
+    /// - Parameter startPitch:     The pitch at the start of the note.
+    /// - Parameter endPitch:       The pitch at the end of the note.
+    /// - Parameter extras:         Optional extra data attached to the note. Defaults to `nil`.
+    /// - Parameter ornamentation:  The ornamentation of the note, or `nil` for none.
+    ///
+    /// - Returns:  The identity of the newly inserted note.
+    ///
+    /// - Throws:   ``NoteTable/Error/partnerOnWrongSide(_:_:_:_:)`` if the ornament’s written
+    ///             partner isn’t strictly on its side of `startPitch`.
+    @discardableResult
+    public mutating func insert(attack: TimeType,
+                                duration: DurationType,
+                                startPitch: PitchType,
+                                endPitch: PitchType,
+                                extras: Extras? = nil,
+                                ornamentation: Ornamentation?) throws(Error) -> NoteID {
+        guard !Self.hasPartnerOnWrongSide(ornamentation, startPitch: startPitch)
+        else { throw .partnerOnWrongSide(attack, duration, startPitch, endPitch) }
+
+        let noteID = NoteID()
+
+        _insert(noteID: noteID,
+                attack: attack,
+                duration: duration,
+                startPitch: startPitch,
+                endPitch: endPitch,
+                extras: extras,
+                ornamentation: ornamentation)
 
         return noteID
     }
@@ -74,6 +141,7 @@ extension NoteTable {
         notes.sort()
 
         hasExtras = hasExtras || other.hasExtras
+        hasOrnamentation = hasOrnamentation || other.hasOrnamentation
         hasPortamento = hasPortamento || other.hasPortamento
         isMonophonic = Self.isMonophonic(in: notes)
         pitchRange = Self.mergePitchRanges(pitchRange.require(),
@@ -83,7 +151,7 @@ extension NoteTable {
     }
 
     /// Moves the note with the given identity to a new attack time, keeping its duration,
-    /// pitches, and extras, and re-sorts it into place.
+    /// pitches, extras, and ornamentation, and re-sorts it into place.
     ///
     /// A note’s position depends on all four of its attack, duration, and pitches (see
     /// ``insertionIndex(for:duration:startPitch:endPitch:)``), so changing any one of them can
@@ -116,13 +184,14 @@ extension NoteTable {
                 duration: note.duration,
                 startPitch: note.startPitch,
                 endPitch: note.endPitch,
-                extras: note.extras)
+                extras: note.extras,
+                ornamentation: note.ornamentation)
 
         return true
     }
 
-    /// Moves the note with the given identity to a new duration, keeping its attack, pitches, and
-    /// extras, and re-sorts it into place.
+    /// Moves the note with the given identity to a new duration, keeping its attack, pitches,
+    /// extras, and ornamentation, and re-sorts it into place.
     ///
     /// See ``moveAttack(noteID:to:)`` for why this reorders rather than updating in place, and why `noteID`
     /// always keeps naming the same note afterward.
@@ -147,13 +216,14 @@ extension NoteTable {
                 duration: duration,
                 startPitch: note.startPitch,
                 endPitch: note.endPitch,
-                extras: note.extras)
+                extras: note.extras,
+                ornamentation: note.ornamentation)
 
         return true
     }
 
     /// Moves the note with the given identity to a new end pitch, keeping its attack, duration,
-    /// start pitch, and extras, and re-sorts it into place.
+    /// start pitch, extras, and ornamentation, and re-sorts it into place.
     ///
     /// See ``moveAttack(noteID:to:)`` for why this reorders rather than updating in place, and why `noteID`
     /// always keeps naming the same note afterward.
@@ -178,27 +248,40 @@ extension NoteTable {
                 duration: note.duration,
                 startPitch: note.startPitch,
                 endPitch: endPitch,
-                extras: note.extras)
+                extras: note.extras,
+                ornamentation: note.ornamentation)
 
         return true
     }
 
     /// Moves the note with the given identity to a new start pitch, keeping its attack, duration,
-    /// end pitch, and extras, and re-sorts it into place.
+    /// end pitch, extras, and ornamentation, and re-sorts it into place.
     ///
     /// See ``moveAttack(noteID:to:)`` for why this reorders rather than updating in place, and why `noteID`
     /// always keeps naming the same note afterward.
+    ///
+    /// The new start pitch must keep the ornament’s written partner, if any, strictly on its side
+    /// (see ``insert(attack:duration:startPitch:endPitch:extras:ornamentation:)``); otherwise the
+    /// note is left unchanged and this throws.
     ///
     /// - Parameter noteID:     The identity of the note to move.
     /// - Parameter startPitch: The new start pitch for the note.
     ///
     /// - Returns:  `true` if `noteID` identified a note and it was moved; `false` otherwise. See
     ///             ``moveAttack(noteID:to:)``.
+    ///
+    /// - Throws:   ``NoteTable/Error/partnerOnWrongSide(_:_:_:_:)`` if `startPitch` would put the
+    ///             ornament’s written partner on the wrong side of the note.
     @discardableResult
     public mutating func movePitchStart(noteID: NoteID,
-                                        to startPitch: PitchType) -> Bool {
+                                        to startPitch: PitchType) throws(Error) -> Bool {
         guard let position = firstIndex(noteID: noteID)
         else { return false }
+
+        let oldNote = notes[position]
+
+        guard !Self.hasPartnerOnWrongSide(oldNote.ornamentation, startPitch: startPitch)
+        else { throw .partnerOnWrongSide(oldNote.attack, oldNote.duration, startPitch, oldNote.endPitch) }
 
         let note = notes.remove(at: position)
 
@@ -209,7 +292,8 @@ extension NoteTable {
                 duration: note.duration,
                 startPitch: startPitch,
                 endPitch: note.endPitch,
-                extras: note.extras)
+                extras: note.extras,
+                ornamentation: note.ornamentation)
 
         return true
     }
@@ -232,6 +316,10 @@ extension NoteTable {
             hasExtras = Self.hasExtras(in: notes)
         }
 
+        if note.ornamentation != nil {
+            hasOrnamentation = Self.hasOrnamentation(in: notes)
+        }
+
         if note.startPitch != note.endPitch {
             hasPortamento = Self.hasPortamento(in: notes)
         }
@@ -242,7 +330,7 @@ extension NoteTable {
     }
 
     /// Updates the extras attached to the note with the given identity, keeping its attack,
-    /// duration, and pitches unchanged.
+    /// duration, pitches, and ornamentation unchanged.
     ///
     /// Unlike ``moveAttack(noteID:to:)`` and its siblings, this never reorders the table — a
     /// note’s position depends only on its attack, duration, and pitches (see
@@ -271,9 +359,49 @@ extension NoteTable {
                                      duration: note.duration,
                                      startPitch: note.startPitch,
                                      endPitch: note.endPitch,
-                                     extras: extras)
+                                     extras: extras,
+                                     ornamentation: note.ornamentation)
 
         hasExtras = Self.hasExtras(in: notes)
+
+        return true
+    }
+
+    /// Updates the ornamentation of the note with the given identity, keeping its attack,
+    /// duration, pitches, and extras unchanged.
+    ///
+    /// Like ``updateExtras(noteID:extras:)``, this never reorders the table: ornamentation plays
+    /// no part in a note’s position, so the note is replaced in place.
+    ///
+    /// - Parameter noteID:         The identity of the note to update.
+    /// - Parameter ornamentation:  The new ornamentation for the note, or `nil` for none.
+    ///
+    /// - Returns:  `true` if `noteID` identified a note and it was updated; `false` if `noteID`
+    ///             named no note and nothing happened.
+    ///
+    /// - Throws:   ``NoteTable/Error/partnerOnWrongSide(_:_:_:_:)`` if the ornament’s written
+    ///             partner isn’t strictly on its side of the note’s start pitch; the note is left
+    ///             unchanged.
+    @discardableResult
+    public mutating func updateOrnamentation(noteID: NoteID,
+                                             ornamentation: Ornamentation?) throws(Error) -> Bool {
+        guard let position = firstIndex(noteID: noteID)
+        else { return false }
+
+        let note = notes[position]
+
+        guard !Self.hasPartnerOnWrongSide(ornamentation, startPitch: note.startPitch)
+        else { throw .partnerOnWrongSide(note.attack, note.duration, note.startPitch, note.endPitch) }
+
+        notes[position] = StoredNote(noteID: noteID,
+                                     attack: note.attack,
+                                     duration: note.duration,
+                                     startPitch: note.startPitch,
+                                     endPitch: note.endPitch,
+                                     extras: note.extras,
+                                     ornamentation: ornamentation)
+
+        hasOrnamentation = Self.hasOrnamentation(in: notes)
 
         return true
     }
@@ -285,13 +413,15 @@ extension NoteTable {
                                   duration: DurationType,
                                   startPitch: PitchType,
                                   endPitch: PitchType,
-                                  extras: Extras?) {
+                                  extras: Extras?,
+                                  ornamentation: Ornamentation?) {
         let note = StoredNote(noteID: noteID,
                               attack: attack,
                               duration: duration,
                               startPitch: startPitch,
                               endPitch: endPitch,
-                              extras: extras)
+                              extras: extras,
+                              ornamentation: ornamentation)
         let index = insertionIndex(for: attack,
                                    duration: duration,
                                    startPitch: startPitch,
@@ -308,8 +438,12 @@ extension NoteTable {
 
         notes.insert(note, at: index)
 
-        if extras != nil {
+        if note.extras != nil {
             hasExtras = true
+        }
+
+        if note.ornamentation != nil {
+            hasOrnamentation = true
         }
 
         if startPitch != endPitch {

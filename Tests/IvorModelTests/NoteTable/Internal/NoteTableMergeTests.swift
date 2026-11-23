@@ -1,5 +1,6 @@
 // © 2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
@@ -65,6 +66,14 @@ extension NoteTableMergeTests {
         let merged = table.mergingTimes(within: beats(Number(numerator: 1, denominator: 8)))
 
         #expect(merged.allSatisfy { $0.attack == 0 && $0.release == 1 })
+    }
+
+    @Test
+    func mergingTimes_passesOrnamentationThrough() throws {
+        let table = try c4Table(transformableOrnamentation())
+        let merged = table.mergingTimes(within: beats(frac(1, 64)))
+
+        #expect(try merged.first?.ornamentation == transformableOrnamentation())
     }
 
     @Test

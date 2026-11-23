@@ -16,7 +16,10 @@ Project
 │  │     ├─ dynamicMap:      DynamicMap
 │  │     ├─ instrumentTable: InstrumentTable
 │  │     ├─ panMap:          PanMap
-│  │     └─ pedals:          [Pedal: PedalTable]
+│  │     ├─ pedals:          [Pedal: PedalTable]
+│  │     ├─ markTable:       PartMarkTable   // fermatas not on a note, caesuras
+│  │     └─ interpretationRules: InterpretationRules?
+│  ├─ interpretationRules: InterpretationRules?   // how ornaments play by default
 │  ├─ info:         Work.Info          // titles, credits, rights, remarks
 │  └─ realizations: [Realization]      // how instruments sound when played
 └─ templates: [Template]               // analyses that generate new works
@@ -116,9 +119,26 @@ table.remove(noteID: noteID)
 ```
 
 `moveAttack`, `moveDuration`, `movePitchStart`, `movePitchEnd`,
-`updateExtras`, and `remove` take the note’s ``NoteID`` and return whether it
-named a note. A note table is also a collection of ``NoteTable/Note``
-snapshots, each with its attack, release, duration, pitches, and ID.
+`updateExtras`, `updateOrnamentation`, and `remove` take the note’s ``NoteID``
+and return whether it named a note. A note table is also a collection of
+``NoteTable/Note`` snapshots, each with its attack, release, duration, pitches,
+extras, ornamentation, and ID.
+
+A note can also carry ``NoteTable/Ornamentation``: grace figures before and
+after it, a trill, mordent or tremolo, an arpeggio, and a fermata. Pass it to
+`insert(…ornamentation:)` or `updateOrnamentation(noteID:ornamentation:)`.
+These, and `movePitchStart`, throw
+``NoteTable/Error/partnerOnWrongSide(_:_:_:_:)`` rather than leave an
+ornament’s written partner on the wrong side of the note’s start pitch.
+
+Transforms carry ornamentation with its note: transposing and inverting map
+grace and written partner pitches (an inversion also moves a step partner to
+the other side), augmenting and diminishing scale written lengths, and
+reversing turns a figure before the note into a figure after it. Converting
+between beat and wall time converts written lengths at the tempo where they
+start. Tones anywhere in a work that share an attack and an ``ArpeggioGroup``
+roll as one; ``Work/unusedArpeggioGroup`` gives a group for a new roll, and
+duplicating a part gives the copy groups of its own.
 
 ``NoteTable/extractNoteEvents()`` slices the notes into a sequence of
 ``NoteEvent`` values: each a set of pitches sounding together for a duration,
@@ -192,6 +212,59 @@ down or comes up: ``Pedal/SimplifyMode/snap`` leaves a plain down/up switch,
 and ``Pedal/SimplifyMode/merge(tolerance:)`` keeps a gradual sweep, with a step
 for about every `tolerance` of travel. It returns the IDs of the entries it
 removed.
+
+## Part marks and interpretation rules
+
+A part’s ``Part/markTable`` holds the signs that stop the music but aren’t on a
+note: a fermata over a rest, a bar line or any span (``PartMark/fermata(_:span:)``),
+and a caesura (``PartMark/caesura(_:)``). Its entries are kept in time order,
+and time transforms carry them like pedal entries (``TransformTargets/mark``),
+scaling a fermata’s span with the time.
+
+A work’s ``Work/interpretationRules`` and a part’s
+``Part/interpretationRules`` say how ornaments, fermatas and caesuras play
+when a note’s own execution doesn’t. A part’s rules override its work’s field
+by field (``InterpretationRules/resolved(work:part:)``), and anything still
+unset comes from a built-in default. Every rule is time-neutral — shares,
+factors, notes per second and seconds — so no transform or conversion changes
+them.
+
+## Rendering
+
+``Work/rendered(options:)`` turns every note’s ornamentation into the plain
+notes that sound, for playback and export: grace figures, trills, mordents,
+tremolos and rolled chords. Each plays as its own execution says, else as its
+part’s and work’s interpretation rules say, else by the built-in
+``RenderingDefaults``. Grace notes before the first beat, or a chord rolled into
+it, move everything later by a ``Work/Rendering/LeadIn``; in a beat work the
+pickup grows to make room.
+
+Then each fermata holds every part — the longest hold at each moment wins — and
+each caesura pauses them. ``RenderingOptions/FermataMode`` says how: by slowing
+the tempo over the held span, so the bar grid stays (the default, in a beat
+work); by inserting the time, so everything later moves; or not at all. A wall
+work, which has no tempo map, inserts the time. The rendered work has no
+fermatas or caesuras left; ``Work/Rendering/fermataTimes`` says where each one
+now starts.
+
+```swift
+let rendering = try work.rendered(options: RenderingOptions(fermataMode: .tempoChanges))
+
+play(rendering.work)
+```
+
+A conversion keeps fermatas and caesuras as signs, unless it’s asked to apply
+them: ``Work/convert(timeBasis:pitchNotation:context:dropsUnconvertibleNotes:appliesFermataHolds:)``
+and ``Work/warped(appliesFermataHolds:)`` take `appliesFermataHolds`.
+
+### Problems
+
+``Work/problems()`` lists what rendering can’t follow exactly as written:
+fermatas at one moment with different holds, a note’s fermata while another part
+moves, grace notes whose timings can’t be played in order, and rolled chords
+whose tones disagree. Each ``Work/Problem`` is an error or a warning, with its
+part, note and time where it has them. Problems are worked out each time, never
+stored, and rendering goes ahead regardless.
 
 ## Meters
 
@@ -284,7 +357,7 @@ wherever the old release was.
 
 ## Converting a work
 
-``Work/convert(timeBasis:pitchNotation:context:dropsUnconvertibleNotes:)``
+``Work/convert(timeBasis:pitchNotation:context:dropsUnconvertibleNotes:appliesFermataHolds:)``
 returns a new work in another time basis, pitch notation, or both. It returns
 `nil` when the work already has both, so there is nothing to convert. Like
 every method that returns a new work, the result has a fresh ``WorkID`` and is
@@ -320,14 +393,14 @@ their context.
 
 Three more conversions change only the time basis, using a tempo map:
 
-- ``Work/warped()`` converts beat time to wall time with the work’s own tempo
+- ``Work/warped(appliesFermataHolds:)`` converts beat time to wall time with the work’s own tempo
   map — a fixed-media rendering of the tempo curve. Wall time has no bars, so
   the meter table is dropped.
 - ``Work/unwarped(using:)`` converts wall time to beat time with a tempo map
   you supply, such as a tapped-in or detected one. The meter table starts out
   empty.
 - ``Work/varispeeded(normalTempo:)`` converts beat-time, absolute-pitch music to
-  wall time like ``Work/warped()``, and also shifts each note’s pitch with the
+  wall time like ``Work/warped(appliesFermataHolds:)``, and also shifts each note’s pitch with the
   tempo in effect, as a tape played faster or slower would.
 
 ## Realizations

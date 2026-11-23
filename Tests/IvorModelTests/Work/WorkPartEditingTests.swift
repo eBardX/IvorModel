@@ -1,9 +1,12 @@
 // © 2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
 import Testing
+import XestiNumbers
+import XestiTools
 
 struct WorkPartEditingTests {
 }
@@ -53,6 +56,27 @@ extension WorkPartEditingTests {
         try work.addPart(name: "  Violin \n 2 ")
 
         #expect(work.partName(at: 0) == "Violin 2")
+    }
+
+    @Test
+    func duplicatePart_givesTheCopyItsOwnArpeggioGroups() throws {
+        var work = try makeOrnamentedStandardWork()
+        let originalID = work.partIDs[0]
+
+        #expect(work.unusedArpeggioGroup == 3)
+
+        let copyID = try #require(try work.duplicatePart(originalID))
+
+        guard case let .standardBeat(parts, _, _, _) = work.content
+        else { Issue.record("Expected standard beat content"); return }
+
+        let original = try #require(parts.first { $0.partID == originalID })
+        let copy = try #require(parts.first { $0.partID == copyID })
+
+        #expect(original.noteTable.arpeggioGroups == [1, 2])
+        #expect(copy.noteTable.arpeggioGroups == [3, 4])
+        #expect(work.unusedArpeggioGroup == 5)
+        #expect(Work().unusedArpeggioGroup == 1)
     }
 
     @Test

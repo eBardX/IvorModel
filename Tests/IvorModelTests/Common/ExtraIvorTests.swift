@@ -141,12 +141,6 @@ extension ExtraIvorTests {
     }
 
     @Test
-    func fermata() {
-        #expect(Extra.fermata.name == "fermata")
-        #expect(Extra.fermata.values.isEmpty)
-    }
-
-    @Test
     func fingering() {
         #expect(Extra.fingering.name == "fingering")
         #expect(Extra.fingering.values.isEmpty)
@@ -345,12 +339,6 @@ extension ExtraIvorTests {
     }
 
     @Test
-    func mordent() {
-        #expect(Extra.mordent.name == "mordent")
-        #expect(Extra.mordent.values.isEmpty)
-    }
-
-    @Test
     func pizzicato() {
         #expect(Extra.pizzicato.name == "pizzicato")
         #expect(Extra.pizzicato.values.isEmpty)
@@ -431,12 +419,6 @@ extension ExtraIvorTests {
     func tenuto() {
         #expect(Extra.tenuto.name == "tenuto")
         #expect(Extra.tenuto.values.isEmpty)
-    }
-
-    @Test
-    func trill() {
-        #expect(Extra.trill.name == "trill")
-        #expect(Extra.trill.values.isEmpty)
     }
 
     @Test

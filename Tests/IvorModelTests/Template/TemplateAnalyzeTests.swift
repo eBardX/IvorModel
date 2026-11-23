@@ -7,6 +7,7 @@ import IvorTuning
 import Testing
 import XestiMarkov
 import XestiNumbers
+import XestiTools
 
 struct TemplateAnalyzeTests {
 }
@@ -111,6 +112,31 @@ extension TemplateAnalyzeTests {
         #expect(template.analysisSummary.sequenceCount == 2)
         #expect(added.analysisSummary.sequenceCount == 4)
         #expect(try beginCount(of: added, .joint) == 4)
+    }
+
+    @Test
+    func analyze_ignoresOrnamentation() throws {
+        let pitches: [Pitch] = [.c4, .d4, .e4, .c4, .d4, .e4]
+        let plain = makeOneBeatWork(pitches)
+        var ornamented = makeOneBeatWork(pitches)
+
+        try ornamented.modifyPart(ornamented.partIDs[0], as: Part<BeatTime, Pitch>.self) { part in
+            for note in part.noteTable {
+                _ = try? part.noteTable.updateOrnamentation(noteID: note.noteID,
+                                                            ornamentation: .init(graceBefore: try? graceFigure([.g4])))
+            }
+        }
+
+        let options = Template.GenerationOptions<BeatTime, Pitch>(order: 1,
+                                                                  length: .noteCount(12))
+        let fromPlain = try analyzeMixTemplate(plain).generateWork(name: "G", partName: "Part", options: options, seed: 7)
+        let fromOrnamented = try analyzeMixTemplate(ornamented).generateWork(name: "G", partName: "Part", options: options, seed: 7)
+
+        guard case let .standardBeat(parts, _, _, _) = fromOrnamented.content
+        else { Issue.record("Expected standard beat content"); return }
+
+        #expect(try standardBeatPitches(of: fromPlain) == standardBeatPitches(of: fromOrnamented))
+        #expect(parts.allSatisfy { !$0.noteTable.hasOrnamentation })
     }
 
     @Test

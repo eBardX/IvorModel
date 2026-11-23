@@ -4,8 +4,8 @@ public import IvorTiming
 public import IvorTuning
 public import XestiTools
 
-/// A named musical part containing a note table, its parameter maps, its instrument table, and its
-/// dictionary of pedal tables.
+/// A named musical part containing a note table, its parameter maps, its instrument table, its
+/// dictionary of pedal tables, its mark table, and its interpretation rules.
 public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     // MARK: Public Type Aliases
@@ -18,8 +18,8 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     // MARK: Public Initializers
 
-    /// Creates a part with the given name and optional note, map, instrument, and pedal data and
-    /// extras.
+    /// Creates a part with the given name and optional note, map, instrument, pedal and mark data,
+    /// interpretation rules, and extras.
     ///
     /// - Parameter name:               The display name of the part. Its whitespace is
     ///                                 normalized to a single line.
@@ -34,6 +34,11 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
     /// - Parameter pedals:             The dictionary of pedal tables for the part, keyed by
     ///                                 pedal. Empty tables are dropped. Defaults to an empty
     ///                                 dictionary.
+    /// - Parameter markTable:          The mark table for the part. Defaults to an empty mark
+    ///                                 table.
+    /// - Parameter interpretationRules: How the part plays its ornaments, fermatas and caesuras,
+    ///                                 over the work’s rules. Empty rules are stored as `nil`.
+    ///                                 Defaults to `nil`.
     /// - Parameter extras:             Format-specific data about the part as a whole. Empty
     ///                                 extras are stored as `nil`. Defaults to `nil`.
     public init(name: String,
@@ -42,6 +47,8 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
                 instrumentTable: InstrumentTable<TimeType>? = nil,
                 panMap: PanMap<TimeType>? = nil,
                 pedals: [Pedal: PedalTable<TimeType>] = [:],
+                markTable: PartMarkTable<TimeType>? = nil,
+                interpretationRules: InterpretationRules? = nil,
                 extras: Extras? = nil) {
         self.init(partID: PartID(),
                   name: name,
@@ -50,6 +57,8 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
                   instrumentTable: instrumentTable,
                   panMap: panMap,
                   pedals: pedals,
+                  markTable: markTable,
+                  interpretationRules: interpretationRules,
                   extras: extras)
     }
 
@@ -72,6 +81,18 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     /// The instrument table for this part.
     public var instrumentTable: InstrumentTable<TimeType>
+
+    /// How this part plays its ornaments, fermatas and caesuras, field by field over the work’s
+    /// ``Work/interpretationRules``, or `nil` to follow the work’s. Empty rules are stored as
+    /// `nil`.
+    ///
+    /// Every rule is time-neutral, so no transform or conversion changes them.
+    public var interpretationRules: InterpretationRules? {
+        didSet { interpretationRules = Self._normalized(interpretationRules) }
+    }
+
+    /// The mark table for this part: its fermatas not on a note, and its caesuras.
+    public var markTable: PartMarkTable<TimeType>
 
     /// The display name of this part, with whitespace normalized to a single line.
     public var name: String {
@@ -107,10 +128,14 @@ public struct Part<TimeType: TimeProtocol, PitchType: PitchProtocol> {
                   instrumentTable: InstrumentTable<TimeType>? = nil,
                   panMap: PanMap<TimeType>? = nil,
                   pedals: [Pedal: PedalTable<TimeType>] = [:],
+                  markTable: PartMarkTable<TimeType>? = nil,
+                  interpretationRules: InterpretationRules? = nil,
                   extras: Extras? = nil) {
         self.dynamicMap = dynamicMap ?? DynamicMap()
         self.extras = Self._normalized(extras)
         self.instrumentTable = instrumentTable ?? InstrumentTable()
+        self.interpretationRules = Self._normalized(interpretationRules)
+        self.markTable = markTable ?? PartMarkTable()
         //
         // `didSet` doesn't run during initialization, so normalize here too:
         //
@@ -155,8 +180,8 @@ extension Part {
         noteTable.attackingIn(range)
     }
 
-    /// Returns a copy of this part with the same content and ``extras`` but a distinct, freshly
-    /// minted ``PartID``.
+    /// Returns a copy of this part with the same content, ``interpretationRules`` and ``extras``
+    /// but a distinct, freshly minted ``PartID``.
     public func duplicated() -> Self {
         Self(name: name,
              noteTable: noteTable,
@@ -164,6 +189,8 @@ extension Part {
              instrumentTable: instrumentTable,
              panMap: panMap,
              pedals: pedals,
+             markTable: markTable,
+             interpretationRules: interpretationRules,
              extras: extras)
     }
 
@@ -190,6 +217,26 @@ extension Part {
         noteTable.soundingIn(range)
     }
 
+    // MARK: Internal Instance Methods
+
+    //
+    // This part with its arpeggio groups renumbered consecutively from `firstGroup`, in their
+    // order, so its rolls don't join any in a work whose groups all lie below `firstGroup`.
+    //
+    internal func regroupingArpeggios(from firstGroup: ArpeggioGroup) -> Self {
+        var groups: [ArpeggioGroup: ArpeggioGroup] = [:]
+
+        for (offset, group) in noteTable.arpeggioGroups.sorted().enumerated() {
+            groups[group] = ArpeggioGroup(uintValue: firstGroup.uintValue + UInt(offset)).require()
+        }
+
+        var part = self
+
+        part.noteTable = noteTable.regroupingArpeggios(groups)
+
+        return part
+    }
+
     // MARK: Private Type Methods
 
     private static func _normalized(_ extras: Extras?) -> Extras? {
@@ -198,6 +245,10 @@ extension Part {
 
     private static func _normalized(_ pedals: [Pedal: PedalTable<TimeType>]) -> [Pedal: PedalTable<TimeType>] {
         pedals.filter { !$0.value.isEmpty }
+    }
+
+    private static func _normalized(_ rules: InterpretationRules?) -> InterpretationRules? {
+        rules?.isEmpty ?? true ? nil : rules
     }
 }
 
@@ -224,6 +275,12 @@ extension Part: Codable {
         let instrumentTable = try container.decode(InstrumentTable<TimeType>.self,
                                                    forKey: .instrumentTable)
 
+        let interpretationRules = try container.decodeIfPresent(InterpretationRules.self,
+                                                                forKey: .interpretationRules)
+
+        let markTable = try container.decodeIfPresent(PartMarkTable<TimeType>.self,
+                                                      forKey: .markTable)
+
         let name = try container.decode(String.self,
                                         forKey: .name)
 
@@ -246,12 +303,15 @@ extension Part: Codable {
                   instrumentTable: instrumentTable,
                   panMap: panMap,
                   pedals: pedals,
+                  markTable: markTable,
+                  interpretationRules: interpretationRules,
                   extras: extras)
     }
 
     // MARK: Public Instance Methods
 
-    /// Encodes this part into the provided encoder.
+    /// Encodes this part into the provided encoder. An empty mark table and `nil` interpretation
+    /// rules are left out, like `nil` extras.
     ///
     /// - Parameter encoder:    The encoder to write to.
     ///
@@ -283,6 +343,14 @@ extension Part: Codable {
         try container.encode(pedals,
                              forKey: .pedals)
 
+        if !markTable.isEmpty {
+            try container.encode(markTable,
+                                 forKey: .markTable)
+        }
+
+        try container.encodeIfPresent(interpretationRules,
+                                      forKey: .interpretationRules)
+
         try container.encodeIfPresent(extras,
                                       forKey: .extras)
     }
@@ -293,6 +361,8 @@ extension Part: Codable {
         case dynamicMap
         case extras
         case instrumentTable
+        case interpretationRules
+        case markTable
         case name
         case noteTable
         case panMap

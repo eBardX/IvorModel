@@ -14,6 +14,9 @@ extension Part {
         /// A failure that occurred in the part’s instrument table.
         case instrumentTableFailure(InstrumentTable<TimeType>.Error)
 
+        /// A failure that occurred in the part’s mark table.
+        case markTableFailure(PartMarkTable<TimeType>.Error)
+
         /// A failure that occurred in the part’s note table.
         case noteTableFailure(NoteTable<TimeType, PitchType>.Error)
 
@@ -44,6 +47,9 @@ extension Part.Error: EnhancedError {
 
         case let .instrumentTableFailure(error):
             "Instrument table failure: \(error.message)"
+
+        case let .markTableFailure(error):
+            "Mark table failure: \(error.message)"
 
         case let .noteTableFailure(error):
             "Note table failure: \(error.message)"

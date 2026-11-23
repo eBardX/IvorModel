@@ -6,6 +6,7 @@ import IvorTiming
 import IvorTuning
 import Testing
 import XestiNumbers
+import XestiTools
 
 struct NoteTableTests {
 }
@@ -27,6 +28,19 @@ extension NoteTableTests {
 
         #expect(decoded.pitchRange == original.pitchRange)
         #expect(decoded.timeRange == original.timeRange)
+    }
+
+    @Test
+    func codable_roundTripKeepsOrnamentationAndFlag() throws {
+        var table = BeatNotes()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+        try table.insert(attack: 1, duration: 1, pitch: .c4, ornamentation: trillOrnamentation(written: .d4))
+
+        let decoded = try codingRoundTrip(table)
+
+        #expect(decoded.hasOrnamentation)
+        #expect(try decoded.map(\.ornamentation) == [nil, trillOrnamentation(written: .d4)])
     }
 
     @Test

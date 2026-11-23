@@ -120,6 +120,54 @@ maps, pedals, meters, transforms, conversion, realizations, templates, and proje
 - ``Pedal``
 - ``PedalTable``
 
+### Fermatas and caesuras
+
+- ``Fermata``
+- ``FermataExecution``
+- ``FermataShape``
+- ``FermataStretch``
+- ``Pause``
+- ``CaesuraExecution``
+- ``PartMark``
+- ``PartMarkTable``
+
+### Rendering
+
+- ``Work/rendered(options:)``
+- ``Work/Rendering``
+- ``RenderingOptions``
+- ``RenderingDefaults``
+- ``WorkTime``
+
+### Problems
+
+- ``Work/problems()``
+- ``Work/Problem``
+
+### Interpretation rules
+
+- ``InterpretationRules``
+- ``GraceRules``
+- ``OrnamentRules``
+- ``ArpeggioRules``
+- ``FermataRules``
+
+### Ornamentation values
+
+- ``Proportion``
+- ``PositiveDuration``
+- ``NotesPerSecond``
+- ``AlternationCount``
+- ``TremoloStrokes``
+- ``OrnamentStart``
+- ``OrnamentExtent``
+- ``PartnerSide``
+- ``PartnerRule``
+- ``ArpeggioGroup``
+- ``ArpeggioDirection``
+- ``ArpeggioAnchor``
+- ``GracePlacement``
+
 ### Meters
 
 - ``Meter``

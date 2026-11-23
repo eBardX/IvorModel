@@ -38,6 +38,10 @@ extension Work {
         /// a whole-work transform.
         case keyTableTransformFailure(kind: TransformKind, detail: String)
 
+        /// A failure that occurred in a part’s mark table while carrying it along with a
+        /// transform.
+        case markTableTransformFailure(kind: TransformKind, partID: PartID, detail: String)
+
         /// A failure that occurred in the work’s meter table while carrying it along with a
         /// whole-work transform.
         case meterTableTransformFailure(kind: TransformKind, detail: String)
@@ -133,6 +137,9 @@ extension Work.Error: EnhancedError {
 
         case let .keyTableTransformFailure(kind, detail):
             "Key table failure during \(kind): \(detail)"
+
+        case let .markTableTransformFailure(kind, partID, detail):
+            "Mark table failure during \(kind) of part \(partID.stringValue): \(detail)"
 
         case let .meterTableTransformFailure(kind, detail):
             "Meter table failure during \(kind): \(detail)"

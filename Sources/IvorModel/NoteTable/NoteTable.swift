@@ -26,6 +26,9 @@ public struct NoteTable<TimeType: TimeProtocol, PitchType: PitchProtocol> {
     /// A Boolean value indicating whether any note in the note table carries extra data.
     public internal(set) var hasExtras: Bool
 
+    /// A Boolean value indicating whether any note in the note table carries ornamentation.
+    public internal(set) var hasOrnamentation: Bool
+
     /// A Boolean value indicating whether any note in the note table has portamento (differing start and end pitches).
     public internal(set) var hasPortamento: Bool
 
@@ -42,6 +45,7 @@ public struct NoteTable<TimeType: TimeProtocol, PitchType: PitchProtocol> {
 
     internal init(notes: [StoredNote]) {
         self.hasExtras = Self.hasExtras(in: notes)
+        self.hasOrnamentation = Self.hasOrnamentation(in: notes)
         self.hasPortamento = Self.hasPortamento(in: notes)
         self.isMonophonic = Self.isMonophonic(in: notes)
         self.notes = notes

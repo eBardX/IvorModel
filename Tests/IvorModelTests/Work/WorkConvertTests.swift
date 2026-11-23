@@ -9,6 +9,8 @@ import Testing
 import XestiNumbers
 import XestiTools
 
+// swiftlint:disable file_length
+
 struct WorkConvertTests {
 }
 
@@ -224,12 +226,88 @@ extension WorkConvertTests {
     }
 
     @Test
+    func convert_pitchNotationConvertsGraceAndPartnerPitches() throws {
+        let work = try makeOrnamentedStandardWork()
+        let converted = try #require(try work.convert(timeBasis: .beat, pitchNotation: .absolute))
+
+        guard case let .absoluteBeat(parts, _, _, _) = converted.content
+        else { Issue.record("Expected absolute beat content"); return }
+
+        let notes = try #require(parts.first?.noteTable)
+        let ornamented = try #require(notes.first { $0.ornamentation != nil })
+        let d5 = try #require(notes.first { $0.ornamentation == nil }?.startPitch)
+
+        //
+        // The grace D5 converts as the plain D5 does; the written partner and the figure after
+        // come through too.
+        //
+        #expect(ornamented.ornamentation?.graceBefore?.pitches == [d5])
+        #expect(ornamented.ornamentation?.graceAfter?.pitches.count == 1)
+
+        guard case let .step(.above, written?)? = ornamented.ornamentation?.ornament?.partner
+        else { Issue.record("Expected a written partner"); return }
+
+        #expect(written > ornamented.startPitch)
+    }
+
+    @Test
+    func convert_pitchNotationDropsAPartnerThatLandsOnTheNote() throws {
+        //
+        // 445 Hz is closest to the same key as 440 Hz, so the written partner can't stay above
+        // the note: it's dropped, and the partner follows its rule.
+        //
+        let work = try makeOrnamentedWallWork(graceBefore: Frequency(392), partner: Frequency(445))
+        let converted = try #require(try work.convert(timeBasis: .wall, pitchNotation: .keyboard))
+        let note = try #require(keyboardWallNotes(of: converted).first)
+
+        #expect(note.ornamentation?.ornament?.partner == .step(.above, written: nil))
+        #expect(note.ornamentation?.ornament?.sign == .trill)
+    }
+
+    @Test
+    func convert_pitchNotationDropsOnlyTheUnconvertibleSlot() throws {
+        let work = try makeOrnamentedWallWork(graceBefore: Frequency(450), partner: Frequency(494))
+        let context = Work.ConvertContext.default.keyMatching(.within(Ratio(cents: 5)))
+
+        #expect(throws: Work.Error.self) {
+            try work.convert(timeBasis: .wall,
+                             pitchNotation: .keyboard,
+                             context: context)
+        }
+
+        //
+        // The grace 450 Hz is no key within 5 cents, so with `dropsUnconvertibleNotes` only the
+        // figure goes; 494 Hz is within 5 cents of B4, so the ornament stays.
+        //
+        let converted = try #require(try work.convert(timeBasis: .wall,
+                                                      pitchNotation: .keyboard,
+                                                      context: context,
+                                                      dropsUnconvertibleNotes: true))
+        let note = try #require(keyboardWallNotes(of: converted).first)
+
+        #expect(note.ornamentation?.graceBefore == nil)
+        #expect(note.ornamentation?.ornament?.partner == .step(.above, written: NoteNumber(uintValue: 71)))
+    }
+
+    @Test
     func convert_pitchNotationKeepsKeys() throws {
         let table = try makeKeyTable([(0, 2), (1, -1)])
         let work = makeKeyWork(table)
         let converted = try #require(try work.convert(timeBasis: .beat, pitchNotation: .keyboard))
 
         #expect(converted.keyTable == table)
+    }
+
+    @Test
+    func convert_pitchNotationKeepsMarksAndRules() throws {
+        let converted = try #require(try makeRuledWork().convert(timeBasis: .beat, pitchNotation: .absolute))
+
+        guard case let .absoluteBeat(parts, _, _, _) = converted.content
+        else { Issue.record("Expected absolute beat content"); return }
+
+        #expect(converted.interpretationRules == ruledWorkRules())
+        #expect(parts.first?.interpretationRules == ruledPartRules())
+        #expect(parts.first?.markTable.map(\.mark) == [.caesura(nil)])
     }
 
     @Test
@@ -439,6 +517,38 @@ extension WorkConvertTests {
     }
 
     @Test
+    func convert_timeBasisConvertsOrnamentationAndMarks() throws {
+        var work = try makeOrnamentedStandardWork()
+
+        try work.modifyPart(work.partIDs[0], as: Part<BeatTime, Pitch>.self) { part in
+            part.markTable.insert(time: 1, mark: .fermata(Fermata(execution: FermataExecution(hold: .added(positiveBeats(1, 8)))),
+                                                          span: positiveBeats(1, 4)))
+        }
+
+        let converted = try #require(try work.convert(timeBasis: .wall, pitchNotation: .standard))
+
+        guard case let .standardWall(parts) = converted.content
+        else { Issue.record("Expected standard wall content"); return }
+
+        let converter = TimeConverter(tempoMap: TempoMap())
+        let part = try #require(parts.first)
+        let mark = try #require(part.markTable.first)
+        let ornamented = try #require(part.noteTable.first { $0.ornamentation != nil })
+
+        #expect(mark.time == converter.wallTime(at: 1))
+        #expect(mark.mark.span == converter.wallTime(at: beatTime(frac(5, 4))) - converter.wallTime(at: 1))
+        let graceLength = converter.wallTime(at: beatTime(frac(1, 16))) - converter.wallTime(at: 0)
+
+        #expect(ornamented.ornamentation?.graceBefore?.events.first?.length?.duration == graceLength)
+
+        guard case let .fermata(fermata, _) = mark.mark,
+              case let .added(hold)? = fermata.execution?.hold
+        else { Issue.record("Expected a fermata with an added hold"); return }
+
+        #expect(hold.duration == converter.wallTime(at: beatTime(frac(9, 8))) - converter.wallTime(at: 1))
+    }
+
+    @Test
     func convert_timeBasisDropsOrStartsEmpty() throws {
         let work = try makeKeyWork(makeKeyTable([(0, 2)]))
         let wall = try #require(try work.convert(timeBasis: .wall, pitchNotation: .standard))
@@ -446,6 +556,17 @@ extension WorkConvertTests {
 
         #expect(wall.keyTable == nil)
         #expect(beat.keyTable == KeyTable())
+    }
+
+    @Test
+    func convert_timeBasisKeepsRules() throws {
+        let converted = try #require(try makeRuledWork().convert(timeBasis: .wall, pitchNotation: .standard))
+
+        guard case let .standardWall(parts) = converted.content
+        else { Issue.record("Expected standard wall content"); return }
+
+        #expect(converted.interpretationRules == ruledWorkRules())
+        #expect(parts.first?.interpretationRules == ruledPartRules())
     }
 
     @Test
@@ -472,6 +593,29 @@ extension WorkConvertTests {
         else { Issue.record("Expected .standardBeat content."); return }
 
         #expect(result.info == work.info)
+    }
+
+    @Test
+    func convert_wallToBeatConvertsMarks() throws {
+        var table = NoteTable<WallTime, Pitch>()
+        var marks = PartMarkTable<WallTime>()
+
+        table.insert(attack: wallTime(0), duration: wallDuration(2_000), pitch: .c4)
+        marks.insert(time: wallTime(1_000), mark: .fermata(Fermata(), span: PositiveDuration(wallDuration(500)).unsafelyUnwrapped))
+
+        let work = Work(content: .standardWall([Part(name: "Piano", noteTable: table, markTable: marks)]))
+        let converted = try #require(try work.convert(timeBasis: .beat, pitchNotation: .standard))
+
+        guard case let .standardBeat(parts, _, _, _) = converted.content
+        else { Issue.record("Expected standard beat content"); return }
+
+        let mark = try #require(parts.first?.markTable.first)
+        let converter = TimeConverter(tempoMap: TempoMap())
+        let time = converter.beatTime(at: wallTime(1_000))
+
+        #expect(mark.time == time)
+        #expect(mark.mark.span == converter.beatTime(at: wallTime(1_500)) - time)
+        #expect(mark.mark.span != nil)
     }
 
     @Test
@@ -582,3 +726,5 @@ extension WorkConvertTests {
         }
     }
 }
+
+// swiftlint:enable file_length

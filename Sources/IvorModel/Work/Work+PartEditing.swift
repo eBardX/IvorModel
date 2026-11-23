@@ -1,5 +1,7 @@
 // © 2026 John Gary Pusey (see LICENSE.md)
 
+internal import XestiTools
+
 private import IvorTiming
 private import IvorTuning
 
@@ -10,6 +12,17 @@ extension Work {
     /// The IDs of the parts in this work, in order.
     public var partIDs: [PartID] {
         content.partIDs
+    }
+
+    /// An arpeggio group no note in this work belongs to: one past the largest in use, or the
+    /// first group if there are none.
+    ///
+    /// Tones anywhere in a work that share an attack and an ``ArpeggioGroup`` roll as one, so an
+    /// importer or an edit that adds a roll gives it a group from here.
+    public var unusedArpeggioGroup: ArpeggioGroup {
+        let largest = content.arpeggioGroups.max()?.uintValue ?? 0
+
+        return ArpeggioGroup(uintValue: largest + 1).require()
     }
 
     // MARK: Public Instance Methods
@@ -90,7 +103,8 @@ extension Work {
 
     /// Duplicates the part with the given ID, inserting the copy immediately after
     /// the original. Every realization gives the copy the same patch table as the
-    /// original.
+    /// original. The copy’s arpeggios get groups of their own (see
+    /// ``unusedArpeggioGroup``), so its rolls don’t join the original’s.
     ///
     /// - Parameter partID: The ID of the part to duplicate.
     ///
@@ -102,12 +116,14 @@ extension Work {
     public mutating func duplicatePart(_ partID: PartID) throws(Error) -> PartID? {
         try ensureUnlocked()
 
+        let firstGroup = unusedArpeggioGroup
+
         switch content {
         case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return nil }
 
-            let duplicate = parts[index].duplicated()
+            let duplicate = parts[index].duplicated().regroupingArpeggios(from: firstGroup)
             var newParts = parts
 
             newParts.insert(duplicate,
@@ -124,7 +140,7 @@ extension Work {
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return nil }
 
-            let duplicate = parts[index].duplicated()
+            let duplicate = parts[index].duplicated().regroupingArpeggios(from: firstGroup)
             var newParts = parts
 
             newParts.insert(duplicate,
@@ -141,7 +157,7 @@ extension Work {
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return nil }
 
-            let duplicate = parts[index].duplicated()
+            let duplicate = parts[index].duplicated().regroupingArpeggios(from: firstGroup)
             var newParts = parts
 
             newParts.insert(duplicate,
@@ -158,7 +174,7 @@ extension Work {
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return nil }
 
-            let duplicate = parts[index].duplicated()
+            let duplicate = parts[index].duplicated().regroupingArpeggios(from: firstGroup)
             var newParts = parts
 
             newParts.insert(duplicate,
@@ -175,7 +191,7 @@ extension Work {
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return nil }
 
-            let duplicate = parts[index].duplicated()
+            let duplicate = parts[index].duplicated().regroupingArpeggios(from: firstGroup)
             var newParts = parts
 
             newParts.insert(duplicate,
@@ -192,7 +208,7 @@ extension Work {
             guard let index = parts.firstIndex(where: { $0.partID == partID })
             else { return nil }
 
-            let duplicate = parts[index].duplicated()
+            let duplicate = parts[index].duplicated().regroupingArpeggios(from: firstGroup)
             var newParts = parts
 
             newParts.insert(duplicate,

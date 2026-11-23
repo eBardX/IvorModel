@@ -1,11 +1,14 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
 import Testing
 import XestiNumbers
 import XestiTools
+
+// swiftlint:disable file_length
 
 struct NoteTableBasicTests {
 }
@@ -14,6 +17,7 @@ struct NoteTableBasicTests {
 
 extension NoteTableBasicTests {
     private typealias NoteTableSB = NoteTable<BeatTime, Pitch>
+    private typealias Ornamentation = BeatNotes.Ornamentation
 
     @Test
     func collection_empty() {
@@ -87,6 +91,16 @@ extension NoteTableBasicTests {
     }
 
     @Test
+    func insert_emptyOrnamentationIsNotStored() throws {
+        var table = BeatNotes()
+
+        try table.insert(attack: 0, duration: 1, pitch: .c4, ornamentation: Ornamentation())
+
+        #expect(!table.hasOrnamentation)
+        #expect(table.first?.ornamentation == nil)
+    }
+
+    @Test
     func insert_outOfOrder_matchesInOrder() {
         let notes: [(attack: BeatTime, duration: BeatDuration, pitch: Pitch)] = [(0, 1, .c4),
                                                                                  (0, 1, .e4),
@@ -111,6 +125,65 @@ extension NoteTableBasicTests {
         #expect(reversed.map(\.startPitch) == inOrder.map(\.startPitch))
         #expect(reversed.pitchRange == inOrder.pitchRange)
         #expect(reversed.timeRange == inOrder.timeRange)
+    }
+
+    @Test
+    func insert_partnerOnTheRightSide() throws {
+        var table = BeatNotes()
+
+        try table.insert(attack: 0, duration: 1, pitch: .c4, ornamentation: trillOrnamentation(written: .d4))
+        try table.insert(attack: 1, duration: 1, pitch: .c4, ornamentation: lowerMordentOrnamentation(written: .b3))
+        try table.insert(attack: 2, duration: 1, pitch: .c4, ornamentation: trillOrnamentation(written: nil))
+
+        #expect(table.count == 3)
+    }
+
+    @Test
+    func insert_partnerOnTheWrongSide() throws {
+        var table = BeatNotes()
+        let wrongSides = try [(trillOrnamentation(written: .c4), Pitch.c4),
+                              (trillOrnamentation(written: .b3), .c4),
+                              (lowerMordentOrnamentation(written: .c4), .c4),
+                              (lowerMordentOrnamentation(written: .d4), .c4)]
+
+        for (ornamentation, pitch) in wrongSides {
+            #expect(throws: BeatNotes.Error.partnerOnWrongSide(0, 1, pitch, pitch)) {
+                try table.insert(attack: 0, duration: 1, pitch: pitch, ornamentation: ornamentation)
+            }
+        }
+
+        #expect(table.isEmpty)
+        #expect(!table.hasOrnamentation)
+    }
+
+    @Test
+    func insert_partnerSideIsCheckedAgainstTheStartPitch() throws {
+        var table = BeatNotes()
+
+        // A glide may end below a trill’s partner: only the start pitch counts.
+        try table.insert(attack: 0, duration: 1, startPitch: .c4, endPitch: .e4, ornamentation: trillOrnamentation(written: .d4))
+
+        #expect(throws: BeatNotes.Error.partnerOnWrongSide(0, 1, .e4, .c4)) {
+            try table.insert(attack: 0, duration: 1, startPitch: .e4, endPitch: .c4, ornamentation: trillOrnamentation(written: .d4))
+        }
+    }
+
+    @Test
+    func insert_withOrnamentation() throws {
+        var table = BeatNotes()
+        let ornamentation = try trillOrnamentation(written: .d4)
+        let noteID = try table.insert(attack: 0,
+                                      duration: 1,
+                                      pitch: .c4,
+                                      extras: Extras(elements: [Extra(name: "accent")]),
+                                      ornamentation: ornamentation)
+        let note = try #require(table.first)
+
+        #expect(note.noteID == noteID)
+        #expect(note.ornamentation == ornamentation)
+        #expect(note.extras == Extras(elements: [Extra(name: "accent")]))
+        #expect(table.hasOrnamentation)
+        #expect(table.hasExtras)
     }
 
     @Test
@@ -231,6 +304,26 @@ extension NoteTableBasicTests {
     }
 
     @Test
+    func merge_combinesTheFlag() throws {
+        var plain = BeatNotes()
+        var ornamented = BeatNotes()
+
+        plain.insert(attack: 0, duration: 1, pitch: .c4)
+        try ornamented.insert(attack: 1, duration: 1, pitch: .c4, ornamentation: trillOrnamentation(written: nil))
+
+        var merged = plain
+
+        merged.merge(with: ornamented)
+
+        #expect(merged.hasOrnamentation)
+        #expect(try merged.map(\.ornamentation) == [nil, trillOrnamentation(written: nil)])
+
+        plain.merge(with: BeatNotes())
+
+        #expect(!plain.hasOrnamentation)
+    }
+
+    @Test
     func moveAttack_found() throws {
         var table = NoteTableSB()
         var foundNoteID: NoteID?
@@ -328,11 +421,48 @@ extension NoteTableBasicTests {
     }
 
     @Test
-    func movePitchStart_notFound() {
+    func movePitchStart_notFound() throws {
         var table = NoteTableSB()
-        let moved = table.movePitchStart(noteID: NoteID(), to: .e4)
+        let moved = try table.movePitchStart(noteID: NoteID(), to: .e4)
 
         #expect(!moved)
+    }
+
+    @Test
+    func movePitchStart_partnerOnTheWrongSide() throws {
+        var table = BeatNotes()
+        let noteID = try table.insert(attack: 0, duration: 1, pitch: .c4, ornamentation: trillOrnamentation(written: .d4))
+
+        for pitch in [Pitch.d4, .e4] {
+            #expect(throws: BeatNotes.Error.partnerOnWrongSide(0, 1, pitch, .c4)) {
+                try table.movePitchStart(noteID: noteID, to: pitch)
+            }
+        }
+
+        #expect(table.first?.startPitch == .c4)
+        #expect(table.first?.noteID == noteID)
+    }
+
+    @Test
+    func moves_keepOrnamentation() throws {
+        var table = BeatNotes()
+        let ornamentation = try trillOrnamentation(written: .d4)
+        let noteID = try table.insert(attack: 0, duration: 1, pitch: .c4, ornamentation: ornamentation)
+
+        table.moveAttack(noteID: noteID, to: 1)
+        table.moveDuration(noteID: noteID, to: 2)
+        table.movePitchEnd(noteID: noteID, to: .e4)
+        try table.movePitchStart(noteID: noteID, to: .b3)
+
+        let note = try #require(table.first)
+
+        #expect(note.noteID == noteID)
+        #expect(note.attack == 1)
+        #expect(note.duration == 2)
+        #expect(note.startPitch == .b3)
+        #expect(note.endPitch == .e4)
+        #expect(note.ornamentation == ornamentation)
+        #expect(table.hasOrnamentation)
     }
 
     @Test
@@ -398,6 +528,22 @@ extension NoteTableBasicTests {
 
         #expect(notes[0].release == notes[1].attack)
         #expect(notes[0].release.doubleValue == notes[1].attack.doubleValue)
+    }
+
+    @Test
+    func remove_clearsTheFlagWithTheLastOrnamentedNote() throws {
+        var table = BeatNotes()
+        let firstID = try table.insert(attack: 0, duration: 1, pitch: .c4, ornamentation: trillOrnamentation(written: nil))
+        let secondID = try table.insert(attack: 1, duration: 1, pitch: .c4, ornamentation: trillOrnamentation(written: nil))
+
+        table.insert(attack: 2, duration: 1, pitch: .c4)
+        table.remove(noteID: firstID)
+
+        #expect(table.hasOrnamentation)
+
+        table.remove(noteID: secondID)
+
+        #expect(!table.hasOrnamentation)
     }
 
     @Test
@@ -470,6 +616,19 @@ extension NoteTableBasicTests {
 
         #expect(updated)
         #expect(table.hasExtras)
+    }
+
+    @Test
+    func updateExtras_keepsOrnamentation() throws {
+        var table = BeatNotes()
+        let ornamentation = try trillOrnamentation(written: .d4)
+        let noteID = try table.insert(attack: 0, duration: 1, pitch: .c4, ornamentation: ornamentation)
+
+        table.updateExtras(noteID: noteID, extras: Extras(elements: [Extra(name: "accent")]))
+        table.updateExtras(noteID: noteID, extras: nil)
+
+        #expect(table.first?.ornamentation == ornamentation)
+        #expect(table.hasOrnamentation)
     }
 
     @Test
@@ -555,4 +714,67 @@ extension NoteTableBasicTests {
         #expect(updated)
         #expect(!table.hasExtras)
     }
+
+    @Test
+    func updateOrnamentation_clears() throws {
+        var table = BeatNotes()
+        let noteID = try table.insert(attack: 0,
+                                      duration: 1,
+                                      pitch: .c4,
+                                      extras: Extras(elements: [Extra(name: "accent")]),
+                                      ornamentation: trillOrnamentation(written: nil))
+
+        #expect(try table.updateOrnamentation(noteID: noteID, ornamentation: nil))
+        #expect(table.first?.ornamentation == nil)
+        #expect(table.first?.extras == Extras(elements: [Extra(name: "accent")]))
+        #expect(!table.hasOrnamentation)
+    }
+
+    @Test
+    func updateOrnamentation_found() throws {
+        var table = BeatNotes()
+        let noteID = table.insert(attack: 0, duration: 1, pitch: .c4)
+        let ornamentation = try lowerMordentOrnamentation(written: .b3)
+
+        #expect(try table.updateOrnamentation(noteID: noteID, ornamentation: ornamentation))
+        #expect(table.first?.ornamentation == ornamentation)
+        #expect(table.first?.noteID == noteID)
+        #expect(table.hasOrnamentation)
+    }
+
+    @Test
+    func updateOrnamentation_notFound() throws {
+        var table = BeatNotes()
+
+        table.insert(attack: 0, duration: 1, pitch: .c4)
+
+        #expect(try !table.updateOrnamentation(noteID: NoteID(), ornamentation: trillOrnamentation(written: nil)))
+        #expect(!table.hasOrnamentation)
+    }
+
+    @Test
+    func updateOrnamentation_partnerOnTheWrongSide() throws {
+        var table = BeatNotes()
+        let ornamentation = try trillOrnamentation(written: .d4)
+        let noteID = try table.insert(attack: 0, duration: 1, pitch: .c4, ornamentation: ornamentation)
+
+        #expect(throws: BeatNotes.Error.partnerOnWrongSide(0, 1, .c4, .c4)) {
+            try table.updateOrnamentation(noteID: noteID, ornamentation: lowerMordentOrnamentation(written: .d4))
+        }
+
+        #expect(table.first?.ornamentation == ornamentation)
+    }
+
+    @Test
+    func updateOrnamentation_preservesOrderAmongTies() throws {
+        var table = BeatNotes()
+        let firstID = table.insert(attack: 0, duration: 1, pitch: .c4)
+        let secondID = table.insert(attack: 0, duration: 1, pitch: .c4)
+
+        try table.updateOrnamentation(noteID: firstID, ornamentation: trillOrnamentation(written: nil))
+
+        #expect(table.map(\.noteID) == [firstID, secondID])
+    }
 }
+
+// swiftlint:enable file_length

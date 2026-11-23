@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
@@ -14,6 +15,7 @@ struct NoteTableStandardTests {
 
 extension NoteTableStandardTests {
     private typealias NoteTableSB = NoteTable<BeatTime, Pitch>
+    private typealias Ornamentation = BeatNotes.Ornamentation
 
     @Test
     func augment_invalidAnchorThrows() {
@@ -97,6 +99,22 @@ extension NoteTableStandardTests {
     }
 
     @Test
+    func augment_scalesWrittenLengths() throws {
+        var table = try c4Table(transformableOrnamentation())
+
+        try table.augment(by: 2, anchor: 0)
+
+        let ornamentation = try #require(table.first?.ornamentation)
+
+        #expect(ornamentation.graceBefore?.events.first?.length == positiveBeats(1, 8))
+        #expect(ornamentation.fermata?.execution?.hold == .added(positiveBeats(1, 2)))
+        //
+        // Shares are unchanged:
+        //
+        #expect(ornamentation.graceAfter?.execution?.fromMain == .share(proportion(1, 4)))
+    }
+
+    @Test
     func augment_validAnchorDoesNotThrow() throws {
         var table = NoteTableSB()
 
@@ -128,6 +146,34 @@ extension NoteTableStandardTests {
     }
 
     @Test
+    func diminish_scalesWrittenLengths() throws {
+        var table = try c4Table(transformableOrnamentation())
+
+        try table.diminish(by: 2, anchor: 0)
+
+        let ornamentation = try #require(table.first?.ornamentation)
+
+        #expect(ornamentation.graceBefore?.events.first?.length == positiveBeats(1, 32))
+        #expect(ornamentation.fermata?.execution?.hold == .added(positiveBeats(1, 8)))
+    }
+
+    @Test
+    func invert_aGracePitchThatCantBeMappedFailsTheNote() throws {
+        var table = try keyboardGraceTable(grace: 0)
+
+        table.insert(attack: 1, duration: 1, pitch: NoteNumber(uintValue: 72).unsafelyUnwrapped)
+
+        //
+        // Around 60…72, note 0 would become 132, past the last note number.
+        //
+        let middleC = try #require(NoteNumber(uintValue: 60))
+
+        #expect(throws: NoteTable<BeatTime, NoteNumber>.Error.invertFailure(0, 1, middleC, middleC)) {
+            try table.invert()
+        }
+    }
+
+    @Test
     func invert_aroundWiderRange_updatesPitchRange() throws {
         //
         // Inverted around C4...G4, wider than the table's own C4...E4, the notes move up to end
@@ -147,6 +193,23 @@ extension NoteTableStandardTests {
     }
 
     @Test
+    func invert_flipsAMordentsSide() throws {
+        var table = BeatNotes()
+
+        try table.insert(attack: 0,
+                         duration: 1,
+                         pitch: .c4,
+                         ornamentation: Ornamentation(ornament: ornament(.mordent, .step(.above, written: nil))))
+        table.insert(attack: 1, duration: 1, pitch: .g4)
+
+        try table.invert()
+
+        let lowerMordent = try ornament(.mordent, .step(.below, written: nil))
+
+        #expect(table.first { $0.attack == 0 }?.ornamentation?.ornament == lowerMordent)
+    }
+
+    @Test
     func invert_invalidAnchorThrows() {
         var table = NoteTableSB()
 
@@ -156,6 +219,28 @@ extension NoteTableStandardTests {
         #expect(throws: NoteTableSB.Error.invalidAnchor) {
             try table.invert(around: .d4 ... .e4)
         }
+    }
+
+    @Test
+    func invert_mapsPitchesAndATrillBecomesAnUnsignedLowerTrill() throws {
+        var table = try c4Table(transformableOrnamentation())
+
+        table.insert(attack: 1, duration: 1, pitch: .g4)
+
+        try table.invert()
+
+        //
+        // Around C4…G4: C4 becomes G4, D4 becomes F4 (below it), D5 becomes F3 and E4 becomes
+        // E♭4.
+        //
+        let note = try #require(table.first { $0.attack == 0 })
+        let ornamentation = try #require(note.ornamentation)
+
+        #expect(note.startPitch == .g4)
+        #expect(ornamentation.ornament?.sign == nil)
+        #expect(ornamentation.ornament?.partner == .step(.below, written: .f4))
+        #expect(ornamentation.graceBefore?.pitches == [.f3])
+        #expect(ornamentation.graceAfter?.pitches == ["E♭4"])
     }
 
     @Test
@@ -227,6 +312,15 @@ extension NoteTableStandardTests {
         }
 
         #expect(attacks.sorted() == [2, 4])
+    }
+
+    @Test
+    func move_passesOrnamentationThrough() throws {
+        var table = try c4Table(transformableOrnamentation())
+
+        try table.move(by: later(1))
+
+        #expect(try table.first?.ornamentation == transformableOrnamentation())
     }
 
     @Test
@@ -447,6 +541,19 @@ extension NoteTableStandardTests {
     }
 
     @Test
+    func reverse_swapsTheFigures() throws {
+        var table = try c4Table(transformableOrnamentation())
+
+        try table.reverse()
+
+        let ornamentation = try #require(table.first?.ornamentation)
+
+        #expect(try ornamentation == (transformableOrnamentation().reversed()))
+        #expect(ornamentation.graceAfter?.pitches == [.d5])
+        #expect(ornamentation.graceBefore?.pitches == [.e4])
+    }
+
+    @Test
     func reverse_validAnchorDoesNotThrow() throws {
         var table = NoteTableSB()
 
@@ -473,6 +580,32 @@ extension NoteTableStandardTests {
         try table.reverse(within: BeatTime(0)...4)
 
         #expect(table.timeRange == BeatTime(3)...4)
+    }
+
+    @Test
+    func transpose_aGracePitchThatCantBeMappedFailsTheNote() throws {
+        var table = try keyboardGraceTable(grace: 127)
+        let middleC = try #require(NoteNumber(uintValue: 60))
+        let semitone = try #require(middleC.interval(to: NoteNumber(uintValue: 61).unsafelyUnwrapped))
+
+        #expect(throws: NoteTable<BeatTime, NoteNumber>.Error.transposeFailure(0, 1, middleC, middleC)) {
+            try table.transpose(by: semitone)
+        }
+    }
+
+    @Test
+    func transpose_mapsGraceAndPartnerPitches() throws {
+        var table = try c4Table(transformableOrnamentation())
+
+        try table.transpose(by: #require(Pitch.c4.interval(to: .d4)))
+
+        let ornamentation = try #require(table.first?.ornamentation)
+
+        #expect(table.first?.startPitch == .d4)
+        #expect(ornamentation.graceBefore?.pitches == [.e5])
+        #expect(ornamentation.graceAfter?.pitches == ["F♯4"])
+        #expect(ornamentation.ornament?.partner == .step(.above, written: .e4))
+        #expect(ornamentation.ornament?.sign == .trill)
     }
 
     @Test

@@ -43,28 +43,29 @@ extension NoteTableInternalTests {
                                             duration: 1,
                                             startPitch: .c4,
                                             endPitch: .c4,
-                                            extras: Extras(elements: [Extra(name: "accent")]))]
+                                            extras: Extras(elements: [Extra(name: "accent")]),
+                                            ornamentation: nil)]
 
         #expect(NoteTableSB.hasExtras(in: notes))
     }
 
     @Test
     func hasExtras_withoutExtras() {
-        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil)]
+        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil, ornamentation: nil)]
 
         #expect(!NoteTableSB.hasExtras(in: notes))
     }
 
     @Test
     func hasPortamento_withoutPortamento() {
-        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil)]
+        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil, ornamentation: nil)]
 
         #expect(!NoteTableSB.hasPortamento(in: notes))
     }
 
     @Test
     func hasPortamento_withPortamento() {
-        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 1, startPitch: .c4, endPitch: .e4, extras: nil)]
+        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 1, startPitch: .c4, endPitch: .e4, extras: nil, ornamentation: nil)]
 
         #expect(NoteTableSB.hasPortamento(in: notes))
     }
@@ -88,16 +89,16 @@ extension NoteTableInternalTests {
 
     @Test
     func isMonophonic_overlapping() {
-        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 2, startPitch: .c4, endPitch: .c4, extras: nil),
-                     NoteTableSB.StoredNote(attack: 1, duration: 1, startPitch: .e4, endPitch: .e4, extras: nil)]
+        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 2, startPitch: .c4, endPitch: .c4, extras: nil, ornamentation: nil),
+                     NoteTableSB.StoredNote(attack: 1, duration: 1, startPitch: .e4, endPitch: .e4, extras: nil, ornamentation: nil)]
 
         #expect(!NoteTableSB.isMonophonic(in: notes))
     }
 
     @Test
     func isMonophonic_sequential() {
-        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil),
-                     NoteTableSB.StoredNote(attack: 1, duration: 1, startPitch: .e4, endPitch: .e4, extras: nil)]
+        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil, ornamentation: nil),
+                     NoteTableSB.StoredNote(attack: 1, duration: 1, startPitch: .e4, endPitch: .e4, extras: nil, ornamentation: nil)]
 
         #expect(NoteTableSB.isMonophonic(in: notes))
     }
@@ -125,8 +126,8 @@ extension NoteTableInternalTests {
 
     @Test
     func pitchRange_nonEmpty() {
-        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil),
-                     NoteTableSB.StoredNote(attack: 1, duration: 1, startPitch: .g5, endPitch: .g5, extras: nil)]
+        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil, ornamentation: nil),
+                     NoteTableSB.StoredNote(attack: 1, duration: 1, startPitch: .g5, endPitch: .g5, extras: nil, ornamentation: nil)]
 
         let range = NoteTableSB.pitchRange(in: notes)
 
@@ -141,8 +142,8 @@ extension NoteTableInternalTests {
 
     @Test
     func timeRange_nonEmpty() {
-        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 2, startPitch: .c4, endPitch: .c4, extras: nil),
-                     NoteTableSB.StoredNote(attack: 3, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil)]
+        let notes = [NoteTableSB.StoredNote(attack: 0, duration: 2, startPitch: .c4, endPitch: .c4, extras: nil, ornamentation: nil),
+                     NoteTableSB.StoredNote(attack: 3, duration: 1, startPitch: .c4, endPitch: .c4, extras: nil, ornamentation: nil)]
 
         let range = NoteTableSB.timeRange(in: notes)
 

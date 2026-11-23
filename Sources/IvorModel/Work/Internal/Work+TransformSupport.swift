@@ -155,6 +155,11 @@ extension Work {
                                                  partID: partID,
                                                  detail: underlying.message)
 
+        case let .markTableFailure(underlying):
+                .markTableTransformFailure(kind: kind,
+                                           partID: partID,
+                                           detail: underlying.message)
+
         case let .noteTableFailure(underlying):
                 .transformFailure(kind: kind,
                                   partID: partID,

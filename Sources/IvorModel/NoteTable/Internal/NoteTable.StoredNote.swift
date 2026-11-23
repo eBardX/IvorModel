@@ -11,10 +11,11 @@ extension NoteTable {
     //
     // The two pitches are folded into one tuple slot, not two separate associated
     // values, to keep `extended` under `enum_case_associated_values_count`'s
-    // threshold now that identity is a sixth field every case carries.
+    // threshold. Likewise the extras and ornamentation share one `Payload` slot, so
+    // a note with neither stays `glide` or `simple` and encodes compactly.
     //
     internal enum StoredNote {
-        case extended(NoteID, TimeType, DurationType, (start: PitchType, end: PitchType), Extras)
+        case extended(NoteID, TimeType, DurationType, (start: PitchType, end: PitchType), Payload)
         case glide(NoteID, TimeType, DurationType, (start: PitchType, end: PitchType))
         case simple(NoteID, TimeType, DurationType, PitchType)
     }
@@ -36,9 +37,17 @@ extension NoteTable.StoredNote {
                   duration: NoteTable.DurationType,
                   startPitch: PitchType,
                   endPitch: PitchType,
-                  extras: Extras?) {
-        if let extras, !extras.isEmpty {
-            self = .extended(noteID, attack, duration, (startPitch, endPitch), extras)
+                  extras: Extras?,
+                  ornamentation: NoteTable.Ornamentation?) {
+        //
+        // Every entry point that can create a note with its written partner on the wrong side
+        // checks it and throws; the transforms keep it by construction.
+        //
+        assert(!NoteTable.hasPartnerOnWrongSide(ornamentation, startPitch: startPitch))
+
+        if let payload = Payload(extras: extras,
+                                 ornamentation: ornamentation) {
+            self = .extended(noteID, attack, duration, (startPitch, endPitch), payload)
         } else if startPitch != endPitch {
             self = .glide(noteID, attack, duration, (startPitch, endPitch))
         } else {
@@ -80,13 +89,7 @@ extension NoteTable.StoredNote {
     }
 
     internal var extras: Extras? {
-        switch self {
-        case let .extended(_, _, _, _, extras):
-            extras
-
-        default:
-            nil
-        }
+        payload?.extras
     }
 
     internal var maximumPitch: PitchType {
@@ -103,6 +106,20 @@ extension NoteTable.StoredNote {
             let .glide(noteID, _, _, _),
             let .simple(noteID, _, _, _):
             noteID
+        }
+    }
+
+    internal var ornamentation: NoteTable.Ornamentation? {
+        payload?.ornamentation
+    }
+
+    internal var payload: Payload? {
+        switch self {
+        case let .extended(_, _, _, _, payload):
+            payload
+
+        default:
+            nil
         }
     }
 
@@ -139,7 +156,8 @@ extension NoteTable.StoredNote: Codable {
     //
     // Identity is never encoded (see `NoteID`'s doc comment), so decoding always
     // assigns a fresh one via the default parameter — indistinguishable from a
-    // freshly inserted note.
+    // freshly inserted note. A written partner on the wrong side of the note is
+    // rejected, as `insert` would reject it.
     //
     internal init(from decoder: any Decoder) throws {
         var container = try decoder.unkeyedContainer()
@@ -149,12 +167,18 @@ extension NoteTable.StoredNote: Codable {
         let startPitch = try container.decode(PitchType.self)
         let endPitch = try container.decodeIfPresent(PitchType.self)
         let extras = try container.decodeIfPresent(Extras.self)?.normalizingNames()
+        let ornamentation = try container.decodeIfPresent(NoteTable.Ornamentation.self)
+
+        guard !NoteTable.hasPartnerOnWrongSide(ornamentation, startPitch: startPitch)
+        else { throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath,
+                                                                       debugDescription: "Ornament partner on the wrong side of the note")) }
 
         self.init(attack: attack,
                   duration: duration,
                   startPitch: startPitch,
                   endPitch: endPitch ?? startPitch,
-                  extras: extras)
+                  extras: extras,
+                  ornamentation: ornamentation)
     }
 
     // MARK: Internal Instance Methods
@@ -166,12 +190,23 @@ extension NoteTable.StoredNote: Codable {
         try container.encode(duration)
         try container.encode(startPitch)
 
-        if endPitch != startPitch || extras != nil {
+        //
+        // The decoder reads the optional elements in order, so a later one needs every earlier
+        // slot written: `endPitch` before extras, and an extras slot (`null`) before the
+        // ornamentation.
+        //
+        if endPitch != startPitch || payload != nil {
             try container.encode(endPitch)
         }
 
         if let extras {
             try container.encode(extras)
+        } else if ornamentation != nil {
+            try container.encodeNil()
+        }
+
+        if let ornamentation {
+            try container.encode(ornamentation)
         }
     }
 }
@@ -196,7 +231,7 @@ extension NoteTable.StoredNote: Equatable {
 
     //
     // Identity is deliberately excluded: two notes are equal here exactly when
-    // they carry the same attack, duration, pitches, and extras, regardless of
+    // they carry the same attack, duration, pitches, extras, and ornamentation, regardless of
     // which `NoteID` each holds. Unlike the time-keyed maps, this equality is not
     // used to reject or collapse anything on insert — a note table allows exact
     // duplicates — but it keeps the same "content, not identity" contract the other
@@ -205,8 +240,8 @@ extension NoteTable.StoredNote: Equatable {
     //
     internal static func == (lhs: Self,
                              rhs: Self) -> Bool {
-        (lhs.attack, lhs.duration, lhs.startPitch, lhs.endPitch, lhs.extras) ==
-            (rhs.attack, rhs.duration, rhs.startPitch, rhs.endPitch, rhs.extras)
+        (lhs.attack, lhs.duration, lhs.startPitch, lhs.endPitch, lhs.extras, lhs.ornamentation) ==
+            (rhs.attack, rhs.duration, rhs.startPitch, rhs.endPitch, rhs.extras, rhs.ornamentation)
     }
 }
 

@@ -44,7 +44,8 @@ extension NoteTable {
                               duration: duration,
                               startPitch: note.startPitch,
                               endPitch: note.endPitch,
-                              extras: note.extras)
+                              extras: note.extras,
+                              ornamentation: note.ornamentation)
         }
 
         return Self(notes: merged.sorted())

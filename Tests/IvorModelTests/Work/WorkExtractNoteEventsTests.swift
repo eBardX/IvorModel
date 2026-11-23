@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
@@ -59,6 +60,20 @@ extension WorkExtractNoteEventsTests {
         let unwrapped = try #require(events)
 
         #expect(unwrapped.isEmpty)
+    }
+
+    @Test
+    func extractNoteEvents_ignoresOrnamentation() throws {
+        var plain = BeatNotes()
+        var ornamented = BeatNotes()
+
+        plain.insert(attack: 0, duration: 1, pitch: .c4)
+        try ornamented.insert(attack: 0,
+                              duration: 1,
+                              pitch: .c4,
+                              ornamentation: .init(graceBefore: graceFigure([.d4]), ornament: ornament(.trill, .step(.above, written: nil))))
+
+        #expect(plain.extractNoteEvents() == ornamented.extractNoteEvents())
     }
 
     @Test

@@ -488,6 +488,13 @@ extension WorkWarpTests {
     }
 
     @Test
+    func warped_keepsRules() throws {
+        let warped = try #require(makeRuledWork().warped())
+
+        #expect(warped.interpretationRules == ruledWorkRules())
+    }
+
+    @Test
     func warped_keepsSMPTEStartTime() throws {
         let startTime = try #require(SMPTETime(string: "01:00:00:00", frameRate: .fps24))
         let work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()),

@@ -77,7 +77,8 @@ extension NoteTable where TimeType == BeatTime {
                                     duration: newDuration,
                                     startPitch: note.startPitch,
                                     endPitch: note.endPitch,
-                                    extras: note.extras)
+                                    extras: note.extras,
+                                    ornamentation: note.ornamentation)
         }
 
         notes.sort()
@@ -113,7 +114,10 @@ extension NoteTable where TimeType == WallTime {
                                      duration: beatRelease - beatAttack,
                                      startPitch: note.startPitch,
                                      endPitch: note.endPitch,
-                                     extras: note.extras))
+                                     extras: note.extras,
+                                     ornamentation: Self.retimed(note.ornamentation,
+                                                                 at: note.attack,
+                                                                 times: tc.beatTime(at:))))
             }
         }
 
@@ -148,7 +152,14 @@ extension NoteTable where TimeType == BeatTime {
                                      duration: wallRelease - wallAttack,
                                      startPitch: note.startPitch,
                                      endPitch: note.endPitch,
-                                     extras: note.extras))
+                                     extras: note.extras,
+                                     ornamentation: Self.retimed(note.ornamentation,
+                                                                 at: note.attack,
+                                                                 times: tc.wallTime(at:)) {
+                                         Self.measuredTremoloRate($0,
+                                                                  at: note.attack,
+                                                                  using: tempoMap)
+                                     }))
             }
         }
 
@@ -198,11 +209,34 @@ extension NoteTable where TimeType == BeatTime, PitchType == Frequency {
                                                note.startPitch,
                                                note.endPitch) }
 
+                //
+                // A figure before the note shifts by the tempo at the attack, and a figure after
+                // it by the tempo at the release, like the note's own start and end pitches; a
+                // written partner shifts with the start pitch.
+                //
+                let ornamentation = Self.retimed(note.ornamentation,
+                                                 at: note.attack,
+                                                 times: tc.wallTime(at:),
+                                                 tremoloRate: { Self.measuredTremoloRate($0,
+                                                                                         at: note.attack,
+                                                                                         using: tempoMap) },
+                                                 pitchBefore: Self._varispeeding(at: note.attack,
+                                                                                 using: tempoMap,
+                                                                                 normalTempo: normalTempo),
+                                                 pitch: Self._varispeeding(at: note.attack,
+                                                                           using: tempoMap,
+                                                                           normalTempo: normalTempo),
+                                                 pitchAfter: Self._varispeeding(at: note.release,
+                                                                                using: tempoMap,
+                                                                                normalTempo: normalTempo))
+
                 wtNotes.append(.init(attack: wallAttack,
                                      duration: wallRelease - wallAttack,
                                      startPitch: varispeedStartPitch,
                                      endPitch: varispeedEndPitch,
-                                     extras: note.extras))
+                                     extras: note.extras,
+                                     ornamentation: NoteTable<WallTime, Frequency>.fittingPartner(ornamentation,
+                                                                                                  startPitch: varispeedStartPitch)))
             }
         }
 
@@ -235,6 +269,24 @@ extension NoteTable where TimeType == BeatTime, PitchType == Frequency {
                                                          direction: .descending))
         } else {
             return pitch
+        }
+    }
+
+    //
+    // A pitch mapping that shifts each pitch by the tempo in effect at `beatTime`, throwing if a
+    // shifted pitch is out of range.
+    //
+    private static func _varispeeding(at beatTime: BeatTime,
+                                      using tempoMap: TempoMap,
+                                      normalTempo: Tempo) -> (Frequency) throws -> Frequency {
+        { pitch in
+            guard let shifted = _varispeed(of: pitch,
+                                           at: beatTime,
+                                           using: tempoMap,
+                                           normalTempo: normalTempo)
+            else { throw ConversionFailure() }
+
+            return shifted
         }
     }
 }

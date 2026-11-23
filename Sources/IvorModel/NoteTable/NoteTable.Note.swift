@@ -30,6 +30,10 @@ extension NoteTable {
         /// The stable identity of the note.
         public let noteID: NoteID
 
+        /// The ornamentation of the note — its grace figures, ornament, arpeggio, and fermata —
+        /// if any.
+        public let ornamentation: Ornamentation?
+
         /// The release time of the note: its ``attack`` advanced by its ``duration``.
         ///
         /// It is worked out exactly, in the note’s own time type, so a note that ends as the next
@@ -49,6 +53,7 @@ extension NoteTable {
             self.endPitch = note.endPitch
             self.extras = note.extras
             self.noteID = note.noteID
+            self.ornamentation = note.ornamentation
             self.release = note.release
             self.startPitch = note.startPitch
         }

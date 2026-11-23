@@ -51,6 +51,19 @@ extension KeyTableTransformTests {
     }
 
     @Test
+    func invert_keepsAtonal() throws {
+        var table = KeyTable()
+
+        try table.insert(beatTime: 0,
+                         key: .atonal)
+
+        let emptied = table.invert(around: Pitch.c4...Pitch.g4)
+
+        #expect(!emptied)
+        #expect(table.first?.key == .atonal)
+    }
+
+    @Test
     func invert_mapsModeKeepsExtras() throws {
         let extras = sampleExtras("kept").inserting(Extra(name: "other", values: [.int(1)]))
         var table = KeyTable()
@@ -70,6 +83,16 @@ extension KeyTableTransformTests {
     }
 
     @Test
+    func invert_noteRange() throws {
+        var table = try makeKeyTable([(0, 1), (4, 0)])
+
+        let emptied = table.invert(around: NoteNumber(uintValue: 60)!...NoteNumber(uintValue: 67)!) // swiftlint:disable:this force_unwrapping
+
+        #expect(!emptied)
+        #expect(table.map(\.key) == [key(-4), key(-3)])
+    }
+
+    @Test
     func invert_noteRange_mapsMode() throws {
         var table = KeyTable()
 
@@ -82,29 +105,6 @@ extension KeyTableTransformTests {
         #expect(!emptied)
         #expect(table.first?.key == key(-4, .mixolydian))
         #expect(table.first?.key.tonic == .eFlat)
-    }
-
-    @Test
-    func invert_keepsAtonal() throws {
-        var table = KeyTable()
-
-        try table.insert(beatTime: 0,
-                         key: .atonal)
-
-        let emptied = table.invert(around: Pitch.c4...Pitch.g4)
-
-        #expect(!emptied)
-        #expect(table.first?.key == .atonal)
-    }
-
-    @Test
-    func invert_noteRange() throws {
-        var table = try makeKeyTable([(0, 1), (4, 0)])
-
-        let emptied = table.invert(around: NoteNumber(uintValue: 60)!...NoteNumber(uintValue: 67)!) // swiftlint:disable:this force_unwrapping
-
-        #expect(!emptied)
-        #expect(table.map(\.key) == [key(-4), key(-3)])
     }
 
     @Test

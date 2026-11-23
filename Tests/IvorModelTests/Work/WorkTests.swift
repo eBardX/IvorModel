@@ -70,6 +70,26 @@ extension WorkTests {
     }
 
     @Test
+    func codable_omitsNilRules() throws {
+        let data = try JSONEncoder().encode(Work(name: "Plain"))
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        #expect(object["interpretationRules"] == nil)
+    }
+
+    @Test
+    func codable_roundTripsRulesAndPartMarks() throws {
+        let work = makeRuledWork()
+        let decoded = try JSONDecoder().decode(Work.self, from: JSONEncoder().encode(work))
+        let part = try #require(standardBeatParts(of: decoded).first)
+
+        #expect(decoded.interpretationRules == ruledWorkRules())
+        #expect(part.interpretationRules == ruledPartRules())
+        #expect(part.markTable.map(\.mark) == [.caesura(nil)])
+        #expect(part.markTable.map(\.time) == [1])
+    }
+
+    @Test
     func comparable() {
         let alpha = Work(name: "Alpha")
         let beta  = Work(name: "Beta")
@@ -107,6 +127,11 @@ extension WorkTests {
         let original = Work(name: "Aubade", info: makeWorkInfo())
 
         #expect(original.duplicated().info == original.info)
+    }
+
+    @Test
+    func duplicated_keepsRules() {
+        #expect(makeRuledWork().duplicated().interpretationRules == ruledWorkRules())
     }
 
     @Test
@@ -164,6 +189,11 @@ extension WorkTests {
     @Test
     func init_emptyExtrasBecomeNil() {
         #expect(Work(extras: Extras()).extras == nil)
+    }
+
+    @Test
+    func init_emptyRulesAreStoredAsNil() {
+        #expect(Work(interpretationRules: InterpretationRules()).interpretationRules == nil)
     }
 
     @Test
@@ -396,6 +426,30 @@ extension WorkTests {
             try work.replaceContent(with: .standardWall([part]))
         }
         #expect(work.partCount == 0)
+    }
+
+    @Test
+    func setInterpretationRules() throws {
+        var work = Work()
+
+        try work.setInterpretationRules(ruledWorkRules())
+
+        #expect(work.interpretationRules == ruledWorkRules())
+
+        try work.setInterpretationRules(InterpretationRules())
+
+        #expect(work.interpretationRules == nil)
+    }
+
+    @Test
+    func setInterpretationRules_lockedWork() {
+        var (work, _) = makeLockedWorkSB()
+
+        #expect(throws: Work.Error.workIsLocked) {
+            try work.setInterpretationRules(ruledWorkRules())
+        }
+
+        #expect(work.interpretationRules == nil)
     }
 
     @Test

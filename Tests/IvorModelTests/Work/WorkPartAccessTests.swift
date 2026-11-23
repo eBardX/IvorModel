@@ -18,7 +18,7 @@ extension WorkPartAccessTests {
         var work = makeKeyWork(KeyTable())
 
         let result = try work.modifyKeyTable { table in
-            try? table.insert(beatTime: 0, key: key(3))
+            _ = try? table.insert(beatTime: 0, key: key(3))
 
             return table.count
         }

@@ -1,8 +1,8 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
 /// A set of the time-keyed collections that a time-based transform should carry along with the
-/// notes: a part’s parameter maps, instrument table and dictionary of pedal tables, and the
-/// work’s own tempo map, meter table and key table.
+/// notes: a part’s parameter maps, instrument table, dictionary of pedal tables and mark table,
+/// and the work’s own tempo map, meter table and key table.
 public struct TransformTargets {
 
     // MARK: Public Initializers
@@ -26,9 +26,9 @@ extension TransformTargets {
 
     // MARK: Public Type Properties
 
-    /// Every target: the parameter maps, the instrument table, the dictionary of pedal tables, and
-    /// the work’s own tempo map, meter table and key table.
-    public static let all: Self = [.dynamic, .instrument, .key, .meter, .pan, .pedal, .tempo]
+    /// Every target: the parameter maps, the instrument table, the dictionary of pedal tables, the
+    /// mark table, and the work’s own tempo map, meter table and key table.
+    public static let all: Self = [.dynamic, .instrument, .key, .mark, .meter, .pan, .pedal, .tempo]
 
     /// The dynamic map.
     public static let dynamic = Self(rawValue: 1 << 0)
@@ -43,6 +43,10 @@ extension TransformTargets {
     /// Quantize never carries the key table, as it never carries the meter table: keys
     /// mark notation, not sound.
     public static let key = Self(rawValue: 1 << 6)
+
+    /// The part mark table: fermatas not on a note, and caesuras. A transform that scales time
+    /// also scales fermata spans.
+    public static let mark = Self(rawValue: 1 << 7)
 
     /// The work’s own meter table. Only meaningful to a whole-work transform — a `Part` has no
     /// meter table of its own, so this target is ignored wherever `TransformTargets` selects among

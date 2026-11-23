@@ -8,6 +8,8 @@ import XestiMarkov
 import XestiNumbers
 import XestiTools
 
+typealias BeatNotes = NoteTable<BeatTime, Pitch>
+
 typealias StandardBeatOptions = Template.GenerationOptions<BeatTime, Pitch>
 
 typealias StandardBeatState = Template.State<BeatTime, Pitch>
@@ -85,6 +87,24 @@ struct PulseCase {
     let barLength: Number?
 }
 
+// A rendered note: start and length in whole notes (or seconds), and pitches.
+struct RenderedNote {
+    let start: Number
+    let length: Number
+    let pitch: Pitch
+    let endPitch: Pitch
+
+    init(_ start: Number,
+         _ length: Number,
+         _ pitch: Pitch,
+         _ endPitch: Pitch? = nil) {
+        self.start = start
+        self.length = length
+        self.pitch = pitch
+        self.endPitch = endPitch ?? pitch
+    }
+}
+
 struct ScalingCase {
     let plain: String
     let factor: Number
@@ -94,6 +114,38 @@ struct ScalingCase {
 struct TypeNameVisitor: Template.ContentVisitor {
     func visit<TimeType, PitchType>(_ model: Template.Model<TimeType, PitchType>) -> String where TimeType.DurationType: TemplateDuration {
         "\(TimeType.self) \(PitchType.self)"
+    }
+}
+
+// One written note of a rendering test: attack, duration, pitch(es) and ornamentation.
+struct WrittenNote {
+    let attack: Number
+    let duration: Number
+    let pitch: Pitch
+    let endPitch: Pitch?
+    let extras: Extras?
+    let ornamentation: BeatNotes.Ornamentation?
+
+    init(_ attack: Number,
+         _ duration: Number,
+         _ pitch: Pitch,
+         endPitch: Pitch? = nil,
+         extras: Extras? = nil,
+         _ ornamentation: BeatNotes.Ornamentation? = nil) {
+        self.attack = attack
+        self.duration = duration
+        self.pitch = pitch
+        self.endPitch = endPitch
+        self.extras = extras
+        self.ornamentation = ornamentation
+    }
+}
+
+// MARK: - CustomStringConvertible
+
+extension RenderedNote: CustomStringConvertible {
+    var description: String {
+        "(\(start), \(length), \(pitch)\(endPitch == pitch ? "" : "→\(endPitch)"))"
     }
 }
 
@@ -132,6 +184,11 @@ extension ScalingCase: CustomTestStringConvertible {
 // MARK: - Equatable
 
 extension NoteTripleSB: Equatable {
+}
+
+// MARK: - Equatable
+
+extension RenderedNote: Equatable {
 }
 
 // MARK: - Sendable

@@ -1,5 +1,6 @@
 // © 2025–2026 John Gary Pusey (see LICENSE.md)
 
+import Foundation
 @testable import IvorModel
 import IvorTiming
 import IvorTuning
@@ -52,6 +53,15 @@ extension PartTransformTests {
         }
 
         #expect(instrumentTimes.sorted() == [0, 4])
+    }
+
+    @Test
+    func augment_applyToExcludesMarks() throws {
+        var part = markedPart()
+
+        try part.augment(by: 2, anchor: 0, applyTo: TransformTargets.all.subtracting(.mark))
+
+        #expect(part.markTable.map(\.time) == [1, 2])
     }
 
     @Test
@@ -240,6 +250,16 @@ extension PartTransformTests {
     }
 
     @Test
+    func augment_scalesMarksAndSpans() throws {
+        var part = markedPart()
+
+        try part.augment(by: 2, anchor: 0)
+
+        #expect(part.markTable.map(\.time) == [2, 4])
+        #expect(part.markTable.first?.mark == longFermataMark(beats(1)))
+    }
+
+    @Test
     func augment_scalesNoteTableAndAllMapsByDefault() throws {
         var part = PartSB(name: "Test")
 
@@ -365,6 +385,16 @@ extension PartTransformTests {
     }
 
     @Test
+    func diminish_scalesMarksAndSpans() throws {
+        var part = markedPart()
+
+        try part.diminish(by: 2, anchor: 0)
+
+        #expect(part.markTable.map(\.time) == [beatTime(frac(1, 2)), 1])
+        #expect(part.markTable.first?.mark == longFermataMark(beats(frac(1, 4))))
+    }
+
+    @Test
     func diminish_scalesNoteTableAndDefaultMaps() throws {
         var part = PartSB(name: "Test")
 
@@ -420,6 +450,25 @@ extension PartTransformTests {
         try part.move(by: directedDuration, applyTo: TransformTargets.all.subtracting(.pedal))
 
         #expect(part.pedals[.sustain]?.map(\.time) == [0, 2])
+    }
+
+    @Test
+    func move_carriesOnlyMarksAmongSelectedNotes() throws {
+        var part = markedPart()
+        let selected = part.attackingIn(0...1)
+
+        try part.move(by: later(1), noteIDs: selected)
+
+        //
+        // The selected notes span 0…2 (the note at 1 is a half note), so both marks move.
+        //
+        #expect(part.markTable.map(\.time) == [2, 3])
+
+        var other = markedPart()
+
+        try other.move(by: later(1), noteIDs: other.attackingIn(4...4))
+
+        #expect(other.markTable.map(\.time) == [1, 2])
     }
 
     @Test
@@ -529,6 +578,25 @@ extension PartTransformTests {
     }
 
     @Test
+    func move_pedalsWithoutPan() throws {
+        var part = markedPart()
+        var sustain = PedalTable<BeatTime>()
+
+        sustain.insert(time: 0, level: .down)
+        sustain.insert(time: 2, level: .up)
+
+        part.pedals[.sustain] = sustain
+
+        try part.move(by: later(1), applyTo: [.pedal])
+
+        //
+        // Pedals move even when the pan map isn't a target.
+        //
+        #expect(part.pedals[.sustain]?.map(\.time) == [1, 3])
+        #expect(part.markTable.map(\.time) == [1, 2])
+    }
+
+    @Test
     func move_shiftsNoteTableAndDefaultMaps() throws {
         var part = PartSB(name: "Test")
 
@@ -548,6 +616,18 @@ extension PartTransformTests {
         }
 
         #expect(dynamicTimes == [2])
+    }
+
+    @Test
+    func quantize_snapsMarks() throws {
+        var part = PartSB(name: "Test")
+        let quantizer = try BeatQuantizer(factors: [1])
+        let time = beatTime(frac(1, 3))
+
+        part.markTable.insert(time: time, mark: .caesura(nil))
+        part.quantize(to: quantizer)
+
+        #expect(part.markTable.map(\.time) == [quantizer.quantize(time)])
     }
 
     @Test
@@ -776,6 +856,20 @@ extension PartTransformTests {
     }
 
     @Test
+    func reverse_mirrorsMarks() throws {
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+        part.markTable.insert(time: 0, mark: longFermataMark(beats(1)))
+        part.markTable.insert(time: 3, mark: .caesura(nil))
+
+        try part.reverse()
+
+        #expect(part.markTable.map(\.time) == [1, 3])
+        #expect(part.markTable.map(\.mark) == [.caesura(nil), longFermataMark(beats(1))])
+    }
+
+    @Test
     func reverse_mirrorsNoteTableAndDefaultMaps() throws {
         var part = PartSB(name: "Test")
 
@@ -847,6 +941,17 @@ extension PartTransformTests {
         #expect(part.timeRange == 1...3)
         #expect(part.noteTable.first { $0.startPitch == .d4 }?.attack == 1)
         #expect(part.dynamicMap.map(\.time) == [0])
+    }
+
+    @Test
+    func transformTimeRange_includesMarks() {
+        var part = PartSB(name: "Test")
+
+        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.markTable.insert(time: 3, mark: longFermataMark(beats(2)))
+
+        #expect(part.transformTimeRange(noteIDs: nil, applyTo: .all) == 1...5)
+        #expect(part.transformTimeRange(noteIDs: nil, applyTo: []) == 1...2)
     }
 
     @Test

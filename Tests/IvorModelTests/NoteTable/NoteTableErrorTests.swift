@@ -92,6 +92,14 @@ extension NoteTableErrorTests {
     }
 
     @Test
+    func message_partnerOnWrongSide() {
+        let msg = ErrorSB.partnerOnWrongSide(0, 1, .c4, .c4).message
+
+        #expect(msg.contains("partner"))
+        #expect(msg.contains("wrong side"))
+    }
+
+    @Test
     func message_reverseFailure() {
         let msg = ErrorSB.reverseFailure(0, 1, .c4, .c4).message
 

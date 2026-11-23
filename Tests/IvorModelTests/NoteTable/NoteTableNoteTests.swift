@@ -38,7 +38,8 @@ extension NoteTableNoteTests {
                                                            duration: 1,
                                                            startPitch: .c4,
                                                            endPitch: .c4,
-                                                           extras: nil)
+                                                           extras: nil,
+                                                           ornamentation: nil)
 
         #expect(NoteTable<BeatTime, Pitch>.Note(stored) == NoteTable<BeatTime, Pitch>.Note(stored)) // swiftlint:disable:this identical_operands
     }
@@ -49,12 +50,14 @@ extension NoteTableNoteTests {
                                                             duration: 1,
                                                             startPitch: .c4,
                                                             endPitch: .c4,
-                                                            extras: nil)
+                                                            extras: nil,
+                                                            ornamentation: nil)
         let stored2 = NoteTable<BeatTime, Pitch>.StoredNote(attack: 0,
                                                             duration: 1,
                                                             startPitch: .c4,
                                                             endPitch: .c4,
-                                                            extras: nil)
+                                                            extras: nil,
+                                                            ornamentation: nil)
 
         #expect(NoteTable<BeatTime, Pitch>.Note(stored1) != NoteTable<BeatTime, Pitch>.Note(stored2))
     }
@@ -65,7 +68,8 @@ extension NoteTableNoteTests {
                                                            duration: 1,
                                                            startPitch: .c4,
                                                            endPitch: .c4,
-                                                           extras: makeChannelExtras(2))
+                                                           extras: makeChannelExtras(2),
+                                                           ornamentation: nil)
 
         #expect(NoteTable<BeatTime, Pitch>.Note(stored).extras == makeChannelExtras(2))
     }
@@ -78,7 +82,8 @@ extension NoteTableNoteTests {
                                                            duration: 3,
                                                            startPitch: .c4,
                                                            endPitch: .g4,
-                                                           extras: nil)
+                                                           extras: nil,
+                                                           ornamentation: nil)
         let note = NoteTable<BeatTime, Pitch>.Note(stored)
 
         #expect(note.attack == 2)

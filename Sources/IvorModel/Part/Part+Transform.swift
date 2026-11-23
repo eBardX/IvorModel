@@ -50,6 +50,7 @@ extension Part {
         var newInstrumentTable = instrumentTable
         var newPanMap = panMap
         var newPedals = pedals
+        var newMarkTable = markTable
 
         if applyTo.contains(.dynamic) {
             do {
@@ -79,24 +80,24 @@ extension Part {
             } catch {
                 throw Error.panMapFailure(error)
             }
+        }
 
         if applyTo.contains(.pedal) {
-            let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
-
-            for (pedal, table) in pedals {
-                var newTable = table
-
-                do {
-                    try newTable.augment(by: factor,
-                                         anchor: resolvedAnchor,
-                                         entryIDs: pedalEntryIDs.map { $0[pedal] ?? [] })
-                } catch {
-                    throw Error.pedalTableFailure(pedal, error)
-                }
-
-                newPedals[pedal] = newTable
+            newPedals = try _transformedPedals(forNoteIDs: noteIDs) { table, entryIDs throws(PedalTable<TimeType>.Error) in
+                try table.augment(by: factor,
+                                  anchor: resolvedAnchor,
+                                  entryIDs: entryIDs)
             }
         }
+
+        if applyTo.contains(.mark) {
+            do {
+                try newMarkTable.augment(by: factor,
+                                         anchor: resolvedAnchor,
+                                         entryIDs: _markEntryIDs(forNoteIDs: noteIDs))
+            } catch {
+                throw Error.markTableFailure(error)
+            }
         }
 
         noteTable = newNoteTable
@@ -104,6 +105,7 @@ extension Part {
         instrumentTable = newInstrumentTable
         panMap = newPanMap
         pedals = newPedals
+        markTable = newMarkTable
     }
 
     /// Diminishes note attack times and durations by a rational factor, along with any
@@ -148,6 +150,7 @@ extension Part {
         var newInstrumentTable = instrumentTable
         var newPanMap = panMap
         var newPedals = pedals
+        var newMarkTable = markTable
 
         if applyTo.contains(.dynamic) {
             do {
@@ -177,24 +180,24 @@ extension Part {
             } catch {
                 throw Error.panMapFailure(error)
             }
+        }
 
         if applyTo.contains(.pedal) {
-            let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
-
-            for (pedal, table) in pedals {
-                var newTable = table
-
-                do {
-                    try newTable.diminish(by: factor,
-                                          anchor: resolvedAnchor,
-                                          entryIDs: pedalEntryIDs.map { $0[pedal] ?? [] })
-                } catch {
-                    throw Error.pedalTableFailure(pedal, error)
-                }
-
-                newPedals[pedal] = newTable
+            newPedals = try _transformedPedals(forNoteIDs: noteIDs) { table, entryIDs throws(PedalTable<TimeType>.Error) in
+                try table.diminish(by: factor,
+                                   anchor: resolvedAnchor,
+                                   entryIDs: entryIDs)
             }
         }
+
+        if applyTo.contains(.mark) {
+            do {
+                try newMarkTable.diminish(by: factor,
+                                          anchor: resolvedAnchor,
+                                          entryIDs: _markEntryIDs(forNoteIDs: noteIDs))
+            } catch {
+                throw Error.markTableFailure(error)
+            }
         }
 
         noteTable = newNoteTable
@@ -202,6 +205,7 @@ extension Part {
         instrumentTable = newInstrumentTable
         panMap = newPanMap
         pedals = newPedals
+        markTable = newMarkTable
     }
 
     /// Inverts note pitches around a pitch range.
@@ -260,6 +264,7 @@ extension Part {
         var newInstrumentTable = instrumentTable
         var newPanMap = panMap
         var newPedals = pedals
+        var newMarkTable = markTable
 
         if applyTo.contains(.dynamic) {
             do {
@@ -286,23 +291,22 @@ extension Part {
             } catch {
                 throw Error.panMapFailure(error)
             }
+        }
 
         if applyTo.contains(.pedal) {
-            let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
-
-            for (pedal, table) in pedals {
-                var newTable = table
-
-                do {
-                    try newTable.move(by: directedDuration,
-                                      entryIDs: pedalEntryIDs.map { $0[pedal] ?? [] })
-                } catch {
-                    throw Error.pedalTableFailure(pedal, error)
-                }
-
-                newPedals[pedal] = newTable
+            newPedals = try _transformedPedals(forNoteIDs: noteIDs) { table, entryIDs throws(PedalTable<TimeType>.Error) in
+                try table.move(by: directedDuration,
+                               entryIDs: entryIDs)
             }
         }
+
+        if applyTo.contains(.mark) {
+            do {
+                try newMarkTable.move(by: directedDuration,
+                                      entryIDs: _markEntryIDs(forNoteIDs: noteIDs))
+            } catch {
+                throw Error.markTableFailure(error)
+            }
         }
 
         noteTable = newNoteTable
@@ -310,6 +314,7 @@ extension Part {
         instrumentTable = newInstrumentTable
         panMap = newPanMap
         pedals = newPedals
+        markTable = newMarkTable
     }
 
     /// Reverses the order of notes within a time range, along with any parameter maps selected
@@ -350,6 +355,7 @@ extension Part {
         var newInstrumentTable = instrumentTable
         var newPanMap = panMap
         var newPedals = pedals
+        var newMarkTable = markTable
 
         if applyTo.contains(.dynamic) {
             do {
@@ -376,23 +382,22 @@ extension Part {
             } catch {
                 throw Error.panMapFailure(error)
             }
+        }
 
         if applyTo.contains(.pedal) {
-            let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
-
-            for (pedal, table) in pedals {
-                var newTable = table
-
-                do {
-                    try newTable.reverse(within: resolvedRange,
-                                         entryIDs: pedalEntryIDs.map { $0[pedal] ?? [] })
-                } catch {
-                    throw Error.pedalTableFailure(pedal, error)
-                }
-
-                newPedals[pedal] = newTable
+            newPedals = try _transformedPedals(forNoteIDs: noteIDs) { table, entryIDs throws(PedalTable<TimeType>.Error) in
+                try table.reverse(within: resolvedRange,
+                                  entryIDs: entryIDs)
             }
         }
+
+        if applyTo.contains(.mark) {
+            do {
+                try newMarkTable.reverse(within: resolvedRange,
+                                         entryIDs: _markEntryIDs(forNoteIDs: noteIDs))
+            } catch {
+                throw Error.markTableFailure(error)
+            }
         }
 
         noteTable = newNoteTable
@@ -400,6 +405,7 @@ extension Part {
         instrumentTable = newInstrumentTable
         panMap = newPanMap
         pedals = newPedals
+        markTable = newMarkTable
     }
 
     /// Transposes note pitches by a directed interval.
@@ -515,6 +521,11 @@ extension Part where TimeType == BeatTime {
                                         entryIDs: pedalEntryIDs.map { $0[pedal] ?? [] })
             }
         }
+
+        if applyTo.contains(.mark) {
+            markTable.quantize(using: quantizer,
+                               entryIDs: _markEntryIDs(forNoteIDs: noteIDs))
+        }
     }
 }
 
@@ -571,12 +582,21 @@ extension Part {
             }
         }
 
+        if applyTo.contains(.mark),
+           let markRange = markTable.timeRange {
+            bounds += [markRange.lowerBound, markRange.upperBound]
+        }
+
         guard let lowerBound = bounds.min(),
               let upperBound = bounds.max()
         else { return nil }
 
         return lowerBound...upperBound
     }
+
+    // MARK: Private Type Aliases
+
+    private typealias PedalTransform = (inout PedalTable<TimeType>, Set<EntryID>?) throws(PedalTable<TimeType>.Error) -> Void
 
     // MARK: Private Instance Methods
 
@@ -598,6 +618,20 @@ extension Part {
         else { return [] }
 
         return Set(instrumentTable.filter { range.contains($0.time) }.map(\.entryID))
+    }
+
+    //
+    // The marks whose time falls within the selected notes' range. A fermata mark moves with the
+    // notes it starts among, span and all.
+    //
+    private func _markEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
+        guard let noteIDs
+        else { return nil }
+
+        guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
+        else { return [] }
+
+        return Set(markTable.filter { range.contains($0.time) }.map(\.entryID))
     }
 
     private func _panEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
@@ -633,5 +667,29 @@ extension Part {
 
             return entryIDs
         }
+    }
+
+    //
+    // Each pedal table, transformed by `transform` with the entries `_pedalEntryIDs` selects for
+    // it. A failure names the pedal whose table failed.
+    //
+    private func _transformedPedals(forNoteIDs noteIDs: Set<NoteID>?,
+                                    _ transform: PedalTransform) throws(Error) -> [Pedal: PedalTable<TimeType>] {
+        let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
+        var newPedals = pedals
+
+        for (pedal, table) in pedals {
+            var newTable = table
+
+            do {
+                try transform(&newTable, pedalEntryIDs.map { $0[pedal] ?? [] })
+            } catch {
+                throw Error.pedalTableFailure(pedal, error)
+            }
+
+            newPedals[pedal] = newTable
+        }
+
+        return newPedals
     }
 }

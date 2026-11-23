@@ -13,6 +13,29 @@ extension NoteTable {
         notes.contains { $0.extras != nil }
     }
 
+    internal static func hasOrnamentation(in notes: [StoredNote]) -> Bool {
+        notes.contains { $0.ornamentation != nil }
+    }
+
+    //
+    // A step partner’s written pitch must lie strictly on its side of the note’s start pitch
+    // (resolution 19 of the grace-notes plan): a contradiction is an error, never silently
+    // reinterpreted.
+    //
+    internal static func hasPartnerOnWrongSide(_ ornamentation: Ornamentation?,
+                                               startPitch: PitchType) -> Bool {
+        guard case let .step(side, written?) = ornamentation?.ornament?.partner
+        else { return false }
+
+        switch side {
+        case .above:
+            return written <= startPitch
+
+        case .below:
+            return written >= startPitch
+        }
+    }
+
     internal static func hasPortamento(in notes: [StoredNote]) -> Bool {
         notes.contains { $0.startPitch != $0.endPitch }
     }
