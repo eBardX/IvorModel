@@ -131,6 +131,13 @@ extension Extra {
     /// a single `.double`.
     public static let midiVolume = Self(name: "midiVolume")
 
+    /// Marks a ``NoteTable`` note of a rendered work (see ``Work/rendered(options:)``) that
+    /// its written note’s ornamentation made, rather than the written note itself: a grace
+    /// note, or a piece of a trill, mordent or tremolo other than its first piece on the main
+    /// pitch. A written note with no ornament, or a rolled chord’s tone, has none. Bare flag,
+    /// no payload.
+    public static let ornamentNote = Self(name: "ornamentNote")
+
     /// A pizzicato articulation on a ``NoteTable`` note. Bare flag, no
     /// payload.
     public static let pizzicato = Self(name: "pizzicato")

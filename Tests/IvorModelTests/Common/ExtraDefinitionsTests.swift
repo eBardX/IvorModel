@@ -54,6 +54,7 @@ extension ExtraDefinitionsTests {
                                    .midiTimeSignature,
                                    .midiUnpitched,
                                    .midiVolume,
+                                   .ornamentNote,
                                    .pizzicato,
                                    .rampDuration,
                                    .rampEndTempo,

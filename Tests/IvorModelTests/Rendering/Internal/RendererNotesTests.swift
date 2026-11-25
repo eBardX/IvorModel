@@ -62,8 +62,8 @@ extension RendererNotesTests {
         let names = renderer.renderedNotes(of: 0).map { Set($0.extras?.elements.map(\.name.stringValue) ?? []) }
 
         #expect(names == [["slurStart", "staccato", "attackVelocity"],
-                          ["attackVelocity"],
-                          ["slurEnd", "attackVelocity"]])
+                          ["attackVelocity", "ornamentNote"],
+                          ["slurEnd", "attackVelocity", "ornamentNote"]])
     }
 
     @Test

@@ -13,7 +13,8 @@ extension Renderer {
     // main pitch's last piece carries the glide, if the note has one; the others sit on its start
     // pitch. A figure tied to the main note lends the tied event's span to the main note instead
     // of sounding it: a figure before extends the first piece back, a figure after the last piece
-    // on. A main note left with no span sounds only its grace notes.
+    // on. A main note left with no span sounds only its grace notes. Every rendered note but the
+    // first piece on the main pitch is an ornament note (see `Extra.ornamentNote`).
     //
     internal func renderedNotes(of index: Int) -> [Note] {
         let source = sources[index]
@@ -39,13 +40,15 @@ extension Renderer {
             after[tied].pitches.remove(at: pitch)
         }
 
+        let firstMain = pieces.firstIndex { $0.partner == nil && $0.start < $0.end }
         let lastMain = pieces.lastIndex { $0.partner == nil }
         var notes: [Note] = []
 
         for (position, piece) in pieces.enumerated() where piece.start < piece.end {
             let extras = Self._extras(source.extras,
                                       isFirst: position == 0,
-                                      isLast: position == pieces.count - 1)
+                                      isLast: position == pieces.count - 1,
+                                      isOrnamentNote: position != firstMain)
 
             for pitch in piece.partner ?? [source.startPitch] {
                 notes.append(Note(end: piece.end,
@@ -60,7 +63,7 @@ extension Renderer {
             for pitch in event.pitches {
                 notes.append(Note(end: event.end,
                                   endPitch: pitch,
-                                  extras: nil,
+                                  extras: Self.ornamentNoteExtras,
                                   start: event.start,
                                   startPitch: pitch))
             }
@@ -69,14 +72,34 @@ extension Renderer {
         return notes
     }
 
+    // MARK: Private Type Properties
+
+    private static var ornamentNoteExtras: Extras {
+        Extras(elements: [.ornamentNote])
+    }
+
     // MARK: Private Type Methods
 
     //
     // The extras a piece of a main note keeps. One piece keeps them all. Otherwise every piece
     // keeps the attack velocity; the first keeps the rest, such as a slur's start and
     // articulations, but the last takes what belongs to the note's end: a slur's end, a breath
-    // mark and the release velocity. Grace notes get none.
+    // mark and the release velocity. Grace notes get none. An ornament note is flagged too.
     //
+    private static func _extras(_ extras: Extras?,
+                                isFirst: Bool,
+                                isLast: Bool,
+                                isOrnamentNote: Bool) -> Extras? {
+        let kept = Self._extras(extras,
+                                isFirst: isFirst,
+                                isLast: isLast)
+
+        guard isOrnamentNote
+        else { return kept }
+
+        return (kept ?? Extras()).inserting(.ornamentNote)
+    }
+
     private static func _extras(_ extras: Extras?,
                                 isFirst: Bool,
                                 isLast: Bool) -> Extras? {

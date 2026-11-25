@@ -43,6 +43,7 @@ extension Extra {
                                                         downBow,
                                                         harmonic,
                                                         marcato,
+                                                        ornamentNote,
                                                         pizzicato,
                                                         staccato,
                                                         tenuto,
