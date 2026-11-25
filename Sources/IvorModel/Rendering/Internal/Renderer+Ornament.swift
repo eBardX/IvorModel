@@ -87,11 +87,19 @@ extension Renderer {
     }
 
     private static func _evenNear(_ value: Number) -> Int {
-        max(2, (round(value / 2) * 2).intValue)
+        max(2, _nearest(value / 2) * 2)
+    }
+
+    //
+    // The integer nearest `value`.  A length under a tempo map entry can be inexact, so the
+    // rounded value is made exact before it's taken as an integer.
+    //
+    private static func _nearest(_ value: Number) -> Int {
+        round(value).exact.intValue
     }
 
     private static func _oddNear(_ value: Number) -> Int {
-        max(3, (round((value - 1) / 2) * 2 + 1).intValue)
+        max(3, _nearest((value - 1) / 2) * 2 + 1)
     }
 
     // MARK: Private Instance Methods
@@ -171,10 +179,10 @@ extension Renderer {
             let notes = fill / noteLength
             let count = switch ornament.partner {
             case .pitches:
-                max(2, round(notes).intValue)
+                max(2, Self._nearest(notes))
 
             case .repeat:
-                max(1, round(notes).intValue)
+                max(1, Self._nearest(notes))
 
             case .step where startsOnPartner:
                 Self._evenNear(notes)

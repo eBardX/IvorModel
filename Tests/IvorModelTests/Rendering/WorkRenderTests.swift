@@ -763,6 +763,32 @@ extension WorkRenderTests {
     }
 
     @Test
+    func trill_defaultRateAtAnInexactTempo() throws {
+        let onMain = try ornament(.trill, .step(.above, written: nil))
+        let onPartner = try ornament(.trill, .step(.above, written: nil), OrnamentExecution(startNote: .partner))
+        let part = try renderingPart([WrittenNote(0, frac(1, 4), .c4, Ornamentation(ornament: onMain)),
+                                      WrittenNote(frac(1, 4), frac(1, 4), .d4, Ornamentation(ornament: onPartner))])
+        var tempoMap = TempoMap()
+
+        tempoMap.insert(beatTime: .zero,
+                        tempo: Tempo(80))
+
+        let work = Work(content: .standardBeat([part], tempoMap, MeterTable(), KeyTable()))
+        let notes = try #require(renderedNotes(work.rendered()).first)
+
+        //
+        // A tempo map entry, as an import makes, gives inexact lengths, so the counts are inexact
+        // before they're rounded. At ♩ = 80, a quarter note lasts 0.75 seconds, 9 notes at 12
+        // per second: the first trill takes that odd count, starting on its main note; the
+        // second, starting on its partner, takes the nearest even count.
+        //
+        #expect(notes.first?.pitch == .c4)
+        #expect(notes.filter { $0.start < frac(1, 4) }.count == 9)
+        #expect(notes.first { $0.start >= frac(1, 4) }?.pitch == .e4)
+        #expect(notes.last?.pitch == .d4)
+    }
+
+    @Test
     func trill_diatonicStepInTheKey() throws {
         let trill = try ornament(.trill, .step(.above, written: nil), OrnamentExecution(rate: .noteValue(positiveBeats(1, 12))))
         let inF = try render([WrittenNote(0, frac(1, 4), .e4, Ornamentation(ornament: trill))],
