@@ -166,7 +166,7 @@ extension WorkRenderTests {
 
         #expect(names == [["slurStart", "staccato", "attackVelocity"],
                           ["attackVelocity", "ornamentNote"],
-                          ["slurEnd", "attackVelocity", "ornamentNote"]])
+                          ["slurEnd", "attackVelocity"]])
     }
 
     @Test

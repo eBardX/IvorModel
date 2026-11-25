@@ -13,7 +13,7 @@ extension NoteTable.OrnamentExecution {
         /// such as a trill in thirty-seconds. It converts and scales with the note.
         case noteValue(PositiveDuration<NoteTable.DurationType>)
 
-        /// This many notes per second, whatever the tempo.
+        /// A fixed number of notes per second, whatever the tempo.
         case perSecond(NotesPerSecond)
     }
 }

@@ -44,6 +44,23 @@ extension Pitch: RenderablePitch {
 
     private static let letters: [Letter] = [.c, .d, .e, .f, .g, .a, .b]
 
+    //
+    // Semitones above C of each letter, in `letters` order.
+    //
+    private static let letterSemitones = [0, 2, 4, 5, 7, 9, 11]
+
+    // MARK: Private Instance Properties
+
+    //
+    // How high this pitch sounds, in semitones from C in octave 0, so that, say, B♯4 and C5
+    // sound the same.
+    //
+    private var soundingSemitones: Int {
+        let index = Self.letters.firstIndex(of: letter) ?? 0
+
+        return octave.intValue * 12 + Self.letterSemitones[index] + accidental.order
+    }
+
     // MARK: Private Instance Methods
 
     private func _diatonicStep(on side: PartnerSide,
@@ -68,9 +85,13 @@ extension Pitch: RenderablePitch {
 
         //
         // A key can make the diatonic step land on or past the main pitch (a B♯ main note in a
-        // key with B♭, say); a whole tone is used then instead.
+        // key with B♭, say); a whole tone is used then instead.  `Pitch`'s `<` orders by how
+        // pitches are written, so they're compared by how they sound.
         //
-        guard isAbove ? step > self : step < self
+        let stepSemitones = step.soundingSemitones
+        let mainSemitones = soundingSemitones
+
+        guard isAbove ? stepSemitones > mainSemitones : stepSemitones < mainSemitones
         else { return nil }
 
         return step

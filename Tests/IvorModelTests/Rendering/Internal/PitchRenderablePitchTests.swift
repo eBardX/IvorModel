@@ -40,13 +40,10 @@ extension PitchRenderablePitchTests {
         //
         let main: Pitch = "B♯4"
 
-        withKnownIssue("""
-            KNOWN_BUGS.md: Diatonic step partners can sound on or past their main note — \
-            C♭5 sorts above B♯4, so the step is kept though it sounds lower
-            """) {
-            #expect(main.partner(on: .above, rule: .diatonic, key: key(-7))
-                == main.transposed(by: DirectedInterval(interval: .major2, direction: .ascending)))
-        }
+        #expect(main.partner(on: .above, rule: .diatonic, key: key(-7))
+            == main.transposed(by: DirectedInterval(interval: .major2, direction: .ascending)))
+        #expect(main.partner(on: .above, rule: .diatonic, key: key(-1))
+            == main.transposed(by: DirectedInterval(interval: .major2, direction: .ascending)))
     }
 
     @Test

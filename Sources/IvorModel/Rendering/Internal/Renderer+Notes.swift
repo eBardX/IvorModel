@@ -13,8 +13,9 @@ extension Renderer {
     // main pitch's last piece carries the glide, if the note has one; the others sit on its start
     // pitch. A figure tied to the main note lends the tied event's span to the main note instead
     // of sounding it: a figure before extends the first piece back, a figure after the last piece
-    // on. A main note left with no span sounds only its grace notes. Every rendered note but the
-    // first piece on the main pitch is an ornament note (see `Extra.ornamentNote`).
+    // on. A main note left with no span sounds only its grace notes. A grace note, and a piece on
+    // a partner pitch other than the main pitch, is an ornament note (see `Extra.ornamentNote`);
+    // every piece on the main pitch, a repeated tremolo's included, is not.
     //
     internal func renderedNotes(of index: Int) -> [Note] {
         let source = sources[index]
@@ -40,17 +41,16 @@ extension Renderer {
             after[tied].pitches.remove(at: pitch)
         }
 
-        let firstMain = pieces.firstIndex { $0.partner == nil && $0.start < $0.end }
         let lastMain = pieces.lastIndex { $0.partner == nil }
         var notes: [Note] = []
 
         for (position, piece) in pieces.enumerated() where piece.start < piece.end {
-            let extras = Self._extras(source.extras,
-                                      isFirst: position == 0,
-                                      isLast: position == pieces.count - 1,
-                                      isOrnamentNote: position != firstMain)
-
             for pitch in piece.partner ?? [source.startPitch] {
+                let extras = Self._extras(source.extras,
+                                          isFirst: position == 0,
+                                          isLast: position == pieces.count - 1,
+                                          isOrnamentNote: piece.partner != nil && pitch != source.startPitch)
+
                 notes.append(Note(end: piece.end,
                                   endPitch: piece.partner == nil && position == lastMain ? source.endPitch : pitch,
                                   extras: extras,

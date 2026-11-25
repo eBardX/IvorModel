@@ -28,6 +28,16 @@ extension Pan {
 
         // MARK: Public Initializers
 
+        /// Creates an angle by decoding a number, throwing a `DecodingError` if it is out of
+        /// range.
+        ///
+        /// - Parameter decoder:    The decoder to read from.
+        ///
+        /// - Throws:   `DecodingError` if the encoded data is invalid or corrupted.
+        public init(from decoder: any Decoder) throws {
+            try self.init(validatingFrom: decoder)
+        }
+
         /// Creates an angle from a number value, wrapping it into the range
         /// `(-180, 180]`, or returning `nil` if the value is not finite.
         ///

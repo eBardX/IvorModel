@@ -18,22 +18,37 @@ extension WorkRenderOrnamentNoteTests {
     private typealias OrnamentExecution = BeatNotes.OrnamentExecution
 
     @Test
-    func ornamentNote_flagsGraceNotesAndAlternationsButNotTheFirstMainPiece() throws {
+    func ornamentNote_flagsGraceNotesAndPartnerPitchesOnly() throws {
         let trill = try ornament(.trill, .step(.above, written: nil), OrnamentExecution(rate: .noteValue(positiveBeats(1, 12))))
         let fromPartner = try ornament(.trill,
                                        .step(.above, written: nil),
                                        OrnamentExecution(startNote: .partner, rate: .noteValue(positiveBeats(1, 12))))
-        let notes = try renderedFlags([WrittenNote(0, frac(1, 4), .c4, Ornamentation(graceBefore: graceFigure([.d4], isSlashed: true),
+        let notes = try renderedFlags([WrittenNote(0, frac(1, 4), .c4, Ornamentation(graceBefore: graceFigure([.b3], isSlashed: true),
                                                                                      ornament: trill)),
                                        WrittenNote(frac(1, 4), frac(1, 4), .e4, Ornamentation(ornament: fromPartner))])
 
         //
-        // The grace note and every piece but each trill's first on its main pitch are flagged.
+        // The grace note and each trill's partner pitch are flagged; every piece on a main pitch,
+        // the trills' returns and held ends included, is not.
         //
-        #expect(notes.first?.pitch == .d4)
-        #expect(notes.first?.isOrnamentNote == true)
+        let fSharp4 = try #require(Pitch(plain: "F#4"))
+
+        //
+        // With no key, a step is a whole step: E4's partner is F♯4.
+        //
         #expect(notes.count > 4)
-        #expect(notes.filter { !$0.isOrnamentNote }.map(\.pitch) == [.c4, .e4])
+        #expect(Set(notes.filter(\.isOrnamentNote).map(\.pitch)) == [.b3, .d4, fSharp4])
+        #expect(Set(notes.filter { !$0.isOrnamentNote }.map(\.pitch)) == [.c4, .e4])
+    }
+
+    @Test
+    func ornamentNote_noneOnARepeatedTremolo() throws {
+        let strokes = try #require(TremoloStrokes(uintValue: 2))
+        let tremolo = try ornament(.tremolo(.measured(strokes)), .repeat)
+        let notes = try renderedFlags([WrittenNote(0, frac(1, 4), .c4, Ornamentation(ornament: tremolo))])
+
+        #expect(notes.count > 1)
+        #expect(notes.allSatisfy { !$0.isOrnamentNote })
     }
 
     @Test

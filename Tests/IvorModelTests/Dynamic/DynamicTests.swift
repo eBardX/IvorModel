@@ -11,20 +11,12 @@ struct DynamicTests {
 // MARK: -
 
 extension DynamicTests {
-    // Decoding runs in a child process: today it stops execution rather than
-    // throwing, which would end the whole test run.
     @Test
-    func codable_rejectsOutOfRangeValue() async {
-        await withKnownIssue("""
-            KNOWN_BUGS.md: Decoding an out-of-range number crashes — \
-            Dynamic traps instead of throwing
-            """) {
-            await #expect(processExitsWith: .success) {
-                let data = Data(#""2""#.utf8)
+    func codable_rejectsOutOfRangeValue() {
+        let data = Data(#""2""#.utf8)
 
-                guard (try? JSONDecoder().decode(Dynamic.self, from: data)) == nil
-                else { exit(EXIT_FAILURE) }
-            }
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(Dynamic.self, from: data)
         }
     }
 

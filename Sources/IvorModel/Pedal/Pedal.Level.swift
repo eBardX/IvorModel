@@ -17,6 +17,16 @@ extension Pedal {
 
         // MARK: Public Initializers
 
+        /// Creates a pedal level by decoding a number, throwing a `DecodingError` if it is out of
+        /// range.
+        ///
+        /// - Parameter decoder:    The decoder to read from.
+        ///
+        /// - Throws:   `DecodingError` if the encoded data is invalid or corrupted.
+        public init(from decoder: any Decoder) throws {
+            try self.init(validatingFrom: decoder)
+        }
+
         /// Creates a pedal level from a number value, returning `nil` if the value is out of
         /// range.
         ///
