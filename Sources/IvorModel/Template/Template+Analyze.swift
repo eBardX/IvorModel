@@ -589,7 +589,7 @@ extension Template {
         guard parts.indices.contains(index)
         else { throw Error.partNotFound(index) }
 
-        return parts[index].noteTable
+        return parts[index].mergedNoteTable
     }
 
     private static func _ratioTransposing(_ transposition: AnalysisOptions.Transposition) -> DirectedInterval<Ratio>? {

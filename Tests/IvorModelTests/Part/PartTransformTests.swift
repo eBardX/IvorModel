@@ -68,7 +68,7 @@ extension PartTransformTests {
     func augment_applyToExcludesPedals() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
         var sustain = PedalTable<BeatTime>()
 
@@ -86,7 +86,7 @@ extension PartTransformTests {
     func augment_carriesEveryPedalTable() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
         var sustain = PedalTable<BeatTime>()
 
@@ -134,7 +134,7 @@ extension PartTransformTests {
     func augment_mapFailureWrapsAndLeavesPartUnchanged() {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 5, duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
 
         //
@@ -149,15 +149,15 @@ extension PartTransformTests {
         // All-or-nothing: the note table is left exactly as it was, even though its
         // own augment would have succeeded on its own:
         //
-        #expect(part.noteTable.timeRange == BeatTime(5)...BeatTime(6))
+        #expect(part.strands[0].noteTable.timeRange == BeatTime(5)...BeatTime(6))
     }
 
     @Test
     func augment_noAnchor_keepsMapAlignedWithNotes() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
 
         let entryID = part.dynamicMap.insert(time: 2, dynamic: .ff).entryID
@@ -171,10 +171,10 @@ extension PartTransformTests {
     func augment_noteIDsNoAnchor_keepsMapAlignedWithNotes() throws {
         var part = PartSB(name: "Test")
 
-        let noteID1 = part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        let noteID2 = part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        let noteID1 = part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        let noteID2 = part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
 
-        part.noteTable.insert(attack: 5, duration: 1, pitch: .g4)
+        part.strands[0].noteTable.insert(attack: 5, duration: 1, pitch: .g4)
 
         let entryID = part.dynamicMap.insert(time: 2, dynamic: .ff).entryID
 
@@ -187,9 +187,9 @@ extension PartTransformTests {
     func augment_noteIDsRestrictsCarriedMapEntries() throws {
         var part = PartSB(name: "Test")
 
-        let noteID1 = part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        let noteID1 = part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
-        part.noteTable.insert(attack: 10, duration: 1, pitch: .d4)
+        part.strands[0].noteTable.insert(attack: 10, duration: 1, pitch: .d4)
 
         let entryIDEarly = part.dynamicMap.insert(time: 0, dynamic: .mp).entryID
         let entryIDLate = part.dynamicMap.insert(time: 10, dynamic: .ff).entryID
@@ -230,7 +230,7 @@ extension PartTransformTests {
     func augment_pedalRangeWidensDefaultAnchor() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .c4)
 
         var sustain = PedalTable<BeatTime>()
 
@@ -245,7 +245,7 @@ extension PartTransformTests {
         // The pedal entry at 0 is part of what's augmented, so the default anchor is 0, not the
         // note's attack at 2:
         //
-        #expect(part.noteTable.timeRange?.lowerBound == 4)
+        #expect(part.strands[0].noteTable.timeRange?.lowerBound == 4)
         #expect(part.pedals[.sustain]?.map(\.time) == [0, 4])
     }
 
@@ -263,8 +263,8 @@ extension PartTransformTests {
     func augment_scalesNoteTableAndAllMapsByDefault() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .d4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .d4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
         part.dynamicMap.insert(time: 2, dynamic: .ff)
         part.instrumentTable.insert(time: 0, instrument: .vanilla)
@@ -273,7 +273,7 @@ extension PartTransformTests {
 
         try part.augment(by: Number(2))
 
-        #expect(part.noteTable.timeRange?.upperBound == 6)
+        #expect(part.strands[0].noteTable.timeRange?.upperBound == 6)
 
         var dynamicTimes: [BeatTime] = []
 
@@ -300,11 +300,11 @@ extension PartTransformTests {
         // A scattered, non-contiguous selection — notes at 0 and 20, skipping one at
         // 10 in between:
         //
-        let noteID1 = part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        let noteID1 = part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
-        part.noteTable.insert(attack: 10, duration: 1, pitch: .d4)
+        part.strands[0].noteTable.insert(attack: 10, duration: 1, pitch: .d4)
 
-        let noteID3 = part.noteTable.insert(attack: 20, duration: 1, pitch: .e4)
+        let noteID3 = part.strands[0].noteTable.insert(attack: 20, duration: 1, pitch: .e4)
 
         let entryIDLow = part.dynamicMap.insert(time: 0, dynamic: .mp).entryID
         let entryIDMiddle = part.dynamicMap.insert(time: 10, dynamic: .mf).entryID
@@ -339,7 +339,7 @@ extension PartTransformTests {
     func diminish_carriesPedals() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 4, pitch: .c4)
 
         var sustain = PedalTable<BeatTime>()
 
@@ -357,8 +357,8 @@ extension PartTransformTests {
     func diminish_noAnchor_keepsMapAlignedWithNotes() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 3, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 3, duration: 1, pitch: .e4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
 
         let entryID = part.dynamicMap.insert(time: 3, dynamic: .ff).entryID
@@ -372,10 +372,10 @@ extension PartTransformTests {
     func diminish_noteIDsNoAnchor_keepsMapAlignedWithNotes() throws {
         var part = PartSB(name: "Test")
 
-        let noteID1 = part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        let noteID2 = part.noteTable.insert(attack: 3, duration: 1, pitch: .e4)
+        let noteID1 = part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        let noteID2 = part.strands[0].noteTable.insert(attack: 3, duration: 1, pitch: .e4)
 
-        part.noteTable.insert(attack: 6, duration: 1, pitch: .g4)
+        part.strands[0].noteTable.insert(attack: 6, duration: 1, pitch: .g4)
 
         let entryID = part.dynamicMap.insert(time: 3, dynamic: .ff).entryID
 
@@ -398,8 +398,8 @@ extension PartTransformTests {
     func diminish_scalesNoteTableAndDefaultMaps() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 2, pitch: .c4)
-        part.noteTable.insert(attack: 4, duration: 2, pitch: .d4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 2, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 4, duration: 2, pitch: .d4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
         part.dynamicMap.insert(time: 4, dynamic: .ff)
 
@@ -418,7 +418,7 @@ extension PartTransformTests {
     func invert_neverTouchesMaps() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
 
         try part.invert()
@@ -436,7 +436,7 @@ extension PartTransformTests {
     func move_applyToExcludesPedals() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
         var sustain = PedalTable<BeatTime>()
 
@@ -475,7 +475,7 @@ extension PartTransformTests {
     func move_carriesPedals() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
         var sustain = PedalTable<BeatTime>()
 
@@ -495,9 +495,9 @@ extension PartTransformTests {
     func move_noteIDsCarriesPressEnd() throws {
         var part = PartSB(name: "Test")
 
-        let noteID = part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        let noteID = part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
-        part.noteTable.insert(attack: 10, duration: 1, pitch: .d4)
+        part.strands[0].noteTable.insert(attack: 10, duration: 1, pitch: .d4)
 
         var sustain = PedalTable<BeatTime>()
 
@@ -521,9 +521,9 @@ extension PartTransformTests {
     func move_noteIDsLeavesNextPressWhenPedalIsUp() throws {
         var part = PartSB(name: "Test")
 
-        let noteID = part.noteTable.insert(attack: 0, duration: 2, pitch: .c4)
+        let noteID = part.strands[0].noteTable.insert(attack: 0, duration: 2, pitch: .c4)
 
-        part.noteTable.insert(attack: 10, duration: 1, pitch: .d4)
+        part.strands[0].noteTable.insert(attack: 10, duration: 1, pitch: .d4)
 
         var sustain = PedalTable<BeatTime>()
 
@@ -549,9 +549,9 @@ extension PartTransformTests {
     func move_noteIDsRestrictsCarriedMapEntries() throws {
         var part = PartSB(name: "Test")
 
-        let noteID1 = part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        let noteID1 = part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
-        part.noteTable.insert(attack: 10, duration: 1, pitch: .d4)
+        part.strands[0].noteTable.insert(attack: 10, duration: 1, pitch: .d4)
 
         let entryIDEarly = part.dynamicMap.insert(time: 0, dynamic: .mp).entryID
         let entryIDLate = part.dynamicMap.insert(time: 10, dynamic: .ff).entryID
@@ -600,14 +600,14 @@ extension PartTransformTests {
     func move_shiftsNoteTableAndDefaultMaps() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
 
         let directedDuration = try #require(BeatTime(0).duration(to: 2))
 
         try part.move(by: directedDuration)
 
-        #expect(part.noteTable.timeRange?.lowerBound == 2)
+        #expect(part.strands[0].noteTable.timeRange?.lowerBound == 2)
 
         var dynamicTimes: [BeatTime] = []
 
@@ -634,7 +634,7 @@ extension PartTransformTests {
     func quantize_toFactorsApplyToCarriesSelectedMap() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0.49, dynamic: .mp)
 
         try part.quantize(to: [1], applyTo: .dynamic)
@@ -652,7 +652,7 @@ extension PartTransformTests {
     func quantize_toFactorsDefaultApplyToCarriesMaps() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0.49, dynamic: .mp)
 
         try part.quantize(to: [1])
@@ -674,14 +674,14 @@ extension PartTransformTests {
     func quantize_toFactorsNoteIDsRestrictsAffectedNotes() throws {
         var part = PartSB(name: "Test")
 
-        let noteID1 = part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
-        let noteID2 = part.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
+        let noteID1 = part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        let noteID2 = part.strands[0].noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
 
         try part.quantize(to: [1], noteIDs: [noteID1])
 
         var attacksByID: [NoteID: BeatTime] = [:]
 
-        for note in part.noteTable {
+        for note in part.strands[0].noteTable {
             attacksByID[note.noteID] = note.attack
         }
 
@@ -693,9 +693,9 @@ extension PartTransformTests {
     func quantize_toFactorsNoteIDsRestrictsCarriedMapEntries() throws {
         var part = PartSB(name: "Test")
 
-        let noteID1 = part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        let noteID1 = part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
 
-        part.noteTable.insert(attack: 4, duration: 1, pitch: .d4)
+        part.strands[0].noteTable.insert(attack: 4, duration: 1, pitch: .d4)
 
         let entryIDEarly = part.dynamicMap.insert(time: 0.49, dynamic: .mp).entryID
         let entryIDLate = part.dynamicMap.insert(time: 10, dynamic: .ff).entryID
@@ -739,11 +739,11 @@ extension PartTransformTests {
     func quantize_toFactorsSnapsNoteTable() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
 
         try part.quantize(to: [1])
 
-        #expect(part.noteTable.timeRange?.lowerBound == 0)
+        #expect(part.strands[0].noteTable.timeRange?.lowerBound == 0)
     }
 
     @Test
@@ -751,7 +751,7 @@ extension PartTransformTests {
         var part = PartSB(name: "Test")
         let quantizer = try BeatQuantizer(factors: [1])
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
         part.panMap.insert(time: 0.49, pan: .center)
 
         part.quantize(to: quantizer, applyTo: .pan)
@@ -769,7 +769,7 @@ extension PartTransformTests {
     func quantize_toQuantizerCarriesPedals() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
         var sustain = PedalTable<BeatTime>()
 
@@ -796,18 +796,18 @@ extension PartTransformTests {
         var part = PartSB(name: "Test")
         let quantizer = try BeatQuantizer(factors: [1])
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
 
         part.quantize(to: quantizer)
 
-        #expect(part.noteTable.timeRange?.lowerBound == 0)
+        #expect(part.strands[0].noteTable.timeRange?.lowerBound == 0)
     }
 
     @Test
     func reverse_carriesPedals() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 8, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 8, pitch: .c4)
 
         var sustain = PedalTable<BeatTime>()
 
@@ -833,21 +833,21 @@ extension PartTransformTests {
         //
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0,
-                              duration: 1,
-                              pitch: .c4,
-                              extras: Extras(elements: [Extra(name: Extra.attackVelocity.name, values: [.int(100)])]))
-        part.noteTable.insert(attack: 2,
-                              duration: 1,
-                              pitch: .e4,
-                              extras: Extras(elements: [Extra(name: Extra.attackVelocity.name, values: [.int(50)])]))
+        part.strands[0].noteTable.insert(attack: 0,
+                                         duration: 1,
+                                         pitch: .c4,
+                                         extras: Extras(elements: [Extra(name: Extra.attackVelocity.name, values: [.int(100)])]))
+        part.strands[0].noteTable.insert(attack: 2,
+                                         duration: 1,
+                                         pitch: .e4,
+                                         extras: Extras(elements: [Extra(name: Extra.attackVelocity.name, values: [.int(50)])]))
         part.dynamicMap.insert(time: 0, dynamic: .f)
         part.dynamicMap.insert(time: 2, dynamic: .p)
 
         try part.reverse(within: 0...3)
 
-        let c4 = try #require(part.noteTable.first { $0.startPitch == .c4 })
-        let e4 = try #require(part.noteTable.first { $0.startPitch == .e4 })
+        let c4 = try #require(part.strands[0].noteTable.first { $0.startPitch == .c4 })
+        let e4 = try #require(part.strands[0].noteTable.first { $0.startPitch == .e4 })
 
         #expect(c4.attack == 2)
         #expect(e4.attack == 0)
@@ -859,7 +859,7 @@ extension PartTransformTests {
     func reverse_mirrorsMarks() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 4, pitch: .c4)
         part.markTable.insert(time: 0, mark: longFermataMark(beats(1)))
         part.markTable.insert(time: 3, mark: .caesura(nil))
 
@@ -873,8 +873,8 @@ extension PartTransformTests {
     func reverse_mirrorsNoteTableAndDefaultMaps() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .d4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .d4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
         part.dynamicMap.insert(time: 2, dynamic: .ff)
 
@@ -897,8 +897,8 @@ extension PartTransformTests {
     func reverse_noRange_keepsMapAlignedWithNotes() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
 
         let entryID = part.dynamicMap.insert(time: 1, dynamic: .ff).entryID
@@ -912,10 +912,10 @@ extension PartTransformTests {
     func reverse_noteIDsNoRange_keepsMapAlignedWithNotes() throws {
         var part = PartSB(name: "Test")
 
-        let noteID1 = part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        let noteID2 = part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        let noteID1 = part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        let noteID2 = part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
 
-        part.noteTable.insert(attack: 5, duration: 1, pitch: .g4)
+        part.strands[0].noteTable.insert(attack: 5, duration: 1, pitch: .g4)
 
         let entryID = part.dynamicMap.insert(time: 1, dynamic: .ff).entryID
 
@@ -932,14 +932,14 @@ extension PartTransformTests {
         //
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .d4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .d4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
 
         try part.reverse(applyTo: [])
 
         #expect(part.timeRange == 1...3)
-        #expect(part.noteTable.first { $0.startPitch == .d4 }?.attack == 1)
+        #expect(part.strands[0].noteTable.first { $0.startPitch == .d4 }?.attack == 1)
         #expect(part.dynamicMap.map(\.time) == [0])
     }
 
@@ -947,7 +947,7 @@ extension PartTransformTests {
     func transformTimeRange_includesMarks() {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
         part.markTable.insert(time: 3, mark: longFermataMark(beats(2)))
 
         #expect(part.transformTimeRange(noteIDs: nil, applyTo: .all) == 1...5)
@@ -958,7 +958,7 @@ extension PartTransformTests {
     func transpose_neverTouchesMaps() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
         part.instrumentTable.insert(time: 0, instrument: .vanilla)
 
         let interval = try #require(Pitch.c4.interval(to: .e4))
@@ -972,14 +972,14 @@ extension PartTransformTests {
         }
 
         #expect(instrumentTimes == [0])
-        #expect(part.noteTable.pitchRange?.lowerBound == .e4)
+        #expect(part.strands[0].noteTable.pitchRange?.lowerBound == .e4)
     }
 
     @Test
     func transpose_neverTouchesPedals() throws {
         var part = PartSB(name: "Test")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
         var sustain = PedalTable<BeatTime>()
 

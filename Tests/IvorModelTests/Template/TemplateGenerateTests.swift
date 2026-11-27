@@ -61,7 +61,7 @@ extension TemplateGenerateTests {
         guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Unexpected content"); return }
 
-        let generated = try #require(parts.first).noteTable
+        let generated = try #require(parts.first).strands[0].noteTable
 
         #expect(makeNoteTriplesSB(generated) == makeNoteTriplesSB(source))
     }

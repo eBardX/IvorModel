@@ -113,7 +113,7 @@ extension HoldCollectorTests {
         #expect(hold.extra == frac(1, 2))
         #expect(isClose(hold.extraSeconds, 2))
         #expect(!hold.isExplicit)
-        #expect(hold.noteID == part.noteTable.first?.noteID)
+        #expect(hold.noteID == part.strands[0].noteTable.first?.noteID)
         #expect(hold.part == 0)
         #expect(hold.span == frac(1, 2))
         #expect(hold.time == 0)

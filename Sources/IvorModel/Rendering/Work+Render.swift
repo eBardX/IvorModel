@@ -153,8 +153,10 @@ extension Work {
 
         for (index, part) in parts.enumerated() {
             try work.modifyPart(part.partID, as: Part<TimeType, PitchType>.self) { part in
-                part.noteTable = Self._noteTable(output.notes[index],
-                                                 offset: offset)
+                for strand in part.strands.indices {
+                    part.strands[strand].noteTable = Self._noteTable(output.notes[index][strand],
+                                                                     offset: offset)
+                }
 
                 for (time, mark) in output.fermataMarks[index] {
                     if let time = TimeType(number: time + offset) {

@@ -102,7 +102,7 @@ extension Work {
         for part in parts {
             var currentAttack = T.zero
 
-            for event in part.noteTable.extractNoteEvents() {
+            for event in part.mergedNoteTable.extractNoteEvents() {
                 tagged.append(TaggedNoteEvent(partID: part.partID,
                                               attack: currentAttack,
                                               noteEvent: event))

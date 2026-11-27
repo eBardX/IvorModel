@@ -19,6 +19,9 @@ extension Extra {
         /// A MIDI channel, as of ``Extra/midiChannel``.
         case channel
 
+        /// A clef, as of ``Extra/exportClef``.
+        case clef
+
         /// MIDI clocks per metronome click, as of ``Extra/midiTimeSignature``.
         case clocksPerClick
 
@@ -59,6 +62,9 @@ extension Extra {
         /// ``Extra/slurEnd``.
         case slurID
 
+        /// A staff number within a part, from 1, as of ``Extra/exportStaff``.
+        case staff
+
         /// A tempo a ramp starts at, as of ``Extra/rampStartTempo``.
         case startTempo
 
@@ -76,6 +82,9 @@ extension Extra {
 
         /// A MIDI key velocity, as of ``Extra/attackVelocity`` and ``Extra/releaseVelocity``.
         case velocity
+
+        /// A voice number within a staff, from 1, as of ``Extra/exportVoice``.
+        case voice
 
         /// A volume, as of ``Extra/midiVolume``.
         case volume

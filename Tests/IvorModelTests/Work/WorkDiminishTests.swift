@@ -74,8 +74,8 @@ extension WorkDiminishTests {
         //
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
         part.dynamicMap.insert(time: 0, dynamic: .mf)
 
         var tempoMap = TempoMap()
@@ -96,7 +96,7 @@ extension WorkDiminishTests {
         let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 4, pitch: .c4)
 
         var tempoMap = TempoMap()
 

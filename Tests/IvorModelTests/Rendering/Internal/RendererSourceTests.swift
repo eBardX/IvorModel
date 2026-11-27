@@ -21,7 +21,8 @@ extension RendererSourceTests {
                                                       ornamentation: nil,
                                                       part: 0,
                                                       release: frac(3, 4),
-                                                      startPitch: .c4)
+                                                      startPitch: .c4,
+                                                      strand: 0)
 
         #expect(source.duration == frac(1, 2))
     }
@@ -35,7 +36,8 @@ extension RendererSourceTests {
                                                       ornamentation: ornamentation,
                                                       part: 2,
                                                       release: 2,
-                                                      startPitch: .c4)
+                                                      startPitch: .c4,
+                                                      strand: 1)
 
         #expect(source.attack == 1)
         #expect(source.endPitch == .e4)
@@ -44,5 +46,6 @@ extension RendererSourceTests {
         #expect(source.part == 2)
         #expect(source.release == 2)
         #expect(source.startPitch == .c4)
+        #expect(source.strand == 1)
     }
 }

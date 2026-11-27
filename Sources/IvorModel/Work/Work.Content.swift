@@ -223,13 +223,32 @@ extension Work.Content {
     }
 
     //
+    // The first strand ID that more than one strand shares, in any parts, or `nil` if every
+    // strand's is distinct.
+    //
+    internal var firstDuplicateStrandID: StrandID? {
+        var seen: Set<StrandID> = []
+
+        return body.strandIDs.first { !seen.insert($0).inserted }
+    }
+
+    //
     // The first rule this content breaks, as the error that reports it, or `nil` if it keeps them
-    // all: distinct part IDs, then distinct note IDs. Every way content gets into a work checks
-    // this — replacing it, a `modifyPart` body, decoding — so a work always keeps the rules.
+    // all: distinct part IDs, every part with a strand, distinct strand IDs, then distinct note
+    // IDs. Every way content gets into a work checks this — replacing it, a `modifyPart` or
+    // `modifyStrand` body, decoding — so a work always keeps the rules.
     //
     internal var invariantError: Work.Error? {
         if let partID = firstDuplicatePartID {
             return .duplicatePartID(partID)
+        }
+
+        if let partID = body.firstPartWithoutStrands {
+            return .partHasNoStrands(partID)
+        }
+
+        if let strandID = firstDuplicateStrandID {
+            return .duplicateStrandID(strandID)
         }
 
         if let noteID = firstDuplicateNoteID {

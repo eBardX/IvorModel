@@ -108,13 +108,27 @@ extension Work.Body {
     // The arpeggio groups any part's notes belong to.
     //
     internal var arpeggioGroups: Set<ArpeggioGroup> {
-        Set(parts.flatMap(\.noteTable.arpeggioGroups))
+        parts.reduce(into: []) { $0.formUnion($1.arpeggioGroups) }
     }
 
     //
-    // The ID of every note of every part, in part order.
+    // The first part with no strands, or `nil` if every part has one.
+    //
+    internal var firstPartWithoutStrands: PartID? {
+        parts.first { $0.strands.isEmpty }?.partID
+    }
+
+    //
+    // The ID of every note of every part, in part order, and within a part in strand order.
     //
     internal var noteIDs: [NoteID] {
-        parts.flatMap { $0.noteTable.notes.map(\.noteID) }
+        parts.flatMap(\.noteIDs)
+    }
+
+    //
+    // The ID of every strand of every part, in part order, and within a part in score order.
+    //
+    internal var strandIDs: [StrandID] {
+        parts.flatMap(\.strandIDs)
     }
 }

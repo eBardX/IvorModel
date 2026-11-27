@@ -48,6 +48,23 @@ extension Extra {
     /// Payload: a single `.int`.
     public static let expressionValue = Self(name: "expressionValue")
 
+    /// The clef of the staff a ``Strand`` is written on, for the exporters that write staves
+    /// (see ``exportStaff``): one of `"treble"`, `"bass"`, `"alto"`, `"tenor"`, `"treble8vb"`,
+    /// `"percussion"`. The first strand on a staff that has one gives the staff its clef. The
+    /// model stores it and never reads it. Payload: a single `.string`.
+    public static let exportClef = Self(name: "exportClef")
+
+    /// The staff, within its part and counting from 1, a ``Strand`` is written on, for the
+    /// exporters that write staves; strands with the same number share a staff, as voices.
+    /// Without it, an exporter works the layout out. The model stores it and never reads it.
+    /// Payload: a single `.int`.
+    public static let exportStaff = Self(name: "exportStaff")
+
+    /// The voice, within its staff and counting from 1, a ``NoteTable`` note was written in,
+    /// kept from import so that export can write the voices back as they were. The model stores
+    /// it and never reads it. Payload: a single `.int`.
+    public static let exportVoice = Self(name: "exportVoice")
+
     /// The literal fingering text (e.g. `"1"`, `"2-3"`) on a ``NoteTable``
     /// note. Payload: a single `.string`.
     public static let fingering = Self(name: "fingering")

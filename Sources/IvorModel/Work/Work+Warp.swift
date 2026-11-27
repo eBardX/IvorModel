@@ -189,20 +189,22 @@ extension Work {
         var newParts: [Part<WallTime, Frequency>] = []
 
         for part in parts {
-            let noteTable: NoteTable<WallTime, Frequency>
-
-            do {
-                noteTable = try part.noteTable.varispeeded(using: tempoMap,
-                                                           normalTempo: normalTempo)
-            } catch {
-                throw .transformFailure(kind: .varispeed,
-                                        partID: part.partID,
-                                        detail: error.message)
-            }
+            let strands = try part.mappingStrands(noteTable: { noteTable throws(Error) in
+                do throws(NoteTable<BeatTime, Frequency>.Error) {
+                    return try noteTable.varispeeded(using: tempoMap,
+                                                     normalTempo: normalTempo)
+                } catch {
+                    throw .transformFailure(kind: .varispeed,
+                                            partID: part.partID,
+                                            detail: error.message)
+                }
+            },
+                                                  instrumentTable: { Self.convertBeatTimes(in: $0, using: timeConverter) },
+                                                  dynamicMap: { Self.convertBeatTimes(in: $0, using: timeConverter) })
 
             newParts.append(Part(partID: part.partID,
                                  name: part.name,
-                                 noteTable: noteTable,
+                                 strands: strands,
                                  dynamicMap: Self.convertBeatTimes(in: part.dynamicMap,
                                                                    using: timeConverter),
                                  instrumentTable: Self.convertBeatTimes(in: part.instrumentTable,

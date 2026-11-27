@@ -44,8 +44,8 @@ extension WorkRetimeTests {
             TimelineOperation.insert(at: frac(1, 2), length: frac(1, 2)).mapped(position, isRelease: isRelease)
         }
 
-        #expect(retimed.noteTable.map(\.attack) == [0, 1])
-        #expect(retimed.noteTable.map(\.duration) == [beats(frac(1, 2)), beats(frac(1, 2))])
+        #expect(retimed.strands[0].noteTable.map(\.attack) == [0, 1])
+        #expect(retimed.strands[0].noteTable.map(\.duration) == [beats(frac(1, 2)), beats(frac(1, 2))])
         #expect(retimed.dynamicMap.map(\.time) == [1])
         #expect(retimed.markTable.map(\.time) == [1])
     }
@@ -57,8 +57,8 @@ extension WorkRetimeTests {
             TimelineOperation.insert(at: 1, length: 1).mapped(position, isRelease: isRelease)
         }
 
-        #expect(retimed.noteTable.map(\.duration) == [beats(3)])
-        #expect(retimed.noteTable.map(\.noteID) == part.noteTable.map(\.noteID))
+        #expect(retimed.strands[0].noteTable.map(\.duration) == [beats(3)])
+        #expect(retimed.strands[0].noteTable.map(\.noteID) == part.strands[0].noteTable.map(\.noteID))
     }
 
     @Test

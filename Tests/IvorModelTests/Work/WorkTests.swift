@@ -420,7 +420,7 @@ extension WorkTests {
     func replaceContent_duplicateNoteID_throws() throws {
         var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
         let (violin, cello) = Self._partsSharingNotes()
-        let sharedID = try #require(violin.noteTable.first?.noteID)
+        let sharedID = try #require(violin.strands[0].noteTable.first?.noteID)
 
         #expect(throws: Work.Error.duplicateNoteID(sharedID)) {
             try work.replaceContent(with: .standardBeat([violin, cello], TempoMap(), MeterTable(), KeyTable()))
@@ -432,13 +432,13 @@ extension WorkTests {
     func replaceContent_duplicateNoteIDWithinOnePart_throws() throws {
         var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
         let (violin, _) = Self._partsSharingNotes()
-        var doubled = violin.noteTable
+        var doubled = violin.strands[0].noteTable
 
-        doubled.merge(with: violin.noteTable)
+        doubled.merge(with: violin.strands[0].noteTable)
 
         let part = Part<BeatTime, Pitch>(name: "Violin", noteTable: doubled)
 
-        #expect(throws: try Work.Error.duplicateNoteID(#require(violin.noteTable.first?.noteID))) {
+        #expect(throws: try Work.Error.duplicateNoteID(#require(violin.strands[0].noteTable.first?.noteID))) {
             try work.replaceContent(with: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
         }
         #expect(work.partIDs.isEmpty)

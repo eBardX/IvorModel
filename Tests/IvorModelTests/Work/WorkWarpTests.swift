@@ -59,7 +59,7 @@ extension WorkWarpTests {
         let expectedTime = timeConverter.beatTime(at: 1_000)
 
         #expect(resultTempoMap == tempoMap)
-        #expect(parts[0].noteTable.notes.first?.attack == expectedTime)
+        #expect(parts[0].strands[0].noteTable.notes.first?.attack == expectedTime)
         #expect(parts[0].dynamicMap.entries.first?.time == expectedTime)
         #expect(parts[0].instrumentTable.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
@@ -359,7 +359,7 @@ extension WorkWarpTests {
         guard case let .absoluteWall(parts) = result.content.cases
         else { Issue.record("Expected .absoluteWall content."); return }
 
-        let attackPitch = parts[0].noteTable.notes.first?.startPitch
+        let attackPitch = parts[0].strands[0].noteTable.notes.first?.startPitch
 
         #expect(try #require(attackPitch).numberValue > Frequency(440).numberValue)
     }
@@ -382,7 +382,7 @@ extension WorkWarpTests {
         guard case let .absoluteWall(parts) = result.content.cases
         else { Issue.record("Expected .absoluteWall content."); return }
 
-        let attackPitch = parts[0].noteTable.notes.first?.startPitch
+        let attackPitch = parts[0].strands[0].noteTable.notes.first?.startPitch
 
         #expect(try #require(attackPitch).numberValue < Frequency(440).numberValue)
     }
@@ -405,7 +405,7 @@ extension WorkWarpTests {
         guard case let .absoluteWall(parts) = result.content.cases
         else { Issue.record("Expected .absoluteWall content."); return }
 
-        #expect(parts[0].noteTable.notes.first?.startPitch == Frequency(440))
+        #expect(parts[0].strands[0].noteTable.notes.first?.startPitch == Frequency(440))
     }
 
     @Test
@@ -459,7 +459,7 @@ extension WorkWarpTests {
 
         let expectedTime = timeConverter.wallTime(at: 1)
 
-        #expect(parts[0].noteTable.notes.first?.attack == expectedTime)
+        #expect(parts[0].strands[0].noteTable.notes.first?.attack == expectedTime)
         #expect(parts[0].dynamicMap.entries.first?.time == expectedTime)
         #expect(parts[0].instrumentTable.entries.first?.time == expectedTime)
         #expect(parts[0].panMap.entries.first?.time == expectedTime)
@@ -571,7 +571,7 @@ extension WorkWarpTests {
               case let .standardBeat(roundTrippedParts, _, _, _) = roundTripped.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
-        #expect(roundTrippedParts[0].noteTable.notes.first?.attack == originalParts[0].noteTable.notes.first?.attack)
-        #expect(roundTrippedParts[0].noteTable.notes.first?.duration == originalParts[0].noteTable.notes.first?.duration)
+        #expect(roundTrippedParts[0].strands[0].noteTable.notes.first?.attack == originalParts[0].strands[0].noteTable.notes.first?.attack)
+        #expect(roundTrippedParts[0].strands[0].noteTable.notes.first?.duration == originalParts[0].strands[0].noteTable.notes.first?.duration)
     }
 }

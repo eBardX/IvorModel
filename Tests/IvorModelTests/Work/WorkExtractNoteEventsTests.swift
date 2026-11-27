@@ -18,7 +18,7 @@ extension WorkExtractNoteEventsTests {
     func extractNoteEvents_absoluteBeat_returnsMatchingOverloadOnly() {
         var part = Part<BeatTime, Frequency>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: Frequency(440))
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: Frequency(440))
 
         let work = Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
@@ -41,7 +41,7 @@ extension WorkExtractNoteEventsTests {
     func extractNoteEvents_absoluteWall_returnsMatchingOverloadOnly() {
         var part = Part<WallTime, Frequency>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: Frequency(440))
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: Frequency(440))
 
         let work = Work(content: .absoluteWall([part]))
 
@@ -80,7 +80,7 @@ extension WorkExtractNoteEventsTests {
     func extractNoteEvents_keyboardBeat_returnsMatchingOverloadOnly() {
         var part = Part<BeatTime, NoteNumber>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: NoteNumber(60))
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: NoteNumber(60))
 
         let work = Work(content: .keyboardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
@@ -95,7 +95,7 @@ extension WorkExtractNoteEventsTests {
     func extractNoteEvents_keyboardWall_returnsMatchingOverloadOnly() {
         var part = Part<WallTime, NoteNumber>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: NoteNumber(60))
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: NoteNumber(60))
 
         let work = Work(content: .keyboardWall([part]))
 
@@ -113,12 +113,12 @@ extension WorkExtractNoteEventsTests {
 
         // Each part's own notes are contiguous (no gaps), so `extractNoteEvents()` doesn't insert
         // any rest events for that part; only the cross-part merge/sort is under test here.
-        part1.noteTable.insert(attack: 0, duration: 2, pitch: .c4)
-        part1.noteTable.insert(attack: 2, duration: 2, pitch: .d4)
+        part1.strands[0].noteTable.insert(attack: 0, duration: 2, pitch: .c4)
+        part1.strands[0].noteTable.insert(attack: 2, duration: 2, pitch: .d4)
 
-        part2.noteTable.insert(attack: 0, duration: 1, pitch: .e3)
-        part2.noteTable.insert(attack: 1, duration: 1, pitch: .f3)
-        part2.noteTable.insert(attack: 2, duration: 2, pitch: .g3)
+        part2.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .e3)
+        part2.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .f3)
+        part2.strands[0].noteTable.insert(attack: 2, duration: 2, pitch: .g3)
 
         let part1ID = part1.partID
         let part2ID = part2.partID
@@ -146,11 +146,11 @@ extension WorkExtractNoteEventsTests {
     func extractNoteEvents_singlePart_matchesNoteTableExtractionAndAttackTimes() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 2, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 3, pitch: .d4)
-        part.noteTable.insert(attack: 5, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 2, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 3, pitch: .d4)
+        part.strands[0].noteTable.insert(attack: 5, duration: 1, pitch: .e4)
 
-        let expectedEvents = part.noteTable.extractNoteEvents()
+        let expectedEvents = part.strands[0].noteTable.extractNoteEvents()
         let partID = part.partID
         let work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
@@ -165,14 +165,14 @@ extension WorkExtractNoteEventsTests {
         #expect(unwrapped[1].attack == 2)
         #expect(unwrapped[2].attack == 5)
 
-        #expect(unwrapped[0].attack == part.noteTable.timeRange?.lowerBound)
+        #expect(unwrapped[0].attack == part.strands[0].noteTable.timeRange?.lowerBound)
     }
 
     @Test
     func extractNoteEvents_standardBeat_returnsMatchingOverloadOnly() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
         let work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
@@ -187,7 +187,7 @@ extension WorkExtractNoteEventsTests {
     func extractNoteEvents_standardWall_returnsMatchingOverloadOnly() {
         var part = Part<WallTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
         let work = Work(content: .standardWall([part]))
 

@@ -235,10 +235,10 @@ extension WorkGoldenEncodingTests {
                                             span: positiveBeats(1, 2)))
 
         // Standard pitch alone gets the full set of ornaments, which are spelled in it.
-        try part.noteTable.insert(attack: beatTime(4),
-                                  duration: beats(1),
-                                  pitch: .c5,
-                                  ornamentation: fullOrnamentation())
+        try part.strands[0].noteTable.insert(attack: beatTime(4),
+                                             duration: beats(1),
+                                             pitch: .c5,
+                                             ornamentation: fullOrnamentation())
 
         return try _work(.standardBeat([part], _tempoMap(), _meterTable(), _keyTable()),
                          partID: part.partID)
@@ -286,7 +286,7 @@ extension WorkGoldenEncodingTests {
     // MARK: Private Type Properties
 
     private static let _absoluteBeatGolden = #"""
-        ((workID W$7Zyhy9bALBsGbTVO50Hf1L)
+        ((workID W$7hzX3VHRTRX07c831JGlRV)
          (version 1)
          (isLocked #f)
          (name Golden)
@@ -321,13 +321,13 @@ extension WorkGoldenEncodingTests {
              (pauseAfter 500000)))
            (caesura 2000000)))
          (realizations
-          (((realizationID R$6XcY5aOxkElqTsauJyQAQL)
+          (((realizationID R$6PEy1JhqklHPM2j8IguU9A)
             (name Default)
             (defaults
              ((Flute
                ((patch ((generalMIDI1 ((program 74)))))))))
             (partTables
-             ((P$3APla0EbLjutuIj8B59jh7
+             ((P$6r7321HHgPXxrM8YFAm9Bf
                ((Oboe
                  ((patch ((generalMIDI1 ((program 69)))))
                   (channel 3))))))))))
@@ -335,23 +335,26 @@ extension WorkGoldenEncodingTests {
           ((pitchNotation absolute)
            (timeBasis beat)
            (parts
-            (((partID P$3APla0EbLjutuIj8B59jh7)
+            (((partID P$6r7321HHgPXxrM8YFAm9Bf)
               (name Golden)
-              (noteTable
-               ((notes
-                 ((0
-                   1
-                   220
-                   220
-                   ((entries (sample (sample note)))))
-                  (1 1 330 440)
-                  (2
-                   1/2
-                   440
-                   440
-                   ()
-                   ((arpeggio
-                     ((direction up) (group 1)))))))))
+              (strands
+               (((strandID S$3Ul65wbHMP68heAOYmqLjm)
+                 (name "")
+                 (noteTable
+                  ((notes
+                    ((0
+                      1
+                      220
+                      220
+                      ((entries (sample (sample note)))))
+                     (1 1 330 440)
+                     (2
+                      1/2
+                      440
+                      440
+                      ()
+                      ((arpeggio
+                        ((direction up) (group 1))))))))))))
               (dynamicMap
                ((entries
                  ((0 2/5)
@@ -398,7 +401,7 @@ extension WorkGoldenEncodingTests {
         """#
 
     private static let _absoluteWallGolden = #"""
-        ((workID W$0QiqvJJPoK4ut4v2d0f3Rr)
+        ((workID W$6XptM9buQfhaQxklqH9Xws)
          (version 1)
          (isLocked #f)
          (name Golden)
@@ -433,13 +436,13 @@ extension WorkGoldenEncodingTests {
              (pauseAfter 500000)))
            (caesura 2000000)))
          (realizations
-          (((realizationID R$2ozTcWimvxYu9fNRdEihM2)
+          (((realizationID R$70oFbNZaKVmAcc0DOKvGTb)
             (name Default)
             (defaults
              ((Flute
                ((patch ((generalMIDI1 ((program 74)))))))))
             (partTables
-             ((P$4k7crU9BupN5zTYQcqGYu9
+             ((P$06W8E6bGgOx06pfToL2e9A
                ((Oboe
                  ((patch ((generalMIDI1 ((program 69)))))
                   (channel 3))))))))))
@@ -447,23 +450,26 @@ extension WorkGoldenEncodingTests {
           ((pitchNotation absolute)
            (timeBasis wall)
            (parts
-            (((partID P$4k7crU9BupN5zTYQcqGYu9)
+            (((partID P$06W8E6bGgOx06pfToL2e9A)
               (name Golden)
-              (noteTable
-               ((notes
-                 ((0
-                   1000000
-                   220
-                   220
-                   ((entries (sample (sample note)))))
-                  (1000000 1000000 330 440)
-                  (2000000
-                   500000
-                   440
-                   440
-                   ()
-                   ((arpeggio
-                     ((direction up) (group 1)))))))))
+              (strands
+               (((strandID S$01tX4655lKyGZhtwwt9I6U)
+                 (name "")
+                 (noteTable
+                  ((notes
+                    ((0
+                      1000000
+                      220
+                      220
+                      ((entries (sample (sample note)))))
+                     (1000000 1000000 330 440)
+                     (2000000
+                      500000
+                      440
+                      440
+                      ()
+                      ((arpeggio
+                        ((direction up) (group 1))))))))))))
               (dynamicMap
                ((entries
                  ((0 2/5)
@@ -493,7 +499,7 @@ extension WorkGoldenEncodingTests {
         """#
 
     private static let _keyboardBeatGolden = #"""
-        ((workID W$39SzA28tQrHh6FwigcMShr)
+        ((workID W$1AfhNou9pEkGyvFbJCFBOU)
          (version 1)
          (isLocked #f)
          (name Golden)
@@ -528,13 +534,13 @@ extension WorkGoldenEncodingTests {
              (pauseAfter 500000)))
            (caesura 2000000)))
          (realizations
-          (((realizationID R$14Bebs9L7YJD1xzzG9bM3q)
+          (((realizationID R$2qSTBJ82BkFJac5yXlVOrn)
             (name Default)
             (defaults
              ((Flute
                ((patch ((generalMIDI1 ((program 74)))))))))
             (partTables
-             ((P$7DwGKfqCTzXWk0Qdnwj4zc
+             ((P$1lrVoiMebJyNKHl9GXAjzr
                ((Oboe
                  ((patch ((generalMIDI1 ((program 69)))))
                   (channel 3))))))))))
@@ -542,23 +548,26 @@ extension WorkGoldenEncodingTests {
           ((pitchNotation keyboard)
            (timeBasis beat)
            (parts
-            (((partID P$7DwGKfqCTzXWk0Qdnwj4zc)
+            (((partID P$1lrVoiMebJyNKHl9GXAjzr)
               (name Golden)
-              (noteTable
-               ((notes
-                 ((0
-                   1
-                   60
-                   60
-                   ((entries (sample (sample note)))))
-                  (1 1 64 67)
-                  (2
-                   1/2
-                   67
-                   67
-                   ()
-                   ((arpeggio
-                     ((direction up) (group 1)))))))))
+              (strands
+               (((strandID S$075l8lzQLJbV7Ove1t1FDM)
+                 (name "")
+                 (noteTable
+                  ((notes
+                    ((0
+                      1
+                      60
+                      60
+                      ((entries (sample (sample note)))))
+                     (1 1 64 67)
+                     (2
+                      1/2
+                      67
+                      67
+                      ()
+                      ((arpeggio
+                        ((direction up) (group 1))))))))))))
               (dynamicMap
                ((entries
                  ((0 2/5)
@@ -605,7 +614,7 @@ extension WorkGoldenEncodingTests {
         """#
 
     private static let _keyboardWallGolden = #"""
-        ((workID W$6akPCANpmfIjGbHxjdTUgk)
+        ((workID W$62GQDUehEvwlJa3vnQqf33)
          (version 1)
          (isLocked #f)
          (name Golden)
@@ -640,13 +649,13 @@ extension WorkGoldenEncodingTests {
              (pauseAfter 500000)))
            (caesura 2000000)))
          (realizations
-          (((realizationID R$24ceGhpAX3JuFu0PdT8tei)
+          (((realizationID R$6R3SJA3eXt5ObN5eC6rkfG)
             (name Default)
             (defaults
              ((Flute
                ((patch ((generalMIDI1 ((program 74)))))))))
             (partTables
-             ((P$4YUpkXJwiJOo90Zy7RQUTT
+             ((P$0UezhaGtl6SpzlUugVv9GH
                ((Oboe
                  ((patch ((generalMIDI1 ((program 69)))))
                   (channel 3))))))))))
@@ -654,23 +663,26 @@ extension WorkGoldenEncodingTests {
           ((pitchNotation keyboard)
            (timeBasis wall)
            (parts
-            (((partID P$4YUpkXJwiJOo90Zy7RQUTT)
+            (((partID P$0UezhaGtl6SpzlUugVv9GH)
               (name Golden)
-              (noteTable
-               ((notes
-                 ((0
-                   1000000
-                   60
-                   60
-                   ((entries (sample (sample note)))))
-                  (1000000 1000000 64 67)
-                  (2000000
-                   500000
-                   67
-                   67
-                   ()
-                   ((arpeggio
-                     ((direction up) (group 1)))))))))
+              (strands
+               (((strandID S$4IL7a3a74ip1CeDOWVBzxK)
+                 (name "")
+                 (noteTable
+                  ((notes
+                    ((0
+                      1000000
+                      60
+                      60
+                      ((entries (sample (sample note)))))
+                     (1000000 1000000 64 67)
+                     (2000000
+                      500000
+                      67
+                      67
+                      ()
+                      ((arpeggio
+                        ((direction up) (group 1))))))))))))
               (dynamicMap
                ((entries
                  ((0 2/5)
@@ -700,7 +712,7 @@ extension WorkGoldenEncodingTests {
         """#
 
     private static let _standardBeatGolden = #"""
-        ((workID W$5jfwmzJDQZJ28We2has6Mi)
+        ((workID W$7ePGMztA2Edu5fl1rfzHwM)
          (version 1)
          (isLocked #f)
          (name Golden)
@@ -735,13 +747,13 @@ extension WorkGoldenEncodingTests {
              (pauseAfter 500000)))
            (caesura 2000000)))
          (realizations
-          (((realizationID R$64is7U9y4mh15tZouSRaX4)
+          (((realizationID R$2yYctaMvmO2b5hlGfYB6SP)
             (name Default)
             (defaults
              ((Flute
                ((patch ((generalMIDI1 ((program 74)))))))))
             (partTables
-             ((P$2ZeYNeEY2UdBDcKajPr6kg
+             ((P$6XL2xvRx1cfnCJ3ObZXNV4
                ((Oboe
                  ((patch ((generalMIDI1 ((program 69)))))
                   (channel 3))))))))))
@@ -749,42 +761,45 @@ extension WorkGoldenEncodingTests {
           ((pitchNotation standard)
            (timeBasis beat)
            (parts
-            (((partID P$2ZeYNeEY2UdBDcKajPr6kg)
+            (((partID P$6XL2xvRx1cfnCJ3ObZXNV4)
               (name Golden)
-              (noteTable
-               ((notes
-                 ((0
-                   1
-                   "C♮4"
-                   "C♮4"
-                   ((entries (sample (sample note)))))
-                  (1 1 "E♮4" "G♮4")
-                  (2
-                   1/2
-                   "G♮4"
-                   "G♮4"
-                   ()
-                   ((arpeggio
-                     ((direction up) (group 1)))))
-                  (4
-                   1
-                   "C♮5"
-                   "C♮5"
-                   ()
-                   ((arpeggio
-                     ((execution ((spread ((perTone 1/64)))))
-                      (group 1)))
-                    (fermata
-                     ((execution ((hold ((added 1/4)))))
-                      (shape long)))
-                    (graceAfter
-                     ((events ((("B♮4")) (("C♮5"))))
-                      (execution ((fromMain ((share 1/4)))))))
-                    (graceBefore ((events ((("D♮5") 1/16)))))
-                    (ornament
-                     ((sign ((trill #t)))
-                      (partner ((step ((side above)))))
-                      (execution ((rate ((noteValue 1/32)))))))))))))
+              (strands
+               (((strandID S$4QUkjFlN8Sb32SvpjNscHY)
+                 (name "")
+                 (noteTable
+                  ((notes
+                    ((0
+                      1
+                      "C♮4"
+                      "C♮4"
+                      ((entries (sample (sample note)))))
+                     (1 1 "E♮4" "G♮4")
+                     (2
+                      1/2
+                      "G♮4"
+                      "G♮4"
+                      ()
+                      ((arpeggio
+                        ((direction up) (group 1)))))
+                     (4
+                      1
+                      "C♮5"
+                      "C♮5"
+                      ()
+                      ((arpeggio
+                        ((execution ((spread ((perTone 1/64)))))
+                         (group 1)))
+                       (fermata
+                        ((execution ((hold ((added 1/4)))))
+                         (shape long)))
+                       (graceAfter
+                        ((events ((("B♮4")) (("C♮5"))))
+                         (execution ((fromMain ((share 1/4)))))))
+                       (graceBefore ((events ((("D♮5") 1/16)))))
+                       (ornament
+                        ((sign ((trill #t)))
+                         (partner ((step ((side above)))))
+                         (execution ((rate ((noteValue 1/32))))))))))))))))
               (dynamicMap
                ((entries
                  ((0 2/5)
@@ -831,7 +846,7 @@ extension WorkGoldenEncodingTests {
         """#
 
     private static let _standardWallGolden = #"""
-        ((workID W$3xMfKFnF0l51fAFrP0ahPV)
+        ((workID W$6Pt54snFCcnHBOMln8RA3r)
          (version 1)
          (isLocked #f)
          (name Golden)
@@ -866,13 +881,13 @@ extension WorkGoldenEncodingTests {
              (pauseAfter 500000)))
            (caesura 2000000)))
          (realizations
-          (((realizationID R$1Lsj50inCBB7s6778g0YMA)
+          (((realizationID R$2ndnf9uraNMbjTyO9TLyvD)
             (name Default)
             (defaults
              ((Flute
                ((patch ((generalMIDI1 ((program 74)))))))))
             (partTables
-             ((P$3QkZc8VpS0bVTl7tPp9nRg
+             ((P$28LgpF1KlFoyh9atFH5Vrl
                ((Oboe
                  ((patch ((generalMIDI1 ((program 69)))))
                   (channel 3))))))))))
@@ -880,23 +895,26 @@ extension WorkGoldenEncodingTests {
           ((pitchNotation standard)
            (timeBasis wall)
            (parts
-            (((partID P$3QkZc8VpS0bVTl7tPp9nRg)
+            (((partID P$28LgpF1KlFoyh9atFH5Vrl)
               (name Golden)
-              (noteTable
-               ((notes
-                 ((0
-                   1000000
-                   "C♮4"
-                   "C♮4"
-                   ((entries (sample (sample note)))))
-                  (1000000 1000000 "E♮4" "G♮4")
-                  (2000000
-                   500000
-                   "G♮4"
-                   "G♮4"
-                   ()
-                   ((arpeggio
-                     ((direction up) (group 1)))))))))
+              (strands
+               (((strandID S$1po0XWOqEgxL3QKd52R1X1)
+                 (name "")
+                 (noteTable
+                  ((notes
+                    ((0
+                      1000000
+                      "C♮4"
+                      "C♮4"
+                      ((entries (sample (sample note)))))
+                     (1000000 1000000 "E♮4" "G♮4")
+                     (2000000
+                      500000
+                      "G♮4"
+                      "G♮4"
+                      ()
+                      ((arpeggio
+                        ((direction up) (group 1))))))))))))
               (dynamicMap
                ((entries
                  ((0 2/5)

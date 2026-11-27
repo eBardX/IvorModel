@@ -162,7 +162,7 @@ extension WorkRenderTests {
         guard case let .standardBeat(parts, _, _, _) = try work.rendered().work.content.cases
         else { Issue.record("Expected standard beat content"); return }
 
-        let names = try #require(parts.first).noteTable.map { Set($0.extras?.elements.map(\.name.stringValue) ?? []) }
+        let names = try #require(parts.first).strands[0].noteTable.map { Set($0.extras?.elements.map(\.name.stringValue) ?? []) }
 
         #expect(names == [["slurStart", "staccato", "attackVelocity"],
                           ["attackVelocity", "ornamentNote"],
@@ -234,7 +234,7 @@ extension WorkRenderTests {
         let part = try #require(parts.first)
 
         #expect(part.markTable.isEmpty)
-        #expect(!part.noteTable.hasOrnamentation)
+        #expect(!part.strands[0].noteTable.hasOrnamentation)
         #expect(rendering.fermataTimes == [.beat(0)])
         #expect(try renderedNotes(rendering).first == [RenderedNote(0, frac(1, 4), .d4),
                                                        RenderedNote(frac(1, 4), frac(1, 4), .c4)])
@@ -670,8 +670,8 @@ extension WorkRenderTests {
               case let .absoluteBeat(frequencyParts, _, _, _) = try frequencyWork.rendered().work.content.cases
         else { Issue.record("Expected beat content"); return }
 
-        let keyPitches = try #require(keyParts.first).noteTable.map(\.startPitch.uintValue)
-        let frequencyPitches = try #require(frequencyParts.first).noteTable.map(\.startPitch)
+        let keyPitches = try #require(keyParts.first).strands[0].noteTable.map(\.startPitch.uintValue)
+        let frequencyPitches = try #require(frequencyParts.first).strands[0].noteTable.map(\.startPitch)
         let wholeTone = Frequency(440).transposed(by: DirectedInterval(interval: Ratio(cents: 200), direction: .ascending))
 
         #expect(keyPitches == [60, 62, 60])
@@ -834,7 +834,7 @@ extension WorkRenderTests {
         guard case let .keyboardBeat(parts, _, _, _) = try work.rendered().work.content.cases
         else { Issue.record("Expected keyboard beat content"); return }
 
-        #expect(try #require(parts.first).noteTable.count == 1)
+        #expect(try #require(parts.first).strands[0].noteTable.count == 1)
     }
 
     @Test
@@ -853,7 +853,7 @@ extension WorkRenderTests {
             let rendering = try work.rendered(options: RenderingOptions(fermataMode: mode))
 
             guard case let .standardWall(parts) = rendering.work.content.cases,
-                  let notes = parts.first?.noteTable
+                  let notes = parts.first?.strands[0].noteTable
             else { Issue.record("Expected standard wall content"); return }
 
             #expect(notes.map(\.attack) == [wallTime(0), wallTime(4_000)])
@@ -882,7 +882,7 @@ extension WorkRenderTests {
         let rendering = try work.rendered()
 
         guard case let .standardWall(parts) = rendering.work.content.cases,
-              let notes = parts.first?.noteTable
+              let notes = parts.first?.strands[0].noteTable
         else { Issue.record("Expected standard wall content"); return }
 
         #expect(rendering.leadIn == .wall(wallDuration(40)))

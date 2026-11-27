@@ -17,8 +17,8 @@ extension WorkInvertTests {
     func invert_absolute_removesKeys() throws {
         var part = Part<BeatTime, Frequency>(name: "Sine")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: 440)
-        part.noteTable.insert(attack: 1, duration: 1, pitch: 660)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: 440)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: 660)
 
         let content = try Work.Content.absoluteBeat([part], TempoMap(), MeterTable(), makeKeyTable([(0, 2)]))
         var removed = Work(content: content)
@@ -37,8 +37,8 @@ extension WorkInvertTests {
     func invert_keyboard_invertsKeys() throws {
         var part = Part<BeatTime, NoteNumber>(name: "Piano")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: 60)
-        part.noteTable.insert(attack: 1, duration: 1, pitch: 67)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: 60)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: 67)
 
         var work = try Work(content: .keyboardBeat([part], TempoMap(), MeterTable(), makeKeyTable([(0, 1)])))
         let range: ClosedRange<NoteNumber> = 60...67
@@ -93,8 +93,8 @@ extension WorkInvertTests {
         var bass = Part<BeatTime, Pitch>(name: "Bass")
         var treble = Part<BeatTime, Pitch>(name: "Treble")
 
-        bass.noteTable.insert(attack: 0, duration: 1, pitch: .c3)
-        treble.noteTable.insert(attack: 0, duration: 1, pitch: .g4)
+        bass.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c3)
+        treble.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .g4)
 
         let content = try Work.Content.standardBeat([bass, treble], TempoMap(), MeterTable(), makeKeyTable([(0, 0)]))
         var moved = Work(content: content)
@@ -111,8 +111,8 @@ extension WorkInvertTests {
     func invert_wholeWork_invertsEveryPart() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .e4)
 
         var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 

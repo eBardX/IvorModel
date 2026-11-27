@@ -7,6 +7,19 @@ extension Work {
 
     // MARK: Public Instance Methods
 
+    /// Returns the key table a strand’s notes follow, or `nil` for wall-time content, which has no
+    /// key table.
+    ///
+    /// Every strand follows the work’s key table today. The strand is asked for so that callers
+    /// need no change if strands come to have keys of their own (polytonality).
+    ///
+    /// - Parameter strandID:   The ID of a strand of this work.
+    ///
+    /// - Returns:  The key table the strand’s notes follow.
+    public func keyTable(for strandID: StrandID) -> KeyTable? {
+        keyTable
+    }
+
     /// Edits the key table of this work in place.
     ///
     /// - Parameter body:   A closure that edits the key table in place, and whose result
@@ -97,6 +110,52 @@ extension Work {
         return result
     }
 
+    /// Edits one strand of this work in place, whichever part it belongs to.
+    ///
+    /// The caller names the strand’s concrete type, which must match this work’s time basis and
+    /// pitch notation — for example, `Strand<BeatTime, Pitch>.self` for standard-beat content.
+    /// The strand keeps its ``StrandID``, whatever `body` does.
+    ///
+    /// - Parameter strandID:   The ID of the strand to edit.
+    /// - Parameter type:       The concrete type of the strand.
+    /// - Parameter body:       A closure that edits the strand in place, and whose result is
+    ///                         returned.
+    ///
+    /// - Returns:  The result of `body`, or `nil` (without calling `body`) if no strand with
+    ///             `strandID` is found or this work’s strands aren’t of type `type`.
+    ///
+    /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked, whether or not the strand
+    ///             is found; ``Work/Error/duplicateNoteID(_:)`` if `body` leaves two notes of the
+    ///             work sharing a note ID where none did before, in which case the work is left
+    ///             as it was.
+    @discardableResult
+    public mutating func modifyStrand<T: TimeProtocol, P: PitchProtocol, R>(_ strandID: StrandID,
+                                                                            as type: Strand<T, P>.Type,
+                                                                            _ body: (inout Strand<T, P>) -> R) throws(Error) -> R? {
+        try ensureUnlocked()
+
+        let original = content
+        let keptRules = original.invariantError == nil
+
+        guard let result = Self._modifyingStrand(strandID,
+                                                 in: &content.body,
+                                                 as: type,
+                                                 body)
+        else { return nil }
+
+        //
+        // As in `modifyPart`: an edit that breaks a rule the work kept is undone.
+        //
+        if keptRules,
+           let error = content.invariantError {
+            content = original
+
+            throw error
+        }
+
+        return result
+    }
+
     /// Edits the tempo map of this work in place.
     ///
     /// - Parameter body:   A closure that edits the tempo map in place, and whose result is
@@ -137,6 +196,23 @@ extension Work {
                    as: type)
     }
 
+    /// Returns one strand of this work, whichever part it belongs to.
+    ///
+    /// The caller names the strand’s concrete type, which must match this work’s time basis and
+    /// pitch notation — for example, `Strand<BeatTime, Pitch>.self` for standard-beat content.
+    ///
+    /// - Parameter strandID:   The ID of the strand to return.
+    /// - Parameter type:       The concrete type of the strand.
+    ///
+    /// - Returns:  The strand with `strandID`, or `nil` if no such strand is found or this work’s
+    ///             strands aren’t of type `type`.
+    public func strand<T: TimeProtocol, P: PitchProtocol>(_ strandID: StrandID,
+                                                          as type: Strand<T, P>.Type) -> Strand<T, P>? {
+        Self._strand(strandID,
+                     in: content.body,
+                     as: type)
+    }
+
     // MARK: Private Type Methods
 
     //
@@ -164,10 +240,48 @@ extension Work {
         return result
     }
 
+    //
+    // Runs `body` on the strand with `strandID`, in whichever part holds it, if `body`'s type of
+    // strand is this body's, and writes the edited strand back.
+    //
+    private static func _modifyingStrand<WorkBody: Work.Body, T, P, R>(_ strandID: StrandID,
+                                                                       in workBody: inout WorkBody,
+                                                                       as type: Strand<T, P>.Type,
+                                                                       _ body: (inout Strand<T, P>) -> R) -> R? {
+        guard let partIndex = workBody.parts.firstIndex(where: { $0.index(ofStrandID: strandID) != nil }),
+              let strandIndex = workBody.parts[partIndex].index(ofStrandID: strandID),
+              var strand = workBody.parts[partIndex].strands[strandIndex] as? Strand<T, P>
+        else { return nil }
+
+        let result = body(&strand)
+
+        //
+        // Can't fail: the strand was just shown to be of the body's own type.
+        //
+        guard let storedStrand = strand as? Strand<WorkBody.TimeType, WorkBody.PitchType>
+        else { return nil }
+
+        workBody.parts[partIndex].strands[strandIndex] = storedStrand
+
+        return result
+    }
+
     private static func _part<T, P>(_ partID: PartID,
                                     in workBody: some Work.Body,
                                     as type: Part<T, P>.Type) -> Part<T, P>? {
         workBody.parts.first { $0.partID == partID } as? Part<T, P>
+    }
+
+    private static func _strand<T, P>(_ strandID: StrandID,
+                                      in workBody: some Work.Body,
+                                      as type: Strand<T, P>.Type) -> Strand<T, P>? {
+        for part in workBody.parts {
+            if let strand = part.strand(strandID) {
+                return strand as? Strand<T, P>
+            }
+        }
+
+        return nil
     }
 
     // MARK: Private Instance Methods

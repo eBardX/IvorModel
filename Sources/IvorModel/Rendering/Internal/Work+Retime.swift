@@ -50,38 +50,52 @@ extension Work {
         let time = { (value: TimeType) -> TimeType in
             TimeType(number: map(value.number, false)) ?? value
         }
-        var notes: [NoteTable<TimeType, PitchType>.StoredNote] = []
+        func retimedNotes(_ noteTable: NoteTable<TimeType, PitchType>) -> NoteTable<TimeType, PitchType> {
+            var notes: [NoteTable<TimeType, PitchType>.StoredNote] = []
 
-        for note in part.noteTable.notes {
-            guard let attack = TimeType(number: map(note.attack.number, false)),
-                  let release = TimeType(number: map(note.release.number, true)),
-                  let span = attack.duration(to: release),
-                  span.direction == .forward
-            else { notes.append(note); continue }
+            for note in noteTable.notes {
+                guard let attack = TimeType(number: map(note.attack.number, false)),
+                      let release = TimeType(number: map(note.release.number, true)),
+                      let span = attack.duration(to: release),
+                      span.direction == .forward
+                else { notes.append(note); continue }
 
-            notes.append(NoteTable<TimeType, PitchType>.StoredNote(noteID: note.noteID,
-                                                                   attack: attack,
-                                                                   duration: span.duration,
-                                                                   startPitch: note.startPitch,
-                                                                   endPitch: note.endPitch,
-                                                                   extras: note.extras,
-                                                                   ornamentation: note.ornamentation))
+                notes.append(NoteTable<TimeType, PitchType>.StoredNote(noteID: note.noteID,
+                                                                       attack: attack,
+                                                                       duration: span.duration,
+                                                                       startPitch: note.startPitch,
+                                                                       endPitch: note.endPitch,
+                                                                       extras: note.extras,
+                                                                       ornamentation: note.ornamentation))
+            }
+
+            return NoteTable(notes: notes.sorted())
+        }
+
+        func retimedDynamics(_ dynamicMap: DynamicMap<TimeType>) -> DynamicMap<TimeType> {
+            DynamicMap(defaultDynamic: dynamicMap.defaultDynamic,
+                       entries: dynamicMap.entries.map {
+                           DynamicMap.StoredEntry(entryID: $0.entryID, time: time($0.time), dynamic: $0.dynamic, extras: $0.extras)
+                       })
+        }
+
+        func retimedInstruments(_ instrumentTable: InstrumentTable<TimeType>) -> InstrumentTable<TimeType> {
+            InstrumentTable(defaultInstrument: instrumentTable.defaultInstrument,
+                            entries: instrumentTable.entries.map {
+                                InstrumentTable.StoredEntry(entryID: $0.entryID,
+                                                            time: time($0.time),
+                                                            instrument: $0.instrument,
+                                                            extras: $0.extras)
+                            })
         }
 
         var result = part
 
-        result.noteTable = NoteTable(notes: notes.sorted())
-        result.dynamicMap = DynamicMap(defaultDynamic: part.dynamicMap.defaultDynamic,
-                                       entries: part.dynamicMap.entries.map {
-                                           DynamicMap.StoredEntry(entryID: $0.entryID, time: time($0.time), dynamic: $0.dynamic, extras: $0.extras)
-                                       })
-        result.instrumentTable = InstrumentTable(defaultInstrument: part.instrumentTable.defaultInstrument,
-                                                 entries: part.instrumentTable.entries.map {
-                                                     InstrumentTable.StoredEntry(entryID: $0.entryID,
-                                                                                 time: time($0.time),
-                                                                                 instrument: $0.instrument,
-                                                                                 extras: $0.extras)
-                                                 })
+        result.strands = part.mappingStrands(noteTable: retimedNotes,
+                                             instrumentTable: retimedInstruments,
+                                             dynamicMap: retimedDynamics)
+        result.dynamicMap = retimedDynamics(part.dynamicMap)
+        result.instrumentTable = retimedInstruments(part.instrumentTable)
         result.panMap = PanMap(defaultPan: part.panMap.defaultPan,
                                entries: part.panMap.entries.map {
                                    PanMap.StoredEntry(entryID: $0.entryID, time: time($0.time), pan: $0.pan, extras: $0.extras)

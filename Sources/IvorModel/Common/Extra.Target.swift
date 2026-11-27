@@ -33,6 +33,9 @@ extension Extra {
         /// An entry in a ``PedalTable``.
         case pedalEntry
 
+        /// A ``Strand`` itself, in ``Strand/extras``.
+        case strand
+
         /// An entry in a tempo map.
         case tempoEntry
 

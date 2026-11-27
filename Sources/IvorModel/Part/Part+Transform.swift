@@ -36,14 +36,10 @@ extension Part {
         let resolvedAnchor = anchor ?? transformTimeRange(noteIDs: noteIDs,
                                                           applyTo: applyTo)?.lowerBound
 
-        var newNoteTable = noteTable
-
-        do {
-            try newNoteTable.augment(by: factor,
-                                     anchor: resolvedAnchor,
-                                     noteIDs: noteIDs)
-        } catch {
-            throw Error.noteTableFailure(error)
+        var newStrands = try transformingNotes { noteTable throws(NoteFailure) in
+            try noteTable.augment(by: factor,
+                                  anchor: resolvedAnchor,
+                                  noteIDs: noteIDs)
         }
 
         var newDynamicMap = dynamicMap
@@ -53,22 +49,20 @@ extension Part {
         var newMarkTable = markTable
 
         if applyTo.contains(.dynamic) {
-            do {
-                try newDynamicMap.augment(by: factor,
-                                          anchor: resolvedAnchor,
-                                          entryIDs: _dynamicEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.dynamicMapFailure(error)
+            (newDynamicMap, newStrands) = try transformingDynamicMaps(of: newStrands,
+                                                                      noteIDs: noteIDs) { table, entryIDs throws(DynamicFailure) in
+                try table.augment(by: factor,
+                                  anchor: resolvedAnchor,
+                                  entryIDs: entryIDs)
             }
         }
 
         if applyTo.contains(.instrument) {
-            do {
-                try newInstrumentTable.augment(by: factor,
-                                               anchor: resolvedAnchor,
-                                               entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.instrumentTableFailure(error)
+            (newInstrumentTable, newStrands) = try transformingInstrumentTables(of: newStrands,
+                                                                                noteIDs: noteIDs) { table, entryIDs throws(InstrumentFailure) in
+                try table.augment(by: factor,
+                                  anchor: resolvedAnchor,
+                                  entryIDs: entryIDs)
             }
         }
 
@@ -100,7 +94,7 @@ extension Part {
             }
         }
 
-        noteTable = newNoteTable
+        strands = newStrands
         dynamicMap = newDynamicMap
         instrumentTable = newInstrumentTable
         panMap = newPanMap
@@ -136,14 +130,10 @@ extension Part {
         let resolvedAnchor = anchor ?? transformTimeRange(noteIDs: noteIDs,
                                                           applyTo: applyTo)?.lowerBound
 
-        var newNoteTable = noteTable
-
-        do {
-            try newNoteTable.diminish(by: factor,
-                                      anchor: resolvedAnchor,
-                                      noteIDs: noteIDs)
-        } catch {
-            throw Error.noteTableFailure(error)
+        var newStrands = try transformingNotes { noteTable throws(NoteFailure) in
+            try noteTable.diminish(by: factor,
+                                   anchor: resolvedAnchor,
+                                   noteIDs: noteIDs)
         }
 
         var newDynamicMap = dynamicMap
@@ -153,22 +143,20 @@ extension Part {
         var newMarkTable = markTable
 
         if applyTo.contains(.dynamic) {
-            do {
-                try newDynamicMap.diminish(by: factor,
-                                           anchor: resolvedAnchor,
-                                           entryIDs: _dynamicEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.dynamicMapFailure(error)
+            (newDynamicMap, newStrands) = try transformingDynamicMaps(of: newStrands,
+                                                                      noteIDs: noteIDs) { table, entryIDs throws(DynamicFailure) in
+                try table.diminish(by: factor,
+                                   anchor: resolvedAnchor,
+                                   entryIDs: entryIDs)
             }
         }
 
         if applyTo.contains(.instrument) {
-            do {
-                try newInstrumentTable.diminish(by: factor,
-                                                anchor: resolvedAnchor,
-                                                entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.instrumentTableFailure(error)
+            (newInstrumentTable, newStrands) = try transformingInstrumentTables(of: newStrands,
+                                                                                noteIDs: noteIDs) { table, entryIDs throws(InstrumentFailure) in
+                try table.diminish(by: factor,
+                                   anchor: resolvedAnchor,
+                                   entryIDs: entryIDs)
             }
         }
 
@@ -200,7 +188,7 @@ extension Part {
             }
         }
 
-        noteTable = newNoteTable
+        strands = newStrands
         dynamicMap = newDynamicMap
         instrumentTable = newInstrumentTable
         panMap = newPanMap
@@ -222,16 +210,12 @@ extension Part {
     ///         one never carries any map along.
     public mutating func invert(around pitchRange: ClosedRange<PitchType>? = nil,
                                 noteIDs: Set<NoteID>? = nil) throws(Error) {
-        var newNoteTable = noteTable
-
-        do {
-            try newNoteTable.invert(around: pitchRange,
-                                    noteIDs: noteIDs)
-        } catch {
-            throw Error.noteTableFailure(error)
+        let newStrands = try transformingNotes { noteTable throws(NoteFailure) in
+            try noteTable.invert(around: pitchRange,
+                                 noteIDs: noteIDs)
         }
 
-        noteTable = newNoteTable
+        strands = newStrands
     }
 
     /// Moves note attack times by a directed duration, along with any parameter maps selected
@@ -251,13 +235,9 @@ extension Part {
     public mutating func move(by directedDuration: DirectedDuration<DurationType>,
                               noteIDs: Set<NoteID>? = nil,
                               applyTo: TransformTargets = .all) throws(Error) {
-        var newNoteTable = noteTable
-
-        do {
-            try newNoteTable.move(by: directedDuration,
-                                  noteIDs: noteIDs)
-        } catch {
-            throw Error.noteTableFailure(error)
+        var newStrands = try transformingNotes { noteTable throws(NoteFailure) in
+            try noteTable.move(by: directedDuration,
+                               noteIDs: noteIDs)
         }
 
         var newDynamicMap = dynamicMap
@@ -267,20 +247,18 @@ extension Part {
         var newMarkTable = markTable
 
         if applyTo.contains(.dynamic) {
-            do {
-                try newDynamicMap.move(by: directedDuration,
-                                       entryIDs: _dynamicEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.dynamicMapFailure(error)
+            (newDynamicMap, newStrands) = try transformingDynamicMaps(of: newStrands,
+                                                                      noteIDs: noteIDs) { table, entryIDs throws(DynamicFailure) in
+                try table.move(by: directedDuration,
+                               entryIDs: entryIDs)
             }
         }
 
         if applyTo.contains(.instrument) {
-            do {
-                try newInstrumentTable.move(by: directedDuration,
-                                            entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.instrumentTableFailure(error)
+            (newInstrumentTable, newStrands) = try transformingInstrumentTables(of: newStrands,
+                                                                                noteIDs: noteIDs) { table, entryIDs throws(InstrumentFailure) in
+                try table.move(by: directedDuration,
+                               entryIDs: entryIDs)
             }
         }
 
@@ -309,7 +287,7 @@ extension Part {
             }
         }
 
-        noteTable = newNoteTable
+        strands = newStrands
         dynamicMap = newDynamicMap
         instrumentTable = newInstrumentTable
         panMap = newPanMap
@@ -342,13 +320,9 @@ extension Part {
         let resolvedRange = timeRange ?? transformTimeRange(noteIDs: noteIDs,
                                                             applyTo: applyTo)
 
-        var newNoteTable = noteTable
-
-        do {
-            try newNoteTable.reverse(within: resolvedRange,
-                                     noteIDs: noteIDs)
-        } catch {
-            throw Error.noteTableFailure(error)
+        var newStrands = try transformingNotes { noteTable throws(NoteFailure) in
+            try noteTable.reverse(within: resolvedRange,
+                                  noteIDs: noteIDs)
         }
 
         var newDynamicMap = dynamicMap
@@ -358,20 +332,18 @@ extension Part {
         var newMarkTable = markTable
 
         if applyTo.contains(.dynamic) {
-            do {
-                try newDynamicMap.reverse(within: resolvedRange,
-                                          entryIDs: _dynamicEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.dynamicMapFailure(error)
+            (newDynamicMap, newStrands) = try transformingDynamicMaps(of: newStrands,
+                                                                      noteIDs: noteIDs) { table, entryIDs throws(DynamicFailure) in
+                try table.reverse(within: resolvedRange,
+                                  entryIDs: entryIDs)
             }
         }
 
         if applyTo.contains(.instrument) {
-            do {
-                try newInstrumentTable.reverse(within: resolvedRange,
-                                               entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.instrumentTableFailure(error)
+            (newInstrumentTable, newStrands) = try transformingInstrumentTables(of: newStrands,
+                                                                                noteIDs: noteIDs) { table, entryIDs throws(InstrumentFailure) in
+                try table.reverse(within: resolvedRange,
+                                  entryIDs: entryIDs)
             }
         }
 
@@ -400,7 +372,7 @@ extension Part {
             }
         }
 
-        noteTable = newNoteTable
+        strands = newStrands
         dynamicMap = newDynamicMap
         instrumentTable = newInstrumentTable
         panMap = newPanMap
@@ -421,16 +393,12 @@ extension Part {
     ///         one never carries any map along.
     public mutating func transpose(by directedInterval: DirectedInterval<IntervalType>,
                                    noteIDs: Set<NoteID>? = nil) throws(Error) {
-        var newNoteTable = noteTable
-
-        do {
-            try newNoteTable.transpose(by: directedInterval,
-                                       noteIDs: noteIDs)
-        } catch {
-            throw Error.noteTableFailure(error)
+        let newStrands = try transformingNotes { noteTable throws(NoteFailure) in
+            try noteTable.transpose(by: directedInterval,
+                                    noteIDs: noteIDs)
         }
 
-        noteTable = newNoteTable
+        strands = newStrands
     }
 }
 
@@ -495,17 +463,35 @@ extension Part where TimeType == BeatTime {
     public mutating func quantize(to quantizer: BeatQuantizer,
                                   noteIDs: Set<NoteID>? = nil,
                                   applyTo: TransformTargets = .all) {
-        noteTable.quantize(using: quantizer,
-                           noteIDs: noteIDs)
+        let range = selectedTimeRange(noteIDs: noteIDs)
+
+        for index in strands.indices {
+            strands[index].noteTable.quantize(using: quantizer,
+                                              noteIDs: noteIDs)
+        }
 
         if applyTo.contains(.dynamic) {
             dynamicMap.quantize(using: quantizer,
                                 entryIDs: _dynamicEntryIDs(forNoteIDs: noteIDs))
+
+            for index in strands.indices {
+                let entryIDs = strands[index].dynamicMap.flatMap { Self.entryIDs(of: $0, noteIDs: noteIDs, in: range) }
+
+                strands[index].dynamicMap?.quantize(using: quantizer,
+                                                    entryIDs: entryIDs)
+            }
         }
 
         if applyTo.contains(.instrument) {
             instrumentTable.quantize(using: quantizer,
                                      entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
+
+            for index in strands.indices {
+                let entryIDs = strands[index].instrumentTable.flatMap { Self.entryIDs(of: $0, noteIDs: noteIDs, in: range) }
+
+                strands[index].instrumentTable?.quantize(using: quantizer,
+                                                         entryIDs: entryIDs)
+            }
         }
 
         if applyTo.contains(.pan) {
@@ -546,26 +532,16 @@ extension Part {
     internal func transformTimeRange(noteIDs: Set<NoteID>?,
                                      applyTo: TransformTargets) -> ClosedRange<TimeType>? {
         if let noteIDs {
-            return noteTable.selectedTimeRange(noteIDs: noteIDs)
+            return selectedTimeRange(noteIDs: noteIDs)
         }
 
         var bounds: [TimeType] = []
 
-        if let noteRange = noteTable.timeRange {
+        if let noteRange = timeRange {
             bounds += [noteRange.lowerBound, noteRange.upperBound]
         }
 
-        if applyTo.contains(.dynamic),
-           let first = dynamicMap.first,
-           let last = dynamicMap.last {
-            bounds += [first.time, last.time]
-        }
-
-        if applyTo.contains(.instrument),
-           let first = instrumentTable.first,
-           let last = instrumentTable.last {
-            bounds += [first.time, last.time]
-        }
+        bounds += ownTableBounds(applyTo: applyTo)
 
         if applyTo.contains(.pan),
            let first = panMap.first,
@@ -604,7 +580,7 @@ extension Part {
         guard let noteIDs
         else { return nil }
 
-        guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
+        guard let range = selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
         return Set(dynamicMap.filter { range.contains($0.time) }.map(\.entryID))
@@ -614,7 +590,7 @@ extension Part {
         guard let noteIDs
         else { return nil }
 
-        guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
+        guard let range = selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
         return Set(instrumentTable.filter { range.contains($0.time) }.map(\.entryID))
@@ -628,7 +604,7 @@ extension Part {
         guard let noteIDs
         else { return nil }
 
-        guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
+        guard let range = selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
         return Set(markTable.filter { range.contains($0.time) }.map(\.entryID))
@@ -638,7 +614,7 @@ extension Part {
         guard let noteIDs
         else { return nil }
 
-        guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
+        guard let range = selectedTimeRange(noteIDs: noteIDs)
         else { return [] }
 
         return Set(panMap.filter { range.contains($0.time) }.map(\.entryID))
@@ -655,7 +631,7 @@ extension Part {
         guard let noteIDs
         else { return nil }
 
-        guard let range = noteTable.selectedTimeRange(noteIDs: noteIDs)
+        guard let range = selectedTimeRange(noteIDs: noteIDs)
         else { return [:] }
 
         return pedals.mapValues { table in

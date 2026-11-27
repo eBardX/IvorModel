@@ -17,6 +17,6 @@ extension Renderer {
 
         internal let fermataMarks: [[(time: Number, mark: PartMark<TimeType>)]]
         internal let leadIn: Number
-        internal let notes: [[Note]]
+        internal let notes: [[[Note]]]     // by part, then by strand
     }
 }

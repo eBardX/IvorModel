@@ -96,8 +96,8 @@ extension WorkQuantizeTests {
     func quantize_noteIDs_restrictsAffectedNotes() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        let noteID1 = part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
-        let noteID2 = part.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
+        let noteID1 = part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        let noteID2 = part.strands[0].noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
 
         let targetID = part.partID
         var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
@@ -109,7 +109,7 @@ extension WorkQuantizeTests {
 
         var attacksByID: [NoteID: BeatTime] = [:]
 
-        for note in parts[0].noteTable {
+        for note in parts[0].strands[0].noteTable {
             attacksByID[note.noteID] = note.attack
         }
 
@@ -121,7 +121,7 @@ extension WorkQuantizeTests {
     func quantize_partIDs_invalidFactorsLeavesWorkUnchanged() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
 
         let partIDs: Set<PartID> = [part.partID]
         var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
@@ -133,7 +133,7 @@ extension WorkQuantizeTests {
         guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
-        #expect(parts[0].noteTable.timeRange?.lowerBound == BeatTime(0.49))
+        #expect(parts[0].strands[0].noteTable.timeRange?.lowerBound == BeatTime(0.49))
     }
 
     @Test
@@ -141,8 +141,8 @@ extension WorkQuantizeTests {
         var part1 = Part<BeatTime, Pitch>(name: "Violin")
         var part2 = Part<BeatTime, Pitch>(name: "Cello")
 
-        part1.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
-        part2.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .e4)
+        part1.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part2.strands[0].noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .e4)
 
         let partIDs: Set<PartID> = [part1.partID]
         var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeyTable()))
@@ -152,8 +152,8 @@ extension WorkQuantizeTests {
         guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
-        #expect(parts[0].noteTable.timeRange?.lowerBound == 0)
-        #expect(parts[1].noteTable.timeRange?.lowerBound == BeatTime(4.49))
+        #expect(parts[0].strands[0].noteTable.timeRange?.lowerBound == 0)
+        #expect(parts[1].strands[0].noteTable.timeRange?.lowerBound == BeatTime(4.49))
     }
 
     @Test
@@ -171,8 +171,8 @@ extension WorkQuantizeTests {
         var part1 = Part<BeatTime, Pitch>(name: "Violin")
         var part2 = Part<BeatTime, Pitch>(name: "Cello")
 
-        part1.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
-        part2.noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .e4)
+        part1.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part2.strands[0].noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .e4)
 
         let targetID = part1.partID
         var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeyTable()))
@@ -182,8 +182,8 @@ extension WorkQuantizeTests {
         guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
-        #expect(parts[0].noteTable.timeRange?.lowerBound == 0)
-        #expect(parts[1].noteTable.timeRange?.lowerBound == BeatTime(4.49))
+        #expect(parts[0].strands[0].noteTable.timeRange?.lowerBound == 0)
+        #expect(parts[1].strands[0].noteTable.timeRange?.lowerBound == BeatTime(4.49))
     }
 
     @Test
@@ -220,7 +220,7 @@ extension WorkQuantizeTests {
     func quantize_wholeWork_absoluteBeat_snapsEveryPart() throws {
         var part = Part<BeatTime, Frequency>(name: "Violin")
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: Frequency(440))
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: Frequency(440))
 
         var work = Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
@@ -233,7 +233,7 @@ extension WorkQuantizeTests {
     func quantize_wholeWork_applyToCarriesSelectedMap() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0.49, dynamic: .mp)
 
         var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
@@ -256,7 +256,7 @@ extension WorkQuantizeTests {
     func quantize_wholeWork_applyToTempoCarriesTempoMap() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
 
         var tempoMap = TempoMap()
 
@@ -282,7 +282,7 @@ extension WorkQuantizeTests {
     func quantize_wholeWork_defaultApplyToCarriesMaps() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0.49, dynamic: .mp)
 
         var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
@@ -305,7 +305,7 @@ extension WorkQuantizeTests {
     func quantize_wholeWork_defaultApplyToCarriesTempoMap() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
 
         var tempoMap = TempoMap()
 
@@ -331,7 +331,7 @@ extension WorkQuantizeTests {
     func quantize_wholeWork_keyboardBeat_snapsEveryPart() throws {
         var part = Part<BeatTime, NoteNumber>(name: "Violin")
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: NoteNumber(60))
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: NoteNumber(60))
 
         var work = Work(content: .keyboardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
@@ -344,7 +344,7 @@ extension WorkQuantizeTests {
     func quantize_wholeWork_standardBeat_snapsEveryPart() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
 
         var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 

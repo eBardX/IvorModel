@@ -20,6 +20,7 @@ extension ExtraTargetTests {
                                           .panEntry,
                                           .part,
                                           .pedalEntry,
+                                          .strand,
                                           .tempoEntry,
                                           .work])
     }

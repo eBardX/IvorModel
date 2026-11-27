@@ -12,7 +12,7 @@ struct ExtraValueRoleTests {
 extension ExtraValueRoleTests {
     @Test
     func allCases_count() {
-        #expect(Extra.ValueRole.allCases.count == 23)
+        #expect(Extra.ValueRole.allCases.count == 26)
     }
 
     @Test

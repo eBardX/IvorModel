@@ -19,8 +19,8 @@ extension WorkAugmentTests {
         var violin = Part<BeatTime, Pitch>(name: "Violin")
         var cello = Part<BeatTime, Pitch>(name: "Cello")
 
-        violin.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        cello.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        violin.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        cello.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
 
         var tempoMap = TempoMap()
 
@@ -74,7 +74,7 @@ extension WorkAugmentTests {
     func augment_defaultAnchorIncludesKeyEntries() throws {
         var part = Part<BeatTime, Pitch>(name: "Piano")
 
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .c4)
 
         var work = try Work(content: .standardBeat([part], TempoMap(), MeterTable(), makeKeyTable([(1, 2)])))
 
@@ -137,7 +137,7 @@ extension WorkAugmentTests {
         //
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0, dynamic: .mf)
 
         var tempoMap = TempoMap()
@@ -150,7 +150,7 @@ extension WorkAugmentTests {
 
         let augmented = try #require(work.part(part.partID, as: Part<BeatTime, Pitch>.self))
 
-        #expect(augmented.noteTable.map(\.attack) == [2])
+        #expect(augmented.strands[0].noteTable.map(\.attack) == [2])
         #expect(augmented.dynamicMap.map(\.time) == [0])
         #expect(work.tempoMap?.map(\.beatTime) == [0])
     }
@@ -181,8 +181,8 @@ extension WorkAugmentTests {
         //
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
         part.dynamicMap.insert(time: 0, dynamic: .mf)
 
         var tempoMap = TempoMap()
@@ -199,8 +199,8 @@ extension WorkAugmentTests {
         var violin = Part<BeatTime, Pitch>(name: "Violin")
         var cello = Part<BeatTime, Pitch>(name: "Cello")
 
-        violin.noteTable.insert(attack: 0, duration: .quarter, pitch: .c4)
-        cello.noteTable.insert(attack: 0, duration: .quarter, pitch: .c3)
+        violin.strands[0].noteTable.insert(attack: 0, duration: .quarter, pitch: .c4)
+        cello.strands[0].noteTable.insert(attack: 0, duration: .quarter, pitch: .c3)
 
         let meterTable = try makeMeterTable([(0, "3/4"), (frac(3, 2), "2/4")])
         var work = Work(content: .standardBeat([violin, cello], TempoMap(), meterTable, KeyTable()))
@@ -211,7 +211,7 @@ extension WorkAugmentTests {
                          partIDs: [violin.partID])
 
         #expect(work.meterTable == meterTable)
-        #expect(work.part(violin.partID, as: Part<BeatTime, Pitch>.self)?.noteTable.first?.duration == .half)
+        #expect(work.part(violin.partID, as: Part<BeatTime, Pitch>.self)?.strands[0].noteTable.first?.duration == .half)
     }
 
     @Test
@@ -219,8 +219,8 @@ extension WorkAugmentTests {
         var goodPart = Part<BeatTime, Pitch>(name: "Violin")
         var badPart = Part<BeatTime, Pitch>(name: "Cello")
 
-        goodPart.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        badPart.noteTable.insert(attack: 5, duration: 1, pitch: .e4)
+        goodPart.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        badPart.strands[0].noteTable.insert(attack: 5, duration: 1, pitch: .e4)
 
         let partIDs: Set<PartID> = [goodPart.partID, badPart.partID]
         var work = Work(content: .standardBeat([goodPart, badPart], TempoMap(), MeterTable(), KeyTable()))
@@ -246,7 +246,7 @@ extension WorkAugmentTests {
         let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 4, pitch: .c4)
 
         var tempoMap = TempoMap()
 
@@ -283,8 +283,8 @@ extension WorkAugmentTests {
         var part1 = Part<BeatTime, Pitch>(name: "Violin")
         var part2 = Part<BeatTime, Pitch>(name: "Cello")
 
-        part1.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part2.noteTable.insert(attack: 0, duration: 1, pitch: .e4)
+        part1.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part2.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .e4)
 
         let targetID = part1.partID
         var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeyTable()))
@@ -300,12 +300,12 @@ extension WorkAugmentTests {
         var part1 = Part<BeatTime, Pitch>(name: "Violin")
         var part2 = Part<BeatTime, Pitch>(name: "Cello")
 
-        part1.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part1.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
         part1.dynamicMap.insert(time: 0, dynamic: .mp)
         part1.instrumentTable.insert(time: 0, instrument: .vanilla)
         part1.panMap.insert(time: 0, pan: .center)
 
-        part2.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part2.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
         part2.dynamicMap.insert(time: 2, dynamic: .mf)
         part2.instrumentTable.insert(time: 2, instrument: .vanilla)
         part2.panMap.insert(time: 2, pan: .left)
@@ -335,7 +335,7 @@ extension WorkAugmentTests {
         var panTimes: [BeatTime] = []
 
         for part in parts {
-            for note in part.noteTable {
+            for note in part.strands[0].noteTable {
                 attacksAndDurations.append((note.attack, note.duration))
             }
 
@@ -391,7 +391,7 @@ extension WorkAugmentTests {
         //
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
 
         var tempoMap = TempoMap()
 
@@ -407,7 +407,7 @@ extension WorkAugmentTests {
         let augmented = try #require(work.part(part.partID, as: Part<BeatTime, Pitch>.self))
 
         #expect(work.tempoMap?.map(\.beatTime) == [0, 2])
-        #expect(augmented.noteTable.map(\.attack) == [1])
+        #expect(augmented.strands[0].noteTable.map(\.attack) == [1])
         #expect(augmented.timeRange == 1...3)
     }
 
@@ -416,8 +416,8 @@ extension WorkAugmentTests {
         var part1 = Part<BeatTime, Pitch>(name: "Violin")
         var part2 = Part<BeatTime, Pitch>(name: "Cello")
 
-        part1.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part2.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part1.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part2.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
 
         var tempoMap = TempoMap()
 
@@ -488,7 +488,7 @@ extension WorkAugmentTests {
     func mapTransformFailure_wrapsUnderlyingDynamicMapError() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 5, duration: 1, pitch: .c4)
         part.dynamicMap.insert(time: 0, dynamic: .mp)
 
         let partID = part.partID
@@ -508,7 +508,7 @@ extension WorkAugmentTests {
     func mapTransformFailure_wrapsUnderlyingInstrumentTableError() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 5, duration: 1, pitch: .c4)
         part.instrumentTable.insert(time: 0, instrument: .vanilla)
 
         let partID = part.partID
@@ -528,7 +528,7 @@ extension WorkAugmentTests {
     func mapTransformFailure_wrapsUnderlyingPanMapError() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 5, duration: 1, pitch: .c4)
         part.panMap.insert(time: 0, pan: .center)
 
         let partID = part.partID

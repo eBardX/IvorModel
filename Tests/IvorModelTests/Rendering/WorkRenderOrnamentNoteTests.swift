@@ -74,7 +74,7 @@ private func renderedFlags(_ notes: [WrittenNote]) throws -> [(pitch: Pitch, isO
     guard case let .standardBeat(parts, _, _, _) = try work.rendered().work.content.cases
     else { throw Work.Error.unsupportedStandardConversion }
 
-    return try #require(parts.first).noteTable
+    return try #require(parts.first).strands[0].noteTable
         .sorted { ($0.attack, $0.startPitch) < ($1.attack, $1.startPitch) }
         .map { ($0.startPitch, $0.extras?.contains(.ornamentNote) ?? false) }
 }

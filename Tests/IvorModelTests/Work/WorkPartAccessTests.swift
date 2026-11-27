@@ -91,12 +91,12 @@ extension WorkPartAccessTests {
         var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeyTable()))
 
         let noteID = try work.modifyPart(part2.partID, as: Part<BeatTime, Pitch>.self) {
-            $0.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+            $0.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
         }
 
         #expect(noteID != nil)
         #expect(work.part(part1.partID, as: Part<BeatTime, Pitch>.self)?.noteCount == 0)
-        #expect(work.part(part2.partID, as: Part<BeatTime, Pitch>.self)?.noteTable.last?.noteID == noteID)
+        #expect(work.part(part2.partID, as: Part<BeatTime, Pitch>.self)?.strands[0].noteTable.last?.noteID == noteID)
         #expect(work.partIDs == [part1.partID, part2.partID])
     }
 
@@ -163,7 +163,7 @@ extension WorkPartAccessTests {
 
         #expect(throws: Work.Error.duplicateNoteID(sharedID)) {
             try work.modifyPart(cello.partID, as: Part<BeatTime, Pitch>.self) {
-                $0.noteTable.merge(with: notes)
+                $0.strands[0].noteTable.merge(with: notes)
                 $0.name = "Viola"
             }
         }

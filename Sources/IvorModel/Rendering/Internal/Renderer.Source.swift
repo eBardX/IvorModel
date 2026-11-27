@@ -22,6 +22,7 @@ extension Renderer {
         internal let part: Int
         internal let release: Number
         internal let startPitch: PitchType
+        internal let strand: Int
     }
 }
 

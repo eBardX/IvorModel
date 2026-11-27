@@ -121,9 +121,9 @@ extension TemplateAnalyzeTests {
         var ornamented = makeOneBeatWork(pitches)
 
         try ornamented.modifyPart(ornamented.partIDs[0], as: Part<BeatTime, Pitch>.self) { part in
-            for note in part.noteTable {
-                _ = try? part.noteTable.updateOrnamentation(noteID: note.noteID,
-                                                            ornamentation: .init(graceBefore: try? graceFigure([.g4])))
+            for note in part.strands[0].noteTable {
+                _ = try? part.strands[0].noteTable.updateOrnamentation(noteID: note.noteID,
+                                                                       ornamentation: .init(graceBefore: try? graceFigure([.g4])))
             }
         }
 
@@ -136,7 +136,7 @@ extension TemplateAnalyzeTests {
         else { Issue.record("Expected standard beat content"); return }
 
         #expect(try standardBeatPitches(of: fromPlain) == standardBeatPitches(of: fromOrnamented))
-        #expect(parts.allSatisfy { !$0.noteTable.hasOrnamentation })
+        #expect(parts.allSatisfy { !$0.strands[0].noteTable.hasOrnamentation })
     }
 
     @Test

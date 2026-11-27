@@ -19,6 +19,9 @@ extension Work {
         /// Two realizations share a realization ID.
         case duplicateRealizationID(RealizationID)
 
+        /// Two strands share a strand ID. Within a work, every strand has an identity of its own.
+        case duplicateStrandID(StrandID)
+
         /// A failure that occurred in a part’s dynamic map while carrying it along with a
         /// transform.
         case dynamicMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
@@ -63,6 +66,9 @@ extension Work {
 
         /// A work must have at least one realization.
         case noRealizations
+
+        /// A part has no strands. Every part has at least one.
+        case partHasNoStrands(PartID)
 
         /// A failure that occurred in a part’s pan map while carrying it along with a transform.
         case panMapTransformFailure(kind: TransformKind, partID: PartID, detail: String)
@@ -126,6 +132,9 @@ extension Work.Error: EnhancedError {
         case let .duplicateRealizationID(realizationID):
             "Duplicate realization ID: \(realizationID.stringValue)"
 
+        case let .duplicateStrandID(strandID):
+            "Duplicate strand ID: \(strandID.stringValue)"
+
         case let .dynamicMapTransformFailure(kind, partID, detail):
             "Dynamic map failure during \(kind) of part \(partID.stringValue): \(detail)"
 
@@ -164,6 +173,9 @@ extension Work.Error: EnhancedError {
 
         case .noRealizations:
             "A work must have at least one realization."
+
+        case let .partHasNoStrands(partID):
+            "Part \(partID.stringValue) has no strands."
 
         case let .panMapTransformFailure(kind, partID, detail):
             "Pan map failure during \(kind) of part \(partID.stringValue): \(detail)"

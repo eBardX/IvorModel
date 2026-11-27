@@ -25,14 +25,17 @@ internal struct Renderer<TimeType: RenderableTime, PitchType: RenderablePitch> {
         var sources: [Source] = []
 
         for (index, part) in parts.enumerated() {
-            for note in part.noteTable {
-                sources.append(Source(attack: note.attack.number,
-                                      endPitch: note.endPitch,
-                                      extras: note.extras,
-                                      ornamentation: note.ornamentation,
-                                      part: index,
-                                      release: note.release.number,
-                                      startPitch: note.startPitch))
+            for (strandIndex, strand) in part.strands.enumerated() {
+                for note in strand.noteTable {
+                    sources.append(Source(attack: note.attack.number,
+                                          endPitch: note.endPitch,
+                                          extras: note.extras,
+                                          ornamentation: note.ornamentation,
+                                          part: index,
+                                          release: note.release.number,
+                                          startPitch: note.startPitch,
+                                          strand: strandIndex))
+                }
             }
         }
 
@@ -51,6 +54,7 @@ internal struct Renderer<TimeType: RenderableTime, PitchType: RenderablePitch> {
         self.clock = clock
         self.ends = sources.map(\.release)
         self.partCount = parts.count
+        self.strandCounts = parts.map(\.strands.count)
         self.releases = releases
         self.rules = parts.map { InterpretationRules.resolved(work: workRules, part: $0.interpretationRules) }
         self.sources = sources
@@ -65,6 +69,11 @@ internal struct Renderer<TimeType: RenderableTime, PitchType: RenderablePitch> {
     internal let releases: [Moment: [Int]]
     internal let rules: [InterpretationRules]
     internal let sources: [Source]
+
+    //
+    // The number of strands of each part, in part order.
+    //
+    internal let strandCounts: [Int]
 
     internal var afterEvents: [[GraceEvent]]
     internal var beforeEvents: [[GraceEvent]]
@@ -93,13 +102,13 @@ extension Renderer {
     // MARK: Private Instance Methods
 
     private func _output() -> Output {
-        var notes = Array(repeating: [Note](), count: partCount)
+        var notes = strandCounts.map { Array(repeating: [Note](), count: $0) }
         var fermataMarks = Array(repeating: [(time: Number, mark: PartMark<TimeType>)](), count: partCount)
 
         for index in sources.indices {
             let source = sources[index]
 
-            notes[source.part] += renderedNotes(of: index)
+            notes[source.part][source.strand] += renderedNotes(of: index)
 
             if let fermata = source.ornamentation?.fermata,
                let span = TimeType.duration(fromNumber: source.duration).flatMap(PositiveDuration.init) {
@@ -107,7 +116,7 @@ extension Renderer {
             }
         }
 
-        let earliest = notes.joined().map(\.start).min() ?? 0
+        let earliest = notes.joined().joined().map(\.start).min() ?? 0
 
         return Output(fermataMarks: fermataMarks,
                       leadIn: earliest < 0 ? -earliest : 0,

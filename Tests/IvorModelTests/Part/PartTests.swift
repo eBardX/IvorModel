@@ -20,9 +20,9 @@ extension PartTests {
     func attackingIn_matching() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        let matchID = part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        let matchID = part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
 
-        part.noteTable.insert(attack: 5, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 5, duration: 1, pitch: .e4)
 
         let result = part.attackingIn(0...2)
 
@@ -33,7 +33,7 @@ extension PartTests {
     func attackingIn_notMatching() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 5, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 5, duration: 1, pitch: .c4)
 
         let result = part.attackingIn(0...2)
 
@@ -181,10 +181,10 @@ extension PartTests {
         let original = Part<BeatTime, Pitch>(name: "Piano", noteTable: noteTable)
         let copy = original.duplicated()
 
-        #expect(Set(copy.noteTable.map(\.noteID)).isDisjoint(with: original.noteTable.map(\.noteID)))
-        #expect(copy.noteTable.count == original.noteTable.count)
+        #expect(Set(copy.strands[0].noteTable.map(\.noteID)).isDisjoint(with: original.strands[0].noteTable.map(\.noteID)))
+        #expect(copy.strands[0].noteTable.count == original.strands[0].noteTable.count)
 
-        for (copied, kept) in zip(copy.noteTable, original.noteTable) {
+        for (copied, kept) in zip(copy.strands[0].noteTable, original.strands[0].noteTable) {
             #expect(copied.attack == kept.attack)
             #expect(copied.duration == kept.duration)
             #expect(copied.startPitch == kept.startPitch)
@@ -332,9 +332,9 @@ extension PartTests {
     func pitchIn_matching() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        let matchID = part.noteTable.insert(attack: 0, duration: 1, pitch: .e4)
+        let matchID = part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .e4)
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .a4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .a4)
 
         let result = part.pitchIn(.c4...(.g4))
 
@@ -345,7 +345,7 @@ extension PartTests {
     func pitchIn_notMatching() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .a4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .a4)
 
         let result = part.pitchIn(.c4...(.g4))
 
@@ -357,7 +357,7 @@ extension PartTests {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
         // Attacks before the range, but sustains through it.
-        let overlapID = part.noteTable.insert(attack: 0, duration: 10, pitch: .c4)
+        let overlapID = part.strands[0].noteTable.insert(attack: 0, duration: 10, pitch: .c4)
 
         let result = part.soundingIn(5...6)
 
@@ -368,7 +368,7 @@ extension PartTests {
     func soundingIn_notMatching() {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 10, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 10, duration: 1, pitch: .c4)
 
         let result = part.soundingIn(0...2)
 

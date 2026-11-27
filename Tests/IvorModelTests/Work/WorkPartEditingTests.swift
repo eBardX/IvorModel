@@ -73,8 +73,8 @@ extension WorkPartEditingTests {
         let original = try #require(parts.first { $0.partID == originalID })
         let copy = try #require(parts.first { $0.partID == copyID })
 
-        #expect(original.noteTable.arpeggioGroups == [1, 2])
-        #expect(copy.noteTable.arpeggioGroups == [3, 4])
+        #expect(original.strands[0].noteTable.arpeggioGroups == [1, 2])
+        #expect(copy.strands[0].noteTable.arpeggioGroups == [3, 4])
         #expect(work.unusedArpeggioGroup == 5)
         #expect(Work().unusedArpeggioGroup == 1)
     }
@@ -88,7 +88,7 @@ extension WorkPartEditingTests {
         let copy = try #require(work.part(copyID, as: Part<BeatTime, Pitch>.self))
 
         #expect(copy.noteCount == original.noteCount)
-        #expect(Set(copy.noteTable.map(\.noteID)).isDisjoint(with: original.noteTable.map(\.noteID)))
+        #expect(Set(copy.strands[0].noteTable.map(\.noteID)).isDisjoint(with: original.strands[0].noteTable.map(\.noteID)))
         #expect(work.content.firstDuplicateNoteID == nil)
     }
 

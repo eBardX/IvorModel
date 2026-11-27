@@ -132,25 +132,36 @@ extension Work {
             var result = part
 
             result.markTable = PartMarkTable()
-            result.noteTable = NoteTable(notes: part.noteTable.notes.map { note in
-                guard let ornamentation = note.ornamentation,
-                      ornamentation.fermata != nil
-                else { return note }
 
-                return NoteTable<TimeType, PitchType>.StoredNote(noteID: note.noteID,
-                                                                 attack: note.attack,
-                                                                 duration: note.duration,
-                                                                 startPitch: note.startPitch,
-                                                                 endPitch: note.endPitch,
-                                                                 extras: note.extras,
-                                                                 ornamentation: .init(graceBefore: ornamentation.graceBefore,
-                                                                                      graceAfter: ornamentation.graceAfter,
-                                                                                      ornament: ornamentation.ornament,
-                                                                                      arpeggio: ornamentation.arpeggio))
-            })
+            for index in result.strands.indices {
+                result.strands[index].noteTable = _withoutFermatas(result.strands[index].noteTable)
+            }
 
             return result
         }
+    }
+
+    //
+    // `noteTable` with every note's fermata sign taken off, its other ornaments kept.
+    //
+    private static func _withoutFermatas<TimeType: RenderableTime,
+                                         PitchType: PitchProtocol>(_ noteTable: NoteTable<TimeType, PitchType>) -> NoteTable<TimeType, PitchType> {
+        NoteTable(notes: noteTable.notes.map { note in
+            guard let ornamentation = note.ornamentation,
+                  ornamentation.fermata != nil
+            else { return note }
+
+            return NoteTable<TimeType, PitchType>.StoredNote(noteID: note.noteID,
+                                                             attack: note.attack,
+                                                             duration: note.duration,
+                                                             startPitch: note.startPitch,
+                                                             endPitch: note.endPitch,
+                                                             extras: note.extras,
+                                                             ornamentation: .init(graceBefore: ornamentation.graceBefore,
+                                                                                  graceAfter: ornamentation.graceAfter,
+                                                                                  ornament: ornamentation.ornament,
+                                                                                  arpeggio: ornamentation.arpeggio))
+        })
     }
 
     // MARK: Private Instance Methods
@@ -217,7 +228,7 @@ extension Work {
             operations = Self._insertions(holds, pauses)
 
         case .tempoChanges:
-            let attacks = parts.flatMap { $0.noteTable.map(\.attack.numberValue) }.sorted()
+            let attacks = parts.flatMap { $0.mergedNoteTable.map(\.attack.numberValue) }.sorted()
 
             for hold in holds {
                 newTempoMap = Self._slowed(newTempoMap, from: hold.time, to: hold.time + hold.span, adding: hold.extraSeconds)

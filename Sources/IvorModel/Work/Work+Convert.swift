@@ -156,9 +156,9 @@ extension Work {
                                                                     tempoMap: TempoMap) -> Part<WallTime, PitchType> {
         Part(partID: part.partID,
              name: part.name,
-             noteTable: _convertBeatTimes(in: part.noteTable,
-                                          using: timeConverter,
-                                          tempoMap: tempoMap),
+             strands: part.mappingStrands(noteTable: { _convertBeatTimes(in: $0, using: timeConverter, tempoMap: tempoMap) },
+                                          instrumentTable: { convertBeatTimes(in: $0, using: timeConverter) },
+                                          dynamicMap: { convertBeatTimes(in: $0, using: timeConverter) }),
              dynamicMap: convertBeatTimes(in: part.dynamicMap,
                                           using: timeConverter),
              instrumentTable: convertBeatTimes(in: part.instrumentTable,
@@ -175,8 +175,9 @@ extension Work {
                                                                     using timeConverter: TimeConverter) -> Part<BeatTime, PitchType> {
         Part(partID: part.partID,
              name: part.name,
-             noteTable: _convertWallTimes(in: part.noteTable,
-                                          using: timeConverter),
+             strands: part.mappingStrands(noteTable: { _convertWallTimes(in: $0, using: timeConverter) },
+                                          instrumentTable: { _convertWallTimes(in: $0, using: timeConverter) },
+                                          dynamicMap: { _convertWallTimes(in: $0, using: timeConverter) }),
              dynamicMap: _convertWallTimes(in: part.dynamicMap,
                                            using: timeConverter),
              instrumentTable: _convertWallTimes(in: part.instrumentTable,
@@ -224,14 +225,20 @@ extension Work {
                                         ToPitchType: PitchProtocol>(in part: Part<TimeType, FromPitchType>,
                                                                     using convert: ([FromPitchType]) -> [ToPitchType?],
                                                                     dropsUnconvertibleNotes: Bool) throws -> Part<TimeType, ToPitchType> {
-        guard let noteTable = convertPitches(in: part.noteTable,
-                                             using: convert,
-                                             dropsUnconvertibleNotes: dropsUnconvertibleNotes)
-        else { throw Error.unconvertiblePitch(partID: part.partID) }
+        let strands = try part.mappingStrands(noteTable: { noteTable throws(Error) in
+            guard let converted = convertPitches(in: noteTable,
+                                                 using: convert,
+                                                 dropsUnconvertibleNotes: dropsUnconvertibleNotes)
+            else { throw Error.unconvertiblePitch(partID: part.partID) }
+
+            return converted
+        },
+                                              instrumentTable: { $0 },
+                                              dynamicMap: { $0 })
 
         return Part(partID: part.partID,
                     name: part.name,
-                    noteTable: noteTable,
+                    strands: strands,
                     dynamicMap: part.dynamicMap,
                     instrumentTable: part.instrumentTable,
                     panMap: part.panMap,

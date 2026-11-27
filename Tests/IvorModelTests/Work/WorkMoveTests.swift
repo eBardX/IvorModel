@@ -49,7 +49,7 @@ extension WorkMoveTests {
     func move_wholeWorkBeat_shiftsEveryPartAndTempoMap() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
         var tempoMap = TempoMap()
 

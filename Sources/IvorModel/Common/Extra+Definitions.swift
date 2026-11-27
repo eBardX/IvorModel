@@ -53,6 +53,8 @@ extension Extra {
                    targets: [.note])
     }
 
+    private static let clefs = ValueSpec.string(["treble", "bass", "alto", "tenor", "treble8vb", "percussion"])
+
     private static let frameRates = ValueSpec.string(SMPTEFrameRate.allCases.map(\.description))
 
     private static let midiByte = ValueSpec.int(0...127)
@@ -73,6 +75,15 @@ extension Extra {
                                                          Definition(name: dynamicMark.name,
                                                                     targets: [.dynamicEntry],
                                                                     values: [ValueSlot(.mark, text)]),
+                                                         Definition(name: exportClef.name,
+                                                                    targets: [.strand],
+                                                                    values: [ValueSlot(.clef, clefs)]),
+                                                         Definition(name: exportStaff.name,
+                                                                    targets: [.strand],
+                                                                    values: [ValueSlot(.staff, .int(1...64))]),
+                                                         Definition(name: exportVoice.name,
+                                                                    targets: [.note],
+                                                                    values: [ValueSlot(.voice, .int(1...64))]),
                                                          Definition(name: expressionValue.name,
                                                                     targets: [.dynamicEntry],
                                                                     values: [ValueSlot(.expression, midiByte)]),

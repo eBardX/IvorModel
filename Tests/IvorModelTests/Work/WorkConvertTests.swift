@@ -233,7 +233,7 @@ extension WorkConvertTests {
         guard case let .absoluteBeat(parts, _, _, _) = converted.content.cases
         else { Issue.record("Expected absolute beat content"); return }
 
-        let notes = try #require(parts.first?.noteTable)
+        let notes = try #require(parts.first?.strands[0].noteTable)
         let ornamented = try #require(notes.first { $0.ornamentation != nil })
         let d5 = try #require(notes.first { $0.ornamentation == nil }?.startPitch)
 
@@ -353,7 +353,7 @@ extension WorkConvertTests {
             return
         }
 
-        #expect(parts.first?.noteTable.first?.startPitch == 440)
+        #expect(parts.first?.strands[0].noteTable.first?.startPitch == 440)
     }
 
     @Test
@@ -375,7 +375,7 @@ extension WorkConvertTests {
             return
         }
 
-        let pitches = parts.first?.noteTable.map(\.startPitch)
+        let pitches = parts.first?.strands[0].noteTable.map(\.startPitch)
 
         #expect(try pitches == [#require(NoteNumber(uintValue: 69)), #require(NoteNumber(uintValue: 60))])
         #expect(parts.first?.partID == part.partID)
@@ -402,8 +402,8 @@ extension WorkConvertTests {
             return
         }
 
-        #expect(parts.first?.noteTable.count == 1)
-        #expect(parts.first?.noteTable.first?.startPitch == NoteNumber(uintValue: 69))
+        #expect(parts.first?.strands[0].noteTable.count == 1)
+        #expect(parts.first?.strands[0].noteTable.first?.startPitch == NoteNumber(uintValue: 69))
     }
 
     @Test
@@ -440,7 +440,7 @@ extension WorkConvertTests {
             return
         }
 
-        #expect(parts.first?.noteTable.first?.startPitch == NoteNumber(uintValue: 60))
+        #expect(parts.first?.strands[0].noteTable.first?.startPitch == NoteNumber(uintValue: 60))
     }
 
     @Test
@@ -533,7 +533,7 @@ extension WorkConvertTests {
         let converter = TimeConverter(tempoMap: TempoMap())
         let part = try #require(parts.first)
         let mark = try #require(part.markTable.first)
-        let ornamented = try #require(part.noteTable.first { $0.ornamentation != nil })
+        let ornamented = try #require(part.strands[0].noteTable.first { $0.ornamentation != nil })
 
         #expect(mark.time == converter.wallTime(at: 1))
         #expect(mark.mark.span == converter.wallTime(at: beatTime(frac(5, 4))) - converter.wallTime(at: 1))
@@ -654,7 +654,7 @@ extension WorkConvertTests {
         guard case let .absoluteWall(parts) = result.content.cases
         else { Issue.record("Expected absolute-wall content"); return }
 
-        let note = try #require(parts.first?.noteTable.first)
+        let note = try #require(parts.first?.strands[0].noteTable.first)
 
         #expect(note.startPitch == 220)
         #expect(note.endPitch == 440)

@@ -71,7 +71,7 @@ extension WorkReverseTests {
         let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 4, pitch: .c4)
 
         var tempoMap = TempoMap()
 
@@ -96,7 +96,7 @@ extension WorkReverseTests {
         let piccolo = try #require(Instrument(stringValue: "Piccolo"))
         var part = Part<WallTime, Pitch>(name: "Flute")
 
-        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 4, pitch: .c4)
         part.instrumentTable.insert(time: 0, instrument: flute)
         part.instrumentTable.insert(time: 2, instrument: piccolo)
 
@@ -118,8 +118,8 @@ extension WorkReverseTests {
         //
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
         part.dynamicMap.insert(time: 0, dynamic: .mf)
         part.dynamicMap.insert(time: 2, dynamic: .f)
 
@@ -165,8 +165,8 @@ extension WorkReverseTests {
         //
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 1, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
         part.dynamicMap.insert(time: 0, dynamic: .mf)
 
         var tempoMap = TempoMap()
@@ -189,7 +189,7 @@ extension WorkReverseTests {
         let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 4, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 4, pitch: .c4)
 
         var tempoMap = TempoMap()
 
@@ -258,7 +258,7 @@ extension WorkReverseTests {
         let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 8, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 8, pitch: .c4)
 
         var tempoMap = TempoMap()
 
@@ -299,7 +299,7 @@ extension WorkReverseTests {
         let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 8, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 8, pitch: .c4)
 
         var tempoMap = TempoMap()
 
@@ -335,7 +335,7 @@ extension WorkReverseTests {
         let t120 = Tempo(120)
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 12, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 12, pitch: .c4)
 
         var tempoMap = TempoMap()
 
@@ -372,9 +372,9 @@ extension WorkReverseTests {
         var violin = Part<BeatTime, Pitch>(name: "Violin")
         var cello = Part<BeatTime, Pitch>(name: "Cello")
 
-        violin.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        violin.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
-        cello.noteTable.insert(attack: 5, duration: 1, pitch: .g4)
+        violin.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        violin.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        cello.strands[0].noteTable.insert(attack: 5, duration: 1, pitch: .g4)
 
         var tempoMap = TempoMap()
 
@@ -398,8 +398,8 @@ extension WorkReverseTests {
     func reverse_wholeWorkBeat_applyToWithoutTempo_leavesTempoMapUntouched() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
 
         var tempoMap = TempoMap()
 
@@ -418,8 +418,8 @@ extension WorkReverseTests {
     func reverse_wholeWorkBeat_mirrorsEveryPartAndTempoMap() throws {
         var part = Part<BeatTime, Pitch>(name: "Violin")
 
-        part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-        part.noteTable.insert(attack: 2, duration: 1, pitch: .e4)
+        part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        part.strands[0].noteTable.insert(attack: 2, duration: 1, pitch: .e4)
 
         var tempoMap = TempoMap()
 

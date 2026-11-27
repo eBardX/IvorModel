@@ -72,8 +72,8 @@ extension RendererTests {
                                   rules: InterpretationRules(grace: GraceRules(slashedPlacement: .beforeBeat))).render()
 
         #expect(output.leadIn == frac(1, 64))
-        #expect(plainNotes(output.notes[0]) == [RenderedNote(-frac(1, 64), frac(1, 64), .d4),
-                                                RenderedNote(0, frac(1, 2), .c4)])
+        #expect(plainNotes(output.notes[0][0]) == [RenderedNote(-frac(1, 64), frac(1, 64), .d4),
+                                                   RenderedNote(0, frac(1, 2), .c4)])
     }
 
     @Test
@@ -83,7 +83,7 @@ extension RendererTests {
 
         #expect(output.leadIn == 0)
         #expect(output.fermataMarks.allSatisfy { $0.isEmpty })
-        #expect(plainNotes(output.notes[0]) == [RenderedNote(0, frac(1, 2), .c4),
-                                                RenderedNote(frac(1, 2), frac(1, 2), .d4, .e4)])
+        #expect(plainNotes(output.notes[0][0]) == [RenderedNote(0, frac(1, 2), .c4),
+                                                   RenderedNote(frac(1, 2), frac(1, 2), .d4, .e4)])
     }
 }

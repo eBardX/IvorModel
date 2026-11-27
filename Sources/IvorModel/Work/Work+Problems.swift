@@ -40,7 +40,7 @@ extension Work {
         var rolls: [Number: [ArpeggioGroup: [NoteTable<TimeType, PitchType>.Arpeggio]]] = [:]
 
         for part in parts {
-            for note in part.noteTable {
+            for note in part.mergedNoteTable {
                 if let arpeggio = note.ornamentation?.arpeggio {
                     rolls[note.attack.number, default: [:]][arpeggio.group, default: []].append(arpeggio)
                 }
@@ -73,7 +73,7 @@ extension Work {
         var problems: [Problem] = []
 
         for (index, part) in parts.enumerated() {
-            for note in part.noteTable {
+            for note in part.mergedNoteTable {
                 let ornamentation = note.ornamentation
                 let before = ornamentation?.graceBefore.map { _isUnordered($0, outsideFirst: true) } ?? false
                 let after = ornamentation?.graceAfter.map { _isUnordered($0, outsideFirst: false) } ?? false
@@ -161,11 +161,11 @@ extension Work {
         var problems: [Problem] = []
 
         for (index, part) in parts.enumerated() {
-            for note in part.noteTable where note.ornamentation?.fermata != nil {
+            for note in part.mergedNoteTable where note.ornamentation?.fermata != nil {
                 let attack = note.attack.number
                 let release = note.release.number
                 let isAmbiguous = parts.indices.contains { other in
-                    other != index && parts[other].noteTable.contains { $0.attack.number > attack && $0.attack.number < release }
+                    other != index && parts[other].mergedNoteTable.contains { $0.attack.number > attack && $0.attack.number < release }
                 }
 
                 if isAmbiguous {

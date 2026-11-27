@@ -22,7 +22,7 @@ func absoluteWallPitches(of work: Work?) throws -> [Frequency] {
     guard case let .absoluteWall(parts) = try #require(work).content.cases
     else { Issue.record("Expected absolute-wall content"); return [] }
 
-    return try #require(parts.first).noteTable.map(\.startPitch)
+    return try #require(parts.first).strands[0].noteTable.map(\.startPitch)
 }
 
 func analyzeAddingTemplate(_ work: Work,
@@ -357,7 +357,7 @@ func firstID(of table: MeterTable) throws -> EntryID {
 
 func firstNoteSB(_ pitch: Pitch,
                  in part: Part<BeatTime, Pitch>) -> NoteTable<BeatTime, Pitch>.Note? {
-    part.noteTable.first { $0.startPitch == pitch }
+    part.strands[0].noteTable.first { $0.startPitch == pitch }
 }
 
 func frac(_ numerator: Int,
@@ -471,14 +471,14 @@ func keyboardWallNotes(of work: Work) throws -> [NoteTable<WallTime, NoteNumber>
     guard case let .keyboardWall(parts) = work.content.cases
     else { throw Work.Error.unsupportedStandardConversion }
 
-    return try Array(#require(parts.first).noteTable)
+    return try Array(#require(parts.first).strands[0].noteTable)
 }
 
 func keyboardWallPitches(of work: Work?) throws -> [NoteNumber] {
     guard case let .keyboardWall(parts) = try #require(work).content.cases
     else { Issue.record("Expected keyboard-wall content"); return [] }
 
-    return try #require(parts.first).noteTable.map(\.startPitch)
+    return try #require(parts.first).strands[0].noteTable.map(\.startPitch)
 }
 
 func lastID(of table: MeterTable) throws -> EntryID {
@@ -518,7 +518,7 @@ func lowerMordentOrnamentation(written: Pitch?) throws -> BeatNotes.Ornamentatio
 func makeAbsoluteKeyWork() throws -> Work {
     var part = Part<BeatTime, Frequency>(name: "Sine")
 
-    part.noteTable.insert(attack: 0, duration: 1, pitch: 440)
+    part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: 440)
 
     return try Work(content: .absoluteBeat([part], TempoMap(), MeterTable(), makeKeyTable([(0, 2)])))
 }
@@ -645,7 +645,7 @@ func makeKeyWork(_ keyTable: KeyTable,
     var part = Part<BeatTime, Pitch>(name: "Piano")
 
     for (index, pitch) in pitches.enumerated() {
-        part.noteTable.insert(attack: beatTime(Number(index)), duration: 1, pitch: pitch)
+        part.strands[0].noteTable.insert(attack: beatTime(Number(index)), duration: 1, pitch: pitch)
     }
 
     return Work(content: .standardBeat([part], TempoMap(), MeterTable(), keyTable))
@@ -654,7 +654,7 @@ func makeKeyWork(_ keyTable: KeyTable,
 func makeLockedWorkSB() -> (work: Work, partID: PartID) {
     var part = Part<BeatTime, Pitch>(name: "Violin")
 
-    part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+    part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
 
     var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
@@ -687,7 +687,7 @@ func makeMeterWork(meterTable: MeterTable,
     var part = Part<BeatTime, Pitch>(name: "Piano")
 
     for attack in attacks {
-        part.noteTable.insert(attack: beatTime(attack), duration: beats(frac(1, 8)), pitch: .c4)
+        part.strands[0].noteTable.insert(attack: beatTime(attack), duration: beats(frac(1, 8)), pitch: .c4)
     }
 
     return Work(content: .standardBeat([part], tempoMap, meterTable, KeyTable()))
@@ -903,7 +903,7 @@ func makeRuledWork() -> Work {
     var part = Part<BeatTime, Pitch>(name: "Violin",
                                      interpretationRules: ruledPartRules())
 
-    part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+    part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
     part.markTable.insert(time: 1, mark: .caesura(nil))
 
     return Work(name: "Ruled",
@@ -987,9 +987,9 @@ func makeWorkInfo() -> Work.Info {
 func markedPart() -> Part<BeatTime, Pitch> {
     var part = Part<BeatTime, Pitch>(name: "Test")
 
-    part.noteTable.insert(attack: 0, duration: 1, pitch: .c4)
-    part.noteTable.insert(attack: 1, duration: 1, pitch: .d4)
-    part.noteTable.insert(attack: 4, duration: 1, pitch: .e4)
+    part.strands[0].noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+    part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .d4)
+    part.strands[0].noteTable.insert(attack: 4, duration: 1, pitch: .e4)
     part.markTable.insert(time: 1, mark: longFermataMark(beats(frac(1, 2))))
     part.markTable.insert(time: 2, mark: .caesura(nil))
 
@@ -1088,7 +1088,7 @@ func renderedNotes(_ rendering: Work.Rendering) throws -> [[RenderedNote]] {
     else { throw Work.Error.unsupportedStandardConversion }
 
     return parts.map { part in
-        part.noteTable.map { RenderedNote($0.attack.numberValue, $0.duration.numberValue, $0.startPitch, $0.endPitch) }
+        part.strands[0].noteTable.map { RenderedNote($0.attack.numberValue, $0.duration.numberValue, $0.startPitch, $0.endPitch) }
             .sorted { ($0.start, $0.pitch) < ($1.start, $1.pitch) }
     }
 }
@@ -1209,21 +1209,21 @@ func standardBeatNoteEventsOrEmpty(of work: Work) -> [NoteEvent<BeatTime, Pitch>
     guard case let .standardBeat(parts, _, _, _) = work.content.cases
     else { return [] }
 
-    return parts.first?.noteTable.extractNoteEvents() ?? []
+    return parts.first?.strands[0].noteTable.extractNoteEvents() ?? []
 }
 
 func standardBeatNoteTable(of work: Work) throws -> NoteTable<BeatTime, Pitch> {
     guard case let .standardBeat(parts, _, _, _) = work.content.cases
     else { throw Template.Error.incompatibleOptions }
 
-    return try #require(parts.first).noteTable
+    return try #require(parts.first).strands[0].noteTable
 }
 
 func standardBeatNoteTriples(of work: Work) throws -> [NoteTripleSB] {
     guard case let .standardBeat(parts, _, _, _) = work.content.cases
     else { throw Template.Error.incompatibleOptions }
 
-    return try makeNoteTriplesSB(#require(parts.first).noteTable)
+    return try makeNoteTriplesSB(#require(parts.first).strands[0].noteTable)
 }
 
 func standardBeatParts(of work: Work) -> [Part<BeatTime, Pitch>] {
@@ -1237,7 +1237,7 @@ func standardBeatPitches(of work: Work) throws -> [Pitch] {
     guard case let .standardBeat(parts, _, _, _) = work.content.cases
     else { throw Template.Error.incompatibleOptions }
 
-    return try makeNoteTriplesSB(#require(parts.first).noteTable).map(\.pitch)
+    return try makeNoteTriplesSB(#require(parts.first).strands[0].noteTable).map(\.pitch)
 }
 
 func standardBeatStates(of template: Template,
@@ -1273,7 +1273,7 @@ func standardWallDurations(of work: Work) throws -> [WallDuration] {
     guard case let .standardWall(parts) = work.content.cases
     else { throw Template.Error.incompatibleOptions }
 
-    return try #require(parts.first).noteTable.extractNoteEvents().map(\.duration)
+    return try #require(parts.first).strands[0].noteTable.extractNoteEvents().map(\.duration)
 }
 
 func standardWallNoteEvents(of template: Template) throws -> [NoteEvent<WallTime, Pitch>] {
@@ -1287,7 +1287,7 @@ func standardWallPitches(of work: Work?) throws -> [Pitch] {
     guard case let .standardWall(parts) = try #require(work).content.cases
     else { Issue.record("Expected standard-wall content"); return [] }
 
-    return try #require(parts.first).noteTable.map(\.startPitch)
+    return try #require(parts.first).strands[0].noteTable.map(\.startPitch)
 }
 
 func summary(of table: MeterTable) -> [String] {
@@ -1339,7 +1339,7 @@ func wallAttacks(of work: Work) throws -> [Double] {
 
     let converter = TimeConverter(tempoMap: tempoMap)
 
-    return try #require(parts.first).noteTable.map { converter.wallTime(at: $0.attack).doubleValue }
+    return try #require(parts.first).strands[0].noteTable.map { converter.wallTime(at: $0.attack).doubleValue }
 }
 
 //

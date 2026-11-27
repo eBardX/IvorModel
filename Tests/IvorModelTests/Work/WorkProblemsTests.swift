@@ -22,7 +22,7 @@ extension WorkProblemsTests {
         let held = try renderingPart([WrittenNote(0, 1, .c4, Ornamentation(fermata: Fermata()))])
         let moving = try renderingPart([WrittenNote(0, frac(1, 2), .e4), WrittenNote(frac(1, 2), frac(1, 2), .f4)])
         let problems = renderingWork([held, moving]).problems()
-        let noteID = try #require(held.noteTable.first?.noteID)
+        let noteID = try #require(held.strands[0].noteTable.first?.noteID)
 
         #expect(problems == [Work.Problem(severity: .warning, kind: .ambiguousHoldSpan, partIndex: 0, noteID: noteID, time: .beat(0))])
     }
@@ -48,13 +48,13 @@ extension WorkProblemsTests {
         // Kept: the C4 lasts 2 seconds and keeps its fermata, and the caesura stays. Applied: the
         // C4 lasts 4 seconds, and the signs are gone.
         //
-        #expect(keptParts.first?.noteTable.map(\.duration) == [wallDuration(2_000), wallDuration(2_000)])
-        #expect(keptParts.first?.noteTable.hasOrnamentation ?? false)
+        #expect(keptParts.first?.strands[0].noteTable.map(\.duration) == [wallDuration(2_000), wallDuration(2_000)])
+        #expect(keptParts.first?.strands[0].noteTable.hasOrnamentation ?? false)
         #expect(keptParts.first?.markTable.count == 1)
-        #expect(appliedParts.first?.noteTable.map(\.attack) == [wallTime(0), wallTime(4_000)])
-        #expect(!(appliedParts.first?.noteTable.hasOrnamentation ?? true))
+        #expect(appliedParts.first?.strands[0].noteTable.map(\.attack) == [wallTime(0), wallTime(4_000)])
+        #expect(!(appliedParts.first?.strands[0].noteTable.hasOrnamentation ?? true))
         #expect(appliedParts.first?.markTable.isEmpty ?? false)
-        #expect(warpedParts.first?.noteTable.map(\.attack) == [wallTime(0), wallTime(4_000)])
+        #expect(warpedParts.first?.strands[0].noteTable.map(\.attack) == [wallTime(0), wallTime(4_000)])
     }
 
     @Test

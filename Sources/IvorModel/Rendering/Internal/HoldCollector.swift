@@ -27,7 +27,7 @@ internal struct HoldCollector<TimeType: RenderableTime, PitchType: PitchProtocol
             let rules = InterpretationRules.resolved(work: workRules,
                                                      part: part.interpretationRules)
 
-            for note in part.noteTable {
+            for note in part.mergedNoteTable {
                 if let fermata = note.ornamentation?.fermata {
                     collector._add(fermata,
                                    at: note.attack.number,
