@@ -39,17 +39,17 @@ extension WorkRenderTests {
 
     @Test
     func arpeggio_disagreeingGroupFollowsItsFirstTone() throws {
-        let first = try renderingPart([WrittenNote(0, frac(1, 4), .c4, rollOrnamentation(direction: .down))])
-        let second = try renderingPart([WrittenNote(0, frac(1, 4), .e4, rollOrnamentation(direction: .up)),
-                                        WrittenNote(0, frac(1, 4), .g4, rollOrnamentation(direction: .up))])
-        let parts = try renderedNotes(renderingWork([first, second]).rendered())
+        let part = try renderingStrandedPart([[WrittenNote(0, frac(1, 4), .c4, rollOrnamentation(direction: .down))],
+                                              [WrittenNote(0, frac(1, 4), .e4, rollOrnamentation(direction: .up)),
+                                               WrittenNote(0, frac(1, 4), .g4, rollOrnamentation(direction: .up))]])
+        let strands = try renderedStrandNotes(renderingWork([part]).rendered())[0]
 
         //
-        // The first tone (part 1) says down: G4, E4, then C4.
+        // The first tone (first strand) says down: G4, E4, then C4.
         //
-        #expect(parts[0] == [RenderedNote(frac(1, 16), frac(3, 16), .c4)])
-        #expect(parts[1] == [RenderedNote(0, frac(1, 4), .g4),
-                             RenderedNote(frac(1, 32), frac(7, 32), .e4)])
+        #expect(strands[0] == [RenderedNote(frac(1, 16), frac(3, 16), .c4)])
+        #expect(strands[1] == [RenderedNote(0, frac(1, 4), .g4),
+                               RenderedNote(frac(1, 32), frac(7, 32), .e4)])
     }
 
     @Test
@@ -87,14 +87,27 @@ extension WorkRenderTests {
     }
 
     @Test
-    func arpeggio_rollAcrossTwoParts() throws {
+    func arpeggio_noRollAcrossParts() throws {
+        // A roll spans one performer's hands, never two performers: one rolled tone in each of
+        // two parts is no roll at all.
         let upper = try renderingPart([WrittenNote(0, frac(1, 4), .c5, rollOrnamentation())])
-        let lower = try renderingPart([WrittenNote(0, frac(1, 4), .c4, rollOrnamentation()), WrittenNote(0, frac(1, 4), .e4, rollOrnamentation())])
+        let lower = try renderingPart([WrittenNote(0, frac(1, 4), .c4, rollOrnamentation())])
         let parts = try renderedNotes(renderingWork([upper, lower]).rendered())
 
-        #expect(parts[0] == [RenderedNote(frac(1, 16), frac(3, 16), .c5)])
-        #expect(parts[1] == [RenderedNote(0, frac(1, 4), .c4),
-                             RenderedNote(frac(1, 32), frac(7, 32), .e4)])
+        #expect(parts[0] == [RenderedNote(0, frac(1, 4), .c5)])
+        #expect(parts[1] == [RenderedNote(0, frac(1, 4), .c4)])
+    }
+
+    @Test
+    func arpeggio_rollAcrossTwoStrands() throws {
+        let part = try renderingStrandedPart([[WrittenNote(0, frac(1, 4), .c5, rollOrnamentation())],
+                                              [WrittenNote(0, frac(1, 4), .c4, rollOrnamentation()),
+                                               WrittenNote(0, frac(1, 4), .e4, rollOrnamentation())]])
+        let strands = try renderedStrandNotes(renderingWork([part]).rendered())[0]
+
+        #expect(strands[0] == [RenderedNote(frac(1, 16), frac(3, 16), .c5)])
+        #expect(strands[1] == [RenderedNote(0, frac(1, 4), .c4),
+                               RenderedNote(frac(1, 32), frac(7, 32), .e4)])
     }
 
     @Test

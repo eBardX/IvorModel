@@ -8,12 +8,12 @@ extension Renderer {
     // MARK: Internal Instance Methods
 
     //
-    // Rolls each arpeggio: the tones anywhere in the work that share an attack and a group
-    // (resolution 13 of the grace-notes plan). They're ordered up, or down, by pitch, and each
-    // next one starts a spread later — after the first, which stays on the beat, or before the
-    // last, which does, for `.lastOnBeat`; notes ending at the attack then end where the roll
-    // begins. Every tone is held to its end. A group whose tones disagree takes its direction
-    // and execution from its first tone (lowest part, then lowest pitch).
+    // Rolls each arpeggio: the tones of one part, in any of its strands, that share an attack and
+    // a group — a roll spans one performer's hands, never two performers. They're ordered up, or
+    // down, by pitch, and each next one starts a spread later — after the first, which stays on
+    // the beat, or before the last, which does, for `.lastOnBeat`; notes ending at the attack
+    // then end where the roll begins. Every tone is held to its end. A group whose tones disagree
+    // takes its direction and execution from its first tone (first strand, then lowest pitch).
     //
     internal mutating func rollArpeggios() {
         var rolls: [RollKey: [Int]] = [:]
@@ -22,7 +22,10 @@ extension Renderer {
             guard let arpeggio = source.ornamentation?.arpeggio
             else { continue }
 
-            rolls[RollKey(group: arpeggio.group, time: source.attack), default: []].append(index)
+            rolls[RollKey(group: arpeggio.group,
+                          part: source.part,
+                          time: source.attack),
+                  default: []].append(index)
         }
 
         for (key, tones) in rolls where tones.count > 1 {
@@ -34,7 +37,7 @@ extension Renderer {
 
     private mutating func _roll(_ tones: [Int],
                                 at attack: Number) {
-        guard let first = tones.min(by: { (sources[$0].part, sources[$0].startPitch) < (sources[$1].part, sources[$1].startPitch) }),
+        guard let first = tones.min(by: { (sources[$0].strand, sources[$0].startPitch) < (sources[$1].strand, sources[$1].startPitch) }),
               let arpeggio = sources[first].ornamentation?.arpeggio
         else { return }
 
@@ -45,7 +48,7 @@ extension Renderer {
                               of: arpeggio,
                               rules: arpeggioRules,
                               at: attack)
-        var ordered = tones.sorted { (sources[$0].startPitch, sources[$0].part) < (sources[$1].startPitch, sources[$1].part) }
+        var ordered = tones.sorted { (sources[$0].startPitch, sources[$0].strand) < (sources[$1].startPitch, sources[$1].strand) }
 
         if direction == .down {
             ordered.reverse()
@@ -63,10 +66,11 @@ extension Renderer {
               let rollStart = ordered.map({ starts[$0] }).min()
         else { return }
 
-        for part in Set(tones.map { sources[$0].part }) {
-            for predecessor in releases[Moment(part: part, time: attack)] ?? [] {
-                ends[predecessor] = min(ends[predecessor], rollStart)
-            }
+        //
+        // Every tone of a roll is in one part (see `rollArpeggios`).
+        //
+        for predecessor in releases[Moment(part: sources[first].part, time: attack)] ?? [] {
+            ends[predecessor] = min(ends[predecessor], rollStart)
         }
     }
 

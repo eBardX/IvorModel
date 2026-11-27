@@ -24,7 +24,13 @@ extension WorkProblemsTests {
         let problems = renderingWork([held, moving]).problems()
         let noteID = try #require(held.strands[0].noteTable.first?.noteID)
 
-        #expect(problems == [Work.Problem(severity: .warning, kind: .ambiguousHoldSpan, partIndex: 0, noteID: noteID, time: .beat(0))])
+        #expect(problems == [Work.Problem(severity: .warning,
+                                          kind: .ambiguousHoldSpan,
+                                          partIndex: 0,
+                                          strandIndex: 0,
+                                          strandID: held.strands[0].strandID,
+                                          noteID: noteID,
+                                          time: .beat(0))])
     }
 
     @Test
@@ -63,7 +69,31 @@ extension WorkProblemsTests {
                                       WrittenNote(0, frac(1, 4), .e4, Ornamentation(arpeggio: BeatNotes.Arpeggio(group: 1, direction: .down))),
                                       WrittenNote(0, frac(1, 4), .g4, Ornamentation(arpeggio: BeatNotes.Arpeggio(group: 2, direction: .down)))])
 
-        #expect(renderingWork([part]).problems() == [Work.Problem(severity: .error, kind: .conflictingArpeggio, time: .beat(0))])
+        #expect(renderingWork([part]).problems() == [Work.Problem(severity: .error, kind: .conflictingArpeggio, partIndex: 0, time: .beat(0))])
+    }
+
+    @Test
+    func ambiguousHoldSpan_anotherStrandOfThePart() throws {
+        let part = try renderingStrandedPart([[WrittenNote(0, 1, .c5, Ornamentation(fermata: Fermata()))],
+                                              [WrittenNote(0, frac(1, 2), .e4), WrittenNote(frac(1, 2), frac(1, 2), .f4)]])
+        let problems = renderingWork([part]).problems()
+
+        #expect(problems.map(\.kind) == [.ambiguousHoldSpan])
+        #expect(problems.first?.strandIndex == 0)
+        #expect(problems.first?.strandID == part.strands[0].strandID)
+    }
+
+    @Test
+    func conflictingArpeggio_acrossStrandsOnly() throws {
+        let rollUp = Ornamentation(arpeggio: BeatNotes.Arpeggio(group: 1, direction: .up))
+        let rollDown = Ornamentation(arpeggio: BeatNotes.Arpeggio(group: 1, direction: .down))
+        let stranded = try renderingStrandedPart([[WrittenNote(0, frac(1, 4), .c4, rollUp)],
+                                                  [WrittenNote(0, frac(1, 4), .e4, rollDown)]])
+        let upper = try renderingPart([WrittenNote(0, frac(1, 4), .c4, rollUp)])
+        let lower = try renderingPart([WrittenNote(0, frac(1, 4), .e4, rollDown)])
+
+        #expect(renderingWork([stranded]).problems() == [Work.Problem(severity: .error, kind: .conflictingArpeggio, partIndex: 0, time: .beat(0))])
+        #expect(renderingWork([upper, lower]).problems().isEmpty)
     }
 
     @Test

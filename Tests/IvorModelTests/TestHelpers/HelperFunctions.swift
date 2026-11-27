@@ -1093,6 +1093,19 @@ func renderedNotes(_ rendering: Work.Rendering) throws -> [[RenderedNote]] {
     }
 }
 
+// A rendered work's notes, by part, then by strand, each strand in time order.
+func renderedStrandNotes(_ rendering: Work.Rendering) throws -> [[[RenderedNote]]] {
+    guard case let .standardBeat(parts, _, _, _) = rendering.work.content.cases
+    else { throw Work.Error.unsupportedStandardConversion }
+
+    return parts.map { part in
+        part.strands.map { strand in
+            strand.noteTable.map { RenderedNote($0.attack.numberValue, $0.duration.numberValue, $0.startPitch, $0.endPitch) }
+                .sorted { ($0.start, $0.pitch) < ($1.start, $1.pitch) }
+        }
+    }
+}
+
 // When a beat time sounds in a rendered work, in seconds, rounded to the millisecond.
 func renderedWallSeconds(_ rendering: Work.Rendering,
                          at time: Number) throws -> Number {
@@ -1120,6 +1133,12 @@ func renderingPart(_ notes: [WrittenNote],
 }
 
 // A standard beat work at ♩ = 60 of these parts.
+// A part with one strand of written notes per element of `strands`, in order.
+func renderingStrandedPart(_ strands: [[WrittenNote]]) throws -> Part<BeatTime, Pitch> {
+    try Part(name: "Stranded",
+             strands: strands.map { try Strand(noteTable: renderingPart($0).strands[0].noteTable) })
+}
+
 func renderingWork(_ parts: [Part<BeatTime, Pitch>],
                    meterTable: MeterTable = MeterTable(),
                    keyTable: KeyTable = KeyTable(),

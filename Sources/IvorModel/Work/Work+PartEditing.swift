@@ -1,7 +1,5 @@
 // © 2026 John Gary Pusey (see LICENSE.md)
 
-internal import XestiTools
-
 private import IvorTiming
 private import IvorTuning
 
@@ -12,17 +10,6 @@ extension Work {
     /// The IDs of the parts in this work, in order.
     public var partIDs: [PartID] {
         content.partIDs
-    }
-
-    /// An arpeggio group no note in this work belongs to: one past the largest in use, or the
-    /// first group if there are none.
-    ///
-    /// Tones anywhere in a work that share an attack and an ``ArpeggioGroup`` roll as one, so an
-    /// importer or an edit that adds a roll gives it a group from here.
-    public var unusedArpeggioGroup: ArpeggioGroup {
-        let largest = content.arpeggioGroups.max()?.uintValue ?? 0
-
-        return ArpeggioGroup(uintValue: largest + 1).require()
     }
 
     // MARK: Public Instance Methods
@@ -44,9 +31,9 @@ extension Work {
 
     /// Duplicates the part with the given ID, inserting the copy immediately after
     /// the original. Every realization gives the copy the same patch table as the
-    /// original. The copy’s notes get identities of their own (see ``Part/duplicated()``),
-    /// and its arpeggios groups of their own (see ``unusedArpeggioGroup``), so its rolls don’t
-    /// join the original’s.
+    /// original. The copy’s strands and notes get identities of their own (see
+    /// ``Part/duplicated()``). Its arpeggio groups stay as they are: a roll spans one part only, so
+    /// the copy’s rolls never join the original’s.
     ///
     /// - Parameter partID: The ID of the part to duplicate.
     ///
@@ -62,8 +49,7 @@ extension Work {
         else { return nil }
 
         let duplicateID = Self._duplicatePart(at: index,
-                                              in: &content.body,
-                                              firstGroup: unusedArpeggioGroup)
+                                              in: &content.body)
 
         copyPartTables(from: partID,
                        to: duplicateID)
@@ -151,13 +137,11 @@ extension Work {
     }
 
     //
-    // Inserts a copy of the part at `index` right after it, its rolls renumbered from
-    // `firstGroup` so they don't join the original's, and returns the copy's ID.
+    // Inserts a copy of the part at `index` right after it, and returns the copy's ID.
     //
     private static func _duplicatePart(at index: Int,
-                                       in body: inout some Work.Body,
-                                       firstGroup: ArpeggioGroup) -> PartID {
-        let duplicate = body.parts[index].duplicated().regroupingArpeggios(from: firstGroup)
+                                       in body: inout some Work.Body) -> PartID {
+        let duplicate = body.parts[index].duplicated()
 
         body.parts.insert(duplicate,
                           at: index + 1)

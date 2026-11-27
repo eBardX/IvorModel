@@ -105,13 +105,6 @@ extension Work.Body {
     // MARK: Internal Instance Properties
 
     //
-    // The arpeggio groups any part's notes belong to.
-    //
-    internal var arpeggioGroups: Set<ArpeggioGroup> {
-        parts.reduce(into: []) { $0.formUnion($1.arpeggioGroups) }
-    }
-
-    //
     // The first part with no strands, or `nil` if every part has one.
     //
     internal var firstPartWithoutStrands: PartID? {

@@ -32,32 +32,40 @@ extension Work {
     // MARK: Private Type Methods
 
     //
-    // Rolled chords whose tones disagree on direction or execution.
+    // Rolled chords whose tones disagree on direction or execution. A roll is one part's tones,
+    // in any of its strands, sharing an attack and a group, so the problem is in that part.
     //
     private static func _arpeggioProblems<TimeType: RenderableTime,
                                           PitchType: PitchProtocol>(_ parts: [Part<TimeType, PitchType>],
                                                                     time: (Number) -> WorkTime?) -> [Problem] {
-        var rolls: [Number: [ArpeggioGroup: [NoteTable<TimeType, PitchType>.Arpeggio]]] = [:]
+        var problems: [(attack: Number, problem: Problem)] = []
 
-        for part in parts {
-            for note in part.mergedNoteTable {
-                if let arpeggio = note.ornamentation?.arpeggio {
-                    rolls[note.attack.number, default: [:]][arpeggio.group, default: []].append(arpeggio)
+        for (index, part) in parts.enumerated() {
+            var rolls: [Number: [ArpeggioGroup: [NoteTable<TimeType, PitchType>.Arpeggio]]] = [:]
+
+            for strand in part.strands {
+                for note in strand.noteTable {
+                    if let arpeggio = note.ornamentation?.arpeggio {
+                        rolls[note.attack.number, default: [:]][arpeggio.group, default: []].append(arpeggio)
+                    }
+                }
+            }
+
+            for (attack, groups) in rolls {
+                for tones in groups.values {
+                    guard let first = tones.first,
+                          tones.contains(where: { $0.direction != first.direction || $0.execution != first.execution })
+                    else { continue }
+
+                    problems.append((attack, Problem(severity: .error,
+                                                     kind: .conflictingArpeggio,
+                                                     partIndex: index,
+                                                     time: time(attack))))
                 }
             }
         }
 
-        return rolls.keys.sorted().flatMap { attack in
-            (rolls[attack] ?? [:]).values.compactMap { tones -> Problem? in
-                guard let first = tones.first,
-                      tones.contains(where: { $0.direction != first.direction || $0.execution != first.execution })
-                else { return nil }
-
-                return Problem(severity: .error,
-                               kind: .conflictingArpeggio,
-                               time: time(attack))
-            }
-        }
+        return problems.sorted { ($0.attack, $0.problem.partIndex ?? 0) < ($1.attack, $1.problem.partIndex ?? 0) }.map(\.problem)
     }
 
     private static func _beatTime(_ number: Number) -> WorkTime? {
@@ -73,17 +81,21 @@ extension Work {
         var problems: [Problem] = []
 
         for (index, part) in parts.enumerated() {
-            for note in part.mergedNoteTable {
-                let ornamentation = note.ornamentation
-                let before = ornamentation?.graceBefore.map { _isUnordered($0, outsideFirst: true) } ?? false
-                let after = ornamentation?.graceAfter.map { _isUnordered($0, outsideFirst: false) } ?? false
+            for (strandIndex, strand) in part.strands.enumerated() {
+                for note in strand.noteTable {
+                    let ornamentation = note.ornamentation
+                    let before = ornamentation?.graceBefore.map { _isUnordered($0, outsideFirst: true) } ?? false
+                    let after = ornamentation?.graceAfter.map { _isUnordered($0, outsideFirst: false) } ?? false
 
-                if before || after {
-                    problems.append(Problem(severity: .warning,
-                                            kind: .unorderedGraceAmounts,
-                                            partIndex: index,
-                                            noteID: note.noteID,
-                                            time: time(note.attack.number)))
+                    if before || after {
+                        problems.append(Problem(severity: .warning,
+                                                kind: .unorderedGraceAmounts,
+                                                partIndex: index,
+                                                strandIndex: strandIndex,
+                                                strandID: strand.strandID,
+                                                noteID: note.noteID,
+                                                time: time(note.attack.number)))
+                    }
                 }
             }
         }
@@ -154,26 +166,35 @@ extension Work {
     }
 
     //
-    // Notes with a fermata while another part attacks during them.
+    // Notes with a fermata while another strand attacks during them, whether in another part or
+    // the same one: the left hand moving under a right-hand fermata is as ambiguous as another
+    // part moving.
     //
     private static func _spanProblems(_ parts: [Part<some RenderableTime, some PitchProtocol>],
                                       time: (Number) -> WorkTime?) -> [Problem] {
         var problems: [Problem] = []
 
         for (index, part) in parts.enumerated() {
-            for note in part.mergedNoteTable where note.ornamentation?.fermata != nil {
-                let attack = note.attack.number
-                let release = note.release.number
-                let isAmbiguous = parts.indices.contains { other in
-                    other != index && parts[other].mergedNoteTable.contains { $0.attack.number > attack && $0.attack.number < release }
-                }
+            for (strandIndex, strand) in part.strands.enumerated() {
+                for note in strand.noteTable where note.ornamentation?.fermata != nil {
+                    let attack = note.attack.number
+                    let release = note.release.number
+                    let isAmbiguous = parts.indices.contains { other in
+                        parts[other].strands.indices.contains { otherStrand in
+                            (other, otherStrand) != (index, strandIndex)
+                                && parts[other].strands[otherStrand].noteTable.contains { $0.attack.number > attack && $0.attack.number < release }
+                        }
+                    }
 
-                if isAmbiguous {
-                    problems.append(Problem(severity: .warning,
-                                            kind: .ambiguousHoldSpan,
-                                            partIndex: index,
-                                            noteID: note.noteID,
-                                            time: time(attack)))
+                    if isAmbiguous {
+                        problems.append(Problem(severity: .warning,
+                                                kind: .ambiguousHoldSpan,
+                                                partIndex: index,
+                                                strandIndex: strandIndex,
+                                                strandID: strand.strandID,
+                                                noteID: note.noteID,
+                                                time: time(attack)))
+                    }
                 }
             }
         }

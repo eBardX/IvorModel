@@ -59,24 +59,18 @@ extension WorkPartEditingTests {
     }
 
     @Test
-    func duplicatePart_givesTheCopyItsOwnArpeggioGroups() throws {
+    func duplicatePart_keepsArpeggioGroups() throws {
+        // A roll spans one part only, so the copy's rolls can keep their groups without joining
+        // the original's.
         var work = try makeOrnamentedStandardWork()
         let originalID = work.partIDs[0]
-
-        #expect(work.unusedArpeggioGroup == 3)
-
         let copyID = try #require(try work.duplicatePart(originalID))
-
-        guard case let .standardBeat(parts, _, _, _) = work.content.cases
-        else { Issue.record("Expected standard beat content"); return }
-
-        let original = try #require(parts.first { $0.partID == originalID })
-        let copy = try #require(parts.first { $0.partID == copyID })
+        let original = try #require(work.part(originalID, as: Part<BeatTime, Pitch>.self))
+        let copy = try #require(work.part(copyID, as: Part<BeatTime, Pitch>.self))
 
         #expect(original.strands[0].noteTable.arpeggioGroups == [1, 2])
-        #expect(copy.strands[0].noteTable.arpeggioGroups == [3, 4])
-        #expect(work.unusedArpeggioGroup == 5)
-        #expect(Work().unusedArpeggioGroup == 1)
+        #expect(copy.strands[0].noteTable.arpeggioGroups == [1, 2])
+        #expect(copy.unusedArpeggioGroup == 3)
     }
 
     @Test

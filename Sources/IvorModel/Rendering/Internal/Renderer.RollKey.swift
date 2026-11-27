@@ -14,6 +14,7 @@ extension Renderer {
         // MARK: Internal Instance Properties
 
         internal let group: ArpeggioGroup
+        internal let part: Int
         internal let time: Number
     }
 }

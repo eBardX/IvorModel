@@ -8,33 +8,46 @@ extension Work {
     // MARK: Internal Type Methods
 
     //
-    // `noteTable` with its pitches converted in one batch, by `convert`, in performance order
-    // (see below). `nil` if a pitch can't be converted, unless `dropsUnconvertibleNotes` is set:
-    // then an unconvertible main pitch drops its note, and an unconvertible grace or partner
-    // pitch drops only its figure or ornament.
+    // `noteTables` — a part's strands' — with their pitches converted in one batch, by
+    // `convert`, in performance order across all of them (see below), so a performer's harmony is
+    // spelled as one. `nil` if a pitch can't be converted, unless `dropsUnconvertibleNotes` is
+    // set: then an unconvertible main pitch drops its note, and an unconvertible grace or partner
+    // pitch drops only its figure or ornament. The tables come back in the same order.
     //
     internal static func convertPitches<TimeType: TimeProtocol,
                                         FromPitchType: PitchProtocol,
-                                        ToPitchType: PitchProtocol>(in noteTable: NoteTable<TimeType, FromPitchType>,
+                                        ToPitchType: PitchProtocol>(in noteTables: [NoteTable<TimeType, FromPitchType>],
                                                                     using convert: ([FromPitchType]) -> [ToPitchType?],
-                                                                    dropsUnconvertibleNotes: Bool) -> NoteTable<TimeType, ToPitchType>? {
-        let oldNotes = noteTable.notes
+                                                                    dropsUnconvertibleNotes: Bool) -> [NoteTable<TimeType, ToPitchType>]? {
+        let oldNotes = noteTables.map(\.notes)
+        let refs = oldNotes.indices.flatMap { table in oldNotes[table].indices.map { (table: table, note: $0) } }
 
         //
         // A context-aware pitch speller needs the part’s pitches in performance order: by onset,
-        // then from low to high within a chord. A note with portamento contributes its end pitch
-        // right after its start pitch. A note’s grace figure before it comes just before its own
-        // pitches, its ornament’s written partner pitches just after them, and its figure after
-        // it last.
+        // then from low to high within a chord, whatever strand each note is in (ties go to the
+        // earlier strand, then the earlier note, so the order is always the same). A note with
+        // portamento contributes its end pitch right after its start pitch. A note’s grace figure
+        // before it comes just before its own pitches, its ornament’s written partner pitches
+        // just after them, and its figure after it last.
         //
-        let order = oldNotes.indices.sorted {
-            (oldNotes[$0].attack, oldNotes[$0].startPitch) < (oldNotes[$1].attack, oldNotes[$1].startPitch)
+        let order = refs.sorted { lhs, rhs in
+            let left = oldNotes[lhs.table][lhs.note]
+            let right = oldNotes[rhs.table][rhs.note]
+
+            if left.attack != right.attack {
+                return left.attack < right.attack
+            }
+
+            if left.startPitch != right.startPitch {
+                return left.startPitch < right.startPitch
+            }
+
+            return (lhs.table, lhs.note) < (rhs.table, rhs.note)
         }
 
         var pitches: [FromPitchType] = []
         let empty = NotePositions(after: 0..<0, before: 0..<0, end: 0, partner: 0..<0, start: 0)
-        var positions = Array(repeating: empty,
-                              count: oldNotes.count)
+        var positions = oldNotes.map { Array(repeating: empty, count: $0.count) }
 
         func append(_ newPitches: [FromPitchType]) -> Range<Int> {
             let lowerBound = pitches.count
@@ -44,12 +57,12 @@ extension Work {
             return lowerBound..<pitches.count
         }
 
-        for index in order {
-            let note = oldNotes[index]
+        for ref in order {
+            let note = oldNotes[ref.table][ref.note]
             let ornamentation = note.ornamentation
 
-            positions[index].before = append(ornamentation?.graceBefore?.pitches ?? [])
-            positions[index].start = pitches.count
+            positions[ref.table][ref.note].before = append(ornamentation?.graceBefore?.pitches ?? [])
+            positions[ref.table][ref.note].start = pitches.count
 
             pitches.append(note.startPitch)
 
@@ -57,39 +70,58 @@ extension Work {
                 pitches.append(note.endPitch)
             }
 
-            positions[index].end = pitches.count - 1
-            positions[index].partner = append(ornamentation?.ornament?.pitches ?? [])
-            positions[index].after = append(ornamentation?.graceAfter?.pitches ?? [])
+            positions[ref.table][ref.note].end = pitches.count - 1
+            positions[ref.table][ref.note].partner = append(ornamentation?.ornament?.pitches ?? [])
+            positions[ref.table][ref.note].after = append(ornamentation?.graceAfter?.pitches ?? [])
         }
 
         let convertedPitches = convert(pitches)
-        var notes: [NoteTable<TimeType, ToPitchType>.StoredNote] = []
+        var tables: [NoteTable<TimeType, ToPitchType>] = []
 
-        for (note, position) in zip(oldNotes, positions) {
-            guard let startPitch = convertedPitches[position.start],
-                  let endPitch = convertedPitches[position.end]
-            else {
-                if dropsUnconvertibleNotes { continue }
+        for (notesOfTable, positionsOfTable) in zip(oldNotes, positions) {
+            var notes: [NoteTable<TimeType, ToPitchType>.StoredNote] = []
 
-                return nil
+            for (note, position) in zip(notesOfTable, positionsOfTable) {
+                guard let startPitch = convertedPitches[position.start],
+                      let endPitch = convertedPitches[position.end]
+                else {
+                    if dropsUnconvertibleNotes { continue }
+
+                    return nil
+                }
+
+                guard let ornamentation = _converted(note.ornamentation,
+                                                     convertedPitches: convertedPitches,
+                                                     positions: position,
+                                                     dropsUnconvertibleNotes: dropsUnconvertibleNotes)
+                else { return nil }
+
+                notes.append(NoteTable<TimeType, ToPitchType>.StoredNote(attack: note.attack,
+                                                                         duration: note.duration,
+                                                                         startPitch: startPitch,
+                                                                         endPitch: endPitch,
+                                                                         extras: note.extras,
+                                                                         ornamentation: NoteTable.fittingPartner(ornamentation,
+                                                                                                                 startPitch: startPitch)))
             }
 
-            guard let ornamentation = _converted(note.ornamentation,
-                                                 convertedPitches: convertedPitches,
-                                                 positions: position,
-                                                 dropsUnconvertibleNotes: dropsUnconvertibleNotes)
-            else { return nil }
-
-            notes.append(NoteTable<TimeType, ToPitchType>.StoredNote(attack: note.attack,
-                                                                     duration: note.duration,
-                                                                     startPitch: startPitch,
-                                                                     endPitch: endPitch,
-                                                                     extras: note.extras,
-                                                                     ornamentation: NoteTable.fittingPartner(ornamentation,
-                                                                                                             startPitch: startPitch)))
+            tables.append(NoteTable(notes: notes))
         }
 
-        return NoteTable(notes: notes)
+        return tables
+    }
+
+    //
+    // One note table with its pitches converted, as the only strand of a part would be.
+    //
+    internal static func convertPitches<TimeType: TimeProtocol,
+                                        FromPitchType: PitchProtocol,
+                                        ToPitchType: PitchProtocol>(in noteTable: NoteTable<TimeType, FromPitchType>,
+                                                                    using convert: ([FromPitchType]) -> [ToPitchType?],
+                                                                    dropsUnconvertibleNotes: Bool) -> NoteTable<TimeType, ToPitchType>? {
+        convertPitches(in: [noteTable],
+                       using: convert,
+                       dropsUnconvertibleNotes: dropsUnconvertibleNotes)?.first
     }
 
     // MARK: Private Type Aliases

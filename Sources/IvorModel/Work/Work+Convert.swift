@@ -225,16 +225,20 @@ extension Work {
                                         ToPitchType: PitchProtocol>(in part: Part<TimeType, FromPitchType>,
                                                                     using convert: ([FromPitchType]) -> [ToPitchType?],
                                                                     dropsUnconvertibleNotes: Bool) throws -> Part<TimeType, ToPitchType> {
-        let strands = try part.mappingStrands(noteTable: { noteTable throws(Error) in
-            guard let converted = convertPitches(in: noteTable,
-                                                 using: convert,
-                                                 dropsUnconvertibleNotes: dropsUnconvertibleNotes)
-            else { throw Error.unconvertiblePitch(partID: part.partID) }
+        //
+        // Every strand is spelled together, as one sequence, so a performer's harmony is spelled
+        // as one; each note's spelling goes back to its own strand.
+        //
+        guard let noteTables = convertPitches(in: part.strands.map(\.noteTable),
+                                              using: convert,
+                                              dropsUnconvertibleNotes: dropsUnconvertibleNotes)
+        else { throw Error.unconvertiblePitch(partID: part.partID) }
 
-            return converted
-        },
-                                              instrumentTable: { $0 },
-                                              dynamicMap: { $0 })
+        let strands = zip(part.strands, noteTables).map { strand, noteTable in
+            strand.replacingNoteTable(with: noteTable,
+                                      instrumentTable: strand.instrumentTable,
+                                      dynamicMap: strand.dynamicMap)
+        }
 
         return Part(partID: part.partID,
                     name: part.name,

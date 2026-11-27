@@ -40,9 +40,19 @@ extension RendererArpeggioTests {
     }
 
     @Test
-    func rollArpeggios_rollsAcrossParts() throws {
+    func rollArpeggios_doesNotRollAcrossParts() throws {
         var renderer = try makeRenderer([renderingPart([WrittenNote(0, frac(1, 4), .c4, rollOrnamentation())]),
                                          renderingPart([WrittenNote(0, frac(1, 4), .e4, rollOrnamentation())])])
+
+        renderer.rollArpeggios()
+
+        #expect(renderer.starts == [0, 0])
+    }
+
+    @Test
+    func rollArpeggios_rollsAcrossStrands() throws {
+        var renderer = try makeRenderer([renderingStrandedPart([[WrittenNote(0, frac(1, 4), .c4, rollOrnamentation())],
+                                                                [WrittenNote(0, frac(1, 4), .e4, rollOrnamentation())]])])
 
         renderer.rollArpeggios()
 

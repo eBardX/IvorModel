@@ -27,6 +27,12 @@ extension Work {
         /// Whether the problem is an error or a warning.
         public let severity: Severity
 
+        /// The ID of the strand the problem is in, if it’s in one strand.
+        public let strandID: StrandID?
+
+        /// The position of the strand the problem is in, within its part, if it’s in one strand.
+        public let strandIndex: Int?
+
         /// Where in the work the problem is, if it’s at one moment.
         public let time: WorkTime?
 
@@ -35,12 +41,16 @@ extension Work {
         internal init(severity: Severity,
                       kind: Kind,
                       partIndex: Int? = nil,
+                      strandIndex: Int? = nil,
+                      strandID: StrandID? = nil,
                       noteID: NoteID? = nil,
                       time: WorkTime? = nil) {
             self.kind = kind
             self.noteID = noteID
             self.partIndex = partIndex
             self.severity = severity
+            self.strandID = strandID
+            self.strandIndex = strandIndex
             self.time = time
         }
     }

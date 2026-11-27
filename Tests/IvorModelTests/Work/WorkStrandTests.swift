@@ -40,6 +40,29 @@ extension WorkStrandTests {
     }
 
     @Test
+    func convert_spellsAPartsStrandsTogether() throws {
+        // A context-aware speller must hear both hands: the part's strands are spelled as one
+        // sequence, so each note is spelled as it would be in one merged strand.
+        let rightHand: [(Int, UInt)] = [(0, 66), (1, 70), (2, 73), (3, 70)]
+        let leftHand: [(Int, UInt)] = [(0, 63), (1, 58), (2, 61), (3, 66)]
+        let stranded = Work(content: .keyboardBeat([Part(name: "Piano",
+                                                         strands: [Strand(noteTable: Self._keyboardNotes(rightHand)),
+                                                                   Strand(noteTable: Self._keyboardNotes(leftHand))])],
+                                                   TempoMap(),
+                                                   MeterTable(),
+                                                   KeyTable()))
+        let merged = Work(content: .keyboardBeat([Part(name: "Piano", noteTable: Self._keyboardNotes(rightHand + leftHand))],
+                                                 TempoMap(),
+                                                 MeterTable(),
+                                                 KeyTable()))
+        let strandedSpellings = try Self._spellings(of: stranded)
+        let mergedSpellings = try Self._spellings(of: merged)
+
+        #expect(strandedSpellings.count == 8)
+        #expect(strandedSpellings == mergedSpellings)
+    }
+
+    @Test
     func errors_haveMessages() {
         let strandID = StrandID()
         let partID = PartID()
@@ -151,6 +174,32 @@ extension WorkStrandTests {
         return Part(name: "Piano",
                     strands: [Strand(name: "RH", noteTable: rightHand),
                               Strand(name: "LH", noteTable: leftHand, dynamicMap: leftDynamics)])
+    }
+
+    private static func _keyboardNotes(_ notes: [(Int, UInt)]) -> NoteTable<BeatTime, NoteNumber> {
+        var table = NoteTable<BeatTime, NoteNumber>()
+
+        for (attack, noteNumber) in notes {
+            // swiftlint:disable:next force_unwrapping
+            table.insert(attack: beatTime(Number(attack)), duration: 1, pitch: NoteNumber(uintValue: noteNumber)!)
+        }
+
+        return table
+    }
+
+    //
+    // Every note's attack and spelled pitch after conversion to standard pitch, across all
+    // strands.
+    //
+    private static func _spellings(of work: Work) throws -> Set<String> {
+        let converted = try #require(try work.convert(timeBasis: .beat, pitchNotation: .standard))
+
+        guard case let .standardBeat(parts, _, _, _) = converted.content.cases
+        else { throw Work.Error.unsupportedStandardConversion }
+
+        return Set(parts.flatMap { part in
+            part.mergedNoteTable.map { "\($0.attack.numberValue)/\($0.startPitch)" }
+        })
     }
 
     private static func _strandIDs(of work: Work) -> [StrandID] {

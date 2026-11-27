@@ -197,13 +197,6 @@ extension Work.Content {
     // MARK: Internal Instance Properties
 
     //
-    // The arpeggio groups any part's notes belong to.
-    //
-    internal var arpeggioGroups: Set<ArpeggioGroup> {
-        body.arpeggioGroups
-    }
-
-    //
     // The first note ID that more than one note shares, in any parts, or `nil` if every note's is
     // distinct.
     //

@@ -7,17 +7,17 @@ extension Work.Problem {
     /// What a ``Work/Problem`` is.
     public enum Kind {
 
-        /// A fermata on a note while another part attacks during the note, so it isn’t clear
-        /// how much of the music the hold covers. A warning: rendering holds the whole note. A
+        /// A fermata on a note while another strand attacks during the note — in another part, or
+        /// in the note’s own part — so it isn’t clear how much of the music the hold covers. A warning: rendering holds the whole note. A
         /// fermata mark over the intended span says it exactly.
         case ambiguousHoldSpan
 
-        /// The tones of one rolled chord — sharing an attack and an ``ArpeggioGroup`` — disagree
-        /// on direction or execution. An error: rendering follows the first tone (lowest part,
-        /// then lowest pitch).
+        /// The tones of one rolled chord — one part’s tones, in any of its strands, sharing an
+        /// attack and an ``ArpeggioGroup`` — disagree on direction or execution. An error:
+        /// rendering follows the first tone (first strand, then lowest pitch).
         case conflictingArpeggio
 
-        /// Fermatas starting at one moment, in different parts or places, hold for different
+        /// Fermatas starting at one moment, in different parts, strands or places, hold for different
         /// lengths, and not all of them say so explicitly. A warning: rendering holds the
         /// longest.
         case conflictingDefaultHolds
