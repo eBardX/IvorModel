@@ -132,7 +132,7 @@ extension TemplateAnalyzeTests {
         let fromPlain = try analyzeMixTemplate(plain).generateWork(name: "G", partName: "Part", options: options, seed: 7)
         let fromOrnamented = try analyzeMixTemplate(ornamented).generateWork(name: "G", partName: "Part", options: options, seed: 7)
 
-        guard case let .standardBeat(parts, _, _, _) = fromOrnamented.content
+        guard case let .standardBeat(parts, _, _, _) = fromOrnamented.content.cases
         else { Issue.record("Expected standard beat content"); return }
 
         #expect(try standardBeatPitches(of: fromPlain) == standardBeatPitches(of: fromOrnamented))

@@ -93,7 +93,7 @@ extension Template.SourceContext {
     internal init(content: Work.Content,
                   index: Int,
                   keepsKey: Bool = true) {
-        switch content {
+        switch content.cases {
         case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
             self.init(parts: parts,
                       index: index,

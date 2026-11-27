@@ -52,37 +52,10 @@ extension Work {
     // time. `convert(timeBasis:pitchNotation:context:dropsUnconvertibleNotes:appliesFermataHolds:)` uses it too.
     //
     internal static func warpedContent(_ content: Content) -> Content? {
-        switch content {
-        case let .absoluteBeat(parts, tempoMap, _, _):
-            let timeConverter = TimeConverter(tempoMap: tempoMap)
+        guard let body = content.body as? any BeatTimeBody
+        else { return nil }
 
-            return .absoluteWall(parts.map { part in
-                convertBeatTimes(in: part,
-                                 using: timeConverter,
-                                 tempoMap: tempoMap)
-            })
-
-        case let .keyboardBeat(parts, tempoMap, _, _):
-            let timeConverter = TimeConverter(tempoMap: tempoMap)
-
-            return .keyboardWall(parts.map { part in
-                convertBeatTimes(in: part,
-                                 using: timeConverter,
-                                 tempoMap: tempoMap)
-            })
-
-        case let .standardBeat(parts, tempoMap, _, _):
-            let timeConverter = TimeConverter(tempoMap: tempoMap)
-
-            return .standardWall(parts.map { part in
-                convertBeatTimes(in: part,
-                                 using: timeConverter,
-                                 tempoMap: tempoMap)
-            })
-
-        default:
-            return nil
-        }
+        return Content(body: _warpedBody(body))
     }
 }
 
@@ -135,39 +108,45 @@ extension Work {
     //
     internal static func unwarpedContent(_ content: Content,
                                          using tempoMap: TempoMap) -> Content? {
+        guard let body = content.body as? any WallTimeBody
+        else { return nil }
+
+        return Content(body: _unwarpedBody(body,
+                                           using: tempoMap))
+    }
+
+    // MARK: Private Type Methods
+
+    //
+    // A beat-time body with `body`'s parts converted to beat time with `tempoMap`, which becomes
+    // its tempo map; its meter and key tables start out empty.
+    //
+    private static func _unwarpedBody(_ body: some WallTimeBody,
+                                      using tempoMap: TempoMap) -> any Work.Body {
         let timeConverter = TimeConverter(tempoMap: tempoMap)
 
-        switch content {
-        case let .absoluteWall(parts):
-            return .absoluteBeat(parts.map { part in
-                convertWallTimes(in: part,
-                                 using: timeConverter)
-            },
-                                 tempoMap,
-                                 MeterTable(),
-                                 KeyTable())
-
-        case let .keyboardWall(parts):
-            return .keyboardBeat(parts.map { part in
-                convertWallTimes(in: part,
-                                 using: timeConverter)
-            },
-                                 tempoMap,
-                                 MeterTable(),
-                                 KeyTable())
-
-        case let .standardWall(parts):
-            return .standardBeat(parts.map { part in
-                convertWallTimes(in: part,
-                                 using: timeConverter)
-            },
-                                 tempoMap,
-                                 MeterTable(),
-                                 KeyTable())
-
-        default:
-            return nil
+        let parts = body.parts.map { part in
+            convertWallTimes(in: part,
+                             using: timeConverter)
         }
+
+        return Work.BeatBody(parts: parts,
+                             tempoMap: tempoMap)
+    }
+
+    //
+    // A wall-time body with `body`'s parts, converted to wall time with its own tempo map.
+    //
+    private static func _warpedBody(_ body: some BeatTimeBody) -> any Work.Body {
+        let timeConverter = TimeConverter(tempoMap: body.tempoMap)
+
+        let parts = body.parts.map { part in
+            convertBeatTimes(in: part,
+                             using: timeConverter,
+                             tempoMap: body.tempoMap)
+        }
+
+        return Work.WallBody(parts: parts)
     }
 }
 
@@ -203,7 +182,7 @@ extension Work {
     ///             ``Work/TransformKind/varispeed`` if shifting any note’s pitch by the tempo
     ///             ratio in effect produces a frequency outside the representable range.
     public func varispeeded(normalTempo: Tempo = .default) throws(Error) -> Work? {
-        guard case let .absoluteBeat(parts, tempoMap, _, _) = content
+        guard case let .absoluteBeat(parts, tempoMap, _, _) = content.cases
         else { return nil }
 
         let timeConverter = TimeConverter(tempoMap: tempoMap)

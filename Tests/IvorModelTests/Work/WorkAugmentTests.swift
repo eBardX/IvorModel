@@ -324,7 +324,7 @@ extension WorkAugmentTests {
         // tempo map, all scaled consistently relative to the same anchor (the aggregate
         // beat-time range's lower bound, 0).
         //
-        guard case let .standardBeat(parts, newTempoMap, _, _) = work.content
+        guard case let .standardBeat(parts, newTempoMap, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         #expect(parts.count == 2)

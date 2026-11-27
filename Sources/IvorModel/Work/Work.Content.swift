@@ -7,28 +7,29 @@ extension Work {
 
     // MARK: Public Nested Types
 
-    /// The musical content of a work, parameterized by pitch notation and time basis.
-    public enum Content {
-        /// Beat-time parts using absolute (frequency) pitch notation, with an associated tempo map,
-        /// meter table and key table.
-        case absoluteBeat([Part<BeatTime, Frequency>], TempoMap, MeterTable, KeyTable)
+    /// The musical content of a work: its parts, with their pitch notation and time basis, and in
+    /// beat time a tempo map, a meter table and a key table.
+    ///
+    /// The content holds a ``Work/Body`` with its concrete types. Read it through ``body`` with
+    /// a generic function to handle every kind of content alike, or through ``cases`` to handle
+    /// each kind in its own way. Make content with the static methods named after the cases,
+    /// such as ``standardBeat(_:_:_:_:)``, or ``empty(timeBasis:pitchNotation:)``.
+    public struct Content {
 
-        /// Wall-time parts using absolute (frequency) pitch notation.
-        case absoluteWall([Part<WallTime, Frequency>])
+        // MARK: Internal Initializers
 
-        /// Beat-time parts using keyboard (MIDI note number) pitch notation, with an associated tempo map,
-        /// meter table and key table.
-        case keyboardBeat([Part<BeatTime, NoteNumber>], TempoMap, MeterTable, KeyTable)
+        internal init(body: any Work.Body) {
+            self.body = body
+        }
 
-        /// Wall-time parts using keyboard (MIDI note number) pitch notation.
-        case keyboardWall([Part<WallTime, NoteNumber>])
+        // MARK: Public Instance Properties
 
-        /// Beat-time parts using standard (staff) pitch notation, with an associated tempo map,
-        /// meter table and key table.
-        case standardBeat([Part<BeatTime, Pitch>], TempoMap, MeterTable, KeyTable)
-
-        /// Wall-time parts using standard (staff) pitch notation.
-        case standardWall([Part<WallTime, Pitch>])
+        /// The content’s parts, and whatever else its time basis carries, with their concrete
+        /// types.
+        ///
+        /// Content changes only through ``Work``’s own methods, which keep the rules a work
+        /// keeps, so the body can be read here but not replaced.
+        public internal(set) var body: any Work.Body
     }
 }
 
@@ -38,6 +39,33 @@ extension Work.Content {
 
     // MARK: Public Type Methods
 
+    /// Returns beat-time content in absolute (frequency) pitch notation.
+    ///
+    /// - Parameter parts:      The parts, in score order.
+    /// - Parameter tempoMap:   The tempo map.
+    /// - Parameter meterTable: The meter table.
+    /// - Parameter keyTable:   The key table.
+    ///
+    /// - Returns:  The content.
+    public static func absoluteBeat(_ parts: [Part<BeatTime, Frequency>],
+                                    _ tempoMap: TempoMap,
+                                    _ meterTable: MeterTable,
+                                    _ keyTable: KeyTable) -> Self {
+        Self(body: Work.BeatBody(parts: parts,
+                                 tempoMap: tempoMap,
+                                 meterTable: meterTable,
+                                 keyTable: keyTable))
+    }
+
+    /// Returns wall-time content in absolute (frequency) pitch notation.
+    ///
+    /// - Parameter parts:  The parts, in score order.
+    ///
+    /// - Returns:  The content.
+    public static func absoluteWall(_ parts: [Part<WallTime, Frequency>]) -> Self {
+        Self(body: Work.WallBody(parts: parts))
+    }
+
     /// Returns content with no parts in the given time basis and pitch notation.
     ///
     /// Beat-time content gets an empty tempo map with the default tempo, an empty meter table and
@@ -46,28 +74,124 @@ extension Work.Content {
     /// - Parameter timeBasis:      The time basis of the content.
     /// - Parameter pitchNotation:  The pitch notation of the content.
     ///
-    /// - Returns:  Empty ``Work/Content`` of the matching case.
+    /// - Returns:  Empty ``Work/Content`` of the matching kind.
     public static func empty(timeBasis: TimeBasis,
                              pitchNotation: PitchNotation) -> Self {
         switch (pitchNotation, timeBasis) {
         case (.absolute, .beat):
-            .absoluteBeat([], TempoMap(), MeterTable(), KeyTable())
+            Self(body: Work.BeatBody<Frequency>())
 
         case (.absolute, .wall):
-            .absoluteWall([])
+            Self(body: Work.WallBody<Frequency>())
 
         case (.keyboard, .beat):
-            .keyboardBeat([], TempoMap(), MeterTable(), KeyTable())
+            Self(body: Work.BeatBody<NoteNumber>())
 
         case (.keyboard, .wall):
-            .keyboardWall([])
+            Self(body: Work.WallBody<NoteNumber>())
 
         case (.standard, .beat):
-            .standardBeat([], TempoMap(), MeterTable(), KeyTable())
+            Self(body: Work.BeatBody<Pitch>())
 
         case (.standard, .wall):
-            .standardWall([])
+            Self(body: Work.WallBody<Pitch>())
         }
+    }
+
+    /// Returns beat-time content in keyboard (MIDI note number) pitch notation.
+    ///
+    /// - Parameter parts:      The parts, in score order.
+    /// - Parameter tempoMap:   The tempo map.
+    /// - Parameter meterTable: The meter table.
+    /// - Parameter keyTable:   The key table.
+    ///
+    /// - Returns:  The content.
+    public static func keyboardBeat(_ parts: [Part<BeatTime, NoteNumber>],
+                                    _ tempoMap: TempoMap,
+                                    _ meterTable: MeterTable,
+                                    _ keyTable: KeyTable) -> Self {
+        Self(body: Work.BeatBody(parts: parts,
+                                 tempoMap: tempoMap,
+                                 meterTable: meterTable,
+                                 keyTable: keyTable))
+    }
+
+    /// Returns wall-time content in keyboard (MIDI note number) pitch notation.
+    ///
+    /// - Parameter parts:  The parts, in score order.
+    ///
+    /// - Returns:  The content.
+    public static func keyboardWall(_ parts: [Part<WallTime, NoteNumber>]) -> Self {
+        Self(body: Work.WallBody(parts: parts))
+    }
+
+    /// Returns beat-time content in standard (staff) pitch notation.
+    ///
+    /// - Parameter parts:      The parts, in score order.
+    /// - Parameter tempoMap:   The tempo map.
+    /// - Parameter meterTable: The meter table.
+    /// - Parameter keyTable:   The key table.
+    ///
+    /// - Returns:  The content.
+    public static func standardBeat(_ parts: [Part<BeatTime, Pitch>],
+                                    _ tempoMap: TempoMap,
+                                    _ meterTable: MeterTable,
+                                    _ keyTable: KeyTable) -> Self {
+        Self(body: Work.BeatBody(parts: parts,
+                                 tempoMap: tempoMap,
+                                 meterTable: meterTable,
+                                 keyTable: keyTable))
+    }
+
+    /// Returns wall-time content in standard (staff) pitch notation.
+    ///
+    /// - Parameter parts:  The parts, in score order.
+    ///
+    /// - Returns:  The content.
+    public static func standardWall(_ parts: [Part<WallTime, Pitch>]) -> Self {
+        Self(body: Work.WallBody(parts: parts))
+    }
+
+    // MARK: Public Instance Properties
+
+    /// The content as one of six cases, one for each pitch notation and time basis.
+    public var cases: Cases {
+        switch body {
+        case let body as Work.BeatBody<Frequency>:
+            .absoluteBeat(body.parts, body.tempoMap, body.meterTable, body.keyTable)
+
+        case let body as Work.WallBody<Frequency>:
+            .absoluteWall(body.parts)
+
+        case let body as Work.BeatBody<NoteNumber>:
+            .keyboardBeat(body.parts, body.tempoMap, body.meterTable, body.keyTable)
+
+        case let body as Work.WallBody<NoteNumber>:
+            .keyboardWall(body.parts)
+
+        case let body as Work.BeatBody<Pitch>:
+            .standardBeat(body.parts, body.tempoMap, body.meterTable, body.keyTable)
+
+        case let body as Work.WallBody<Pitch>:
+            .standardWall(body.parts)
+
+        default:
+            //
+            // Content is made only by this type's own methods and decoding, each of which makes
+            // one of the six bodies above.
+            //
+            preconditionFailure("Unexpected work body: \(type(of: body))")
+        }
+    }
+
+    /// The pitch notation of the content.
+    public var pitchNotation: PitchNotation {
+        body.pitchNotation
+    }
+
+    /// The time basis of the content.
+    public var timeBasis: TimeBasis {
+        body.timeBasis
     }
 
     // MARK: Internal Instance Properties
@@ -76,25 +200,7 @@ extension Work.Content {
     // The arpeggio groups any part's notes belong to.
     //
     internal var arpeggioGroups: Set<ArpeggioGroup> {
-        switch self {
-        case let .absoluteBeat(parts, _, _, _):
-            Set(parts.flatMap(\.noteTable.arpeggioGroups))
-
-        case let .absoluteWall(parts):
-            Set(parts.flatMap(\.noteTable.arpeggioGroups))
-
-        case let .keyboardBeat(parts, _, _, _):
-            Set(parts.flatMap(\.noteTable.arpeggioGroups))
-
-        case let .keyboardWall(parts):
-            Set(parts.flatMap(\.noteTable.arpeggioGroups))
-
-        case let .standardBeat(parts, _, _, _):
-            Set(parts.flatMap(\.noteTable.arpeggioGroups))
-
-        case let .standardWall(parts):
-            Set(parts.flatMap(\.noteTable.arpeggioGroups))
-        }
+        body.arpeggioGroups
     }
 
     //
@@ -104,7 +210,7 @@ extension Work.Content {
     internal var firstDuplicateNoteID: NoteID? {
         var seen: Set<NoteID> = []
 
-        return noteIDs.first { !seen.insert($0).inserted }
+        return body.noteIDs.first { !seen.insert($0).inserted }
     }
 
     //
@@ -113,7 +219,7 @@ extension Work.Content {
     internal var firstDuplicatePartID: PartID? {
         var seen: Set<PartID> = []
 
-        return partIDs.first { !seen.insert($0).inserted }
+        return body.partIDs.first { !seen.insert($0).inserted }
     }
 
     //
@@ -137,77 +243,11 @@ extension Work.Content {
     // The ID of every note of every part, in part order.
     //
     internal var noteIDs: [NoteID] {
-        switch self {
-        case let .absoluteBeat(parts, _, _, _):
-            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
-
-        case let .absoluteWall(parts):
-            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
-
-        case let .keyboardBeat(parts, _, _, _):
-            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
-
-        case let .keyboardWall(parts):
-            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
-
-        case let .standardBeat(parts, _, _, _):
-            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
-
-        case let .standardWall(parts):
-            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
-        }
+        body.noteIDs
     }
 
     internal var partIDs: [PartID] {
-        switch self {
-        case let .absoluteBeat(parts, _, _, _):
-            parts.map(\.partID)
-
-        case let .absoluteWall(parts):
-            parts.map(\.partID)
-
-        case let .keyboardBeat(parts, _, _, _):
-            parts.map(\.partID)
-
-        case let .keyboardWall(parts):
-            parts.map(\.partID)
-
-        case let .standardBeat(parts, _, _, _):
-            parts.map(\.partID)
-
-        case let .standardWall(parts):
-            parts.map(\.partID)
-        }
-    }
-
-    internal var pitchNotation: PitchNotation {
-        switch self {
-        case .absoluteBeat,
-             .absoluteWall:
-            .absolute
-
-        case .keyboardBeat,
-             .keyboardWall:
-            .keyboard
-
-        case .standardBeat,
-             .standardWall:
-            .standard
-        }
-    }
-
-    internal var timeBasis: TimeBasis {
-        switch self {
-        case .absoluteBeat,
-             .keyboardBeat,
-             .standardBeat:
-            .beat
-
-        case .absoluteWall,
-             .keyboardWall,
-             .standardWall:
-            .wall
-        }
+        body.partIDs
     }
 }
 
@@ -233,46 +273,22 @@ extension Work.Content: Codable {
 
         switch (pitchNotation, timeBasis) {
         case (.absolute, .beat):
-            self = try .absoluteBeat(container.decode([Part<BeatTime, Frequency>].self,
-                                                      forKey: .parts),
-                                     container.decode(TempoMap.self,
-                                                      forKey: .tempoMap).normalizingExtraNames(),
-                                     container.decode(MeterTable.self,
-                                                      forKey: .meterTable),
-                                     container.decode(KeyTable.self,
-                                                      forKey: .keyTable))
+            self = try Self(body: Self._decodeBeatBody(Work.BeatBody<Frequency>.self, from: container))
 
         case (.absolute, .wall):
-            self = try .absoluteWall(container.decode([Part<WallTime, Frequency>].self,
-                                                      forKey: .parts))
+            self = try Self(body: Self._decodeWallBody(Work.WallBody<Frequency>.self, from: container))
 
         case (.keyboard, .beat):
-            self = try .keyboardBeat(container.decode([Part<BeatTime, NoteNumber>].self,
-                                                      forKey: .parts),
-                                     container.decode(TempoMap.self,
-                                                      forKey: .tempoMap).normalizingExtraNames(),
-                                     container.decode(MeterTable.self,
-                                                      forKey: .meterTable),
-                                     container.decode(KeyTable.self,
-                                                      forKey: .keyTable))
+            self = try Self(body: Self._decodeBeatBody(Work.BeatBody<NoteNumber>.self, from: container))
 
         case (.keyboard, .wall):
-            self = try .keyboardWall(container.decode([Part<WallTime, NoteNumber>].self,
-                                                      forKey: .parts))
+            self = try Self(body: Self._decodeWallBody(Work.WallBody<NoteNumber>.self, from: container))
 
         case (.standard, .beat):
-            self = try .standardBeat(container.decode([Part<BeatTime, Pitch>].self,
-                                                      forKey: .parts),
-                                     container.decode(TempoMap.self,
-                                                      forKey: .tempoMap).normalizingExtraNames(),
-                                     container.decode(MeterTable.self,
-                                                      forKey: .meterTable),
-                                     container.decode(KeyTable.self,
-                                                      forKey: .keyTable))
+            self = try Self(body: Self._decodeBeatBody(Work.BeatBody<Pitch>.self, from: container))
 
         case (.standard, .wall):
-            self = try .standardWall(container.decode([Part<WallTime, Pitch>].self,
-                                                      forKey: .parts))
+            self = try Self(body: Self._decodeWallBody(Work.WallBody<Pitch>.self, from: container))
         }
     }
 
@@ -295,57 +311,18 @@ extension Work.Content: Codable {
         try container.encode(timeBasis,
                              forKey: .timeBasis)
 
-        switch self {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
-            try container.encode(parts,
-                                 forKey: .parts)
+        try Self._encodeParts(of: body,
+                              into: &container)
 
-            try container.encode(tempoMap,
+        if let body = body as? any Work.BeatTimeBody {
+            try container.encode(body.tempoMap,
                                  forKey: .tempoMap)
 
-            try container.encode(meterTable,
+            try container.encode(body.meterTable,
                                  forKey: .meterTable)
 
-            try container.encode(keyTable,
+            try container.encode(body.keyTable,
                                  forKey: .keyTable)
-
-        case let .absoluteWall(parts):
-            try container.encode(parts,
-                                 forKey: .parts)
-
-        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
-            try container.encode(parts,
-                                 forKey: .parts)
-
-            try container.encode(tempoMap,
-                                 forKey: .tempoMap)
-
-            try container.encode(meterTable,
-                                 forKey: .meterTable)
-
-            try container.encode(keyTable,
-                                 forKey: .keyTable)
-
-        case let .keyboardWall(parts):
-            try container.encode(parts,
-                                 forKey: .parts)
-
-        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
-            try container.encode(parts,
-                                 forKey: .parts)
-
-            try container.encode(tempoMap,
-                                 forKey: .tempoMap)
-
-            try container.encode(meterTable,
-                                 forKey: .meterTable)
-
-            try container.encode(keyTable,
-                                 forKey: .keyTable)
-
-        case let .standardWall(parts):
-            try container.encode(parts,
-                                 forKey: .parts)
         }
     }
 
@@ -358,6 +335,32 @@ extension Work.Content: Codable {
         case pitchNotation
         case tempoMap
         case timeBasis
+    }
+
+    // MARK: Private Type Methods
+
+    private static func _decodeBeatBody<PitchType>(_ type: Work.BeatBody<PitchType>.Type,
+                                                   from container: KeyedDecodingContainer<CodingKeys>) throws -> Work.BeatBody<PitchType> {
+        try Work.BeatBody(parts: container.decode([Part<BeatTime, PitchType>].self,
+                                                  forKey: .parts),
+                          tempoMap: container.decode(TempoMap.self,
+                                                     forKey: .tempoMap).normalizingExtraNames(),
+                          meterTable: container.decode(MeterTable.self,
+                                                       forKey: .meterTable),
+                          keyTable: container.decode(KeyTable.self,
+                                                     forKey: .keyTable))
+    }
+
+    private static func _decodeWallBody<PitchType>(_ type: Work.WallBody<PitchType>.Type,
+                                                   from container: KeyedDecodingContainer<CodingKeys>) throws -> Work.WallBody<PitchType> {
+        try Work.WallBody(parts: container.decode([Part<WallTime, PitchType>].self,
+                                                  forKey: .parts))
+    }
+
+    private static func _encodeParts(of body: some Work.Body,
+                                     into container: inout KeyedEncodingContainer<CodingKeys>) throws {
+        try container.encode(body.parts,
+                             forKey: .parts)
     }
 }
 

@@ -14,7 +14,7 @@ extension Work {
     /// - Returns:  The tagged note events, or `nil` if this work’s content is not
     ///             beat-time, absolute-pitch content.
     public func extractNoteEvents() -> [TaggedNoteEvent<BeatTime, Frequency>]? {
-        guard case let .absoluteBeat(parts, _, _, _) = content
+        guard case let .absoluteBeat(parts, _, _, _) = content.cases
         else { return nil }
 
         return Self._extractNoteEvents(from: parts)
@@ -27,7 +27,7 @@ extension Work {
     /// - Returns:  The tagged note events, or `nil` if this work’s content is not
     ///             wall-time, absolute-pitch content.
     public func extractNoteEvents() -> [TaggedNoteEvent<WallTime, Frequency>]? {
-        guard case let .absoluteWall(parts) = content
+        guard case let .absoluteWall(parts) = content.cases
         else { return nil }
 
         return Self._extractNoteEvents(from: parts)
@@ -40,7 +40,7 @@ extension Work {
     /// - Returns:  The tagged note events, or `nil` if this work’s content is not
     ///             beat-time, keyboard-pitch content.
     public func extractNoteEvents() -> [TaggedNoteEvent<BeatTime, NoteNumber>]? {
-        guard case let .keyboardBeat(parts, _, _, _) = content
+        guard case let .keyboardBeat(parts, _, _, _) = content.cases
         else { return nil }
 
         return Self._extractNoteEvents(from: parts)
@@ -53,7 +53,7 @@ extension Work {
     /// - Returns:  The tagged note events, or `nil` if this work’s content is not
     ///             wall-time, keyboard-pitch content.
     public func extractNoteEvents() -> [TaggedNoteEvent<WallTime, NoteNumber>]? {
-        guard case let .keyboardWall(parts) = content
+        guard case let .keyboardWall(parts) = content.cases
         else { return nil }
 
         return Self._extractNoteEvents(from: parts)
@@ -66,7 +66,7 @@ extension Work {
     /// - Returns:  The tagged note events, or `nil` if this work’s content is not
     ///             beat-time, standard-pitch content.
     public func extractNoteEvents() -> [TaggedNoteEvent<BeatTime, Pitch>]? {
-        guard case let .standardBeat(parts, _, _, _) = content
+        guard case let .standardBeat(parts, _, _, _) = content.cases
         else { return nil }
 
         return Self._extractNoteEvents(from: parts)
@@ -79,7 +79,7 @@ extension Work {
     /// - Returns:  The tagged note events, or `nil` if this work’s content is not
     ///             wall-time, standard-pitch content.
     public func extractNoteEvents() -> [TaggedNoteEvent<WallTime, Pitch>]? {
-        guard case let .standardWall(parts) = content
+        guard case let .standardWall(parts) = content.cases
         else { return nil }
 
         return Self._extractNoteEvents(from: parts)

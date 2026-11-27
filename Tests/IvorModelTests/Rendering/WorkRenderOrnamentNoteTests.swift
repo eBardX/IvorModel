@@ -71,7 +71,7 @@ extension WorkRenderOrnamentNoteTests {
 private func renderedFlags(_ notes: [WrittenNote]) throws -> [(pitch: Pitch, isOrnamentNote: Bool)] {
     let work = try renderingWork([renderingPart(notes)])
 
-    guard case let .standardBeat(parts, _, _, _) = try work.rendered().work.content
+    guard case let .standardBeat(parts, _, _, _) = try work.rendered().work.content.cases
     else { throw Work.Error.unsupportedStandardConversion }
 
     return try #require(parts.first).noteTable

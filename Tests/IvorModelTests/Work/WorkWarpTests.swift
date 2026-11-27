@@ -53,7 +53,7 @@ extension WorkWarpTests {
         #expect(result.timeBasis == .beat)
         #expect(result.tempoMap == tempoMap)
 
-        guard case let .absoluteBeat(parts, resultTempoMap, _, _) = result.content
+        guard case let .absoluteBeat(parts, resultTempoMap, _, _) = result.content.cases
         else { Issue.record("Expected .absoluteBeat content."); return }
 
         let expectedTime = timeConverter.beatTime(at: 1_000)
@@ -69,9 +69,9 @@ extension WorkWarpTests {
     func unwarped_beatTimeContent_returnsNil() {
         let tempoMap = TempoMap()
 
-        #expect(try Work(content: .absoluteBeat([], tempoMap, MeterTable(), KeyTable())).unwarped(using: tempoMap) == nil)
-        #expect(try Work(content: .keyboardBeat([], tempoMap, MeterTable(), KeyTable())).unwarped(using: tempoMap) == nil)
-        #expect(try Work(content: .standardBeat([], tempoMap, MeterTable(), KeyTable())).unwarped(using: tempoMap) == nil)
+        #expect(Work(content: .absoluteBeat([], tempoMap, MeterTable(), KeyTable())).unwarped(using: tempoMap) == nil)
+        #expect(Work(content: .keyboardBeat([], tempoMap, MeterTable(), KeyTable())).unwarped(using: tempoMap) == nil)
+        #expect(Work(content: .standardBeat([], tempoMap, MeterTable(), KeyTable())).unwarped(using: tempoMap) == nil)
     }
 
     @Test
@@ -92,7 +92,7 @@ extension WorkWarpTests {
 
         let result = try #require(work.unwarped(using: tempoMap))
 
-        guard case let .absoluteBeat(parts, _, _, _) = result.content
+        guard case let .absoluteBeat(parts, _, _, _) = result.content.cases
         else { Issue.record("Expected .absoluteBeat content."); return }
 
         let expectedTime = timeConverter.beatTime(at: 1_000)
@@ -121,7 +121,7 @@ extension WorkWarpTests {
 
         let result = try #require(work.unwarped(using: TempoMap()))
 
-        guard case .standardBeat = result.content
+        guard case .standardBeat = result.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         #expect(result.info == work.info)
@@ -214,7 +214,7 @@ extension WorkWarpTests {
 
         let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
-        guard case let .absoluteWall(parts) = result.content
+        guard case let .absoluteWall(parts) = result.content.cases
         else { Issue.record("Expected .absoluteWall content."); return }
 
         let expectedTime = timeConverter.wallTime(at: 1)
@@ -252,7 +252,7 @@ extension WorkWarpTests {
 
         let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
-        guard case let .absoluteWall(parts) = result.content
+        guard case let .absoluteWall(parts) = result.content.cases
         else { Issue.record("Expected .absoluteWall content."); return }
 
         #expect(parts[0].pedals[.sustain]?.map(\.time) == [1, 2, 2].map { timeConverter.wallTime(at: BeatTime($0)) })
@@ -279,7 +279,7 @@ extension WorkWarpTests {
 
         let result = try #require(try work.varispeeded())
 
-        guard case .absoluteWall = result.content
+        guard case .absoluteWall = result.content.cases
         else { Issue.record("Expected .absoluteWall content."); return }
 
         #expect(result.info == work.info)
@@ -356,7 +356,7 @@ extension WorkWarpTests {
 
         let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
-        guard case let .absoluteWall(parts) = result.content
+        guard case let .absoluteWall(parts) = result.content.cases
         else { Issue.record("Expected .absoluteWall content."); return }
 
         let attackPitch = parts[0].noteTable.notes.first?.startPitch
@@ -379,7 +379,7 @@ extension WorkWarpTests {
 
         let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
-        guard case let .absoluteWall(parts) = result.content
+        guard case let .absoluteWall(parts) = result.content.cases
         else { Issue.record("Expected .absoluteWall content."); return }
 
         let attackPitch = parts[0].noteTable.notes.first?.startPitch
@@ -402,7 +402,7 @@ extension WorkWarpTests {
 
         let result = try #require(try work.varispeeded(normalTempo: Tempo(60)))
 
-        guard case let .absoluteWall(parts) = result.content
+        guard case let .absoluteWall(parts) = result.content.cases
         else { Issue.record("Expected .absoluteWall content."); return }
 
         #expect(parts[0].noteTable.notes.first?.startPitch == Frequency(440))
@@ -454,7 +454,7 @@ extension WorkWarpTests {
         #expect(result.name == "Test")
         #expect(result.timeBasis == .wall)
 
-        guard case let .absoluteWall(parts) = result.content
+        guard case let .absoluteWall(parts) = result.content.cases
         else { Issue.record("Expected .absoluteWall content."); return }
 
         let expectedTime = timeConverter.wallTime(at: 1)
@@ -481,7 +481,7 @@ extension WorkWarpTests {
 
         let result = try #require(work.warped())
 
-        guard case .standardWall = result.content
+        guard case .standardWall = result.content.cases
         else { Issue.record("Expected .standardWall content."); return }
 
         #expect(result.info == work.info)
@@ -567,8 +567,8 @@ extension WorkWarpTests {
 
         #expect(roundTripped.content.timeBasis == .beat)
 
-        guard case let .standardBeat(originalParts, _, _, _) = work.content,
-              case let .standardBeat(roundTrippedParts, _, _, _) = roundTripped.content
+        guard case let .standardBeat(originalParts, _, _, _) = work.content.cases,
+              case let .standardBeat(roundTrippedParts, _, _, _) = roundTripped.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         #expect(roundTrippedParts[0].noteTable.notes.first?.attack == originalParts[0].noteTable.notes.first?.attack)

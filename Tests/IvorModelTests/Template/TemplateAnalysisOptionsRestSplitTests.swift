@@ -114,7 +114,7 @@ extension TemplateAnalysisOptionsRestSplitTests {
                                                                 constraints: constraints),
                                                  seed: seed)
 
-            guard case let .standardBeat(parts, _, _, _) = work.content
+            guard case let .standardBeat(parts, _, _, _) = work.content.cases
             else { Issue.record("not standard beat"); return }
 
             let events = try #require(parts.first).noteTable.extractNoteEvents()

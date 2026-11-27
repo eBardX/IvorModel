@@ -47,7 +47,7 @@ extension WorkContentTests {
         let content = Work.Content.keyboardBeat([], TempoMap(), MeterTable(), table)
         let decoded = try JSONDecoder().decode(Work.Content.self, from: JSONEncoder().encode(content))
 
-        guard case let .keyboardBeat(_, _, _, decodedTable) = decoded
+        guard case let .keyboardBeat(_, _, _, decodedTable) = decoded.cases
         else { Issue.record("not keyboard beat"); return }
 
         #expect(decodedTable == table)
@@ -61,7 +61,7 @@ extension WorkContentTests {
         let data = try JSONEncoder().encode(content)
         let decoded = try JSONDecoder().decode(Work.Content.self, from: data)
 
-        guard case let .standardBeat(_, _, decodedTable, _) = decoded
+        guard case let .standardBeat(_, _, decodedTable, _) = decoded.cases
         else { Issue.record("not standard beat"); return }
 
         #expect(decodedTable == meterTable)
@@ -109,7 +109,7 @@ extension WorkContentTests {
 
     @Test
     func content_empty_hasEmptyKeyTable() {
-        guard case let .absoluteBeat(_, _, _, table) = Work.Content.empty(timeBasis: .beat, pitchNotation: .absolute)
+        guard case let .absoluteBeat(_, _, _, table) = Work.Content.empty(timeBasis: .beat, pitchNotation: .absolute).cases
         else { Issue.record("not absolute beat"); return }
 
         #expect(table.isEmpty)

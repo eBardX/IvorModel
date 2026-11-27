@@ -19,37 +19,14 @@ extension Work {
     /// - Returns:  The problems, holds first, then fermata spans, grace figures and arpeggios,
     ///             each in time order.
     public func problems() -> [Problem] {
-        switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
-            _problems(parts,
-                      clock: RenderingClock(tempoMap: tempoMap, meterTable: meterTable, keyTable: keyTable),
-                      time: Self._beatTime)
-
-        case let .absoluteWall(parts):
-            _problems(parts,
-                      clock: RenderingClock(),
-                      time: Self._wallTime)
-
-        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
-            _problems(parts,
-                      clock: RenderingClock(tempoMap: tempoMap, meterTable: meterTable, keyTable: keyTable),
-                      time: Self._beatTime)
-
-        case let .keyboardWall(parts):
-            _problems(parts,
-                      clock: RenderingClock(),
-                      time: Self._wallTime)
-
-        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
-            _problems(parts,
-                      clock: RenderingClock(tempoMap: tempoMap, meterTable: meterTable, keyTable: keyTable),
-                      time: Self._beatTime)
-
-        case let .standardWall(parts):
-            _problems(parts,
-                      clock: RenderingClock(),
-                      time: Self._wallTime)
+        if let body = content.body as? any BeatTimeBody {
+            return _beatProblems(body)
         }
+
+        guard let body = content.body as? any WallTimeBody
+        else { preconditionFailure("A work's body is of beat or wall time") }
+
+        return _wallProblems(body)
     }
 
     // MARK: Private Type Methods
@@ -210,6 +187,14 @@ extension Work {
 
     // MARK: Private Instance Methods
 
+    private func _beatProblems(_ body: some BeatTimeBody) -> [Problem] {
+        _problems(body.parts,
+                  clock: RenderingClock(tempoMap: body.tempoMap,
+                                        meterTable: body.meterTable,
+                                        keyTable: body.keyTable),
+                  time: Self._beatTime)
+    }
+
     private func _problems(_ parts: [Part<some RenderableTime, some PitchProtocol>],
                            clock: RenderingClock,
                            time: (Number) -> WorkTime?) -> [Problem] {
@@ -221,5 +206,11 @@ extension Work {
             + Self._spanProblems(parts, time: time)
             + Self._graceProblems(parts, time: time).sorted { ($0.time.map(Self._order) ?? 0) < ($1.time.map(Self._order) ?? 0) }
             + Self._arpeggioProblems(parts, time: time)
+    }
+
+    private func _wallProblems(_ body: some WallTimeBody) -> [Problem] {
+        _problems(body.parts,
+                  clock: RenderingClock(),
+                  time: Self._wallTime)
     }
 }

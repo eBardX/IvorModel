@@ -94,7 +94,7 @@ extension Template {
                                      options: AnalysisOptions) throws(Error) -> Int {
         try options.validate()
 
-        switch work.content {
+        switch work.content.cases {
         case let .absoluteBeat(parts, _, _, _):
             return try _splitForms(of: parts,
                                    at: index,
@@ -204,7 +204,7 @@ extension Template {
     private static func _analyzeNoteEvents(in content: Work.Content,
                                            at index: Int,
                                            options: AnalysisOptions) throws(Error) -> (Self.Content, AnalysisSummary) {
-        switch content {
+        switch content.cases {
         case let .absoluteBeat(parts, _, _, _):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
                                                           at: index,

@@ -159,7 +159,7 @@ extension WorkRenderTests {
         let mordent = try ornament(.mordent, .step(.above, written: nil), OrnamentExecution(rate: .noteValue(positiveBeats(1, 32))))
         let work = try renderingWork([renderingPart([WrittenNote(0, frac(1, 4), .c4, extras: extras, Ornamentation(ornament: mordent))])])
 
-        guard case let .standardBeat(parts, _, _, _) = try work.rendered().work.content
+        guard case let .standardBeat(parts, _, _, _) = try work.rendered().work.content.cases
         else { Issue.record("Expected standard beat content"); return }
 
         let names = try #require(parts.first).noteTable.map { Set($0.extras?.elements.map(\.name.stringValue) ?? []) }
@@ -228,7 +228,7 @@ extension WorkRenderTests {
                                                                  Ornamentation(graceBefore: graceFigure([.d4]), fermata: fermata))])])
         let rendering = try work.rendered(options: RenderingOptions(fermataMode: .notRealized))
 
-        guard case let .standardBeat(parts, _, _, _) = rendering.work.content
+        guard case let .standardBeat(parts, _, _, _) = rendering.work.content.cases
         else { Issue.record("Expected standard beat content"); return }
 
         let part = try #require(parts.first)
@@ -264,7 +264,7 @@ extension WorkRenderTests {
 
         let rendering = try renderingWork([part], meterTable: meterTable).rendered(options: RenderingOptions(fermataMode: .stretchedNotes))
 
-        guard case let .standardBeat(parts, tempoMap, newMeterTable, _) = rendering.work.content
+        guard case let .standardBeat(parts, tempoMap, newMeterTable, _) = rendering.work.content.cases
         else { Issue.record("Expected standard beat content"); return }
 
         //
@@ -281,7 +281,7 @@ extension WorkRenderTests {
     func fermata_tempoChangesSlowsTheSpan() throws {
         let rendering = try renderingWork([twoNotePart(Fermata())]).rendered()
 
-        guard case let .standardBeat(_, tempoMap, _, _) = rendering.work.content
+        guard case let .standardBeat(_, tempoMap, _, _) = rendering.work.content.cases
         else { Issue.record("Expected standard beat content"); return }
 
         //
@@ -579,7 +579,7 @@ extension WorkRenderTests {
 
         let rendering = try renderingWork([part]).rendered()
 
-        guard case let .standardBeat(parts, _, _, _) = rendering.work.content
+        guard case let .standardBeat(parts, _, _, _) = rendering.work.content.cases
         else { Issue.record("Expected standard beat content"); return }
 
         //
@@ -666,8 +666,8 @@ extension WorkRenderTests {
                                                         MeterTable(),
                                                         KeyTable()))
 
-        guard case let .keyboardBeat(keyParts, _, _, _) = try keyWork.rendered().work.content,
-              case let .absoluteBeat(frequencyParts, _, _, _) = try frequencyWork.rendered().work.content
+        guard case let .keyboardBeat(keyParts, _, _, _) = try keyWork.rendered().work.content.cases,
+              case let .absoluteBeat(frequencyParts, _, _, _) = try frequencyWork.rendered().work.content.cases
         else { Issue.record("Expected beat content"); return }
 
         let keyPitches = try #require(keyParts.first).noteTable.map(\.startPitch.uintValue)
@@ -695,7 +695,7 @@ extension WorkRenderTests {
 
         let rendered = try work.rendered().work
 
-        guard case let .standardBeat(parts, _, _, _) = rendered.content
+        guard case let .standardBeat(parts, _, _, _) = rendered.content.cases
         else { Issue.record("Expected standard beat content"); return }
 
         #expect(!rendered.isLocked)
@@ -831,7 +831,7 @@ extension WorkRenderTests {
 
         let work = Work(content: .keyboardBeat([Part(name: "K", noteTable: keys)], TempoMap(defaultTempo: Tempo(60)), MeterTable(), KeyTable()))
 
-        guard case let .keyboardBeat(parts, _, _, _) = try work.rendered().work.content
+        guard case let .keyboardBeat(parts, _, _, _) = try work.rendered().work.content.cases
         else { Issue.record("Expected keyboard beat content"); return }
 
         #expect(try #require(parts.first).noteTable.count == 1)
@@ -852,7 +852,7 @@ extension WorkRenderTests {
         for mode in [RenderingOptions.FermataMode.tempoChanges, .stretchedNotes] {
             let rendering = try work.rendered(options: RenderingOptions(fermataMode: mode))
 
-            guard case let .standardWall(parts) = rendering.work.content,
+            guard case let .standardWall(parts) = rendering.work.content.cases,
                   let notes = parts.first?.noteTable
             else { Issue.record("Expected standard wall content"); return }
 
@@ -881,7 +881,7 @@ extension WorkRenderTests {
         let work = Work(content: .standardWall([Part(name: "W", noteTable: table)]), interpretationRules: rules)
         let rendering = try work.rendered()
 
-        guard case let .standardWall(parts) = rendering.work.content,
+        guard case let .standardWall(parts) = rendering.work.content.cases,
               let notes = parts.first?.noteTable
         else { Issue.record("Expected standard wall content"); return }
 

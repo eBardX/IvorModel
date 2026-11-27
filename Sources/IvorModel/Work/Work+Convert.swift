@@ -257,7 +257,7 @@ extension Work {
                                               to targetNotation: PitchNotation,
                                               with context: ConvertContext,
                                               dropsUnconvertibleNotes: Bool) throws -> Content {
-        switch (content, targetNotation) {
+        switch (content.cases, targetNotation) {
         case let (.absoluteBeat(parts, tempoMap, meterTable, keyTable), .keyboard):
             // Absolute/Beat → Keyboard/Beat
             try .keyboardBeat(_convertPitches(in: parts,

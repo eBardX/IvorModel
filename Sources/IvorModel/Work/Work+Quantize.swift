@@ -38,7 +38,7 @@ extension Work {
 
         let quantizer = try Self._quantizer(factors)
 
-        switch content {
+        switch content.cases {
         case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
             typealias PartType = Part<BeatTime, Frequency>
 

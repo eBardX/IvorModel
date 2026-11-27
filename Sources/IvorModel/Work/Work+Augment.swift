@@ -48,7 +48,7 @@ extension Work {
                                  partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 
-        switch content {
+        switch content.cases {
         case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
             typealias PartType = Part<BeatTime, Frequency>
 
@@ -146,7 +146,7 @@ extension Work {
                                  partIDs: Set<PartID>? = nil) throws(Error) {
         try ensureUnlocked()
 
-        switch content {
+        switch content.cases {
         case let .absoluteWall(parts):
             typealias PartType = Part<WallTime, Frequency>
 

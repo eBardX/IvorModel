@@ -78,7 +78,7 @@ extension WorkConvertTests {
         let result = try #require(try work.convert(timeBasis: .wall,
                                                    pitchNotation: .standard))
 
-        guard case .standardWall = result.content
+        guard case .standardWall = result.content.cases
         else { Issue.record("Expected .standardWall content."); return }
 
         #expect(result.info == work.info)
@@ -209,7 +209,7 @@ extension WorkConvertTests {
         let result = try #require(try work.convert(timeBasis: .beat,
                                                    pitchNotation: .absolute))
 
-        guard case .absoluteBeat = result.content
+        guard case .absoluteBeat = result.content.cases
         else { Issue.record("Expected .absoluteBeat content."); return }
 
         #expect(result.info == work.info)
@@ -230,7 +230,7 @@ extension WorkConvertTests {
         let work = try makeOrnamentedStandardWork()
         let converted = try #require(try work.convert(timeBasis: .beat, pitchNotation: .absolute))
 
-        guard case let .absoluteBeat(parts, _, _, _) = converted.content
+        guard case let .absoluteBeat(parts, _, _, _) = converted.content.cases
         else { Issue.record("Expected absolute beat content"); return }
 
         let notes = try #require(parts.first?.noteTable)
@@ -302,7 +302,7 @@ extension WorkConvertTests {
     func convert_pitchNotationKeepsMarksAndRules() throws {
         let converted = try #require(try makeRuledWork().convert(timeBasis: .beat, pitchNotation: .absolute))
 
-        guard case let .absoluteBeat(parts, _, _, _) = converted.content
+        guard case let .absoluteBeat(parts, _, _, _) = converted.content.cases
         else { Issue.record("Expected absolute beat content"); return }
 
         #expect(converted.interpretationRules == ruledWorkRules())
@@ -347,7 +347,7 @@ extension WorkConvertTests {
         let result = try #require(try work.convert(timeBasis: .beat,
                                                    pitchNotation: .absolute))
 
-        guard case let .absoluteBeat(parts, _, _, _) = result.content
+        guard case let .absoluteBeat(parts, _, _, _) = result.content.cases
         else {
             Issue.record("Expected absolute-beat content")
             return
@@ -369,7 +369,7 @@ extension WorkConvertTests {
         let result = try #require(try work.convert(timeBasis: .beat,
                                                    pitchNotation: .keyboard))
 
-        guard case let .keyboardBeat(parts, _, _, _) = result.content
+        guard case let .keyboardBeat(parts, _, _, _) = result.content.cases
         else {
             Issue.record("Expected keyboard-beat content")
             return
@@ -396,7 +396,7 @@ extension WorkConvertTests {
                                                    pitchNotation: .keyboard,
                                                    dropsUnconvertibleNotes: true))
 
-        guard case let .keyboardWall(parts) = result.content
+        guard case let .keyboardWall(parts) = result.content.cases
         else {
             Issue.record("Expected keyboard-wall content")
             return
@@ -434,7 +434,7 @@ extension WorkConvertTests {
         let result = try #require(try work.convert(timeBasis: .wall,
                                                    pitchNotation: .keyboard))
 
-        guard case let .keyboardWall(parts) = result.content
+        guard case let .keyboardWall(parts) = result.content.cases
         else {
             Issue.record("Expected keyboard-wall content")
             return
@@ -527,7 +527,7 @@ extension WorkConvertTests {
 
         let converted = try #require(try work.convert(timeBasis: .wall, pitchNotation: .standard))
 
-        guard case let .standardWall(parts) = converted.content
+        guard case let .standardWall(parts) = converted.content.cases
         else { Issue.record("Expected standard wall content"); return }
 
         let converter = TimeConverter(tempoMap: TempoMap())
@@ -562,7 +562,7 @@ extension WorkConvertTests {
     func convert_timeBasisKeepsRules() throws {
         let converted = try #require(try makeRuledWork().convert(timeBasis: .wall, pitchNotation: .standard))
 
-        guard case let .standardWall(parts) = converted.content
+        guard case let .standardWall(parts) = converted.content.cases
         else { Issue.record("Expected standard wall content"); return }
 
         #expect(converted.interpretationRules == ruledWorkRules())
@@ -589,7 +589,7 @@ extension WorkConvertTests {
         let result = try #require(try work.convert(timeBasis: .beat,
                                                    pitchNotation: .standard))
 
-        guard case .standardBeat = result.content
+        guard case .standardBeat = result.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         #expect(result.info == work.info)
@@ -606,7 +606,7 @@ extension WorkConvertTests {
         let work = Work(content: .standardWall([Part(name: "Piano", noteTable: table, markTable: marks)]))
         let converted = try #require(try work.convert(timeBasis: .beat, pitchNotation: .standard))
 
-        guard case let .standardBeat(parts, _, _, _) = converted.content
+        guard case let .standardBeat(parts, _, _, _) = converted.content.cases
         else { Issue.record("Expected standard beat content"); return }
 
         let mark = try #require(parts.first?.markTable.first)
@@ -651,7 +651,7 @@ extension WorkConvertTests {
         let result = try #require(try work.convert(timeBasis: .wall,
                                                    pitchNotation: .absolute))
 
-        guard case let .absoluteWall(parts) = result.content
+        guard case let .absoluteWall(parts) = result.content.cases
         else { Issue.record("Expected absolute-wall content"); return }
 
         let note = try #require(parts.first?.noteTable.first)

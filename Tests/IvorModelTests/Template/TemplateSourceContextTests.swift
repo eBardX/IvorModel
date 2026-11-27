@@ -174,7 +174,7 @@ extension TemplateSourceContextTests {
 
         let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
 
-        guard case let .standardBeat(parts, tempoMap, _, _) = generated.content
+        guard case let .standardBeat(parts, tempoMap, _, _) = generated.content.cases
         else { Issue.record("not standard beat"); return }
 
         let part = try #require(parts.first)
@@ -251,7 +251,7 @@ extension TemplateSourceContextTests {
         let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
         let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
 
-        guard case let .standardBeat(parts, tempoMap, _, _) = generated.content
+        guard case let .standardBeat(parts, tempoMap, _, _) = generated.content.cases
         else { Issue.record("not standard beat"); return }
 
         let part = try #require(parts.first)

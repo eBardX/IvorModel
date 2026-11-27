@@ -35,7 +35,7 @@ extension WorkTimelineTests {
 
         let result = Work(content: .standardWall([Part(name: "W", noteTable: table)])).applyingTimeline(mode: .tempoChanges)
 
-        guard case let .standardWall(parts) = result.work.content
+        guard case let .standardWall(parts) = result.work.content.cases
         else { Issue.record("Expected standard wall content"); return }
 
         let notes = try #require(parts.first).noteTable

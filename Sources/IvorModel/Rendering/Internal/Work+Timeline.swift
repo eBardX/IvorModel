@@ -25,49 +25,24 @@ extension Work {
 
         work.isLocked = false
 
-        switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
-            let result = _timeline(parts, tempoMap: tempoMap, meterTable: meterTable, keyTable: keyTable, mode: mode)
+        if var body = content.body as? any BeatTimeBody {
+            let times = _applyBeatTimeline(to: &body,
+                                           mode: mode)
 
-            work.content = .absoluteBeat(result.parts, result.tempoMap, result.meterTable, result.keyTable)
+            work.content.body = body
 
-            return (work, result.times.compactMap { BeatTime(numberValue: $0).map(WorkTime.beat) })
-
-        case let .absoluteWall(parts):
-            let result = _timeline(parts, mode: mode)
-
-            work.content = .absoluteWall(result.parts)
-
-            return (work, result.times.compactMap { WallTime(numberValue: $0).map(WorkTime.wall) })
-
-        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
-            let result = _timeline(parts, tempoMap: tempoMap, meterTable: meterTable, keyTable: keyTable, mode: mode)
-
-            work.content = .keyboardBeat(result.parts, result.tempoMap, result.meterTable, result.keyTable)
-
-            return (work, result.times.compactMap { BeatTime(numberValue: $0).map(WorkTime.beat) })
-
-        case let .keyboardWall(parts):
-            let result = _timeline(parts, mode: mode)
-
-            work.content = .keyboardWall(result.parts)
-
-            return (work, result.times.compactMap { WallTime(numberValue: $0).map(WorkTime.wall) })
-
-        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
-            let result = _timeline(parts, tempoMap: tempoMap, meterTable: meterTable, keyTable: keyTable, mode: mode)
-
-            work.content = .standardBeat(result.parts, result.tempoMap, result.meterTable, result.keyTable)
-
-            return (work, result.times.compactMap { BeatTime(numberValue: $0).map(WorkTime.beat) })
-
-        case let .standardWall(parts):
-            let result = _timeline(parts, mode: mode)
-
-            work.content = .standardWall(result.parts)
-
-            return (work, result.times.compactMap { WallTime(numberValue: $0).map(WorkTime.wall) })
+            return (work, times)
         }
+
+        guard var body = content.body as? any WallTimeBody
+        else { preconditionFailure("A work's body is of beat or wall time") }
+
+        let times = _applyWallTimeline(to: &body,
+                                       mode: mode)
+
+        work.content.body = body
+
+        return (work, times)
     }
 
     // MARK: Private Type Aliases
@@ -179,6 +154,38 @@ extension Work {
     }
 
     // MARK: Private Instance Methods
+
+    //
+    // Applies the timeline to a beat-time body's parts and tables, and returns the fermata times.
+    //
+    private func _applyBeatTimeline(to body: inout some BeatTimeBody,
+                                    mode: RenderingOptions.FermataMode) -> [WorkTime] {
+        let result = _timeline(body.parts,
+                               tempoMap: body.tempoMap,
+                               meterTable: body.meterTable,
+                               keyTable: body.keyTable,
+                               mode: mode)
+
+        body.parts = result.parts
+        body.tempoMap = result.tempoMap
+        body.meterTable = result.meterTable
+        body.keyTable = result.keyTable
+
+        return result.times.compactMap { BeatTime(numberValue: $0).map(WorkTime.beat) }
+    }
+
+    //
+    // Applies the timeline to a wall-time body's parts, and returns the fermata times.
+    //
+    private func _applyWallTimeline(to body: inout some WallTimeBody,
+                                    mode: RenderingOptions.FermataMode) -> [WorkTime] {
+        let result = _timeline(body.parts,
+                               mode: mode)
+
+        body.parts = result.parts
+
+        return result.times.compactMap { WallTime(numberValue: $0).map(WorkTime.wall) }
+    }
 
     private func _timeline<TimeType: RenderableTime,
                            PitchType: PitchProtocol>(_ parts: [Part<TimeType, PitchType>],

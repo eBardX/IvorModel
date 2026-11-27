@@ -104,7 +104,7 @@ extension WorkQuantizeTests {
 
         try work.quantize(to: [1], noteIDs: [noteID1], partIDs: [targetID])
 
-        guard case let .standardBeat(parts, _, _, _) = work.content
+        guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         var attacksByID: [NoteID: BeatTime] = [:]
@@ -130,7 +130,7 @@ extension WorkQuantizeTests {
             try work.quantize(to: [], partIDs: partIDs)
         }
 
-        guard case let .standardBeat(parts, _, _, _) = work.content
+        guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         #expect(parts[0].noteTable.timeRange?.lowerBound == BeatTime(0.49))
@@ -149,7 +149,7 @@ extension WorkQuantizeTests {
 
         try work.quantize(to: [1], partIDs: partIDs)
 
-        guard case let .standardBeat(parts, _, _, _) = work.content
+        guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         #expect(parts[0].noteTable.timeRange?.lowerBound == 0)
@@ -179,7 +179,7 @@ extension WorkQuantizeTests {
 
         try work.quantize(to: [1], partIDs: [targetID])
 
-        guard case let .standardBeat(parts, _, _, _) = work.content
+        guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         #expect(parts[0].noteTable.timeRange?.lowerBound == 0)
@@ -240,7 +240,7 @@ extension WorkQuantizeTests {
 
         try work.quantize(to: [1], applyTo: .dynamic)
 
-        guard case let .standardBeat(parts, _, _, _) = work.content
+        guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         var dynamicTimes: [BeatTime] = []
@@ -266,7 +266,7 @@ extension WorkQuantizeTests {
 
         try work.quantize(to: [1], applyTo: .tempo)
 
-        guard case let .standardBeat(_, newTempoMap, _, _) = work.content
+        guard case let .standardBeat(_, newTempoMap, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         var tempoBeatTimes: [BeatTime] = []
@@ -289,7 +289,7 @@ extension WorkQuantizeTests {
 
         try work.quantize(to: [1])
 
-        guard case let .standardBeat(parts, _, _, _) = work.content
+        guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         var dynamicTimes: [BeatTime] = []
@@ -315,7 +315,7 @@ extension WorkQuantizeTests {
 
         try work.quantize(to: [1])
 
-        guard case let .standardBeat(_, newTempoMap, _, _) = work.content
+        guard case let .standardBeat(_, newTempoMap, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
 
         var tempoBeatTimes: [BeatTime] = []

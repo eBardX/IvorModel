@@ -40,7 +40,7 @@ extension Work {
 
         work.isLocked = false
 
-        switch content {
+        switch content.cases {
         case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
             return try work._rendered(parts,
                                       clock: RenderingClock(tempoMap: tempoMap,

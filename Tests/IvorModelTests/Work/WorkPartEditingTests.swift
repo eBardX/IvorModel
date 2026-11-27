@@ -67,7 +67,7 @@ extension WorkPartEditingTests {
 
         let copyID = try #require(try work.duplicatePart(originalID))
 
-        guard case let .standardBeat(parts, _, _, _) = work.content
+        guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected standard beat content"); return }
 
         let original = try #require(parts.first { $0.partID == originalID })

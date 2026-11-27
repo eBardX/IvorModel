@@ -39,9 +39,9 @@ extension WorkProblemsTests {
         let applied = try #require(try work.convert(timeBasis: .wall, pitchNotation: .standard, appliesFermataHolds: true))
         let warped = try #require(work.warped(appliesFermataHolds: true))
 
-        guard case let .standardWall(keptParts) = kept.content,
-              case let .standardWall(appliedParts) = applied.content,
-              case let .standardWall(warpedParts) = warped.content
+        guard case let .standardWall(keptParts) = kept.content.cases,
+              case let .standardWall(appliedParts) = applied.content.cases,
+              case let .standardWall(warpedParts) = warped.content.cases
         else { Issue.record("Expected standard wall content"); return }
 
         //

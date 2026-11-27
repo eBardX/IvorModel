@@ -19,7 +19,7 @@ func absoluteWallNoteEvents(of template: Template) throws -> [NoteEvent<WallTime
 }
 
 func absoluteWallPitches(of work: Work?) throws -> [Frequency] {
-    guard case let .absoluteWall(parts) = try #require(work).content
+    guard case let .absoluteWall(parts) = try #require(work).content.cases
     else { Issue.record("Expected absolute-wall content"); return [] }
 
     return try #require(parts.first).noteTable.map(\.startPitch)
@@ -345,7 +345,7 @@ func fileContents(of root: FileWrapper,
 }
 
 func firstAbsolutePartID(of work: Work) throws -> PartID {
-    guard case let .absoluteWall(parts) = work.content
+    guard case let .absoluteWall(parts) = work.content.cases
     else { Issue.record("Expected absolute-wall content"); return PartID() }
 
     return try #require(parts.first).partID
@@ -468,14 +468,14 @@ func keyboardGraceTable(grace: UInt) throws -> NoteTable<BeatTime, NoteNumber> {
 }
 
 func keyboardWallNotes(of work: Work) throws -> [NoteTable<WallTime, NoteNumber>.Note] {
-    guard case let .keyboardWall(parts) = work.content
+    guard case let .keyboardWall(parts) = work.content.cases
     else { throw Work.Error.unsupportedStandardConversion }
 
     return try Array(#require(parts.first).noteTable)
 }
 
 func keyboardWallPitches(of work: Work?) throws -> [NoteNumber] {
-    guard case let .keyboardWall(parts) = try #require(work).content
+    guard case let .keyboardWall(parts) = try #require(work).content.cases
     else { Issue.record("Expected keyboard-wall content"); return [] }
 
     return try #require(parts.first).noteTable.map(\.startPitch)
@@ -1084,7 +1084,7 @@ func render(_ notes: [WrittenNote],
 
 // The rendered notes of each part of a standard beat rendering, ordered by start, then pitch.
 func renderedNotes(_ rendering: Work.Rendering) throws -> [[RenderedNote]] {
-    guard case let .standardBeat(parts, _, _, _) = rendering.work.content
+    guard case let .standardBeat(parts, _, _, _) = rendering.work.content.cases
     else { throw Work.Error.unsupportedStandardConversion }
 
     return parts.map { part in
@@ -1206,35 +1206,35 @@ func standardBeatNoteEvents(of work: Work) throws -> [NoteEvent<BeatTime, Pitch>
 }
 
 func standardBeatNoteEventsOrEmpty(of work: Work) -> [NoteEvent<BeatTime, Pitch>] {
-    guard case let .standardBeat(parts, _, _, _) = work.content
+    guard case let .standardBeat(parts, _, _, _) = work.content.cases
     else { return [] }
 
     return parts.first?.noteTable.extractNoteEvents() ?? []
 }
 
 func standardBeatNoteTable(of work: Work) throws -> NoteTable<BeatTime, Pitch> {
-    guard case let .standardBeat(parts, _, _, _) = work.content
+    guard case let .standardBeat(parts, _, _, _) = work.content.cases
     else { throw Template.Error.incompatibleOptions }
 
     return try #require(parts.first).noteTable
 }
 
 func standardBeatNoteTriples(of work: Work) throws -> [NoteTripleSB] {
-    guard case let .standardBeat(parts, _, _, _) = work.content
+    guard case let .standardBeat(parts, _, _, _) = work.content.cases
     else { throw Template.Error.incompatibleOptions }
 
     return try makeNoteTriplesSB(#require(parts.first).noteTable)
 }
 
 func standardBeatParts(of work: Work) -> [Part<BeatTime, Pitch>] {
-    guard case let .standardBeat(parts, _, _, _) = work.content
+    guard case let .standardBeat(parts, _, _, _) = work.content.cases
     else { return [] }
 
     return parts
 }
 
 func standardBeatPitches(of work: Work) throws -> [Pitch] {
-    guard case let .standardBeat(parts, _, _, _) = work.content
+    guard case let .standardBeat(parts, _, _, _) = work.content.cases
     else { throw Template.Error.incompatibleOptions }
 
     return try makeNoteTriplesSB(#require(parts.first).noteTable).map(\.pitch)
@@ -1270,7 +1270,7 @@ func standardBeatVocabulary(of template: Template) throws -> Template.Vocabulary
 }
 
 func standardWallDurations(of work: Work) throws -> [WallDuration] {
-    guard case let .standardWall(parts) = work.content
+    guard case let .standardWall(parts) = work.content.cases
     else { throw Template.Error.incompatibleOptions }
 
     return try #require(parts.first).noteTable.extractNoteEvents().map(\.duration)
@@ -1284,7 +1284,7 @@ func standardWallNoteEvents(of template: Template) throws -> [NoteEvent<WallTime
 }
 
 func standardWallPitches(of work: Work?) throws -> [Pitch] {
-    guard case let .standardWall(parts) = try #require(work).content
+    guard case let .standardWall(parts) = try #require(work).content.cases
     else { Issue.record("Expected standard-wall content"); return [] }
 
     return try #require(parts.first).noteTable.map(\.startPitch)
@@ -1334,7 +1334,7 @@ func twoNotePart(_ fermata: Fermata<BeatTime>? = nil) throws -> Part<BeatTime, P
 }
 
 func wallAttacks(of work: Work) throws -> [Double] {
-    guard case let .standardBeat(parts, tempoMap, _, _) = work.content
+    guard case let .standardBeat(parts, tempoMap, _, _) = work.content.cases
     else { throw Work.Error.timeBasisMismatch(expected: .beat) }
 
     let converter = TimeConverter(tempoMap: tempoMap)

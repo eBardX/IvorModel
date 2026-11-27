@@ -163,19 +163,7 @@ extension Work {
 
     /// The beat-time range spanned by all beat-time parts, or `nil` for wall-time content.
     public var beatTimeRange: ClosedRange<BeatTime>? {
-        switch content {
-        case let .absoluteBeat(parts, _, _, _):
-            Self.aggregateTimeRange(of: parts)
-
-        case let .keyboardBeat(parts, _, _, _):
-            Self.aggregateTimeRange(of: parts)
-
-        case let .standardBeat(parts, _, _, _):
-            Self.aggregateTimeRange(of: parts)
-
-        default:
-            nil
-        }
+        (content.body as? any BeatTimeBody)?.beatTimeRange
     }
 
     /// The musical content of the work.
@@ -199,74 +187,22 @@ extension Work {
     /// The key table associated with beat-time content, or `nil` for wall-time
     /// content.
     public var keyTable: KeyTable? {
-        switch content {
-        case let .absoluteBeat(_, _, _, ktable),
-             let .keyboardBeat(_, _, _, ktable),
-             let .standardBeat(_, _, _, ktable):
-            ktable
-
-        default:
-            nil
-        }
+        (content.body as? any BeatTimeBody)?.keyTable
     }
 
     /// The meter table associated with beat-time content, or `nil` for wall-time content.
     public var meterTable: MeterTable? {
-        switch content {
-        case let .absoluteBeat(_, _, mtable, _),
-             let .keyboardBeat(_, _, mtable, _),
-             let .standardBeat(_, _, mtable, _):
-            mtable
-
-        default:
-            nil
-        }
+        (content.body as? any BeatTimeBody)?.meterTable
     }
 
     /// The total number of notes across all parts in this work.
     public var noteCount: Int {
-        switch content {
-        case let .absoluteBeat(parts, _, _, _):
-            parts.reduce(0) { $0 + $1.noteCount }
-
-        case let .absoluteWall(parts):
-            parts.reduce(0) { $0 + $1.noteCount }
-
-        case let .keyboardBeat(parts, _, _, _):
-            parts.reduce(0) { $0 + $1.noteCount }
-
-        case let .keyboardWall(parts):
-            parts.reduce(0) { $0 + $1.noteCount }
-
-        case let .standardBeat(parts, _, _, _):
-            parts.reduce(0) { $0 + $1.noteCount }
-
-        case let .standardWall(parts):
-            parts.reduce(0) { $0 + $1.noteCount }
-        }
+        content.body.noteCount
     }
 
     /// The number of parts in this work.
     public var partCount: Int {
-        switch content {
-        case let .absoluteBeat(parts, _, _, _):
-            parts.count
-
-        case let .absoluteWall(parts):
-            parts.count
-
-        case let .keyboardBeat(parts, _, _, _):
-            parts.count
-
-        case let .keyboardWall(parts):
-            parts.count
-
-        case let .standardBeat(parts, _, _, _):
-            parts.count
-
-        case let .standardWall(parts):
-            parts.count
-        }
+        content.body.partCount
     }
 
     /// The pitch notation used by this work.
@@ -279,38 +215,12 @@ extension Work {
     /// Both bounds always share the same underlying pitch type — ``Frequency``,
     /// ``NoteNumber``, or ``Pitch`` — as determined by ``pitchNotation``.
     public var pitchRange: (lowerBound: any PitchProtocol, upperBound: any PitchProtocol)? {
-        switch content {
-        case let .absoluteBeat(parts, _, _, _):
-            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
-
-        case let .absoluteWall(parts):
-            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
-
-        case let .keyboardBeat(parts, _, _, _):
-            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
-
-        case let .keyboardWall(parts):
-            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
-
-        case let .standardBeat(parts, _, _, _):
-            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
-
-        case let .standardWall(parts):
-            Self.aggregatePitchRange(of: parts).map { ($0.lowerBound, $0.upperBound) }
-        }
+        content.body.pitchRange
     }
 
     /// The tempo map associated with beat-time content, or `nil` for wall-time content.
     public var tempoMap: TempoMap? {
-        switch content {
-        case let .absoluteBeat(_, tmap, _, _),
-            let .keyboardBeat(_, tmap, _, _),
-            let .standardBeat(_, tmap, _, _):
-            tmap
-
-        default:
-            nil
-        }
+        (content.body as? any BeatTimeBody)?.tempoMap
     }
 
     /// The time basis used by this work.
@@ -320,19 +230,7 @@ extension Work {
 
     /// The wall-time range spanned by all wall-time parts, or `nil` for beat-time content.
     public var wallTimeRange: ClosedRange<WallTime>? {
-        switch content {
-        case let .absoluteWall(parts):
-            Self.aggregateTimeRange(of: parts)
-
-        case let .keyboardWall(parts):
-            Self.aggregateTimeRange(of: parts)
-
-        case let .standardWall(parts):
-            Self.aggregateTimeRange(of: parts)
-
-        default:
-            nil
-        }
+        (content.body as? any WallTimeBody)?.wallTimeRange
     }
 
     // MARK: Public Instance Methods
@@ -391,25 +289,7 @@ extension Work {
     ///
     /// - Returns:  The name of the part at `index`.
     public func partName(at index: Int) -> String {
-        switch content {
-        case let .absoluteBeat(parts, _, _, _):
-            parts[index].name
-
-        case let .absoluteWall(parts):
-            parts[index].name
-
-        case let .keyboardBeat(parts, _, _, _):
-            parts[index].name
-
-        case let .keyboardWall(parts):
-            parts[index].name
-
-        case let .standardBeat(parts, _, _, _):
-            parts[index].name
-
-        case let .standardWall(parts):
-            parts[index].name
-        }
+        content.body.partName(at: index)
     }
 
     /// Changes the display name of this work.

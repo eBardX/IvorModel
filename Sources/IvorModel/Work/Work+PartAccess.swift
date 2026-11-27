@@ -20,33 +20,14 @@ extension Work {
     public mutating func modifyKeyTable<R>(_ body: (inout KeyTable) -> R) throws(Error) -> R? {
         try ensureUnlocked()
 
-        switch content {
-        case .absoluteBeat(let parts, let tempoMap, let meterTable, var keyTable):
-            let result = body(&keyTable)
+        guard var beatBody = content.body as? any BeatTimeBody
+        else { return nil }
 
-            content = .absoluteBeat(parts, tempoMap, meterTable, keyTable)
+        let result = body(&beatBody.keyTable)
 
-            return result
+        content.body = beatBody
 
-        case .absoluteWall,
-             .keyboardWall,
-             .standardWall:
-            return nil
-
-        case .keyboardBeat(let parts, let tempoMap, let meterTable, var keyTable):
-            let result = body(&keyTable)
-
-            content = .keyboardBeat(parts, tempoMap, meterTable, keyTable)
-
-            return result
-
-        case .standardBeat(let parts, let tempoMap, let meterTable, var keyTable):
-            let result = body(&keyTable)
-
-            content = .standardBeat(parts, tempoMap, meterTable, keyTable)
-
-            return result
-        }
+        return result
     }
 
     /// Edits the meter table of this work in place.
@@ -62,33 +43,14 @@ extension Work {
     public mutating func modifyMeterTable<R>(_ body: (inout MeterTable) -> R) throws(Error) -> R? {
         try ensureUnlocked()
 
-        switch content {
-        case .absoluteBeat(let parts, let tempoMap, var meterTable, let keyTable):
-            let result = body(&meterTable)
+        guard var beatBody = content.body as? any BeatTimeBody
+        else { return nil }
 
-            content = .absoluteBeat(parts, tempoMap, meterTable, keyTable)
+        let result = body(&beatBody.meterTable)
 
-            return result
+        content.body = beatBody
 
-        case .absoluteWall,
-             .keyboardWall,
-             .standardWall:
-            return nil
-
-        case .keyboardBeat(let parts, let tempoMap, var meterTable, let keyTable):
-            let result = body(&meterTable)
-
-            content = .keyboardBeat(parts, tempoMap, meterTable, keyTable)
-
-            return result
-
-        case .standardBeat(let parts, let tempoMap, var meterTable, let keyTable):
-            let result = body(&meterTable)
-
-            content = .standardBeat(parts, tempoMap, meterTable, keyTable)
-
-            return result
-        }
+        return result
     }
 
     /// Edits one part of this work in place.
@@ -148,33 +110,14 @@ extension Work {
     public mutating func modifyTempoMap<R>(_ body: (inout TempoMap) -> R) throws(Error) -> R? {
         try ensureUnlocked()
 
-        switch content {
-        case .absoluteBeat(let parts, var tempoMap, let meterTable, let keyTable):
-            let result = body(&tempoMap)
+        guard var beatBody = content.body as? any BeatTimeBody
+        else { return nil }
 
-            content = .absoluteBeat(parts, tempoMap, meterTable, keyTable)
+        let result = body(&beatBody.tempoMap)
 
-            return result
+        content.body = beatBody
 
-        case .absoluteWall,
-             .keyboardWall,
-             .standardWall:
-            return nil
-
-        case .keyboardBeat(let parts, var tempoMap, let meterTable, let keyTable):
-            let result = body(&tempoMap)
-
-            content = .keyboardBeat(parts, tempoMap, meterTable, keyTable)
-
-            return result
-
-        case .standardBeat(let parts, var tempoMap, let meterTable, let keyTable):
-            let result = body(&tempoMap)
-
-            content = .standardBeat(parts, tempoMap, meterTable, keyTable)
-
-            return result
-        }
+        return result
     }
 
     /// Returns one part of this work.
@@ -189,56 +132,42 @@ extension Work {
     ///             aren’t of type `type`.
     public func part<T: TimeProtocol, P: PitchProtocol>(_ partID: PartID,
                                                         as type: Part<T, P>.Type) -> Part<T, P>? {
-        switch content {
-        case let .absoluteBeat(parts, _, _, _):
-            Self._part(partID, in: parts, as: type)
-
-        case let .absoluteWall(parts):
-            Self._part(partID, in: parts, as: type)
-
-        case let .keyboardBeat(parts, _, _, _):
-            Self._part(partID, in: parts, as: type)
-
-        case let .keyboardWall(parts):
-            Self._part(partID, in: parts, as: type)
-
-        case let .standardBeat(parts, _, _, _):
-            Self._part(partID, in: parts, as: type)
-
-        case let .standardWall(parts):
-            Self._part(partID, in: parts, as: type)
-        }
+        Self._part(partID,
+                   in: content.body,
+                   as: type)
     }
 
     // MARK: Private Type Methods
 
-    private static func _modifying<ST, SP, T, P, R>(_ parts: [Part<ST, SP>],
-                                                    partID: PartID,
-                                                    as type: Part<T, P>.Type,
-                                                    _ body: (inout Part<T, P>) -> R) -> (parts: [Part<ST, SP>], result: R)? {
-        guard let index = parts.firstIndex(where: { $0.partID == partID }),
-              var part = parts[index] as? Part<T, P>
+    //
+    // Runs `body` on the part with `partID`, if `body`'s type of part is this body's, and writes
+    // the edited part back.
+    //
+    private static func _modifying<WorkBody: Work.Body, T, P, R>(_ partID: PartID,
+                                                                 in workBody: inout WorkBody,
+                                                                 as type: Part<T, P>.Type,
+                                                                 _ body: (inout Part<T, P>) -> R) -> R? {
+        guard let index = workBody.parts.firstIndex(where: { $0.partID == partID }),
+              var part = workBody.parts[index] as? Part<T, P>
         else { return nil }
 
         let result = body(&part)
 
         //
-        // Can't fail: `Part<T, P>` and `Part<ST, SP>` were just shown to be the same type.
+        // Can't fail: the part was just shown to be of the body's own type.
         //
-        guard let storedPart = part as? Part<ST, SP>
+        guard let storedPart = part as? Part<WorkBody.TimeType, WorkBody.PitchType>
         else { return nil }
 
-        var newParts = parts
+        workBody.parts[index] = storedPart
 
-        newParts[index] = storedPart
-
-        return (newParts, result)
+        return result
     }
 
     private static func _part<T, P>(_ partID: PartID,
-                                    in parts: [Part<some TimeProtocol, some PitchProtocol>],
+                                    in workBody: some Work.Body,
                                     as type: Part<T, P>.Type) -> Part<T, P>? {
-        parts.first { $0.partID == partID } as? Part<T, P>
+        workBody.parts.first { $0.partID == partID } as? Part<T, P>
     }
 
     // MARK: Private Instance Methods
@@ -249,54 +178,9 @@ extension Work {
     private mutating func _modifyPart<T: TimeProtocol, P: PitchProtocol, R>(_ partID: PartID,
                                                                             as type: Part<T, P>.Type,
                                                                             _ body: (inout Part<T, P>) -> R) -> R? {
-        switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
-
-            content = .absoluteBeat(modified.parts, tempoMap, meterTable, keyTable)
-
-            return modified.result
-
-        case let .absoluteWall(parts):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
-
-            content = .absoluteWall(modified.parts)
-
-            return modified.result
-
-        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
-
-            content = .keyboardBeat(modified.parts, tempoMap, meterTable, keyTable)
-
-            return modified.result
-
-        case let .keyboardWall(parts):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
-
-            content = .keyboardWall(modified.parts)
-
-            return modified.result
-
-        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
-
-            content = .standardBeat(modified.parts, tempoMap, meterTable, keyTable)
-
-            return modified.result
-
-        case let .standardWall(parts):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
-
-            content = .standardWall(modified.parts)
-
-            return modified.result
-        }
+        Self._modifying(partID,
+                        in: &content.body,
+                        as: type,
+                        body)
     }
 }
