@@ -10,6 +10,9 @@ extension Work {
 
     /// An error thrown by ``Work`` operations.
     public enum Error {
+        /// Two notes share a note ID. Within a work, every note has an identity of its own.
+        case duplicateNoteID(NoteID)
+
         /// Two parts share a part ID.
         case duplicatePartID(PartID)
 
@@ -114,6 +117,9 @@ extension Work.Error: EnhancedError {
     /// The human-readable message for this error.
     public var message: String {
         switch self {
+        case let .duplicateNoteID(noteID):
+            "Duplicate note ID: \(noteID.stringValue)"
+
         case let .duplicatePartID(partID):
             "Duplicate part ID: \(partID.stringValue)"
 

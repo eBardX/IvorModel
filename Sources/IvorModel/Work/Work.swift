@@ -431,12 +431,13 @@ extension Work {
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/duplicatePartID(_:)`` if two of the parts in `content` share a
-    ///             part ID.
+    ///             part ID; ``Work/Error/duplicateNoteID(_:)`` if two of its notes, in any
+    ///             parts, share a note ID.
     public mutating func replaceContent(with content: Content) throws(Error) {
         try ensureUnlocked()
 
-        if let partID = content.firstDuplicatePartID {
-            throw Error.duplicatePartID(partID)
+        if let error = content.invariantError {
+            throw error
         }
 
         self.content = content
@@ -734,10 +735,10 @@ extension Work: Codable {
     // unchanged, so anything else is corruption rather than something to repair.
     //
     private func _validateDecodedParts(in container: KeyedDecodingContainer<CodingKeys>) throws {
-        if let partID = content.firstDuplicatePartID {
+        if let error = content.invariantError {
             throw DecodingError.dataCorruptedError(forKey: .content,
                                                    in: container,
-                                                   debugDescription: Error.duplicatePartID(partID).message)
+                                                   debugDescription: error.message)
         }
 
         let partIDSet = Set(partIDs)

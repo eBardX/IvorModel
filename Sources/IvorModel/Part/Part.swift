@@ -182,9 +182,12 @@ extension Part {
 
     /// Returns a copy of this part with the same content, ``interpretationRules`` and ``extras``
     /// but a distinct, freshly minted ``PartID``.
+    ///
+    /// The copy’s notes are the same notes under fresh identities, so the copy can join the
+    /// original in one work, where no two notes may share a ``NoteID``.
     public func duplicated() -> Self {
         Self(name: name,
-             noteTable: noteTable,
+             noteTable: noteTable.renewingNoteIDs(),
              dynamicMap: dynamicMap,
              instrumentTable: instrumentTable,
              panMap: panMap,

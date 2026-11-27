@@ -104,62 +104,35 @@ extension Work {
     ///             `partID` is found or this work’s parts aren’t of type `type`.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked, whether or not the part is
-    ///             found.
+    ///             found; ``Work/Error/duplicateNoteID(_:)`` if `body` leaves two notes of the
+    ///             work sharing a note ID where none did before, in which case the work is left
+    ///             as it was.
     @discardableResult
     public mutating func modifyPart<T: TimeProtocol, P: PitchProtocol, R>(_ partID: PartID,
                                                                           as type: Part<T, P>.Type,
                                                                           _ body: (inout Part<T, P>) -> R) throws(Error) -> R? {
         try ensureUnlocked()
 
-        switch content {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
+        let original = content
+        let keptRules = original.invariantError == nil
 
-            content = .absoluteBeat(modified.parts, tempoMap, meterTable, keyTable)
+        guard let result = _modifyPart(partID, as: type, body)
+        else { return nil }
 
-            return modified.result
+        //
+        // The body can edit the part freely, so it can break a rule the work keeps (two notes
+        // sharing an identity, say). Then the edit is undone, so the work is as it was. Only a
+        // rule the edit breaks counts: `Work.init` doesn't check its content, so a work can
+        // already break one, and editing it (as rendering does) mustn't then fail.
+        //
+        if keptRules,
+           let error = content.invariantError {
+            content = original
 
-        case let .absoluteWall(parts):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
-
-            content = .absoluteWall(modified.parts)
-
-            return modified.result
-
-        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
-
-            content = .keyboardBeat(modified.parts, tempoMap, meterTable, keyTable)
-
-            return modified.result
-
-        case let .keyboardWall(parts):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
-
-            content = .keyboardWall(modified.parts)
-
-            return modified.result
-
-        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
-
-            content = .standardBeat(modified.parts, tempoMap, meterTable, keyTable)
-
-            return modified.result
-
-        case let .standardWall(parts):
-            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
-            else { return nil }
-
-            content = .standardWall(modified.parts)
-
-            return modified.result
+            throw error
         }
+
+        return result
     }
 
     /// Edits the tempo map of this work in place.
@@ -266,5 +239,64 @@ extension Work {
                                     in parts: [Part<some TimeProtocol, some PitchProtocol>],
                                     as type: Part<T, P>.Type) -> Part<T, P>? {
         parts.first { $0.partID == partID } as? Part<T, P>
+    }
+
+    // MARK: Private Instance Methods
+
+    //
+    // `modifyPart`'s edit, before its check of the work's rules.
+    //
+    private mutating func _modifyPart<T: TimeProtocol, P: PitchProtocol, R>(_ partID: PartID,
+                                                                            as type: Part<T, P>.Type,
+                                                                            _ body: (inout Part<T, P>) -> R) -> R? {
+        switch content {
+        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
+            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
+            else { return nil }
+
+            content = .absoluteBeat(modified.parts, tempoMap, meterTable, keyTable)
+
+            return modified.result
+
+        case let .absoluteWall(parts):
+            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
+            else { return nil }
+
+            content = .absoluteWall(modified.parts)
+
+            return modified.result
+
+        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
+            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
+            else { return nil }
+
+            content = .keyboardBeat(modified.parts, tempoMap, meterTable, keyTable)
+
+            return modified.result
+
+        case let .keyboardWall(parts):
+            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
+            else { return nil }
+
+            content = .keyboardWall(modified.parts)
+
+            return modified.result
+
+        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
+            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
+            else { return nil }
+
+            content = .standardBeat(modified.parts, tempoMap, meterTable, keyTable)
+
+            return modified.result
+
+        case let .standardWall(parts):
+            guard let modified = Self._modifying(parts, partID: partID, as: type, body)
+            else { return nil }
+
+            content = .standardWall(modified.parts)
+
+            return modified.result
+        }
     }
 }

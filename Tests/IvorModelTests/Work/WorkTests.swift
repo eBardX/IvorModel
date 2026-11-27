@@ -90,6 +90,18 @@ extension WorkTests {
     }
 
     @Test
+    func codable_sharedNoteIDsDecodeDistinct() throws {
+        // Note IDs are never saved (see `NoteID`), so decoding gives every note a fresh one:
+        // even a work built with shared IDs (`Work.init` doesn't check) decodes with none.
+        let (violin, cello) = Self._partsSharingNotes()
+        let data = try JSONEncoder().encode(Work(content: .standardBeat([violin, cello], TempoMap(), MeterTable(), KeyTable())))
+        let decoded = try JSONDecoder().decode(Work.self, from: data)
+
+        #expect(decoded.noteCount == 4)
+        #expect(decoded.content.firstDuplicateNoteID == nil)
+    }
+
+    @Test
     func comparable() {
         let alpha = Work(name: "Alpha")
         let beta  = Work(name: "Beta")
@@ -405,6 +417,34 @@ extension WorkTests {
     }
 
     @Test
+    func replaceContent_duplicateNoteID_throws() throws {
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
+        let (violin, cello) = Self._partsSharingNotes()
+        let sharedID = try #require(violin.noteTable.first?.noteID)
+
+        #expect(throws: Work.Error.duplicateNoteID(sharedID)) {
+            try work.replaceContent(with: .standardBeat([violin, cello], TempoMap(), MeterTable(), KeyTable()))
+        }
+        #expect(work.partIDs.isEmpty)
+    }
+
+    @Test
+    func replaceContent_duplicateNoteIDWithinOnePart_throws() throws {
+        var work = Work(content: .standardBeat([], TempoMap(), MeterTable(), KeyTable()))
+        let (violin, _) = Self._partsSharingNotes()
+        var doubled = violin.noteTable
+
+        doubled.merge(with: violin.noteTable)
+
+        let part = Part<BeatTime, Pitch>(name: "Violin", noteTable: doubled)
+
+        #expect(throws: try Work.Error.duplicateNoteID(#require(violin.noteTable.first?.noteID))) {
+            try work.replaceContent(with: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
+        }
+        #expect(work.partIDs.isEmpty)
+    }
+
+    @Test
     func replaceContent_duplicatePartID_throws() {
         var work = Work(content: .standardWall([]))
         let part = Part<WallTime, Pitch>(name: "Cello")
@@ -557,5 +597,20 @@ extension WorkTests {
         let work = Work(content: .standardWall([]))
 
         #expect(work.timeBasis == .wall)
+    }
+
+    // MARK: Private Type Methods
+
+    //
+    // Two parts holding the same notes, identities and all, which no work may contain.
+    //
+    private static func _partsSharingNotes() -> (Part<BeatTime, Pitch>, Part<BeatTime, Pitch>) {
+        var noteTable = NoteTable<BeatTime, Pitch>()
+
+        noteTable.insert(attack: 0, duration: 1, pitch: .c4)
+        noteTable.insert(attack: 1, duration: 1, pitch: .e4)
+
+        return (Part(name: "Violin", noteTable: noteTable),
+                Part(name: "Cello", noteTable: noteTable))
     }
 }

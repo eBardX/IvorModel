@@ -80,6 +80,19 @@ extension WorkPartEditingTests {
     }
 
     @Test
+    func duplicatePart_givesTheCopyItsOwnNoteIDs() throws {
+        var work = try makeOrnamentedStandardWork()
+        let originalID = work.partIDs[0]
+        let copyID = try #require(try work.duplicatePart(originalID))
+        let original = try #require(work.part(originalID, as: Part<BeatTime, Pitch>.self))
+        let copy = try #require(work.part(copyID, as: Part<BeatTime, Pitch>.self))
+
+        #expect(copy.noteCount == original.noteCount)
+        #expect(Set(copy.noteTable.map(\.noteID)).isDisjoint(with: original.noteTable.map(\.noteID)))
+        #expect(work.content.firstDuplicateNoteID == nil)
+    }
+
+    @Test
     func duplicatePart_insertsAfterOriginal() throws {
         let part1 = Part<BeatTime, Pitch>(name: "Violin")
         let part2 = Part<BeatTime, Pitch>(name: "Cello")

@@ -171,6 +171,30 @@ extension PartTests {
     }
 
     @Test
+    func duplicated_givesNotesFreshIDs() throws {
+        var noteTable = NoteTable<BeatTime, Pitch>()
+
+        noteTable.insert(attack: 0, duration: 1, pitch: .c4, extras: sampleExtras("first"))
+        noteTable.insert(attack: 1, duration: 1, startPitch: .d4, endPitch: .e4)
+        try noteTable.insert(attack: 2, duration: 1, pitch: .g4, ornamentation: fullOrnamentation())
+
+        let original = Part<BeatTime, Pitch>(name: "Piano", noteTable: noteTable)
+        let copy = original.duplicated()
+
+        #expect(Set(copy.noteTable.map(\.noteID)).isDisjoint(with: original.noteTable.map(\.noteID)))
+        #expect(copy.noteTable.count == original.noteTable.count)
+
+        for (copied, kept) in zip(copy.noteTable, original.noteTable) {
+            #expect(copied.attack == kept.attack)
+            #expect(copied.duration == kept.duration)
+            #expect(copied.startPitch == kept.startPitch)
+            #expect(copied.endPitch == kept.endPitch)
+            #expect(copied.extras == kept.extras)
+            #expect(copied.ornamentation == kept.ornamentation)
+        }
+    }
+
+    @Test
     func duplicated_keepsExtras() {
         let part = Part<BeatTime, Pitch>(name: "Violin", extras: makeChannelExtras(3))
 

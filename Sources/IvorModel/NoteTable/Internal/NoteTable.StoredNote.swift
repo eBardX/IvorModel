@@ -145,6 +145,25 @@ extension NoteTable.StoredNote {
             pitch
         }
     }
+
+    // MARK: Internal Instance Methods
+
+    //
+    // This note under a fresh identity, with everything else kept: for a copy that goes into the
+    // same work as the original, where two notes may not share an identity.
+    //
+    internal func renewingNoteID() -> Self {
+        switch self {
+        case let .extended(_, attack, duration, pitches, payload):
+            .extended(NoteID(), attack, duration, pitches, payload)
+
+        case let .glide(_, attack, duration, pitches):
+            .glide(NoteID(), attack, duration, pitches)
+
+        case let .simple(_, attack, duration, pitch):
+            .simple(NoteID(), attack, duration, pitch)
+        }
+    }
 }
 
 // MARK: - Codable

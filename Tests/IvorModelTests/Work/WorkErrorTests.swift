@@ -16,6 +16,13 @@ extension WorkErrorTests {
     }
 
     @Test
+    func message_duplicateNoteID() {
+        let noteID = NoteID()
+
+        #expect(Work.Error.duplicateNoteID(noteID).message.contains(noteID.stringValue))
+    }
+
+    @Test
     func message_duplicatePartID() {
         #expect(!Work.Error.duplicatePartID(PartID()).message.isEmpty)
     }

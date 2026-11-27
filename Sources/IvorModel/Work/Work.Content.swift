@@ -98,12 +98,64 @@ extension Work.Content {
     }
 
     //
+    // The first note ID that more than one note shares, in any parts, or `nil` if every note's is
+    // distinct.
+    //
+    internal var firstDuplicateNoteID: NoteID? {
+        var seen: Set<NoteID> = []
+
+        return noteIDs.first { !seen.insert($0).inserted }
+    }
+
+    //
     // The first part ID that more than one part shares, or `nil` if every part's is distinct.
     //
     internal var firstDuplicatePartID: PartID? {
         var seen: Set<PartID> = []
 
         return partIDs.first { !seen.insert($0).inserted }
+    }
+
+    //
+    // The first rule this content breaks, as the error that reports it, or `nil` if it keeps them
+    // all: distinct part IDs, then distinct note IDs. Every way content gets into a work checks
+    // this — replacing it, a `modifyPart` body, decoding — so a work always keeps the rules.
+    //
+    internal var invariantError: Work.Error? {
+        if let partID = firstDuplicatePartID {
+            return .duplicatePartID(partID)
+        }
+
+        if let noteID = firstDuplicateNoteID {
+            return .duplicateNoteID(noteID)
+        }
+
+        return nil
+    }
+
+    //
+    // The ID of every note of every part, in part order.
+    //
+    internal var noteIDs: [NoteID] {
+        switch self {
+        case let .absoluteBeat(parts, _, _, _):
+            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
+
+        case let .absoluteWall(parts):
+            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
+
+        case let .keyboardBeat(parts, _, _, _):
+            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
+
+        case let .keyboardWall(parts):
+            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
+
+        case let .standardBeat(parts, _, _, _):
+            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
+
+        case let .standardWall(parts):
+            parts.flatMap { $0.noteTable.notes.map(\.noteID) }
+        }
     }
 
     internal var partIDs: [PartID] {

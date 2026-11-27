@@ -133,6 +133,45 @@ extension WorkPartAccessTests {
     }
 
     @Test
+    func modifyPart_alreadySharedNoteID_stillEdits() throws {
+        var notes = NoteTable<BeatTime, Pitch>()
+
+        notes.insert(attack: 0, duration: 1, pitch: .c4)
+
+        // `Work.init` doesn't check its content, so the work can start out sharing a note ID.
+        let violin = Part<BeatTime, Pitch>(name: "Violin", noteTable: notes)
+        let cello = Part<BeatTime, Pitch>(name: "Cello", noteTable: notes)
+        var work = Work(content: .standardBeat([violin, cello], TempoMap(), MeterTable(), KeyTable()))
+
+        try work.modifyPart(cello.partID, as: Part<BeatTime, Pitch>.self) {
+            $0.name = "Viola"
+        }
+
+        #expect(work.partName(at: 1) == "Viola")
+    }
+
+    @Test
+    func modifyPart_sharedNoteID_throwsAndLeavesWork() throws {
+        var notes = NoteTable<BeatTime, Pitch>()
+
+        notes.insert(attack: 0, duration: 1, pitch: .c4)
+
+        let violin = Part<BeatTime, Pitch>(name: "Violin", noteTable: notes)
+        let cello = Part<BeatTime, Pitch>(name: "Cello")
+        var work = Work(content: .standardBeat([violin, cello], TempoMap(), MeterTable(), KeyTable()))
+        let sharedID = try #require(notes.first?.noteID)
+
+        #expect(throws: Work.Error.duplicateNoteID(sharedID)) {
+            try work.modifyPart(cello.partID, as: Part<BeatTime, Pitch>.self) {
+                $0.noteTable.merge(with: notes)
+                $0.name = "Viola"
+            }
+        }
+        #expect(work.part(cello.partID, as: Part<BeatTime, Pitch>.self)?.noteCount == 0)
+        #expect(work.partName(at: 1) == "Cello")
+    }
+
+    @Test
     func modifyPart_wallContent_editsPart() throws {
         let part = Part<WallTime, Frequency>(name: "Violin")
         var work = Work(content: .absoluteWall([part]))

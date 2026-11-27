@@ -121,4 +121,16 @@ extension NoteTable {
             (attack, duration, $0.startPitch, $0.endPitch) < ($0.attack, $0.duration, startPitch, endPitch)
         }
     }
+
+    //
+    // This table with every note under a fresh identity, and otherwise unchanged. Note order
+    // doesn't depend on identity, so the notes stay in order.
+    //
+    internal func renewingNoteIDs() -> Self {
+        var table = self
+
+        table.notes = notes.map { $0.renewingNoteID() }
+
+        return table
+    }
 }

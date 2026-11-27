@@ -103,8 +103,9 @@ extension Work {
 
     /// Duplicates the part with the given ID, inserting the copy immediately after
     /// the original. Every realization gives the copy the same patch table as the
-    /// original. The copy’s arpeggios get groups of their own (see
-    /// ``unusedArpeggioGroup``), so its rolls don’t join the original’s.
+    /// original. The copy’s notes get identities of their own (see ``Part/duplicated()``),
+    /// and its arpeggios groups of their own (see ``unusedArpeggioGroup``), so its rolls don’t
+    /// join the original’s.
     ///
     /// - Parameter partID: The ID of the part to duplicate.
     ///
