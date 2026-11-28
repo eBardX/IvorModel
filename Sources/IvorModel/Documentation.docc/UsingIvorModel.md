@@ -84,7 +84,9 @@ means naming its concrete type:
 let melody = try work.addPart(name: "Melody")
 
 try work.modifyPart(melody, as: Part<BeatTime, Pitch>.self) { part in
-    part.strands[0].noteTable.insert(attack: 0, duration: .quarter, pitch: .c4)
+    part.modifyStrand(part.strandIDs[0]) { strand in
+        strand.noteTable.insert(attack: 0, duration: .quarter, pitch: .c4)
+    }
 }
 
 let part = work.part(melody, as: Part<BeatTime, Pitch>.self)

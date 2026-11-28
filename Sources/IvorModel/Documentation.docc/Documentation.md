@@ -43,13 +43,15 @@ let melody = try work.addPart(name: "Melody")
 let pitches = ["C4", "E4", "G4", "E4", "C4", "G3", "C4"]
 
 try work.modifyPart(melody, as: Part<BeatTime, Pitch>.self) { part in
-    var attack = BeatTime.zero
+    part.modifyStrand(part.strandIDs[0]) { strand in
+        var attack = BeatTime.zero
 
-    for name in pitches {
-        part.strands[0].noteTable.insert(attack: attack,
-                                         duration: .quarter,
-                                         pitch: Pitch(plain: name)!)
-        attack += .quarter
+        for name in pitches {
+            strand.noteTable.insert(attack: attack,
+                                    duration: .quarter,
+                                    pitch: Pitch(plain: name)!)
+            attack += .quarter
+        }
     }
 }
 
