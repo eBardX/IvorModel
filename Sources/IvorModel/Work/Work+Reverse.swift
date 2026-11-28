@@ -10,172 +10,141 @@ extension Work {
 
     // MARK: Public Instance Methods
 
-    /// Reverses the order of notes within a beat-time range across the beat-time parts in this work
-    /// that `partIDs` names, along with any parameter maps selected by `applyTo` and, when
-    /// `applyTo` contains ``TransformTargets/tempo``, ``TransformTargets/meter`` or
-    /// ``TransformTargets/key``, the work’s own tempo map, meter table or key
-    /// table. All three are work-wide, so they’re carried along whichever parts are targeted.
+    /// Reverses the order of notes within a beat-time range across the notes of this beat-time
+    /// work that `scope` takes, along with the tables it carries.
+    ///
+    /// A table is carried only when `scope` covers everything that shares it (see
+    /// ``Work/Scope``), and `applyTo` names its kind; `alsoCarry` opts shared tables in anyway.
+    /// The work’s tempo map, meter table and key table need the whole work.
     ///
     /// The meter table’s bars within the range are reversed as ``MeterTable/reverse(within:)``
     /// describes, and the grid after the range is kept.
     ///
-    /// - Parameter timeRange:  The beat-time range to mirror attack times around. `nil` resolves
-    /// to the span of everything being reversed: the targeted parts’ notes and the entries of every
-    /// map `applyTo` selects, including the tempo map, the meter table and the key table.
-    /// - Parameter applyTo:    The parameter maps (and the work-wide tables) to reverse
-    ///                         along with every note table. Defaults to every map.
-    /// - Parameter partIDs:    The IDs of the parts to transform, or `nil` (the default) for every
-    ///                         part. IDs naming no part are ignored.
+    /// - Parameter timeRange:  The beat-time range to mirror attack times around; it must take in
+    ///                         every note being reversed. `nil` resolves to the span of
+    ///                         everything being reversed: the scope’s notes and every table
+    ///                         carried whole.
+    /// - Parameter applyTo:    The kinds of table to reverse along with the notes. Defaults to
+    ///                         every kind.
+    /// - Parameter alsoCarry:  The kinds of shared table to carry even though `scope` doesn’t
+    ///                         cover everything that shares them. Defaults to none.
+    /// - Parameter scope:      The notes to reverse. Defaults to ``Work/Scope/all``.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
-    ///             time; otherwise, a transform-failure case naming the part (or the tempo map)
-    ///             and sub-structure that failed.
+    ///             time; an unknown-ID case if `scope` names something not in this work;
+    ///             otherwise, a transform-failure case naming the part (or the tempo map) and
+    ///             sub-structure that failed.
     public mutating func reverse(within timeRange: ClosedRange<BeatTime>? = nil,
                                  applyTo: TransformTargets = .all,
-                                 partIDs: Set<PartID>? = nil) throws(Error) {
+                                 alsoCarry: TransformTargets = [],
+                                 scope: Scope = .all) throws(Error) {
         try ensureUnlocked()
 
-        switch content.cases {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, Frequency>
+        guard var body = content.body as? any BeatTimeBody
+        else { throw Error.timeBasisMismatch(expected: .beat) }
 
-            let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                     tempoMap: tempoMap,
-                                                                     meterTable: meterTable,
-                                                                     keyTable: keyTable,
-                                                                     applyTo: applyTo)
-            let newParts = try Self.transformed(parts: parts,
-                                                partIDs: partIDs,
-                                                kind: .reverse) { (part: inout PartType) throws(PartType.Error) in
-                try part.reverse(within: resolvedRange, applyTo: applyTo)
-            }
-            let (newTempoMap, newMeterTable, newKeyTable) = try Self._reversedTables(tempoMap: tempoMap,
-                                                                                     meterTable: meterTable,
-                                                                                     keyTable: keyTable,
-                                                                                     within: resolvedRange,
-                                                                                     applyTo: applyTo)
+        try Self._reverse(&body,
+                          within: timeRange,
+                          applyTo: applyTo,
+                          alsoCarry: alsoCarry,
+                          scope: scope)
 
-            content = .absoluteBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
-
-        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, NoteNumber>
-
-            let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                     tempoMap: tempoMap,
-                                                                     meterTable: meterTable,
-                                                                     keyTable: keyTable,
-                                                                     applyTo: applyTo)
-            let newParts = try Self.transformed(parts: parts,
-                                                partIDs: partIDs,
-                                                kind: .reverse) { (part: inout PartType) throws(PartType.Error) in
-                try part.reverse(within: resolvedRange,
-                                 applyTo: applyTo)
-            }
-            let (newTempoMap, newMeterTable, newKeyTable) = try Self._reversedTables(tempoMap: tempoMap,
-                                                                                     meterTable: meterTable,
-                                                                                     keyTable: keyTable,
-                                                                                     within: resolvedRange,
-                                                                                     applyTo: applyTo)
-
-            content = .keyboardBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
-
-        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, Pitch>
-
-            let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                     tempoMap: tempoMap,
-                                                                     meterTable: meterTable,
-                                                                     keyTable: keyTable,
-                                                                     applyTo: applyTo)
-            let newParts = try Self.transformed(parts: parts,
-                                                partIDs: partIDs,
-                                                kind: .reverse) { (part: inout PartType) throws(PartType.Error) in
-                try part.reverse(within: resolvedRange,
-                                 applyTo: applyTo)
-            }
-            let (newTempoMap, newMeterTable, newKeyTable) = try Self._reversedTables(tempoMap: tempoMap,
-                                                                                     meterTable: meterTable,
-                                                                                     keyTable: keyTable,
-                                                                                     within: resolvedRange,
-                                                                                     applyTo: applyTo)
-
-            content = .standardBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
-
-        default:
-            throw Error.timeBasisMismatch(expected: .beat)
-        }
+        content.body = body
     }
 
-    /// Reverses the order of notes within a wall-time range across the wall-time parts in this work
-    /// that `partIDs` names, along with any parameter maps selected by `applyTo`.
+    /// Reverses the order of notes within a wall-time range across the notes of this wall-time
+    /// work that `scope` takes, along with the tables it carries.
     ///
-    /// - Parameter timeRange:  The wall-time range to mirror attack times around. `nil` resolves
-    ///                         to the span of everything being reversed: the targeted parts’
-    ///                         notes and the entries of every map `applyTo` selects.
-    /// - Parameter applyTo:    The parameter maps to reverse along with each targeted note table.
-    ///                         Defaults to every map.
-    /// - Parameter partIDs:    The IDs of the parts to transform, or `nil` (the default) for every
-    ///                         part. IDs naming no part are ignored.
+    /// A table is carried only when `scope` covers everything that shares it (see
+    /// ``Work/Scope``), and `applyTo` names its kind; `alsoCarry` opts shared tables in anyway.
+    ///
+    /// - Parameter timeRange:  The wall-time range to mirror attack times around; it must take in
+    ///                         every note being reversed. `nil` resolves to the span of
+    ///                         everything being reversed: the scope’s notes and every table
+    ///                         carried whole.
+    /// - Parameter applyTo:    The kinds of table to reverse along with the notes. Defaults to
+    ///                         every kind.
+    /// - Parameter alsoCarry:  The kinds of shared table to carry even though `scope` doesn’t
+    ///                         cover everything that shares them. Defaults to none.
+    /// - Parameter scope:      The notes to reverse. Defaults to ``Work/Scope/all``.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use wall
-    ///             time; otherwise, a transform-failure case naming the part and sub-structure
-    ///             that failed.
+    ///             time; an unknown-ID case if `scope` names something not in this work;
+    ///             otherwise, a transform-failure case naming the part and sub-structure that
+    ///             failed.
     public mutating func reverse(within timeRange: ClosedRange<WallTime>? = nil,
                                  applyTo: TransformTargets = .all,
-                                 partIDs: Set<PartID>? = nil) throws(Error) {
+                                 alsoCarry: TransformTargets = [],
+                                 scope: Scope = .all) throws(Error) {
         try ensureUnlocked()
 
-        switch content.cases {
-        case let .absoluteWall(parts):
-            typealias PartType = Part<WallTime, Frequency>
+        guard var body = content.body as? any WallTimeBody
+        else { throw Error.timeBasisMismatch(expected: .wall) }
 
-            let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                     applyTo: applyTo)
-            let newParts = try Self.transformed(parts: parts,
-                                                partIDs: partIDs,
-                                                kind: .reverse) { (part: inout PartType) throws(PartType.Error) in
-                try part.reverse(within: resolvedRange,
-                                 applyTo: applyTo)
-            }
+        try Self._reverseParts(&body,
+                               within: timeRange,
+                               applyTo: applyTo,
+                               alsoCarry: alsoCarry,
+                               resolution: scope.resolved(in: body))
 
-            content = .absoluteWall(newParts)
-
-        case let .keyboardWall(parts):
-            typealias PartType = Part<WallTime, NoteNumber>
-
-            let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                     applyTo: applyTo)
-            let newParts = try Self.transformed(parts: parts,
-                                                partIDs: partIDs,
-                                                kind: .reverse) { (part: inout PartType) throws(PartType.Error) in
-                try part.reverse(within: resolvedRange,
-                                 applyTo: applyTo)
-            }
-
-            content = .keyboardWall(newParts)
-
-        case let .standardWall(parts):
-            typealias PartType = Part<WallTime, Pitch>
-
-            let resolvedRange = timeRange ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                     applyTo: applyTo)
-            let newParts = try Self.transformed(parts: parts,
-                                                partIDs: partIDs,
-                                                kind: .reverse) { (part: inout PartType) throws(PartType.Error) in
-                try part.reverse(within: resolvedRange,
-                                 applyTo: applyTo)
-            }
-
-            content = .standardWall(newParts)
-
-        default:
-            throw Error.timeBasisMismatch(expected: .wall)
-        }
+        content.body = body
     }
 
     // MARK: Private Type Methods
+
+    private static func _reverse(_ body: inout some BeatTimeBody,
+                                 within timeRange: ClosedRange<BeatTime>?,
+                                 applyTo: TransformTargets,
+                                 alsoCarry: TransformTargets,
+                                 scope: Scope) throws(Error) {
+        let resolution = try scope.resolved(in: body)
+        let workTargets = resolution.workTargets(applyTo: applyTo,
+                                                 alsoCarry: alsoCarry)
+        let timeRange = timeRange ?? transformTimeRange(of: body,
+                                                        resolution: resolution,
+                                                        applyTo: applyTo,
+                                                        alsoCarry: alsoCarry)
+
+        try _reverseParts(&body,
+                          within: timeRange,
+                          applyTo: applyTo,
+                          alsoCarry: alsoCarry,
+                          resolution: resolution)
+
+        (body.tempoMap, body.meterTable, body.keyTable) = try _reversedTables(tempoMap: body.tempoMap,
+                                                                              meterTable: body.meterTable,
+                                                                              keyTable: body.keyTable,
+                                                                              within: timeRange,
+                                                                              applyTo: workTargets)
+    }
+
+    //
+    // The scope's notes reversed, with the tables each part carries. `timeRange` `nil` resolves
+    // to the span of everything that moves.
+    //
+    private static func _reverseParts<WorkBody: Body>(_ body: inout WorkBody,
+                                                      within timeRange: ClosedRange<WorkBody.TimeType>?,
+                                                      applyTo: TransformTargets,
+                                                      alsoCarry: TransformTargets,
+                                                      resolution: ResolvedScope) throws(Error) {
+        typealias PartType = Part<WorkBody.TimeType, WorkBody.PitchType>
+
+        let timeRange = timeRange ?? partsTimeRange(of: body,
+                                                    resolution: resolution,
+                                                    applyTo: applyTo,
+                                                    alsoCarry: alsoCarry)
+
+        try transform(&body,
+                      resolution: resolution,
+                      kind: .reverse) { (part: inout PartType, selection) throws(PartType.Error) in
+            try part.reverse(within: timeRange,
+                             selection: selection,
+                             applyTo: applyTo,
+                             alsoCarry: alsoCarry)
+        }
+    }
 
     //
     // The JohnnySonic ramp extras (`rampStartTempo`, `rampEndTempo` and `rampDuration`) describe
@@ -315,7 +284,7 @@ extension Work {
 
     //
     // The work-wide tables a beat-time reverse carries along: the tempo map, meter table and key
-    // table, each only when `applyTo` names it.
+    // table, each only when `applyTo` (the work targets the scope carries) names it.
     //
     private static func _reversedTables(tempoMap: TempoMap,
                                         meterTable: MeterTable,

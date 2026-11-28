@@ -8,152 +8,132 @@ extension Work {
 
     // MARK: Public Instance Methods
 
-    /// Moves note attack times by a directed duration across the beat-time parts in this work that
-    /// `partIDs` names, along with any parameter maps selected by `applyTo` and, when `applyTo`
-    /// contains ``TransformTargets/tempo``, ``TransformTargets/meter`` or
-    /// ``TransformTargets/key``, the work’s own tempo map, meter table or key
-    /// table. All three are work-wide, so they’re carried along whichever parts are targeted.
+    /// Moves note attack times by a directed duration across the notes of this beat-time work
+    /// that `scope` takes, along with the tables it carries.
+    ///
+    /// A table is carried only when `scope` covers everything that shares it (see
+    /// ``Work/Scope``), and `applyTo` names its kind; `alsoCarry` opts shared tables in anyway.
+    /// The work’s tempo map, meter table and key table need the whole work.
     ///
     /// The meter table moves as ``MeterTable/move(by:)`` describes: every barline stays where the
     /// music takes it, and a meter that started at 0 still does.
     ///
-    /// - Parameter directedDuration:   The directed duration by which to move the targeted parts’
-    ///                                 note attack times.
-    /// - Parameter applyTo:            The parameter maps (and the work-wide tables) to move
-    ///                                 along with each targeted note table. Defaults to every map.
-    /// - Parameter partIDs:            The IDs of the parts to transform, or `nil` (the default)
-    ///                                 for every part. IDs naming no part are ignored.
+    /// - Parameter directedDuration:   The directed duration by which to move the attack times.
+    /// - Parameter applyTo:            The kinds of table to move along with the notes. Defaults
+    ///                                 to every kind.
+    /// - Parameter alsoCarry:          The kinds of shared table to carry even though `scope`
+    ///                                 doesn’t cover everything that shares them. Defaults to
+    ///                                 none.
+    /// - Parameter scope:              The notes to move. Defaults to ``Work/Scope/all``.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
-    ///             time; otherwise, a transform-failure case naming the part (or the tempo map)
-    ///             and sub-structure that failed.
+    ///             time; an unknown-ID case if `scope` names something not in this work;
+    ///             otherwise, a transform-failure case naming the part (or the tempo map) and
+    ///             sub-structure that failed.
     public mutating func move(by directedDuration: DirectedDuration<BeatDuration>,
                               applyTo: TransformTargets = .all,
-                              partIDs: Set<PartID>? = nil) throws(Error) {
+                              alsoCarry: TransformTargets = [],
+                              scope: Scope = .all) throws(Error) {
         try ensureUnlocked()
 
-        switch content.cases {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, Frequency>
+        guard var body = content.body as? any BeatTimeBody
+        else { throw Error.timeBasisMismatch(expected: .beat) }
 
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .move) { (part: inout PartType) throws(PartType.Error) in
-                try part.move(by: directedDuration, applyTo: applyTo)
-            }
-            let newTempoMap = try Self.carried(tempoMap: tempoMap, applyTo: applyTo, kind: .move) { (tempo: inout TempoMap) throws(TempoMap.Error) in
-                try tempo.move(by: directedDuration)
-            }
-            let newMeterTable = try Self.carried(meterTable: meterTable,
-                                                 applyTo: applyTo,
-                                                 kind: .move) { (meter: inout MeterTable) throws(MeterTable.Error) in
-                meter.move(by: directedDuration)
-            }
-            let newKeyTable = try Self.carried(keyTable: keyTable,
-                                               applyTo: applyTo,
-                                               kind: .move) { (key: inout KeyTable) throws(KeyTable.Error) in
-                key.move(by: directedDuration)
-            }
+        try Self._move(&body,
+                       by: directedDuration,
+                       applyTo: applyTo,
+                       alsoCarry: alsoCarry,
+                       scope: scope)
 
-            content = .absoluteBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
-
-        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, NoteNumber>
-
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .move) { (part: inout PartType) throws(PartType.Error) in
-                try part.move(by: directedDuration, applyTo: applyTo)
-            }
-            let newTempoMap = try Self.carried(tempoMap: tempoMap, applyTo: applyTo, kind: .move) { (tempo: inout TempoMap) throws(TempoMap.Error) in
-                try tempo.move(by: directedDuration)
-            }
-            let newMeterTable = try Self.carried(meterTable: meterTable,
-                                                 applyTo: applyTo,
-                                                 kind: .move) { (meter: inout MeterTable) throws(MeterTable.Error) in
-                meter.move(by: directedDuration)
-            }
-            let newKeyTable = try Self.carried(keyTable: keyTable,
-                                               applyTo: applyTo,
-                                               kind: .move) { (key: inout KeyTable) throws(KeyTable.Error) in
-                key.move(by: directedDuration)
-            }
-
-            content = .keyboardBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
-
-        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, Pitch>
-
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .move) { (part: inout PartType) throws(PartType.Error) in
-                try part.move(by: directedDuration, applyTo: applyTo)
-            }
-            let newTempoMap = try Self.carried(tempoMap: tempoMap, applyTo: applyTo, kind: .move) { (tempo: inout TempoMap) throws(TempoMap.Error) in
-                try tempo.move(by: directedDuration)
-            }
-            let newMeterTable = try Self.carried(meterTable: meterTable,
-                                                 applyTo: applyTo,
-                                                 kind: .move) { (meter: inout MeterTable) throws(MeterTable.Error) in
-                meter.move(by: directedDuration)
-            }
-            let newKeyTable = try Self.carried(keyTable: keyTable,
-                                               applyTo: applyTo,
-                                               kind: .move) { (key: inout KeyTable) throws(KeyTable.Error) in
-                key.move(by: directedDuration)
-            }
-
-            content = .standardBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
-
-        default:
-            throw Error.timeBasisMismatch(expected: .beat)
-        }
+        content.body = body
     }
 
-    /// Moves note attack times by a directed duration across the wall-time parts in this work that
-    /// `partIDs` names, along with any parameter maps selected by `applyTo`.
+    /// Moves note attack times by a directed duration across the notes of this wall-time work
+    /// that `scope` takes, along with the tables it carries.
     ///
-    /// - Parameter directedDuration:   The directed duration by which to move the targeted parts’
-    ///                                 note attack times.
-    /// - Parameter applyTo:            The parameter maps to move along with each targeted note
-    ///                                 table. Defaults to every map.
-    /// - Parameter partIDs:            The IDs of the parts to transform, or `nil` (the default)
-    ///                                 for every part. IDs naming no part are ignored.
+    /// A table is carried only when `scope` covers everything that shares it (see
+    /// ``Work/Scope``), and `applyTo` names its kind; `alsoCarry` opts shared tables in anyway.
+    ///
+    /// - Parameter directedDuration:   The directed duration by which to move the attack times.
+    /// - Parameter applyTo:            The kinds of table to move along with the notes. Defaults
+    ///                                 to every kind.
+    /// - Parameter alsoCarry:          The kinds of shared table to carry even though `scope`
+    ///                                 doesn’t cover everything that shares them. Defaults to
+    ///                                 none.
+    /// - Parameter scope:              The notes to move. Defaults to ``Work/Scope/all``.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use wall
-    ///             time; otherwise, a transform-failure case naming the part and sub-structure
-    ///             that failed.
+    ///             time; an unknown-ID case if `scope` names something not in this work;
+    ///             otherwise, a transform-failure case naming the part and sub-structure that
+    ///             failed.
     public mutating func move(by directedDuration: DirectedDuration<WallDuration>,
                               applyTo: TransformTargets = .all,
-                              partIDs: Set<PartID>? = nil) throws(Error) {
+                              alsoCarry: TransformTargets = [],
+                              scope: Scope = .all) throws(Error) {
         try ensureUnlocked()
 
-        switch content.cases {
-        case let .absoluteWall(parts):
-            typealias PartType = Part<WallTime, Frequency>
+        guard var body = content.body as? any WallTimeBody
+        else { throw Error.timeBasisMismatch(expected: .wall) }
 
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .move) { (part: inout PartType) throws(PartType.Error) in
-                try part.move(by: directedDuration, applyTo: applyTo)
-            }
+        try Self._moveParts(&body,
+                            by: directedDuration,
+                            applyTo: applyTo,
+                            alsoCarry: alsoCarry,
+                            resolution: scope.resolved(in: body))
 
-            content = .absoluteWall(newParts)
+        content.body = body
+    }
 
-        case let .keyboardWall(parts):
-            typealias PartType = Part<WallTime, NoteNumber>
+    // MARK: Private Type Methods
 
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .move) { (part: inout PartType) throws(PartType.Error) in
-                try part.move(by: directedDuration, applyTo: applyTo)
-            }
+    private static func _move(_ body: inout some BeatTimeBody,
+                              by directedDuration: DirectedDuration<BeatDuration>,
+                              applyTo: TransformTargets,
+                              alsoCarry: TransformTargets,
+                              scope: Scope) throws(Error) {
+        let resolution = try scope.resolved(in: body)
+        let workTargets = resolution.workTargets(applyTo: applyTo,
+                                                 alsoCarry: alsoCarry)
 
-            content = .keyboardWall(newParts)
+        try _moveParts(&body,
+                       by: directedDuration,
+                       applyTo: applyTo,
+                       alsoCarry: alsoCarry,
+                       resolution: resolution)
 
-        case let .standardWall(parts):
-            typealias PartType = Part<WallTime, Pitch>
+        body.tempoMap = try carried(tempoMap: body.tempoMap,
+                                    applyTo: workTargets,
+                                    kind: .move) { (tempo: inout TempoMap) throws(TempoMap.Error) in
+            try tempo.move(by: directedDuration)
+        }
+        body.meterTable = try carried(meterTable: body.meterTable,
+                                      applyTo: workTargets,
+                                      kind: .move) { (meter: inout MeterTable) throws(MeterTable.Error) in
+            meter.move(by: directedDuration)
+        }
+        body.keyTable = try carried(keyTable: body.keyTable,
+                                    applyTo: workTargets,
+                                    kind: .move) { (key: inout KeyTable) throws(KeyTable.Error) in
+            key.move(by: directedDuration)
+        }
+    }
 
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .move) { (part: inout PartType) throws(PartType.Error) in
-                try part.move(by: directedDuration, applyTo: applyTo)
-            }
+    private static func _moveParts<WorkBody: Body>(_ body: inout WorkBody,
+                                                   by directedDuration: DirectedDuration<WorkBody.TimeType.DurationType>,
+                                                   applyTo: TransformTargets,
+                                                   alsoCarry: TransformTargets,
+                                                   resolution: ResolvedScope) throws(Error) {
+        typealias PartType = Part<WorkBody.TimeType, WorkBody.PitchType>
 
-            content = .standardWall(newParts)
-
-        default:
-            throw Error.timeBasisMismatch(expected: .wall)
+        try transform(&body,
+                      resolution: resolution,
+                      kind: .move) { (part: inout PartType, selection) throws(PartType.Error) in
+            try part.move(by: directedDuration,
+                          selection: selection,
+                          applyTo: applyTo,
+                          alsoCarry: alsoCarry)
         }
     }
 }

@@ -101,6 +101,15 @@ extension Work {
         /// The context’s tuning system does not support standard pitch notation.
         case unsupportedStandardConversion
 
+        /// A scope names a note that isn’t in the work.
+        case unknownNoteID(NoteID)
+
+        /// A scope names a part that isn’t in the work.
+        case unknownPartID(PartID)
+
+        /// A scope names a strand that isn’t in the work.
+        case unknownStrandID(StrandID)
+
         /// The work was encoded with an unsupported version number.
         case unsupportedVersion(Int)
 
@@ -203,6 +212,15 @@ extension Work.Error: EnhancedError {
 
         case .unsupportedStandardConversion:
             "The tuning system does not support standard pitch notation."
+
+        case let .unknownNoteID(noteID):
+            "No note in the work has ID \(noteID.stringValue)."
+
+        case let .unknownPartID(partID):
+            "No part in the work has ID \(partID.stringValue)."
+
+        case let .unknownStrandID(strandID):
+            "No strand in the work has ID \(strandID.stringValue)."
 
         case let .unsupportedVersion(version):
             "Unsupported Ivor work version: \(version)"

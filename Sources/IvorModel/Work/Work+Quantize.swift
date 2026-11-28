@@ -9,104 +9,76 @@ extension Work {
 
     // MARK: Public Instance Methods
 
-    /// Quantizes note attack/release times across the beat-time parts in this work that `partIDs`
-    /// names, along with any parameter maps selected by `applyTo` and, when `applyTo` contains
-    /// ``TransformTargets/tempo``, the work’s own tempo map. The tempo map is work-wide, so it is carried
-    /// along whichever parts are targeted.
+    /// Quantizes note attack and release times across the notes of this beat-time work that
+    /// `scope` takes, along with the tables it carries.
     ///
-    /// The work’s meter table and key table are never quantized, whatever `applyTo`
-    /// holds: their entries mark notation, not sound.
+    /// A table is carried only when `scope` covers everything that shares it (see
+    /// ``Work/Scope``), and `applyTo` names its kind; `alsoCarry` opts shared tables in anyway.
+    /// The work’s tempo map needs the whole work. The meter table and key table are never
+    /// quantized, whatever `applyTo` holds: their entries mark notation, not sound.
     ///
     /// - Parameter factors:    An array of positive integer subdivision factors.
-    /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize every
-    ///                         note in the targeted parts.
-    /// - Parameter applyTo:    The parameter maps (and tempo map) to quantize along with each part’s
-    ///                         note table. Defaults to ``TransformTargets/all``.
-    /// - Parameter partIDs:    The IDs of the parts to transform, or `nil` (the default) for every
-    ///                         part. IDs naming no part are ignored.
+    /// - Parameter applyTo:    The kinds of table to quantize along with the notes. Defaults to
+    ///                         ``TransformTargets/all``.
+    /// - Parameter alsoCarry:  The kinds of shared table to carry even though `scope` doesn’t
+    ///                         cover everything that shares them. Defaults to none.
+    /// - Parameter scope:      The notes to quantize. Defaults to ``Work/Scope/all``.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
     ///             time; ``Work/Error/emptyQuantizationFactors`` /
-    ///             ``Work/Error/invalidQuantizationFactor(_:)`` if `factors` is invalid;
-    ///             otherwise a transform-failure case naming the part.
+    ///             ``Work/Error/invalidQuantizationFactor(_:)`` if `factors` is invalid; an
+    ///             unknown-ID case if `scope` names something not in this work.
     public mutating func quantize(to factors: [Int],
-                                  noteIDs: Set<NoteID>? = nil,
                                   applyTo: TransformTargets = .all,
-                                  partIDs: Set<PartID>? = nil) throws(Error) {
+                                  alsoCarry: TransformTargets = [],
+                                  scope: Scope = .all) throws(Error) {
         try ensureUnlocked()
 
         let quantizer = try Self._quantizer(factors)
 
-        switch content.cases {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, Frequency>
+        guard var body = content.body as? any BeatTimeBody
+        else { throw Error.timeBasisMismatch(expected: .beat) }
 
-            let newParts = try Self.transformed(parts: parts,
-                                                partIDs: partIDs,
-                                                kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
-                part.quantize(to: quantizer,
-                              noteIDs: noteIDs,
-                              applyTo: applyTo)
-            }
+        try Self._quantize(&body,
+                           using: quantizer,
+                           applyTo: applyTo,
+                           alsoCarry: alsoCarry,
+                           scope: scope)
 
-            content = .absoluteBeat(newParts,
-                                    Self._quantized(tempoMap: tempoMap,
-                                                    using: quantizer,
-                                                    applyTo: applyTo),
-                                    meterTable,
-                                    keyTable)
-
-        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, NoteNumber>
-
-            let newParts = try Self.transformed(parts: parts,
-                                                partIDs: partIDs,
-                                                kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
-                part.quantize(to: quantizer,
-                              noteIDs: noteIDs,
-                              applyTo: applyTo)
-            }
-
-            content = .keyboardBeat(newParts,
-                                    Self._quantized(tempoMap: tempoMap,
-                                                    using: quantizer,
-                                                    applyTo: applyTo),
-                                    meterTable,
-                                    keyTable)
-
-        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, Pitch>
-
-            let newParts = try Self.transformed(parts: parts,
-                                                partIDs: partIDs,
-                                                kind: .quantize) { (part: inout PartType) throws(PartType.Error) in
-                part.quantize(to: quantizer,
-                              noteIDs: noteIDs,
-                              applyTo: applyTo)
-            }
-
-            content = .standardBeat(newParts,
-                                    Self._quantized(tempoMap: tempoMap,
-                                                    using: quantizer,
-                                                    applyTo: applyTo),
-                                    meterTable,
-                                    keyTable)
-
-        default:
-            throw Error.timeBasisMismatch(expected: .beat)
-        }
+        content.body = body
     }
 
     // MARK: Private Type Methods
 
+    private static func _quantize<WorkBody: BeatTimeBody>(_ body: inout WorkBody,
+                                                          using quantizer: BeatQuantizer,
+                                                          applyTo: TransformTargets,
+                                                          alsoCarry: TransformTargets,
+                                                          scope: Scope) throws(Error) {
+        typealias PartType = Part<BeatTime, WorkBody.PitchType>
+
+        let resolution = try scope.resolved(in: body)
+
+        try transform(&body,
+                      resolution: resolution,
+                      kind: .quantize) { (part: inout PartType, selection) throws(PartType.Error) in
+            part.quantize(to: quantizer,
+                          selection: selection,
+                          applyTo: applyTo,
+                          alsoCarry: alsoCarry)
+        }
+
+        body.tempoMap = _quantized(tempoMap: body.tempoMap,
+                                   using: quantizer,
+                                   applyTo: resolution.workTargets(applyTo: applyTo,
+                                                                   alsoCarry: alsoCarry))
+    }
+
     //
-    // Unlike `carried(tempoMap:applyTo:kind:transform:)` (used by augment/diminish/move/reverse),
-    // this gates on the `.tempo` bit specifically rather than on `applyTo` merely being
-    // non-empty: quantize's per-part maps are each opted into individually (see
-    // `Part.quantize(to:noteIDs:applyTo:)`), and the tempo map — timing information in its own
-    // right, not a parallel automation lane — follows the same opt-in-by-bit rule rather than
-    // riding along with any other map selection.
+    // The tempo map quantized, when `applyTo` (the work targets the scope carries) contains
+    // `.tempo`. Quantizing can't fail, so this needn't go through
+    // `carried(tempoMap:applyTo:kind:transform:)`.
     //
     private static func _quantized(tempoMap: TempoMap,
                                    using quantizer: BeatQuantizer,

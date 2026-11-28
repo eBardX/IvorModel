@@ -71,7 +71,7 @@ extension WorkQuantizeTests {
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.quantize(to: [1], partIDs: [partID])
+            try work.quantize(to: [1], scope: Work.Scope(parts: [partID]))
         }
 
         #expect(throws: Work.Error.workIsLocked) {
@@ -99,10 +99,9 @@ extension WorkQuantizeTests {
         let noteID1 = part.strands[0].noteTable.insert(attack: BeatTime(0.49), duration: 1, pitch: .c4)
         let noteID2 = part.strands[0].noteTable.insert(attack: BeatTime(4.49), duration: 1, pitch: .d4)
 
-        let targetID = part.partID
         var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
-        try work.quantize(to: [1], noteIDs: [noteID1], partIDs: [targetID])
+        try work.quantize(to: [1], scope: Work.Scope(notes: [noteID1]))
 
         guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
@@ -127,7 +126,7 @@ extension WorkQuantizeTests {
         var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(throws: Work.Error.emptyQuantizationFactors) {
-            try work.quantize(to: [], partIDs: partIDs)
+            try work.quantize(to: [], scope: Work.Scope(parts: partIDs))
         }
 
         guard case let .standardBeat(parts, _, _, _) = work.content.cases
@@ -147,7 +146,7 @@ extension WorkQuantizeTests {
         let partIDs: Set<PartID> = [part1.partID]
         var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeyTable()))
 
-        try work.quantize(to: [1], partIDs: partIDs)
+        try work.quantize(to: [1], scope: Work.Scope(parts: partIDs))
 
         guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }
@@ -157,12 +156,14 @@ extension WorkQuantizeTests {
     }
 
     @Test
-    func quantize_singlePart_missingID_isNoOp() throws {
+    func quantize_unknownPartID_throws() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
+        let unknownID = PartID()
 
-        try work.quantize(to: [1], partIDs: [PartID()])
-
+        #expect(throws: Work.Error.unknownPartID(unknownID)) {
+            try work.quantize(to: [1], scope: Work.Scope(parts: [unknownID]))
+        }
         #expect(work.partCount == 1)
     }
 
@@ -177,7 +178,7 @@ extension WorkQuantizeTests {
         let targetID = part1.partID
         var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeyTable()))
 
-        try work.quantize(to: [1], partIDs: [targetID])
+        try work.quantize(to: [1], scope: Work.Scope(parts: [targetID]))
 
         guard case let .standardBeat(parts, _, _, _) = work.content.cases
         else { Issue.record("Expected .standardBeat content."); return }

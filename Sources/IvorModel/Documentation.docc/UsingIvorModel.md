@@ -311,17 +311,20 @@ work.keyTable?.key(at: 4)   // F♯ minor
 
 ## Transforming a work
 
-A work transforms its parts in place. Each transform applies to every part, or
-to the ones whose IDs you pass in `partIDs`:
+A work transforms its notes in place. Each transform applies to the notes a
+``Work/Scope`` takes: by default ``Work/Scope/all``, the whole work, or any mix
+of whole parts, whole strands and single notes, built with
+``Work/Scope/init(parts:)``, ``Work/Scope/init(strands:)`` and
+``Work/Scope/init(notes:)`` and combined with ``Work/Scope/union(_:)``:
 
-- **Pitch:** `transpose(by:movesKeys:partIDs:)`, by an interval of the
+- **Pitch:** `transpose(by:movesKeys:alsoCarry:scope:)`, by an interval of the
   work’s own pitch notation — an `Interval`, a `Ratio`, or a `NoteDistance` — and
-  `invert(around:movesKeys:partIDs:)`, which mirrors pitches within a
+  `invert(around:movesKeys:alsoCarry:scope:)`, which mirrors pitches within a
   range.
-- **Time:** `augment(by:anchor:applyTo:partIDs:)`,
-  `diminish(by:anchor:applyTo:partIDs:)`, `move(by:applyTo:partIDs:)`,
-  `reverse(within:applyTo:partIDs:)`, and
-  `quantize(to:noteIDs:applyTo:partIDs:)`.
+- **Time:** `augment(by:anchor:applyTo:alsoCarry:keepingSound:scope:)`,
+  `diminish(by:anchor:applyTo:alsoCarry:keepingSound:scope:)`,
+  `move(by:applyTo:alsoCarry:scope:)`, `reverse(within:applyTo:alsoCarry:scope:)`,
+  and `quantize(to:applyTo:alsoCarry:scope:)`.
 
 ```swift
 try work.transpose(by: DirectedInterval(interval: .perfect5, direction: .ascending))
@@ -329,17 +332,21 @@ try work.augment(by: 2, anchor: BeatTime.zero)  // twice as slow, from the start
 ```
 
 The time transforms come in a beat-time and a wall-time form, so give the anchor
-(or the duration, or the range) in the work’s own time type. They move a part’s
-parameter maps, instrument table, and pedal tables along with its notes, and the work’s own
-tempo map, meter table and key table with them; `applyTo` takes a
-``TransformTargets`` set to choose which of these go along. When the meter table goes along, the meter is
+(or the duration, or the range) in the work’s own time type. They carry tables along
+with the notes, but only a table the scope covers everything that shares: the
+work’s tempo map, meter table and key table need the whole work; a part’s pedals,
+pan and marks need the whole part; the part’s instrument table and dynamic map
+need every strand that uses them; and a strand’s own need the whole strand (for
+some of its notes, only the entries within their time range go). Wholes add up
+— naming every strand of a part covers the part — but notes never do. `applyTo`
+takes a ``TransformTargets`` set to choose which kinds go along, and `alsoCarry`
+opts in a shared table the scope doesn’t cover. When the meter table goes along, the meter is
 re-notated so that every note keeps its bar and beat: 3/4 augmented by 2 becomes
 3/2. Augment and diminish can also keep the sound (`keepingSound`), by scaling
 each tempo’s unit with the music: 3/8 at ♪ = 240, augmented by 2, becomes 3/4 at
 ♩ = 240. Quantize never moves the meter table or the key table. The
-pitch transforms move the keys too, unless `movesKeys` is
-`false`: transposing only some parts may or may not change the key, so the
-caller decides. Where a key can’t follow — a transposition by a ratio
+pitch transforms move the keys too, when the scope carries them, unless
+`movesKeys` is `false`. Where a key can’t follow — a transposition by a ratio
 more than 25 cents from a whole number of semitones, or any inversion of
 absolute pitch — the keys are removed. A transform
 whose interval or time type doesn’t match the work throws
@@ -347,13 +354,17 @@ whose interval or time type doesn’t match the work throws
 ``Work/Error/timeBasisMismatch(expected:)``. Parts and note tables have the same
 transforms, for working on one at a time.
 
-A part’s time transforms can also take `noteIDs`, to transform only the selected
-notes. The map and table entries carried with them are then only those within
-the selected notes’ time range, with one addition for pedals: if a pedal is
-still down at the end of that range, the next entry in its table, which ends
-the press, is carried too. Otherwise, moving the selection would leave its
-release behind, and the pedal would stay down from the moved notes’ end until
-wherever the old release was.
+A part’s transforms take `noteIDs` instead of a scope, and follow the same rule.
+When a shared table is opted in for some notes, the entries carried are those
+within the notes’ time range, with one addition for pedals: if a pedal is still
+down at the end of that range, the next entry in its table, which ends the
+press, is carried too. Otherwise, moving the selection would leave its release
+behind, and the pedal would stay down from the moved notes’ end until wherever
+the old release was.
+
+``Work/scope(matching:within:)`` finds notes for a scope: those in a time range,
+by attack or by sounding, and in a pitch range, by start pitch, end pitch or
+either (``Work/Scope/Criteria``).
 
 ## Converting a work
 

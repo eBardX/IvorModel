@@ -13,25 +13,25 @@ struct WorkPartTransformTests {
 extension WorkPartTransformTests {
     @Test
     func partTransform_mutatesPartInPlace() throws {
-        let transform: Work.PartTransform<BeatTime, Pitch> = { part in
+        let transform: Work.PartTransform<BeatTime, Pitch> = { part, _ in
             part.name = "Renamed"
         }
         var part = Part<BeatTime, Pitch>(name: "Original")
 
-        try transform(&part)
+        try transform(&part, .whole)
 
         #expect(part.name == "Renamed")
     }
 
     @Test
     func partTransform_throwsPartError() {
-        let transform: Work.PartTransform<WallTime, NoteNumber> = { _ in
+        let transform: Work.PartTransform<WallTime, NoteNumber> = { _, _ in
             throw .panMapFailure(.invalidAnchor)
         }
         var part = Part<WallTime, NoteNumber>(name: "Piano")
 
         #expect(throws: Part<WallTime, NoteNumber>.Error.self) {
-            try transform(&part)
+            try transform(&part, .whole)
         }
     }
 }

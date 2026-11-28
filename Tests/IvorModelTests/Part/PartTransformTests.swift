@@ -178,7 +178,7 @@ extension PartTransformTests {
 
         let entryID = part.dynamicMap.insert(time: 2, dynamic: .ff).entryID
 
-        try part.augment(by: Number(2), noteIDs: [noteID1, noteID2])
+        try part.augment(by: Number(2), noteIDs: [noteID1, noteID2], alsoCarry: .all)
 
         #expect(dynamicTime(of: entryID, in: part) == firstNoteSB(.e4, in: part)?.attack)
     }
@@ -309,7 +309,7 @@ extension PartTransformTests {
         let entryIDLow = part.dynamicMap.insert(time: 0, dynamic: .mp).entryID
         let entryIDMiddle = part.dynamicMap.insert(time: 10, dynamic: .mf).entryID
 
-        try part.augment(by: Number(2), noteIDs: [noteID1, noteID3])
+        try part.augment(by: Number(2), noteIDs: [noteID1, noteID3], alsoCarry: .all)
 
         var lowTime: BeatTime?
         var middleTime: BeatTime?
@@ -379,7 +379,7 @@ extension PartTransformTests {
 
         let entryID = part.dynamicMap.insert(time: 3, dynamic: .ff).entryID
 
-        try part.diminish(by: Number(2), noteIDs: [noteID1, noteID2])
+        try part.diminish(by: Number(2), noteIDs: [noteID1, noteID2], alsoCarry: .all)
 
         #expect(dynamicTime(of: entryID, in: part) == firstNoteSB(.e4, in: part)?.attack)
     }
@@ -457,7 +457,7 @@ extension PartTransformTests {
         var part = markedPart()
         let selected = part.attackingIn(0...1)
 
-        try part.move(by: later(1), noteIDs: selected)
+        try part.move(by: later(1), noteIDs: selected, alsoCarry: .all)
 
         //
         // The selected notes span 0…2 (the note at 1 is a half note), so both marks move.
@@ -466,7 +466,7 @@ extension PartTransformTests {
 
         var other = markedPart()
 
-        try other.move(by: later(1), noteIDs: other.attackingIn(4...4))
+        try other.move(by: later(1), noteIDs: other.attackingIn(4...4), alsoCarry: .all)
 
         #expect(other.markTable.map(\.time) == [1, 2])
     }
@@ -508,7 +508,7 @@ extension PartTransformTests {
 
         let directedDuration = try #require(BeatTime(0).duration(to: 4))
 
-        try part.move(by: directedDuration, noteIDs: [noteID])
+        try part.move(by: directedDuration, noteIDs: [noteID], alsoCarry: .all)
 
         //
         // The selected note spans 0...1. The pedal goes down at 0, inside it, and is still down
@@ -535,7 +535,7 @@ extension PartTransformTests {
 
         let directedDuration = try #require(BeatTime(0).duration(to: 4))
 
-        try part.move(by: directedDuration, noteIDs: [noteID])
+        try part.move(by: directedDuration, noteIDs: [noteID], alsoCarry: .all)
 
         //
         // The selected note spans 0...2, and the pedal is already up by 2, so the next press at
@@ -558,7 +558,7 @@ extension PartTransformTests {
 
         let directedDuration = try #require(BeatTime(0).duration(to: 2))
 
-        try part.move(by: directedDuration, noteIDs: [noteID1])
+        try part.move(by: directedDuration, noteIDs: [noteID1], alsoCarry: .all)
 
         var earlyTime: BeatTime?
         var lateTime: BeatTime?
@@ -700,7 +700,7 @@ extension PartTransformTests {
         let entryIDEarly = part.dynamicMap.insert(time: 0.49, dynamic: .mp).entryID
         let entryIDLate = part.dynamicMap.insert(time: 10, dynamic: .ff).entryID
 
-        try part.quantize(to: [1], noteIDs: [noteID1], applyTo: .dynamic)
+        try part.quantize(to: [1], noteIDs: [noteID1], applyTo: .dynamic, alsoCarry: .all)
 
         var earlyTime: BeatTime?
         var lateTime: BeatTime?
@@ -919,7 +919,7 @@ extension PartTransformTests {
 
         let entryID = part.dynamicMap.insert(time: 1, dynamic: .ff).entryID
 
-        try part.reverse(noteIDs: [noteID1, noteID2])
+        try part.reverse(noteIDs: [noteID1, noteID2], alsoCarry: .all)
 
         #expect(dynamicTime(of: entryID, in: part) == firstNoteSB(.c4, in: part)?.release)
     }
@@ -950,8 +950,8 @@ extension PartTransformTests {
         part.strands[0].noteTable.insert(attack: 1, duration: 1, pitch: .c4)
         part.markTable.insert(time: 3, mark: longFermataMark(beats(2)))
 
-        #expect(part.transformTimeRange(noteIDs: nil, applyTo: .all) == 1...5)
-        #expect(part.transformTimeRange(noteIDs: nil, applyTo: []) == 1...2)
+        #expect(part.transformTimeRange(part.carryPlan(for: .whole, applyTo: .all, alsoCarry: [])) == 1...5)
+        #expect(part.transformTimeRange(part.carryPlan(for: .whole, applyTo: [], alsoCarry: [])) == 1...2)
     }
 
     @Test

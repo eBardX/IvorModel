@@ -131,37 +131,14 @@ extension WorkTransformSupportTests {
     }
 
     @Test
-    func selected_filtersByPartID() {
-        let part1 = Part<BeatTime, Pitch>(name: "One")
-        let part2 = Part<BeatTime, Pitch>(name: "Two")
-
-        let result = Work.selected([part1, part2], partIDs: [part2.partID])
-
-        #expect(result.map(\.partID) == [part2.partID])
-    }
-
-    @Test
-    func selected_nil_returnsEveryPart() {
-        let parts = [Part<BeatTime, Pitch>(name: "One"), Part<BeatTime, Pitch>(name: "Two")]
-
-        #expect(Work.selected(parts, partIDs: nil).map(\.partID) == parts.map(\.partID))
-    }
-
-    @Test
-    func selected_unknownIDs_returnsNoParts() {
-        let parts = [Part<BeatTime, Pitch>(name: "One")]
-
-        #expect(Work.selected(parts, partIDs: [PartID()]).isEmpty)
-    }
-
-    @Test
-    func transformed_failure_wrapsErrorWithPartID() {
+    func transform_failure_wrapsErrorWithPartID() throws {
         let part = Part<BeatTime, Pitch>(name: "One")
+        var body = try Self._body([part])
 
         do {
-            _ = try Work.transformed(parts: [part],
-                                     partIDs: nil,
-                                     kind: .move) { (_: inout Part<BeatTime, Pitch>) throws(Part<BeatTime, Pitch>.Error) in
+            try Work.transform(&body,
+                               resolution: Work.Scope.all.resolved(in: body),
+                               kind: .move) { (_: inout Part<BeatTime, Pitch>, _) throws(Part<BeatTime, Pitch>.Error) in
                 throw .panMapFailure(.invalidAnchor)
             }
 
@@ -174,30 +151,34 @@ extension WorkTransformSupportTests {
     }
 
     @Test
-    func transformed_nil_transformsEveryPart() throws {
-        let parts = [Part<BeatTime, Pitch>(name: "One"), Part<BeatTime, Pitch>(name: "Two")]
+    func transform_all_transformsEveryPartWhole() throws {
+        var body = try Self._body([Part(name: "One"), Part(name: "Two")])
+        var selections: [Work.PartSelection] = []
 
-        let result = try Work.transformed(parts: parts,
-                                          partIDs: nil,
-                                          kind: .move) { (part: inout Part<BeatTime, Pitch>) throws(Part<BeatTime, Pitch>.Error) in
+        try Work.transform(&body,
+                           resolution: Work.Scope.all.resolved(in: body),
+                           kind: .move) { (part: inout Part<BeatTime, Pitch>, selection) throws(Part<BeatTime, Pitch>.Error) in
             part.name = "Changed"
+            selections.append(selection)
         }
 
-        #expect(result.map(\.name) == ["Changed", "Changed"])
+        #expect(body.parts.map(\.name) == ["Changed", "Changed"])
+        #expect(selections == [.whole, .whole])
     }
 
     @Test
-    func transformed_selected_leavesOthersInPlace() throws {
+    func transform_someParts_leavesOthersInPlace() throws {
         let parts = [Part<BeatTime, Pitch>(name: "One"), Part<BeatTime, Pitch>(name: "Two")]
+        var body = try Self._body(parts)
 
-        let result = try Work.transformed(parts: parts,
-                                          partIDs: [parts[1].partID],
-                                          kind: .move) { (part: inout Part<BeatTime, Pitch>) throws(Part<BeatTime, Pitch>.Error) in
+        try Work.transform(&body,
+                           resolution: Work.Scope(parts: [parts[1].partID]).resolved(in: body),
+                           kind: .move) { (part: inout Part<BeatTime, Pitch>, _) throws(Part<BeatTime, Pitch>.Error) in
             part.name = "Changed"
         }
 
-        #expect(result.map(\.name) == ["One", "Changed"])
-        #expect(result.map(\.partID) == parts.map(\.partID))
+        #expect(body.parts.map(\.name) == ["One", "Changed"])
+        #expect(body.parts.map(\.partID) == parts.map(\.partID))
     }
 
     @Test
@@ -246,5 +227,13 @@ extension WorkTransformSupportTests {
                                  partID: partID)
 
         #expect(error == .panMapTransformFailure(kind: .move, partID: partID, detail: underlying.message))
+    }
+
+    // MARK: Private Type Methods
+
+    private static func _body(_ parts: [Part<BeatTime, Pitch>]) throws -> Work.BeatBody<Pitch> {
+        let work = Work(content: .standardBeat(parts, TempoMap(), MeterTable(), KeyTable()))
+
+        return try #require(work.content.body as? Work.BeatBody<Pitch>)
     }
 }

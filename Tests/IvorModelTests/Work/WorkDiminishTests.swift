@@ -54,7 +54,7 @@ extension WorkDiminishTests {
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.diminish(by: Number(2), anchor: nil as BeatTime?, partIDs: [partID])
+            try work.diminish(by: Number(2), anchor: nil as BeatTime?, scope: Work.Scope(parts: [partID]))
         }
 
         #expect(throws: Work.Error.workIsLocked) {

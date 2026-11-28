@@ -105,6 +105,7 @@ maps, pedals, meters, transforms, conversion, realizations, templates, and proje
 ### Parts and notes
 
 - ``Part``
+- ``Strand``
 - ``NoteTable``
 - ``NoteEvent``
 
@@ -185,6 +186,7 @@ maps, pedals, meters, transforms, conversion, realizations, templates, and proje
 ### Transforms
 
 - ``TransformTargets``
+- ``Work/Scope``
 
 ### Realizations
 
@@ -209,6 +211,7 @@ maps, pedals, meters, transforms, conversion, realizations, templates, and proje
 - ``UniqueID``
 - ``WorkID``
 - ``PartID``
+- ``StrandID``
 - ``NoteID``
 - ``EntryID``
 - ``RealizationID``

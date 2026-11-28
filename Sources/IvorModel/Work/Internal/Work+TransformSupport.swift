@@ -54,10 +54,10 @@ extension Work {
     }
 
     //
-    // `applyTo` also governs whether a beat-time transform carries the work's own `tempoMap`
-    // along: only when it contains `.tempo`, just as each per-part map moves only when `applyTo`
-    // names it. Which parts are targeted makes no difference here. The tempo map is work-wide, so
-    // the app clears `.tempo` by default when the user targets only some parts.
+    // Whether a beat-time transform carries the work's own `tempoMap` along: only when
+    // `applyTo` contains `.tempo`. Callers pass the work targets their resolved scope carries
+    // (`ResolvedScope.workTargets(applyTo:alsoCarry:)`), so the tempo map moves only with the
+    // whole work, or when the caller opts it in.
     //
     internal static func carried(tempoMap: TempoMap,
                                  applyTo: TransformTargets,
@@ -99,40 +99,95 @@ extension Work {
     }
 
     //
-    // The parts a transform targets: those whose ID is in `partIDs`, or every part when
-    // `partIDs` is `nil`. Used to resolve a default anchor or range over just the targeted parts.
+    // The pitch range of the notes `resolution` takes, across every part it touches: what a
+    // pitch transform's default range resolves to.
     //
-    internal static func selected<T: TimeProtocol, P: PitchProtocol>(_ parts: [Part<T, P>],
-                                                                     partIDs: Set<PartID>?) -> [Part<T, P>] {
-        guard let partIDs
-        else { return parts }
+    internal static func selectedPitchRange<WorkBody: Work.Body>(of body: WorkBody,
+                                                                 resolution: ResolvedScope) -> ClosedRange<WorkBody.PitchType>? {
+        let ranges = body.parts.compactMap { part in
+            resolution.selections[part.partID].flatMap { part.selectedPitchRange(for: $0) }
+        }
 
-        return parts.filter { partIDs.contains($0.partID) }
+        guard let lowerBound = ranges.map(\.lowerBound).min(),
+              let upperBound = ranges.map(\.upperBound).max()
+        else { return nil }
+
+        return lowerBound...upperBound
     }
 
     //
-    // Applies `transform` to every part whose ID is in `partIDs` — every part when `partIDs` is
-    // `nil` — leaving every other part untouched and in place. IDs naming no part are ignored.
-    // All-or-nothing: a thrown error abandons the local `result` array before it is ever
-    // assigned to `content`.
+    // Applies `transform` to every part `resolution` touches, with what it takes of the part,
+    // leaving every other part untouched and in place. All or nothing: a thrown error abandons
+    // the local copy before it is ever assigned to `body`.
     //
-    internal static func transformed<T: TimeProtocol, P: PitchProtocol>(parts: [Part<T, P>],
-                                                                        partIDs: Set<PartID>?,
-                                                                        kind: TransformKind,
-                                                                        transform: PartTransform<T, P>) throws(Error) -> [Part<T, P>] {
-        var result = parts
+    internal static func transform<WorkBody: Work.Body>(_ body: inout WorkBody,
+                                                        resolution: ResolvedScope,
+                                                        kind: TransformKind,
+                                                        _ transform: PartTransform<WorkBody.TimeType, WorkBody.PitchType>) throws(Error) {
+        var parts = body.parts
 
-        for index in result.indices where partIDs?.contains(result[index].partID) ?? true {
+        for index in parts.indices {
+            guard let selection = resolution.selections[parts[index].partID]
+            else { continue }
+
             do {
-                try transform(&result[index])
+                try transform(&parts[index], selection)
             } catch {
                 throw Self.wrapped(error: error,
                                    kind: kind,
-                                   partID: result[index].partID)
+                                   partID: parts[index].partID)
             }
         }
 
-        return result
+        body.parts = parts
+    }
+
+    //
+    // The one range a time transform's default resolves from, so everything that moves scales
+    // or mirrors about the same point: each touched part's own range (its chosen notes and the
+    // tables it carries whole; see `Part.transformTimeRange(_:)`), joined.
+    //
+    internal static func partsTimeRange<WorkBody: Work.Body>(of body: WorkBody,
+                                                             resolution: ResolvedScope,
+                                                             applyTo: TransformTargets,
+                                                             alsoCarry: TransformTargets) -> ClosedRange<WorkBody.TimeType>? {
+        body.parts.reduce(nil) { acc, part in
+            guard let selection = resolution.selections[part.partID],
+                  let partRange = part.transformTimeRange(part.carryPlan(for: selection,
+                                                                         applyTo: applyTo,
+                                                                         alsoCarry: alsoCarry))
+            else { return acc }
+
+            return Self._widened(acc, by: partRange)
+        }
+    }
+
+    //
+    // As above, for beat time, widened by the tempo map's, meter table's and key table's
+    // entries when the transform carries them.
+    //
+    internal static func transformTimeRange(of body: some Work.BeatTimeBody,
+                                            resolution: ResolvedScope,
+                                            applyTo: TransformTargets,
+                                            alsoCarry: TransformTargets) -> ClosedRange<BeatTime>? {
+        let workTargets = resolution.workTargets(applyTo: applyTo,
+                                                 alsoCarry: alsoCarry)
+        var range = partsTimeRange(of: body,
+                                   resolution: resolution,
+                                   applyTo: applyTo,
+                                   alsoCarry: alsoCarry)
+        let tables: [(TransformTargets, [BeatTime])] = [(.tempo, body.tempoMap.map(\.beatTime)),
+                                                        (.meter, body.meterTable.map(\.beatTime)),
+                                                        (.key, body.keyTable.map(\.beatTime))]
+
+        for (kind, times) in tables where workTargets.contains(kind) {
+            if let first = times.min(),
+               let last = times.max() {
+                range = Self._widened(range, by: first...last)
+            }
+        }
+
+        return range
     }
 
     //
@@ -176,5 +231,15 @@ extension Work {
                                             pedal: pedal,
                                             detail: underlying.message)
         }
+    }
+
+    // MARK: Private Type Methods
+
+    private static func _widened<TimeType: TimeProtocol>(_ range: ClosedRange<TimeType>?,
+                                                         by other: ClosedRange<TimeType>) -> ClosedRange<TimeType> {
+        guard let range
+        else { return other }
+
+        return min(range.lowerBound, other.lowerBound)...max(range.upperBound, other.upperBound)
     }
 }

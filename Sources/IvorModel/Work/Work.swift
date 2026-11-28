@@ -381,63 +381,6 @@ extension Work {
         }
     }
 
-    //
-    // The targeted parts' own transform ranges (notes, plus every map `applyTo` selects), joined.
-    // A wall-time work has no tempo map, so this is its whole default.
-    //
-    internal static func transformTimeRange<TimeType: TimeProtocol>(of parts: [Part<TimeType, some PitchProtocol>],
-                                                                    applyTo: TransformTargets) -> ClosedRange<TimeType>? {
-        parts.reduce(nil) { acc, part in
-            guard let partRange = part.transformTimeRange(noteIDs: nil,
-                                                          applyTo: applyTo)
-            else { return acc }
-
-            guard let acc
-            else { return partRange }
-
-            return min(acc.lowerBound, partRange.lowerBound)...max(acc.upperBound, partRange.upperBound)
-        }
-    }
-
-    //
-    // The one range a beat-time work's augment, diminish or reverse resolves its default from:
-    // the targeted parts' own transform ranges (notes, plus every map `applyTo` selects), widened
-    // by the tempo map's, meter table's and key table's entries when `applyTo` carries
-    // them.
-    // Everything that moves then scales or mirrors about the same point.
-    //
-    internal static func transformTimeRange(of parts: [Part<BeatTime, some PitchProtocol>],
-                                            tempoMap: TempoMap,
-                                            meterTable: MeterTable,
-                                            keyTable: KeyTable,
-                                            applyTo: TransformTargets) -> ClosedRange<BeatTime>? {
-        var range = transformTimeRange(of: parts,
-                                       applyTo: applyTo)
-
-        if applyTo.contains(.tempo),
-           let first = tempoMap.first,
-           let last = tempoMap.last {
-            range = Self._widened(range,
-                                  by: first.beatTime...last.beatTime)
-        }
-
-        if applyTo.contains(.meter),
-           let first = meterTable.first,
-           let last = meterTable.last {
-            range = Self._widened(range,
-                                  by: first.beatTime...last.beatTime)
-        }
-
-        if applyTo.contains(.key),
-           let first = keyTable.first,
-           let last = keyTable.last {
-            range = Self._widened(range,
-                                  by: first.beatTime...last.beatTime)
-        }
-
-        return range
-    }
-
     // MARK: Internal Instance Methods
 
     //
@@ -457,14 +400,6 @@ extension Work {
 
     private static func _normalized(_ rules: InterpretationRules?) -> InterpretationRules? {
         rules?.isEmpty ?? true ? nil : rules
-    }
-
-    private static func _widened(_ range: ClosedRange<BeatTime>?,
-                                 by other: ClosedRange<BeatTime>) -> ClosedRange<BeatTime> {
-        guard let range
-        else { return other }
-
-        return min(range.lowerBound, other.lowerBound)...max(range.upperBound, other.upperBound)
     }
 }
 

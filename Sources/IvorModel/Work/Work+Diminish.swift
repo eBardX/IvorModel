@@ -9,11 +9,12 @@ extension Work {
 
     // MARK: Public Instance Methods
 
-    /// Diminishes note attack times and durations by a rational factor across the beat-time parts
-    /// in this work that `partIDs` names, along with any parameter maps selected by `applyTo` and,
-    /// when `applyTo` contains ``TransformTargets/tempo``, ``TransformTargets/meter`` or
-    /// ``TransformTargets/key``, the work’s own tempo map, meter table or key
-    /// table. All three are work-wide, so they’re carried along whichever parts are targeted.
+    /// Diminishes note attack times and durations by a rational factor across the notes of this
+    /// beat-time work that `scope` takes, along with the tables it carries.
+    ///
+    /// A table is carried only when `scope` covers everything that shares it (see
+    /// ``Work/Scope``), and `applyTo` names its kind; `alsoCarry` opts shared tables in anyway.
+    /// The work’s tempo map, meter table and key table need the whole work.
     ///
     /// When the meter table is carried, the meter scales with the music (see
     /// ``MeterTable/diminish(by:anchor:)``), so every note keeps its `bar:beat`. When it isn’t, the
@@ -23,167 +24,151 @@ extension Work {
     /// anchor on keeps its rate while its unit scales with the music (see
     /// `TempoMap.scaleUnits(by:from:)`), so nothing sounds different.
     ///
-    /// - Parameter factor:         A rational number ≥ 1 by which to compress the targeted parts’
-    ///                             note timings.
+    /// - Parameter factor:         A rational number ≥ 1 by which to compress the note timings.
     /// - Parameter anchor:         The low beat-time bound to compress attack times relative to.
-    /// `nil` resolves to the start of everything being diminished: the targeted parts’ notes and
-    /// the entries of every map `applyTo` selects, including the tempo map, the meter table and the
-    /// key table.
-    /// - Parameter applyTo:        The parameter maps (and the work-wide tables) to diminish
-    ///                             along with each targeted note table. Defaults to every map.
+    ///                             `nil` resolves to the start of everything being diminished: the
+    ///                             scope’s notes and every table carried whole.
+    /// - Parameter applyTo:        The kinds of table to diminish along with the notes. Defaults to
+    ///                             every kind.
+    /// - Parameter alsoCarry:      The kinds of shared table to carry even though `scope` doesn’t
+    ///                             cover everything that shares them. Defaults to none.
     /// - Parameter keepingSound:   Whether to scale the tempo units too, so that the music
-    ///                             sounds the same. It has an effect only when `applyTo`
-    ///                             contains ``TransformTargets/tempo``. Defaults to `false`.
-    /// - Parameter partIDs:        The IDs of the parts to transform, or `nil` (the default) for
-    ///                             every part. IDs naming no part are ignored.
+    ///                             sounds the same. It has an effect only when the tempo map is
+    ///                             carried. Defaults to `false`.
+    /// - Parameter scope:          The notes to diminish. Defaults to ``Work/Scope/all``.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use beat
-    ///             time; otherwise, a transform-failure case naming the part (or the tempo map or
+    ///             time; an unknown-ID case if `scope` names something not in this work;
+    ///             otherwise, a transform-failure case naming the part (or the tempo map or
     ///             meter table) and sub-structure that failed.
     public mutating func diminish(by factor: Number,
                                   anchor: BeatTime? = nil,
                                   applyTo: TransformTargets = .all,
+                                  alsoCarry: TransformTargets = [],
                                   keepingSound: Bool = false,
-                                  partIDs: Set<PartID>? = nil) throws(Error) {
+                                  scope: Scope = .all) throws(Error) {
         try ensureUnlocked()
 
-        switch content.cases {
-        case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, Frequency>
+        guard var body = content.body as? any BeatTimeBody
+        else { throw Error.timeBasisMismatch(expected: .beat) }
 
-            let resolvedAnchor = anchor ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                   tempoMap: tempoMap,
-                                                                   meterTable: meterTable,
-                                                                   keyTable: keyTable,
-                                                                   applyTo: applyTo)?.lowerBound
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
-                try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
-            }
-            let (newTempoMap, newMeterTable, newKeyTable) = try Self._diminishedTables(tempoMap: tempoMap,
-                                                                                       meterTable: meterTable,
-                                                                                       keyTable: keyTable,
-                                                                                       by: factor,
-                                                                                       anchor: resolvedAnchor,
-                                                                                       applyTo: applyTo,
-                                                                                       keepingSound: keepingSound)
+        try Self._diminish(&body,
+                           by: factor,
+                           anchor: anchor,
+                           applyTo: applyTo,
+                           alsoCarry: alsoCarry,
+                           keepingSound: keepingSound,
+                           scope: scope)
 
-            content = .absoluteBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
-
-        case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, NoteNumber>
-
-            let resolvedAnchor = anchor ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                   tempoMap: tempoMap,
-                                                                   meterTable: meterTable,
-                                                                   keyTable: keyTable,
-                                                                   applyTo: applyTo)?.lowerBound
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
-                try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
-            }
-            let (newTempoMap, newMeterTable, newKeyTable) = try Self._diminishedTables(tempoMap: tempoMap,
-                                                                                       meterTable: meterTable,
-                                                                                       keyTable: keyTable,
-                                                                                       by: factor,
-                                                                                       anchor: resolvedAnchor,
-                                                                                       applyTo: applyTo,
-                                                                                       keepingSound: keepingSound)
-
-            content = .keyboardBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
-
-        case let .standardBeat(parts, tempoMap, meterTable, keyTable):
-            typealias PartType = Part<BeatTime, Pitch>
-
-            let resolvedAnchor = anchor ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                   tempoMap: tempoMap,
-                                                                   meterTable: meterTable,
-                                                                   keyTable: keyTable,
-                                                                   applyTo: applyTo)?.lowerBound
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
-                try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
-            }
-            let (newTempoMap, newMeterTable, newKeyTable) = try Self._diminishedTables(tempoMap: tempoMap,
-                                                                                       meterTable: meterTable,
-                                                                                       keyTable: keyTable,
-                                                                                       by: factor,
-                                                                                       anchor: resolvedAnchor,
-                                                                                       applyTo: applyTo,
-                                                                                       keepingSound: keepingSound)
-
-            content = .standardBeat(newParts, newTempoMap, newMeterTable, newKeyTable)
-
-        default:
-            throw Error.timeBasisMismatch(expected: .beat)
-        }
+        content.body = body
     }
 
-    /// Diminishes note attack times and durations by a rational factor across the wall-time parts
-    /// in this work that `partIDs` names, along with any parameter maps selected by `applyTo`.
+    /// Diminishes note attack times and durations by a rational factor across the notes of this
+    /// wall-time work that `scope` takes, along with the tables it carries.
     ///
-    /// - Parameter factor:     A rational number ≥ 1 by which to compress the targeted parts’ note
-    ///                         timings.
-    /// - Parameter anchor:     The low wall-time bound to compress attack times relative to. `nil`
-    ///                         resolves to the start of everything being diminished: the targeted
-    ///                         parts’ notes and the entries of every map `applyTo` selects.
-    /// - Parameter applyTo:    The parameter maps to diminish along with each targeted note table.
-    ///                         Defaults to every map.
-    /// - Parameter partIDs:    The IDs of the parts to transform, or `nil` (the default) for every
-    ///                         part. IDs naming no part are ignored.
+    /// A table is carried only when `scope` covers everything that shares it (see
+    /// ``Work/Scope``), and `applyTo` names its kind; `alsoCarry` opts shared tables in anyway.
+    ///
+    /// - Parameter factor:     A rational number ≥ 1 by which to compress the note timings.
+    /// - Parameter anchor:     The low wall-time bound to compress attack times relative to.
+    ///                         `nil` resolves to the start of everything being diminished: the
+    ///                         scope’s notes and every table carried whole.
+    /// - Parameter applyTo:    The kinds of table to diminish along with the notes. Defaults to
+    ///                         every kind.
+    /// - Parameter alsoCarry:  The kinds of shared table to carry even though `scope` doesn’t
+    ///                         cover everything that shares them. Defaults to none.
+    /// - Parameter scope:      The notes to diminish. Defaults to ``Work/Scope/all``.
     ///
     /// - Throws:   ``Work/Error/workIsLocked`` if this work is locked;
     ///             ``Work/Error/timeBasisMismatch(expected:)`` if this work does not use wall
-    ///             time; otherwise, a transform-failure case naming the part and sub-structure
-    ///             that failed.
+    ///             time; an unknown-ID case if `scope` names something not in this work;
+    ///             otherwise, a transform-failure case naming the part and sub-structure that
+    ///             failed.
     public mutating func diminish(by factor: Number,
                                   anchor: WallTime? = nil,
                                   applyTo: TransformTargets = .all,
-                                  partIDs: Set<PartID>? = nil) throws(Error) {
+                                  alsoCarry: TransformTargets = [],
+                                  scope: Scope = .all) throws(Error) {
         try ensureUnlocked()
 
-        switch content.cases {
-        case let .absoluteWall(parts):
-            typealias PartType = Part<WallTime, Frequency>
+        guard var body = content.body as? any WallTimeBody
+        else { throw Error.timeBasisMismatch(expected: .wall) }
 
-            let resolvedAnchor = anchor ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                   applyTo: applyTo)?.lowerBound
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
-                try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
-            }
+        try Self._diminishParts(&body,
+                                by: factor,
+                                anchor: anchor,
+                                applyTo: applyTo,
+                                alsoCarry: alsoCarry,
+                                resolution: scope.resolved(in: body))
 
-            content = .absoluteWall(newParts)
-
-        case let .keyboardWall(parts):
-            typealias PartType = Part<WallTime, NoteNumber>
-
-            let resolvedAnchor = anchor ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                   applyTo: applyTo)?.lowerBound
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
-                try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
-            }
-
-            content = .keyboardWall(newParts)
-
-        case let .standardWall(parts):
-            typealias PartType = Part<WallTime, Pitch>
-
-            let resolvedAnchor = anchor ?? Self.transformTimeRange(of: Self.selected(parts, partIDs: partIDs),
-                                                                   applyTo: applyTo)?.lowerBound
-            let newParts = try Self.transformed(parts: parts, partIDs: partIDs, kind: .diminish) { (part: inout PartType) throws(PartType.Error) in
-                try part.diminish(by: factor, anchor: resolvedAnchor, applyTo: applyTo)
-            }
-
-            content = .standardWall(newParts)
-
-        default:
-            throw Error.timeBasisMismatch(expected: .wall)
-        }
+        content.body = body
     }
 
     // MARK: Private Type Methods
 
+    private static func _diminish(_ body: inout some BeatTimeBody,
+                                  by factor: Number,
+                                  anchor: BeatTime?,
+                                  applyTo: TransformTargets,
+                                  alsoCarry: TransformTargets,
+                                  keepingSound: Bool,
+                                  scope: Scope) throws(Error) {
+        let resolution = try scope.resolved(in: body)
+        let workTargets = resolution.workTargets(applyTo: applyTo,
+                                                 alsoCarry: alsoCarry)
+        let anchor = anchor ?? transformTimeRange(of: body,
+                                                  resolution: resolution,
+                                                  applyTo: applyTo,
+                                                  alsoCarry: alsoCarry)?.lowerBound
+
+        try _diminishParts(&body,
+                           by: factor,
+                           anchor: anchor,
+                           applyTo: applyTo,
+                           alsoCarry: alsoCarry,
+                           resolution: resolution)
+
+        (body.tempoMap, body.meterTable, body.keyTable) = try _diminishedTables(tempoMap: body.tempoMap,
+                                                                                meterTable: body.meterTable,
+                                                                                keyTable: body.keyTable,
+                                                                                by: factor,
+                                                                                anchor: anchor,
+                                                                                applyTo: workTargets,
+                                                                                keepingSound: keepingSound)
+    }
+
+    //
+    // The scope's notes diminished, with the tables each part carries. `anchor` `nil` resolves to
+    // the start of everything that moves.
+    //
+    private static func _diminishParts<WorkBody: Body>(_ body: inout WorkBody,
+                                                       by factor: Number,
+                                                       anchor: WorkBody.TimeType?,
+                                                       applyTo: TransformTargets,
+                                                       alsoCarry: TransformTargets,
+                                                       resolution: ResolvedScope) throws(Error) {
+        typealias PartType = Part<WorkBody.TimeType, WorkBody.PitchType>
+
+        let anchor = anchor ?? partsTimeRange(of: body,
+                                              resolution: resolution,
+                                              applyTo: applyTo,
+                                              alsoCarry: alsoCarry)?.lowerBound
+
+        try transform(&body,
+                      resolution: resolution,
+                      kind: .diminish) { (part: inout PartType, selection) throws(PartType.Error) in
+            try part.diminish(by: factor,
+                              anchor: anchor,
+                              selection: selection,
+                              applyTo: applyTo,
+                              alsoCarry: alsoCarry)
+        }
+    }
+
     //
     // The work-wide tables a beat-time diminish carries along: the tempo map, meter table and key
-    // table, each only when `applyTo` names it.
+    // table, each only when `applyTo` (the work targets the scope carries) names it.
     //
     private static func _diminishedTables(tempoMap: TempoMap,
                                           meterTable: MeterTable,

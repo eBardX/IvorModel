@@ -31,7 +31,7 @@ extension WorkAugmentTests {
 
         try selected.augment(by: Number(2),
                              anchor: nil as BeatTime?,
-                             partIDs: [violin.partID, cello.partID])
+                             scope: Work.Scope(parts: [violin.partID, cello.partID]))
         try whole.augment(by: Number(2),
                           anchor: nil as BeatTime?)
 
@@ -161,7 +161,7 @@ extension WorkAugmentTests {
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.augment(by: Number(2), anchor: nil as BeatTime?, partIDs: [partID])
+            try work.augment(by: Number(2), anchor: nil as BeatTime?, scope: Work.Scope(parts: [partID]))
         }
 
         #expect(throws: Work.Error.workIsLocked) {
@@ -208,7 +208,7 @@ extension WorkAugmentTests {
         try work.augment(by: 2,
                          anchor: nil as BeatTime?,
                          applyTo: TransformTargets.all.subtracting([.tempo, .meter]),
-                         partIDs: [violin.partID])
+                         scope: Work.Scope(parts: [violin.partID]))
 
         #expect(work.meterTable == meterTable)
         #expect(work.part(violin.partID, as: Part<BeatTime, Pitch>.self)?.strands[0].noteTable.first?.duration == .half)
@@ -230,7 +230,7 @@ extension WorkAugmentTests {
         // containment check fails, even though it's a valid anchor for `badPart` (5...6):
         //
         #expect(throws: Work.Error.self) {
-            try work.augment(by: Number(2), anchor: BeatTime(3), partIDs: partIDs)
+            try work.augment(by: Number(2), anchor: BeatTime(3), scope: Work.Scope(parts: partIDs))
         }
 
         #expect(work.partName(at: 0) == "Violin")
@@ -269,12 +269,14 @@ extension WorkAugmentTests {
     }
 
     @Test
-    func augment_singlePart_missingID_isNoOp() throws {
+    func augment_unknownPartID_throws() throws {
         let part = Part<BeatTime, Pitch>(name: "Violin")
         var work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
+        let unknownID = PartID()
 
-        try work.augment(by: Number(2), anchor: nil as BeatTime?, partIDs: [PartID()])
-
+        #expect(throws: Work.Error.unknownPartID(unknownID)) {
+            try work.augment(by: Number(2), anchor: nil as BeatTime?, scope: Work.Scope(parts: [unknownID]))
+        }
         #expect(work.partCount == 1)
     }
 
@@ -289,7 +291,7 @@ extension WorkAugmentTests {
         let targetID = part1.partID
         var work = Work(content: .standardBeat([part1, part2], TempoMap(), MeterTable(), KeyTable()))
 
-        try work.augment(by: Number(2), anchor: nil as BeatTime?, partIDs: [targetID])
+        try work.augment(by: Number(2), anchor: nil as BeatTime?, scope: Work.Scope(parts: [targetID]))
 
         #expect(work.partName(at: 0) == "Violin")
         #expect(work.partName(at: 1) == "Cello")
@@ -451,7 +453,7 @@ extension WorkAugmentTests {
 
         #expect(throws: Work.Error.meterTableTransformFailure(kind: .augment,
                                                               detail: MeterTable.Error.invalidAugmentationFactor(frac(1, 2)).message)) {
-            try work.augment(by: frac(1, 2), anchor: nil as BeatTime?, applyTo: [.meter], partIDs: [])
+            try work.augment(by: frac(1, 2), anchor: nil as BeatTime?, applyTo: [.meter], alsoCarry: [.meter], scope: Work.Scope(parts: []))
         }
     }
 

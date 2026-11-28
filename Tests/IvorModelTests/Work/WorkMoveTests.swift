@@ -34,7 +34,7 @@ extension WorkMoveTests {
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.move(by: directedDuration, partIDs: [partID])
+            try work.move(by: directedDuration, scope: Work.Scope(parts: [partID]))
         }
 
         #expect(throws: Work.Error.workIsLocked) {

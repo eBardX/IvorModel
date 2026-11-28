@@ -8,397 +8,170 @@ extension Part {
 
     // MARK: Public Instance Methods
 
-    /// Augments note attack times and durations by a rational factor, along with any parameter
-    /// maps selected by `applyTo`.
+    /// Augments note attack times and durations by a rational factor, along with the tables it
+    /// carries.
     ///
-    /// - Parameter factor:     A rational number ≥ 1 by which to stretch the selected note
-    ///                         timings.
+    /// A table is carried only when the notes cover everything that shares it. With `noteIDs`
+    /// `nil` (the whole part), every table `applyTo` names is carried. With some notes, only the
+    /// entries within their time range of the own dynamic maps and instrument tables of the
+    /// strands that hold them are; the part’s pedals, pan, marks, dynamic map and instrument
+    /// table stay, unless `alsoCarry` opts them in.
+    ///
+    /// - Parameter factor:     A rational number ≥ 1 by which to stretch the note timings.
     /// - Parameter anchor:     The low time bound to stretch attack times relative to. `nil`
-    ///                         resolves to the start of everything being augmented: the notes
-    ///                         and the entries of every map `applyTo` selects, or — when
-    ///                         `noteIDs` is non-`nil` — the selected notes’ own range.
-    /// - Parameter noteIDs:    The identities of the notes to augment, or `nil` to augment every
-    ///                         note in the note table. Also narrows which entries of any map
-    ///                         selected by `applyTo` are carried along, to those falling within
-    ///                         the selected notes’ own time range.
-    /// - Parameter applyTo:    The parameter maps to augment along with the note table.
-    ///                         Defaults to every map.
+    ///                         resolves to the start of everything being augmented: the chosen
+    ///                         notes and every table carried whole.
+    /// - Parameter noteIDs:    The identities of the notes to augment, wherever they are in
+    ///                         the part, or `nil` (the default) for the whole part.
+    /// - Parameter applyTo:    The kinds of table to augment along with the notes. Defaults to
+    ///                         every kind.
+    /// - Parameter alsoCarry:  The kinds of shared table to carry even though `noteIDs` doesn’t
+    ///                         cover everything that shares them. Their entries within the
+    ///                         chosen notes’ time range are carried. Defaults to none.
     ///
-    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the note table cannot be augmented, or
-    ///             the corresponding map-failure case if a selected map cannot be augmented.
+    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the notes cannot be augmented, or the
+    ///             corresponding table-failure case if a carried table cannot be augmented.
     public mutating func augment(by factor: Number,
                                  anchor: TimeType? = nil,
                                  noteIDs: Set<NoteID>? = nil,
-                                 applyTo: TransformTargets = .all) throws(Error) {
-        //
-        // Resolve the default once, so the note table and every map scale about the same anchor.
-        //
-        let resolvedAnchor = anchor ?? transformTimeRange(noteIDs: noteIDs,
-                                                          applyTo: applyTo)?.lowerBound
-
-        var newStrands = try transformingNotes { noteTable throws(NoteFailure) in
-            try noteTable.augment(by: factor,
-                                  anchor: resolvedAnchor,
-                                  noteIDs: noteIDs)
-        }
-
-        var newDynamicMap = dynamicMap
-        var newInstrumentTable = instrumentTable
-        var newPanMap = panMap
-        var newPedals = pedals
-        var newMarkTable = markTable
-
-        if applyTo.contains(.dynamic) {
-            (newDynamicMap, newStrands) = try transformingDynamicMaps(of: newStrands,
-                                                                      noteIDs: noteIDs) { table, entryIDs throws(DynamicFailure) in
-                try table.augment(by: factor,
-                                  anchor: resolvedAnchor,
-                                  entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.instrument) {
-            (newInstrumentTable, newStrands) = try transformingInstrumentTables(of: newStrands,
-                                                                                noteIDs: noteIDs) { table, entryIDs throws(InstrumentFailure) in
-                try table.augment(by: factor,
-                                  anchor: resolvedAnchor,
-                                  entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.pan) {
-            do {
-                try newPanMap.augment(by: factor,
-                                      anchor: resolvedAnchor,
-                                      entryIDs: _panEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.panMapFailure(error)
-            }
-        }
-
-        if applyTo.contains(.pedal) {
-            newPedals = try _transformedPedals(forNoteIDs: noteIDs) { table, entryIDs throws(PedalTable<TimeType>.Error) in
-                try table.augment(by: factor,
-                                  anchor: resolvedAnchor,
-                                  entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.mark) {
-            do {
-                try newMarkTable.augment(by: factor,
-                                         anchor: resolvedAnchor,
-                                         entryIDs: _markEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.markTableFailure(error)
-            }
-        }
-
-        strands = newStrands
-        dynamicMap = newDynamicMap
-        instrumentTable = newInstrumentTable
-        panMap = newPanMap
-        pedals = newPedals
-        markTable = newMarkTable
+                                 applyTo: TransformTargets = .all,
+                                 alsoCarry: TransformTargets = []) throws(Error) {
+        try augment(by: factor,
+                    anchor: anchor,
+                    selection: selection(for: noteIDs),
+                    applyTo: applyTo,
+                    alsoCarry: alsoCarry)
     }
 
-    /// Diminishes note attack times and durations by a rational factor, along with any
-    /// parameter maps selected by `applyTo`.
+    /// Diminishes note attack times and durations by a rational factor, along with the tables
+    /// it carries.
     ///
-    /// - Parameter factor:     A rational number ≥ 1 by which to compress the selected note
-    ///                         timings.
+    /// A table is carried only when the notes cover everything that shares it. With `noteIDs`
+    /// `nil` (the whole part), every table `applyTo` names is carried. With some notes, only the
+    /// entries within their time range of the own dynamic maps and instrument tables of the
+    /// strands that hold them are; the part’s pedals, pan, marks, dynamic map and instrument
+    /// table stay, unless `alsoCarry` opts them in.
+    ///
+    /// - Parameter factor:     A rational number ≥ 1 by which to compress the note timings.
     /// - Parameter anchor:     The low time bound to compress attack times relative to. `nil`
-    ///                         resolves to the start of everything being diminished: the notes
-    ///                         and the entries of every map `applyTo` selects, or — when
-    ///                         `noteIDs` is non-`nil` — the selected notes’ own range.
-    /// - Parameter noteIDs:    The identities of the notes to diminish, or `nil` to diminish
-    ///                         every note in the note table. Also narrows which entries of any
-    ///                         map selected by `applyTo` are carried along, to those falling
-    ///                         within the selected notes’ own time range.
-    /// - Parameter applyTo:    The parameter maps to diminish along with the note table.
-    ///                         Defaults to every map.
+    ///                         resolves to the start of everything being diminished: the chosen
+    ///                         notes and every table carried whole.
+    /// - Parameter noteIDs:    The identities of the notes to diminish, wherever they are in
+    ///                         the part, or `nil` (the default) for the whole part.
+    /// - Parameter applyTo:    The kinds of table to diminish along with the notes. Defaults to
+    ///                         every kind.
+    /// - Parameter alsoCarry:  The kinds of shared table to carry even though `noteIDs` doesn’t
+    ///                         cover everything that shares them. Their entries within the
+    ///                         chosen notes’ time range are carried. Defaults to none.
     ///
-    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the note table cannot be diminished, or
-    ///             the corresponding map-failure case if a selected map cannot be diminished.
+    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the notes cannot be diminished, or the
+    ///             corresponding table-failure case if a carried table cannot be diminished.
     public mutating func diminish(by factor: Number,
                                   anchor: TimeType? = nil,
                                   noteIDs: Set<NoteID>? = nil,
-                                  applyTo: TransformTargets = .all) throws(Error) {
-        //
-        // Resolve the default once, so the note table and every map scale about the same anchor.
-        //
-        let resolvedAnchor = anchor ?? transformTimeRange(noteIDs: noteIDs,
-                                                          applyTo: applyTo)?.lowerBound
-
-        var newStrands = try transformingNotes { noteTable throws(NoteFailure) in
-            try noteTable.diminish(by: factor,
-                                   anchor: resolvedAnchor,
-                                   noteIDs: noteIDs)
-        }
-
-        var newDynamicMap = dynamicMap
-        var newInstrumentTable = instrumentTable
-        var newPanMap = panMap
-        var newPedals = pedals
-        var newMarkTable = markTable
-
-        if applyTo.contains(.dynamic) {
-            (newDynamicMap, newStrands) = try transformingDynamicMaps(of: newStrands,
-                                                                      noteIDs: noteIDs) { table, entryIDs throws(DynamicFailure) in
-                try table.diminish(by: factor,
-                                   anchor: resolvedAnchor,
-                                   entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.instrument) {
-            (newInstrumentTable, newStrands) = try transformingInstrumentTables(of: newStrands,
-                                                                                noteIDs: noteIDs) { table, entryIDs throws(InstrumentFailure) in
-                try table.diminish(by: factor,
-                                   anchor: resolvedAnchor,
-                                   entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.pan) {
-            do {
-                try newPanMap.diminish(by: factor,
-                                       anchor: resolvedAnchor,
-                                       entryIDs: _panEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.panMapFailure(error)
-            }
-        }
-
-        if applyTo.contains(.pedal) {
-            newPedals = try _transformedPedals(forNoteIDs: noteIDs) { table, entryIDs throws(PedalTable<TimeType>.Error) in
-                try table.diminish(by: factor,
-                                   anchor: resolvedAnchor,
-                                   entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.mark) {
-            do {
-                try newMarkTable.diminish(by: factor,
-                                          anchor: resolvedAnchor,
-                                          entryIDs: _markEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.markTableFailure(error)
-            }
-        }
-
-        strands = newStrands
-        dynamicMap = newDynamicMap
-        instrumentTable = newInstrumentTable
-        panMap = newPanMap
-        pedals = newPedals
-        markTable = newMarkTable
+                                  applyTo: TransformTargets = .all,
+                                  alsoCarry: TransformTargets = []) throws(Error) {
+        try diminish(by: factor,
+                     anchor: anchor,
+                     selection: selection(for: noteIDs),
+                     applyTo: applyTo,
+                     alsoCarry: alsoCarry)
     }
 
     /// Inverts note pitches around a pitch range.
     ///
     /// - Parameter pitchRange: The pitch range to invert pitches around. `nil` resolves to the
-    ///                         note table’s own pitch range, or — when `noteIDs` is non-`nil` —
-    ///                         the selected notes’ own pitch range.
-    /// - Parameter noteIDs:    The identities of the notes to invert, or `nil` to invert every
-    ///                         note in the note table.
+    ///                         chosen notes’ own pitch range, across every strand.
+    /// - Parameter noteIDs:    The identities of the notes to invert, wherever they are in the
+    ///                         part, or `nil` (the default) for the whole part.
     ///
-    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the note table cannot be inverted.
+    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the notes cannot be inverted.
     ///
-    /// - Note: No parameter map has a pitch axis, so — unlike the other five transforms — this
-    ///         one never carries any map along.
+    /// - Note: No table has a pitch axis, so — unlike the time transforms — this one never
+    ///         carries any table along.
     public mutating func invert(around pitchRange: ClosedRange<PitchType>? = nil,
                                 noteIDs: Set<NoteID>? = nil) throws(Error) {
-        let newStrands = try transformingNotes { noteTable throws(NoteFailure) in
-            try noteTable.invert(around: pitchRange,
-                                 noteIDs: noteIDs)
-        }
-
-        strands = newStrands
+        try invert(around: pitchRange,
+                   selection: selection(for: noteIDs))
     }
 
-    /// Moves note attack times by a directed duration, along with any parameter maps selected
-    /// by `applyTo`.
+    /// Moves note attack times by a directed duration, along with the tables it carries.
     ///
-    /// - Parameter directedDuration:   The directed duration by which to move the selected note
-    ///                                 attack times.
-    /// - Parameter noteIDs:            The identities of the notes to move, or `nil` to move
-    ///                                 every note in the note table. Also narrows which entries
-    ///                                 of any map selected by `applyTo` are carried along, to
-    ///                                 those falling within the selected notes’ own time range.
-    /// - Parameter applyTo:            The parameter maps to move along with the note table.
-    ///                                 Defaults to every map.
+    /// A table is carried only when the notes cover everything that shares it. With `noteIDs`
+    /// `nil` (the whole part), every table `applyTo` names is carried. With some notes, only the
+    /// entries within their time range of the own dynamic maps and instrument tables of the
+    /// strands that hold them are; the part’s pedals, pan, marks, dynamic map and instrument
+    /// table stay, unless `alsoCarry` opts them in.
     ///
-    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the note table cannot be moved, or the
-    ///             corresponding map-failure case if a selected map cannot be moved.
+    /// - Parameter directedDuration:   The directed duration by which to move the attack
+    ///                                 times.
+    /// - Parameter noteIDs:            The identities of the notes to move, wherever they are
+    ///                                 in the part, or `nil` (the default) for the whole part.
+    /// - Parameter applyTo:            The kinds of table to move along with the notes.
+    ///                                 Defaults to every kind.
+    /// - Parameter alsoCarry:          The kinds of shared table to carry even though `noteIDs`
+    ///                                 doesn’t cover everything that shares them. Their entries
+    ///                                 within the chosen notes’ time range are carried. Defaults
+    ///                                 to none.
+    ///
+    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the notes cannot be moved, or the
+    ///             corresponding table-failure case if a carried table cannot be moved.
     public mutating func move(by directedDuration: DirectedDuration<DurationType>,
                               noteIDs: Set<NoteID>? = nil,
-                              applyTo: TransformTargets = .all) throws(Error) {
-        var newStrands = try transformingNotes { noteTable throws(NoteFailure) in
-            try noteTable.move(by: directedDuration,
-                               noteIDs: noteIDs)
-        }
-
-        var newDynamicMap = dynamicMap
-        var newInstrumentTable = instrumentTable
-        var newPanMap = panMap
-        var newPedals = pedals
-        var newMarkTable = markTable
-
-        if applyTo.contains(.dynamic) {
-            (newDynamicMap, newStrands) = try transformingDynamicMaps(of: newStrands,
-                                                                      noteIDs: noteIDs) { table, entryIDs throws(DynamicFailure) in
-                try table.move(by: directedDuration,
-                               entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.instrument) {
-            (newInstrumentTable, newStrands) = try transformingInstrumentTables(of: newStrands,
-                                                                                noteIDs: noteIDs) { table, entryIDs throws(InstrumentFailure) in
-                try table.move(by: directedDuration,
-                               entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.pan) {
-            do {
-                try newPanMap.move(by: directedDuration,
-                                   entryIDs: _panEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.panMapFailure(error)
-            }
-        }
-
-        if applyTo.contains(.pedal) {
-            newPedals = try _transformedPedals(forNoteIDs: noteIDs) { table, entryIDs throws(PedalTable<TimeType>.Error) in
-                try table.move(by: directedDuration,
-                               entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.mark) {
-            do {
-                try newMarkTable.move(by: directedDuration,
-                                      entryIDs: _markEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.markTableFailure(error)
-            }
-        }
-
-        strands = newStrands
-        dynamicMap = newDynamicMap
-        instrumentTable = newInstrumentTable
-        panMap = newPanMap
-        pedals = newPedals
-        markTable = newMarkTable
+                              applyTo: TransformTargets = .all,
+                              alsoCarry: TransformTargets = []) throws(Error) {
+        try move(by: directedDuration,
+                 selection: selection(for: noteIDs),
+                 applyTo: applyTo,
+                 alsoCarry: alsoCarry)
     }
 
-    /// Reverses the order of notes within a time range, along with any parameter maps selected
-    /// by `applyTo`.
+    /// Reverses the order of notes within a time range, along with the tables it carries.
+    ///
+    /// A table is carried only when the notes cover everything that shares it. With `noteIDs`
+    /// `nil` (the whole part), every table `applyTo` names is carried. With some notes, only the
+    /// entries within their time range of the own dynamic maps and instrument tables of the
+    /// strands that hold them are; the part’s pedals, pan, marks, dynamic map and instrument
+    /// table stay, unless `alsoCarry` opts them in.
     ///
     /// - Parameter timeRange:  The time range to mirror attack times around. `nil` resolves to
-    ///                         the span of everything being reversed: the notes and the entries
-    ///                         of every map `applyTo` selects, or — when `noteIDs` is non-`nil`
-    ///                         — the selected notes’ own time range.
-    /// - Parameter noteIDs:    The identities of the notes to reverse, or `nil` to reverse every
-    ///                         note in the note table. Also narrows which entries of any map
-    ///                         selected by `applyTo` are carried along, to those falling within
-    ///                         the selected notes’ own time range.
-    /// - Parameter applyTo:    The parameter maps to reverse along with the note table.
-    ///                         Defaults to every map.
+    ///                         the span of everything being reversed: the chosen notes and every
+    ///                         table carried whole.
+    /// - Parameter noteIDs:    The identities of the notes to reverse, wherever they are in
+    ///                         the part, or `nil` (the default) for the whole part.
+    /// - Parameter applyTo:    The kinds of table to reverse along with the notes. Defaults to
+    ///                         every kind.
+    /// - Parameter alsoCarry:  The kinds of shared table to carry even though `noteIDs` doesn’t
+    ///                         cover everything that shares them. Their entries within the
+    ///                         chosen notes’ time range are carried. Defaults to none.
     ///
-    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the note table cannot be reversed, or
-    ///             the corresponding map-failure case if a selected map cannot be reversed.
+    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the notes cannot be reversed, or the
+    ///             corresponding table-failure case if a carried table cannot be reversed.
     public mutating func reverse(within timeRange: ClosedRange<TimeType>? = nil,
                                  noteIDs: Set<NoteID>? = nil,
-                                 applyTo: TransformTargets = .all) throws(Error) {
-        //
-        // Resolve the default once, so the note table and every map mirror about the same axis.
-        //
-        let resolvedRange = timeRange ?? transformTimeRange(noteIDs: noteIDs,
-                                                            applyTo: applyTo)
-
-        var newStrands = try transformingNotes { noteTable throws(NoteFailure) in
-            try noteTable.reverse(within: resolvedRange,
-                                  noteIDs: noteIDs)
-        }
-
-        var newDynamicMap = dynamicMap
-        var newInstrumentTable = instrumentTable
-        var newPanMap = panMap
-        var newPedals = pedals
-        var newMarkTable = markTable
-
-        if applyTo.contains(.dynamic) {
-            (newDynamicMap, newStrands) = try transformingDynamicMaps(of: newStrands,
-                                                                      noteIDs: noteIDs) { table, entryIDs throws(DynamicFailure) in
-                try table.reverse(within: resolvedRange,
-                                  entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.instrument) {
-            (newInstrumentTable, newStrands) = try transformingInstrumentTables(of: newStrands,
-                                                                                noteIDs: noteIDs) { table, entryIDs throws(InstrumentFailure) in
-                try table.reverse(within: resolvedRange,
-                                  entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.pan) {
-            do {
-                try newPanMap.reverse(within: resolvedRange,
-                                      entryIDs: _panEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.panMapFailure(error)
-            }
-        }
-
-        if applyTo.contains(.pedal) {
-            newPedals = try _transformedPedals(forNoteIDs: noteIDs) { table, entryIDs throws(PedalTable<TimeType>.Error) in
-                try table.reverse(within: resolvedRange,
-                                  entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.mark) {
-            do {
-                try newMarkTable.reverse(within: resolvedRange,
-                                         entryIDs: _markEntryIDs(forNoteIDs: noteIDs))
-            } catch {
-                throw Error.markTableFailure(error)
-            }
-        }
-
-        strands = newStrands
-        dynamicMap = newDynamicMap
-        instrumentTable = newInstrumentTable
-        panMap = newPanMap
-        pedals = newPedals
-        markTable = newMarkTable
+                                 applyTo: TransformTargets = .all,
+                                 alsoCarry: TransformTargets = []) throws(Error) {
+        try reverse(within: timeRange,
+                    selection: selection(for: noteIDs),
+                    applyTo: applyTo,
+                    alsoCarry: alsoCarry)
     }
 
     /// Transposes note pitches by a directed interval.
     ///
-    /// - Parameter directedInterval:   The directed interval by which to transpose the selected
-    ///                                 pitches.
-    /// - Parameter noteIDs:            The identities of the notes to transpose, or `nil` to
-    ///                                 transpose every note in the note table.
+    /// - Parameter directedInterval:   The directed interval by which to transpose the pitches.
+    /// - Parameter noteIDs:            The identities of the notes to transpose, wherever they
+    ///                                 are in the part, or `nil` (the default) for the whole
+    ///                                 part.
     ///
-    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the note table cannot be transposed.
+    /// - Throws:   ``Part/Error/noteTableFailure(_:)`` if the notes cannot be transposed.
     ///
-    /// - Note: No parameter map has a pitch axis, so — unlike the other five transforms — this
-    ///         one never carries any map along.
+    /// - Note: No table has a pitch axis, so — unlike the time transforms — this one never
+    ///         carries any table along.
     public mutating func transpose(by directedInterval: DirectedInterval<IntervalType>,
                                    noteIDs: Set<NoteID>? = nil) throws(Error) {
-        let newStrands = try transformingNotes { noteTable throws(NoteFailure) in
-            try noteTable.transpose(by: directedInterval,
-                                    noteIDs: noteIDs)
-        }
-
-        strands = newStrands
+        try transpose(by: directedInterval,
+                      selection: selection(for: noteIDs))
     }
 }
 
@@ -409,22 +182,30 @@ extension Part where TimeType == BeatTime {
     // MARK: Public Instance Methods
 
     /// Quantizes note attack and release times to the nearest subdivision given by `factors`,
-    /// along with any parameter maps selected by `applyTo`.
+    /// along with the tables it carries.
+    ///
+    /// A table is carried only when the notes cover everything that shares it. With `noteIDs`
+    /// `nil` (the whole part), every table `applyTo` names is carried. With some notes, only the
+    /// entries within their time range of the own dynamic maps and instrument tables of the
+    /// strands that hold them are; the part’s pedals, pan, marks, dynamic map and instrument
+    /// table stay, unless `alsoCarry` opts them in.
     ///
     /// - Parameter factors:    An array of positive integer subdivision factors.
-    /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize
-    ///                         every note in the note table. Also narrows which entries of any
-    ///                         map selected by `applyTo` are carried along, to those falling
-    ///                         within the selected notes’ own time range.
-    /// - Parameter applyTo:    The parameter maps to quantize along with the note table.
-    ///                         Defaults to ``TransformTargets/all``.
+    /// - Parameter noteIDs:    The identities of the notes to quantize, wherever they are in
+    ///                         the part, or `nil` (the default) for the whole part.
+    /// - Parameter applyTo:    The kinds of table to quantize along with the notes. Defaults to
+    ///                         every kind.
+    /// - Parameter alsoCarry:  The kinds of shared table to carry even though `noteIDs` doesn’t
+    ///                         cover everything that shares them. Their entries within the
+    ///                         chosen notes’ time range are carried. Defaults to none.
     ///
     /// - Throws:   ``Part/Error/noteTableFailure(_:)`` wrapping
     ///             ``NoteTable/Error/emptyQuantizationFactors`` or
     ///             ``NoteTable/Error/invalidQuantizationFactor(_:)`` if `factors` is invalid.
     public mutating func quantize(to factors: [Int],
                                   noteIDs: Set<NoteID>? = nil,
-                                  applyTo: TransformTargets = .all) throws(Error) {
+                                  applyTo: TransformTargets = .all,
+                                  alsoCarry: TransformTargets = []) throws(Error) {
         let quantizer: BeatQuantizer
 
         do {
@@ -441,231 +222,31 @@ extension Part where TimeType == BeatTime {
 
         quantize(to: quantizer,
                  noteIDs: noteIDs,
-                 applyTo: applyTo)
+                 applyTo: applyTo,
+                 alsoCarry: alsoCarry)
     }
 
     /// Quantizes note attack and release times to the nearest grid point defined by `quantizer`,
-    /// along with any parameter maps selected by `applyTo`.
+    /// along with the tables it carries.
     ///
-    /// Unlike ``quantize(to:noteIDs:applyTo:)-(_,_,_)``, this never throws — an already-built
-    /// ``BeatQuantizer`` has already had its factors validated, so there is nothing left for this
-    /// call to fail on. This is the overload ``Work``’s whole-work and targeted quantize variants
-    /// (`Work+Quantize.swift`) call, so a single `BeatQuantizer` can be validated once and reused
-    /// across every part without re-validating per part.
+    /// Unlike ``quantize(to:noteIDs:applyTo:alsoCarry:)-(_,_,_,_)``, this never throws: a
+    /// ``BeatQuantizer`` has already had its factors validated, so nothing is left to fail.
     ///
-    /// - Parameter quantizer:  The quantizer whose grid to snap attack/release times to.
-    /// - Parameter noteIDs:    The identities of the notes to quantize, or `nil` to quantize
-    ///                         every note in the note table. Also narrows which entries of any
-    ///                         map selected by `applyTo` are carried along, to those falling
-    ///                         within the selected notes’ own time range.
-    /// - Parameter applyTo:    The parameter maps to quantize along with the note table.
-    ///                         Defaults to ``TransformTargets/all``.
+    /// - Parameter quantizer:  The quantizer whose grid to snap attack and release times to.
+    /// - Parameter noteIDs:    The identities of the notes to quantize, wherever they are in
+    ///                         the part, or `nil` (the default) for the whole part.
+    /// - Parameter applyTo:    The kinds of table to quantize along with the notes. Defaults to
+    ///                         every kind.
+    /// - Parameter alsoCarry:  The kinds of shared table to carry even though `noteIDs` doesn’t
+    ///                         cover everything that shares them. Their entries within the
+    ///                         chosen notes’ time range are carried. Defaults to none.
     public mutating func quantize(to quantizer: BeatQuantizer,
                                   noteIDs: Set<NoteID>? = nil,
-                                  applyTo: TransformTargets = .all) {
-        let range = selectedTimeRange(noteIDs: noteIDs)
-
-        for index in strands.indices {
-            strands[index].noteTable.quantize(using: quantizer,
-                                              noteIDs: noteIDs)
-        }
-
-        if applyTo.contains(.dynamic) {
-            dynamicMap.quantize(using: quantizer,
-                                entryIDs: _dynamicEntryIDs(forNoteIDs: noteIDs))
-
-            for index in strands.indices {
-                let entryIDs = strands[index].dynamicMap.flatMap { Self.entryIDs(of: $0, noteIDs: noteIDs, in: range) }
-
-                strands[index].dynamicMap?.quantize(using: quantizer,
-                                                    entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.instrument) {
-            instrumentTable.quantize(using: quantizer,
-                                     entryIDs: _instrumentEntryIDs(forNoteIDs: noteIDs))
-
-            for index in strands.indices {
-                let entryIDs = strands[index].instrumentTable.flatMap { Self.entryIDs(of: $0, noteIDs: noteIDs, in: range) }
-
-                strands[index].instrumentTable?.quantize(using: quantizer,
-                                                         entryIDs: entryIDs)
-            }
-        }
-
-        if applyTo.contains(.pan) {
-            panMap.quantize(using: quantizer,
-                            entryIDs: _panEntryIDs(forNoteIDs: noteIDs))
-        }
-
-        if applyTo.contains(.pedal) {
-            let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
-
-            for pedal in pedals.keys {
-                pedals[pedal]?.quantize(using: quantizer,
-                                        entryIDs: pedalEntryIDs.map { $0[pedal] ?? [] })
-            }
-        }
-
-        if applyTo.contains(.mark) {
-            markTable.quantize(using: quantizer,
-                               entryIDs: _markEntryIDs(forNoteIDs: noteIDs))
-        }
-    }
-}
-
-// MARK: -
-
-extension Part {
-
-    // MARK: Internal Instance Methods
-
-    //
-    // The one range a time transform's default resolves from, shared by the note table and every
-    // map it carries, so they all scale or mirror about the same point. A `noteIDs` selection
-    // resolves to the selected notes' own range, since the carried map entries are those inside
-    // it. A whole part resolves to the span of its notes together with the entries of every map
-    // `applyTo` selects: only the layers that move. Module-internal so `Work` can widen it across
-    // the targeted parts and the tempo map.
-    //
-    internal func transformTimeRange(noteIDs: Set<NoteID>?,
-                                     applyTo: TransformTargets) -> ClosedRange<TimeType>? {
-        if let noteIDs {
-            return selectedTimeRange(noteIDs: noteIDs)
-        }
-
-        var bounds: [TimeType] = []
-
-        if let noteRange = timeRange {
-            bounds += [noteRange.lowerBound, noteRange.upperBound]
-        }
-
-        bounds += ownTableBounds(applyTo: applyTo)
-
-        if applyTo.contains(.pan),
-           let first = panMap.first,
-           let last = panMap.last {
-            bounds += [first.time, last.time]
-        }
-
-        if applyTo.contains(.pedal) {
-            for table in pedals.values {
-                if let first = table.first,
-                   let last = table.last {
-                    bounds += [first.time, last.time]
-                }
-            }
-        }
-
-        if applyTo.contains(.mark),
-           let markRange = markTable.timeRange {
-            bounds += [markRange.lowerBound, markRange.upperBound]
-        }
-
-        guard let lowerBound = bounds.min(),
-              let upperBound = bounds.max()
-        else { return nil }
-
-        return lowerBound...upperBound
-    }
-
-    // MARK: Private Type Aliases
-
-    private typealias PedalTransform = (inout PedalTable<TimeType>, Set<EntryID>?) throws(PedalTable<TimeType>.Error) -> Void
-
-    // MARK: Private Instance Methods
-
-    private func _dynamicEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
-        guard let noteIDs
-        else { return nil }
-
-        guard let range = selectedTimeRange(noteIDs: noteIDs)
-        else { return [] }
-
-        return Set(dynamicMap.filter { range.contains($0.time) }.map(\.entryID))
-    }
-
-    private func _instrumentEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
-        guard let noteIDs
-        else { return nil }
-
-        guard let range = selectedTimeRange(noteIDs: noteIDs)
-        else { return [] }
-
-        return Set(instrumentTable.filter { range.contains($0.time) }.map(\.entryID))
-    }
-
-    //
-    // The marks whose time falls within the selected notes' range. A fermata mark moves with the
-    // notes it starts among, span and all.
-    //
-    private func _markEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
-        guard let noteIDs
-        else { return nil }
-
-        guard let range = selectedTimeRange(noteIDs: noteIDs)
-        else { return [] }
-
-        return Set(markTable.filter { range.contains($0.time) }.map(\.entryID))
-    }
-
-    private func _panEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> Set<EntryID>? {
-        guard let noteIDs
-        else { return nil }
-
-        guard let range = selectedTimeRange(noteIDs: noteIDs)
-        else { return [] }
-
-        return Set(panMap.filter { range.contains($0.time) }.map(\.entryID))
-    }
-
-    //
-    // Unlike the other layers, each pedal table also gives up the entry that ends a press under
-    // way at the end of the selected notes' range (see `PedalTable.pressEnd(after:)`): moving a
-    // selection must not leave its release behind, or the pedal would stay down from the moved
-    // notes' end until wherever the old release was. `nil` (every entry) when there is no
-    // selection; a pedal missing from the result has no entries selected.
-    //
-    private func _pedalEntryIDs(forNoteIDs noteIDs: Set<NoteID>?) -> [Pedal: Set<EntryID>]? {
-        guard let noteIDs
-        else { return nil }
-
-        guard let range = selectedTimeRange(noteIDs: noteIDs)
-        else { return [:] }
-
-        return pedals.mapValues { table in
-            var entryIDs = Set(table.filter { range.contains($0.time) }.map(\.entryID))
-
-            if let pressEnd = table.pressEnd(after: range) {
-                entryIDs.insert(pressEnd)
-            }
-
-            return entryIDs
-        }
-    }
-
-    //
-    // Each pedal table, transformed by `transform` with the entries `_pedalEntryIDs` selects for
-    // it. A failure names the pedal whose table failed.
-    //
-    private func _transformedPedals(forNoteIDs noteIDs: Set<NoteID>?,
-                                    _ transform: PedalTransform) throws(Error) -> [Pedal: PedalTable<TimeType>] {
-        let pedalEntryIDs = _pedalEntryIDs(forNoteIDs: noteIDs)
-        var newPedals = pedals
-
-        for (pedal, table) in pedals {
-            var newTable = table
-
-            do {
-                try transform(&newTable, pedalEntryIDs.map { $0[pedal] ?? [] })
-            } catch {
-                throw Error.pedalTableFailure(pedal, error)
-            }
-
-            newPedals[pedal] = newTable
-        }
-
-        return newPedals
+                                  applyTo: TransformTargets = .all,
+                                  alsoCarry: TransformTargets = []) {
+        quantize(to: quantizer,
+                 selection: selection(for: noteIDs),
+                 applyTo: applyTo,
+                 alsoCarry: alsoCarry)
     }
 }

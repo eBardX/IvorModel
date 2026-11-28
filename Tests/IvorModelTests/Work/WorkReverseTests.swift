@@ -145,7 +145,7 @@ extension WorkReverseTests {
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.reverse(within: nil as ClosedRange<BeatTime>?, partIDs: [partID])
+            try work.reverse(within: nil as ClosedRange<BeatTime>?, scope: Work.Scope(parts: [partID]))
         }
 
         #expect(throws: Work.Error.workIsLocked) {
@@ -368,7 +368,7 @@ extension WorkReverseTests {
     }
 
     @Test
-    func reverse_partialSelection_carriesTempoMap() throws {
+    func reverse_partialSelection_carriesTempoMapOnlyWhenOptedIn() throws {
         var violin = Part<BeatTime, Pitch>(name: "Violin")
         var cello = Part<BeatTime, Pitch>(name: "Cello")
 
@@ -382,15 +382,21 @@ extension WorkReverseTests {
         tempoMap.insert(beatTime: 2, tempo: .default)
 
         var work = Work(content: .standardBeat([violin, cello], tempoMap, MeterTable(), KeyTable()))
+        var optedIn = work
 
         try work.reverse(within: nil as ClosedRange<BeatTime>?,
-                         partIDs: [violin.partID])
+                         scope: Work.Scope(parts: [violin.partID]))
+        try optedIn.reverse(within: nil as ClosedRange<BeatTime>?,
+                            alsoCarry: .tempo,
+                            scope: Work.Scope(parts: [violin.partID]))
 
         //
-        // The tempo map is work-wide, so it is reversed within the targeted part’s range (0...3)
-        // even though only one part was targeted; the untargeted part is left alone.
+        // The tempo map is the whole work's, so reversing one part leaves it, unless it's opted
+        // in: then it's reversed within the targeted part's range (0...3). Either way, the
+        // untargeted part is left alone.
         //
-        #expect(work.tempoMap?.map(\.beatTime) == [1, 3])
+        #expect(work.tempoMap?.map(\.beatTime) == [0, 2])
+        #expect(optedIn.tempoMap?.map(\.beatTime) == [1, 3])
         #expect(work.part(cello.partID, as: Part<BeatTime, Pitch>.self)?.timeRange == 5...6)
     }
 

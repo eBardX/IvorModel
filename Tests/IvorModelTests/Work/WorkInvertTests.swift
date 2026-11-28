@@ -54,7 +54,7 @@ extension WorkInvertTests {
         let beatTimeRange = work.beatTimeRange
 
         #expect(throws: Work.Error.workIsLocked) {
-            try work.invert(around: nil as ClosedRange<Pitch>?, partIDs: [partID])
+            try work.invert(around: nil as ClosedRange<Pitch>?, scope: Work.Scope(parts: [partID]))
         }
 
         #expect(throws: Work.Error.workIsLocked) {
@@ -100,11 +100,19 @@ extension WorkInvertTests {
         var moved = Work(content: content)
         var kept = Work(content: content)
 
-        try moved.invert(around: Pitch.c4...Pitch.g4, partIDs: [treble.partID])
-        try kept.invert(around: Pitch.c4...Pitch.g4, movesKeys: false, partIDs: [treble.partID])
+        var optedIn = Work(content: content)
 
-        #expect(moved.keyTable?.map(\.key) == [key(-3)])
+        //
+        // The keys are the whole work's, so inverting one part leaves them, unless they're
+        // opted in with `alsoCarry`, and `movesKeys` is on.
+        //
+        try moved.invert(around: Pitch.c4...Pitch.g4, scope: Work.Scope(parts: [treble.partID]))
+        try kept.invert(around: Pitch.c4...Pitch.g4, movesKeys: false, alsoCarry: .key, scope: Work.Scope(parts: [treble.partID]))
+        try optedIn.invert(around: Pitch.c4...Pitch.g4, alsoCarry: .key, scope: Work.Scope(parts: [treble.partID]))
+
+        #expect(moved.keyTable?.map(\.key) == [key(0)])
         #expect(kept.keyTable?.map(\.key) == [key(0)])
+        #expect(optedIn.keyTable?.map(\.key) == [key(-3)])
     }
 
     @Test
