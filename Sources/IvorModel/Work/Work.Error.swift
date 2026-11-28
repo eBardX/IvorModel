@@ -44,6 +44,9 @@ extension Work {
         /// a whole-work transform.
         case keyTableTransformFailure(kind: TransformKind, detail: String)
 
+        /// A part’s last strand can’t be removed or extracted: a part always has a strand.
+        case lastStrand(StrandID)
+
         /// A failure that occurred in a part’s mark table while carrying it along with a
         /// transform.
         case markTableTransformFailure(kind: TransformKind, partID: PartID, detail: String)
@@ -80,6 +83,12 @@ extension Work {
         /// The requested transform was invoked with a pitch notation that does not match the
         /// work’s own.
         case pitchNotationMismatch(expected: PitchNotation)
+
+        /// A strand operation’s scope names notes outside the strand it works on.
+        case scopeOutsideStrand(StrandID)
+
+        /// The strands must all be in one part.
+        case strandsInDifferentParts
 
         /// A failure that occurred in the work’s tempo map while carrying it along with a
         /// whole-work transform.
@@ -162,6 +171,9 @@ extension Work.Error: EnhancedError {
         case let .keyTableTransformFailure(kind, detail):
             "Key table failure during \(kind): \(detail)"
 
+        case let .lastStrand(strandID):
+            "Strand \(strandID.stringValue) is its part’s last strand."
+
         case let .markTableTransformFailure(kind, partID, detail):
             "Mark table failure during \(kind) of part \(partID.stringValue): \(detail)"
 
@@ -194,6 +206,12 @@ extension Work.Error: EnhancedError {
 
         case let .pitchNotationMismatch(expected):
             "This transform requires \(expected) pitch notation."
+
+        case let .scopeOutsideStrand(strandID):
+            "The scope names notes outside strand \(strandID.stringValue)."
+
+        case .strandsInDifferentParts:
+            "The strands must all be in one part."
 
         case let .tempoMapTransformFailure(kind, detail):
             "Tempo map failure during \(kind): \(detail)"

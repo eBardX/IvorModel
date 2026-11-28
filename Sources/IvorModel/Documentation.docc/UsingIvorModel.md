@@ -75,8 +75,8 @@ always be set.
 
 ## Parts
 
-A ``Part`` is a named line of music: a note table, two parameter maps, an
-instrument table, and its pedal tables, plus ``Part/extras`` for format-specific data about the part as a whole, such as
+A ``Part`` is a performer’s music: one or more strands of notes (see below), two
+parameter maps, an instrument table, and its pedal tables, plus ``Part/extras`` for format-specific data about the part as a whole, such as
 the ``Extra/midiChannel`` it came from. A work’s parts all share its time and pitch types, so reading or editing one
 means naming its concrete type:
 
@@ -84,7 +84,7 @@ means naming its concrete type:
 let melody = try work.addPart(name: "Melody")
 
 try work.modifyPart(melody, as: Part<BeatTime, Pitch>.self) { part in
-    part.noteTable.insert(attack: 0, duration: .quarter, pitch: .c4)
+    part.strands[0].noteTable.insert(attack: 0, duration: .quarter, pitch: .c4)
 }
 
 let part = work.part(melody, as: Part<BeatTime, Pitch>.self)
@@ -97,6 +97,31 @@ work’s content. ``Work/addPart(name:)``, ``Work/duplicatePart(_:)``,
 them in order. ``Work/modifyTempoMap(_:)``, ``Work/modifyMeterTable(_:)`` and
 ``Work/modifyKeyTable(_:)`` edit a beat-time work’s tempo map, meter
 table and key table.
+
+## Strands
+
+A part’s notes are in its ``Strand``s: one line each, such as a piano’s two
+hands, listed in score order (top to bottom). A part always has at least one.
+A strand has a ``StrandID``, a name, a note table and extras, and may have its
+own instrument table or dynamic map in place of the part’s. Its notes keep
+their IDs as they move between strands.
+
+The work edits strands, and every edit refuses on a locked work and throws for
+an ID it doesn’t have:
+
+- **Strands:** ``Work/addStrand(named:to:)``, ``Work/removeStrand(_:)`` (never
+  a part’s last), ``Work/renameStrand(_:to:)``, ``Work/shiftStrand(_:to:)``,
+  ``Work/setExtras(_:ofStrand:)``, and ``Work/removeEmptyStrands(scope:)``.
+- **Own tables:** ``Work/giveOwnDynamicMap(to:)`` and
+  ``Work/giveOwnInstrumentTable(to:)`` start a strand’s own as a copy of the
+  part’s; ``Work/removeOwnDynamicMap(from:)`` and
+  ``Work/removeOwnInstrumentTable(from:)`` go back to the part’s.
+- **Notes:** ``Work/moveNotes(_:to:)`` keeps their IDs, ``Work/copyNotes(_:to:)``
+  gives new ones, and ``Work/removeNotes(_:)`` removes them. Notes take on the
+  instrument and dynamics of the strand they land in.
+- **Reshaping:** ``Work/splitStrand(_:scope:)``, ``Work/mergeStrands(_:)``,
+  ``Work/extractStrand(_:)`` (to a new part), and ``Work/joinParts(_:)`` (parts
+  into one, as strands).
 
 A part can also find its notes: ``Part/attackingIn(_:)`` (attacked within a
 time range), ``Part/soundingIn(_:)`` (sounding at any point within it), and

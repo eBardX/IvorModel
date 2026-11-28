@@ -81,6 +81,14 @@ extension Work {
         }
     }
 
+    internal mutating func mergePartTables(from sourceID: PartID,
+                                           into destinationID: PartID) {
+        for index in realizations.indices {
+            realizations[index].mergePartTable(from: sourceID,
+                                               into: destinationID)
+        }
+    }
+
     internal mutating func removeOrphanedPartTables() {
         let partIDs = Set(partIDs)
 

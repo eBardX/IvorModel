@@ -114,6 +114,21 @@ extension Realization {
         partTables[destinationID] = partTables[sourceID]
     }
 
+    //
+    // Merges the patch table of `sourceID` into that of `destinationID`: an instrument both
+    // assign keeps the destination's assignment.
+    //
+    internal mutating func mergePartTable(from sourceID: PartID,
+                                          into destinationID: PartID) {
+        var table = self[destinationID]
+
+        for (instrument, assignment) in self[sourceID].assignments where table[instrument] == nil {
+            table[instrument] = assignment
+        }
+
+        self[destinationID] = table
+    }
+
     internal mutating func removePartTables(notIn partIDs: Set<PartID>) {
         partTables = partTables.filter { partIDs.contains($0.key) }
     }

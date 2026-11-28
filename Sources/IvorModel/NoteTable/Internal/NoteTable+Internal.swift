@@ -123,6 +123,15 @@ extension NoteTable {
     }
 
     //
+    // The notes of this table that `noteIDs` names, and the rest, each as a table of its own.
+    // The notes keep their identities.
+    //
+    internal func partitioned(by noteIDs: Set<NoteID>) -> (taken: Self, kept: Self) {
+        (Self(notes: notes.filter { noteIDs.contains($0.noteID) }),
+         Self(notes: notes.filter { !noteIDs.contains($0.noteID) }))
+    }
+
+    //
     // This table with every note under a fresh identity, and otherwise unchanged. Note order
     // doesn't depend on identity, so the notes stay in order.
     //
