@@ -8,7 +8,7 @@ import Testing
 import XestiNumbers
 
 //
-// A template's source context: the setting its first source part started in, recorded at
+// A template's source context: the setting its first source started in, recorded at
 // analysis and carried over to the works it generates.
 //
 
@@ -22,8 +22,8 @@ extension TemplateSourceContextTests {
     func adding_keepsOriginalContext() throws {
         let original = makeSourceContextWork(instrument: Fixtures.flute)
         let other = makeSourceContextWork(instrument: Fixtures.oboe)
-        let template = try Template.analyzeNoteEvents(in: original, at: 0, maximumOrder: 1, name: "Test")
-        let added = try template.adding(partAt: 0, of: other, name: "Both")
+        let template = try Template.analyzeNoteEvents(in: original, scope: .all, maximumOrder: 1, name: "Test")
+        let added = try template.adding(.all, of: other, name: "Both")
 
         #expect(added.sourceContext == template.sourceContext)
         #expect(added.sourceContext.instrument == Fixtures.flute)
@@ -41,7 +41,7 @@ extension TemplateSourceContextTests {
 
     @Test
     func analyze_beatWork_recordsSettingAtFirstAttack() throws {
-        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
+        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), scope: .all, maximumOrder: 1, name: "Test")
         let context = template.sourceContext
 
         #expect(context.dynamic == .f)
@@ -53,7 +53,7 @@ extension TemplateSourceContextTests {
     @Test
     func analyze_firstAttackBeforeFirstKeyEntry_hasNoKey() throws {
         let template = try Template.analyzeNoteEvents(in: makeKeyedSourceWork([(3, 2)]),
-                                                      at: 0,
+                                                      scope: .all,
                                                       maximumOrder: 1,
                                                       name: "Test")
 
@@ -63,7 +63,7 @@ extension TemplateSourceContextTests {
     @Test
     func analyze_firstAttackBeforeFirstMeterEntry_hasNoMeter() throws {
         let template = try Template.analyzeNoteEvents(in: makeMeteredSourceWork(makeMeterTable([(3, "3/4")])),
-                                                      at: 0,
+                                                      scope: .all,
                                                       maximumOrder: 1,
                                                       name: "Test")
 
@@ -74,7 +74,7 @@ extension TemplateSourceContextTests {
     @Test
     func analyze_freeMeter_hasNoBarPosition() throws {
         let template = try Template.analyzeNoteEvents(in: makeMeteredSourceWork(makeMeterTable([(0, "free")])),
-                                                      at: 0,
+                                                      scope: .all,
                                                       maximumOrder: 1,
                                                       name: "Test")
 
@@ -92,7 +92,7 @@ extension TemplateSourceContextTests {
 
     @Test
     func analyze_meterlessSource_hasNoMeter() throws {
-        let template = try Template.analyzeNoteEvents(in: makePlainSourceWork(), at: 0, maximumOrder: 1, name: "Test")
+        let template = try Template.analyzeNoteEvents(in: makePlainSourceWork(), scope: .all, maximumOrder: 1, name: "Test")
 
         #expect(template.sourceContext.meter == nil)
         #expect(template.sourceContext.barPosition == .zero)
@@ -110,7 +110,7 @@ extension TemplateSourceContextTests {
     @Test
     func analyze_recordsKeyAtFirstAttack() throws {
         let template = try Template.analyzeNoteEvents(in: makeKeyedSourceWork([(0, 2), (2, -3), (4, 1)]),
-                                                      at: 0,
+                                                      scope: .all,
                                                       maximumOrder: 1,
                                                       name: "Test")
 
@@ -128,7 +128,7 @@ extension TemplateSourceContextTests {
 
         try work.modifyMeterTable { $0 = meterTable }
 
-        let template = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1, name: "Test")
+        let template = try Template.analyzeNoteEvents(in: work, scope: .all, maximumOrder: 1, name: "Test")
 
         #expect(template.sourceContext.meter == meter("3/4"))
         #expect(template.sourceContext.barPosition == beats(frac(1, 2)))
@@ -139,7 +139,8 @@ extension TemplateSourceContextTests {
         let work = Work(name: "Wall",
                         content: .standardWall([Part(name: "Voice",
                                                      noteTable: NoteTable<WallTime, Pitch>())]))
-        let context = Template.SourceContext(content: work.content, index: 0)
+        let context = Template.SourceContext(content: work.content,
+                                             source: Template.SourceScope(partID: work.partIDs[0], selection: .whole))
 
         #expect(context.meter == nil)
         #expect(context.barPosition == .zero)
@@ -160,7 +161,7 @@ extension TemplateSourceContextTests {
                         content: .standardWall([Part(name: "Voice",
                                                      noteTable: noteTable,
                                                      dynamicMap: dynamicMap)]))
-        let template = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1, name: "Test")
+        let template = try Template.analyzeNoteEvents(in: work, scope: .all, maximumOrder: 1, name: "Test")
 
         #expect(template.sourceContext.tempo == nil)
         #expect(template.sourceContext.dynamic == .pp)
@@ -168,7 +169,7 @@ extension TemplateSourceContextTests {
 
     @Test
     func generate_defaultContext_leavesMapsEmpty() throws {
-        let template = try Template.analyzeNoteEvents(in: makePlainSourceWork(), at: 0, maximumOrder: 1, name: "Test")
+        let template = try Template.analyzeNoteEvents(in: makePlainSourceWork(), scope: .all, maximumOrder: 1, name: "Test")
 
         #expect(template.sourceContext == Template.SourceContext(tempo: .default))
 
@@ -188,7 +189,7 @@ extension TemplateSourceContextTests {
     @Test
     func generate_freeMeter_writesFreeMeterWithoutPickup() throws {
         let template = try Template.analyzeNoteEvents(in: makeMeteredSourceWork(makeMeterTable([(0, "free")])),
-                                                      at: 0,
+                                                      scope: .all,
                                                       maximumOrder: 1,
                                                       name: "Test")
         let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
@@ -199,7 +200,7 @@ extension TemplateSourceContextTests {
 
     @Test
     func generate_meterlessSource_givesEmptyTable() throws {
-        let template = try Template.analyzeNoteEvents(in: makePlainSourceWork(), at: 0, maximumOrder: 1, name: "Test")
+        let template = try Template.analyzeNoteEvents(in: makePlainSourceWork(), scope: .all, maximumOrder: 1, name: "Test")
         let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
 
         #expect(generated.meterTable == MeterTable())
@@ -208,11 +209,11 @@ extension TemplateSourceContextTests {
     @Test
     func generate_mixingTemplates_keepsFirstSourcesMeter() throws {
         let threeFour = try Template.analyzeNoteEvents(in: makeMeteredSourceWork(makeMeterTable([(0, "3/4")])),
-                                                       at: 0,
+                                                       scope: .all,
                                                        maximumOrder: 1,
                                                        name: "3/4")
         let sixEight = try Template.analyzeNoteEvents(in: makeMeteredSourceWork(makeMeterTable([(0, "6/8")])),
-                                                      at: 0,
+                                                      scope: .all,
                                                       maximumOrder: 1,
                                                       name: "6/8")
         let generated = try threeFour.generateWork(name: "Out",
@@ -230,7 +231,7 @@ extension TemplateSourceContextTests {
         // The plain source part's first attack is at 2, which is beat 3 of the third bar of 3/4.
         //
         let template = try Template.analyzeNoteEvents(in: makeMeteredSourceWork(makeMeterTable([(0, "3/4")])),
-                                                      at: 0,
+                                                      scope: .all,
                                                       maximumOrder: 1,
                                                       name: "Test")
 
@@ -248,7 +249,7 @@ extension TemplateSourceContextTests {
 
     @Test
     func generate_startsInSourceContext() throws {
-        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
+        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), scope: .all, maximumOrder: 1, name: "Test")
         let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
 
         guard case let .standardBeat(parts, tempoMap, _, _) = generated.content.cases
@@ -273,7 +274,7 @@ extension TemplateSourceContextTests {
         try table.insert(beatTime: 0, key: key(-2), extras: sampleExtras("minor"))
 
         let work = Work(content: .standardBeat([makePlainSourcePart()], TempoMap(), MeterTable(), table))
-        let template = try Template.analyzeNoteEvents(in: work, at: 0, maximumOrder: 1, name: "Test")
+        let template = try Template.analyzeNoteEvents(in: work, scope: .all, maximumOrder: 1, name: "Test")
         let generated = try template.generateWork(name: "Out", partName: "Part", order: 1, limit: 4)
 
         // The mode extra isn't carried, so the generated key has no name.
@@ -298,7 +299,8 @@ extension TemplateSourceContextTests {
 
     @Test
     func missingPart_givesDefaults() {
-        let context = Template.SourceContext(content: makeSourceContextWork().content, index: 3)
+        let context = Template.SourceContext(content: makeSourceContextWork().content,
+                                             source: Template.SourceScope(partID: PartID(), selection: .whole))
 
         //
         // Without a part there's no first attack, so the tempo is the one at time zero.
@@ -308,7 +310,7 @@ extension TemplateSourceContextTests {
 
     @Test
     func part_hasNoPedals() throws {
-        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
+        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), scope: .all, maximumOrder: 1, name: "Test")
         let part = template.sourceContext.part(name: "Generated",
                                                noteTable: NoteTable<BeatTime, Pitch>())
 
@@ -317,7 +319,7 @@ extension TemplateSourceContextTests {
 
     @Test
     func sourceContext_roundTripsThroughProject() throws {
-        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), at: 0, maximumOrder: 1, name: "Test")
+        let template = try Template.analyzeNoteEvents(in: makeSourceContextWork(), scope: .all, maximumOrder: 1, name: "Test")
         var project = Project()
 
         project.updateTemplate(template)

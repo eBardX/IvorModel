@@ -30,7 +30,7 @@ extension TemplateModelChainsTests {
     @Test
     func analysis_jointRecipe_hasOneChain() throws {
         let template = try Template.analyzeNoteEvents(in: makeStandardBeatWork(Fixtures.melodyWithRest),
-                                                      at: 0,
+                                                      scope: .all,
                                                       maximumOrder: 1,
                                                       name: "Test")
 
@@ -61,7 +61,7 @@ extension TemplateModelChainsTests {
     func analysis_separatingWithoutBothFeatures_throws(recipe: Template.AnalysisOptions.StateRecipe) {
         #expect(throws: Template.Error.invalidStateRecipe) {
             try Template.analyzeNoteEvents(in: makeStandardBeatWork([(0, 1, .c4)]),
-                                           at: 0,
+                                           scope: .all,
                                            options: .init(maximumOrder: 1,
                                                           states: recipe),
                                            name: "Test")
@@ -137,7 +137,7 @@ extension TemplateModelChainsTests {
     @Test
     func generation_jointTemplateWithPitchChain_throws() throws {
         let template = try Template.analyzeNoteEvents(in: makeStandardBeatWork(Fixtures.risingScale),
-                                                      at: 0,
+                                                      scope: .all,
                                                       maximumOrder: 1,
                                                       name: "Test")
 

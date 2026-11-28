@@ -47,8 +47,20 @@ extension Template {
         /// a unison transposition, or appears twice.
         case invalidVariants
 
-        /// No part was found at the requested index.
-        case partNotFound(Int)
+        /// A note that the source scope names isn’t in the work.
+        case noteNotFound(NoteID)
+
+        /// A part that the source scope names isn’t in the work.
+        case partNotFound(PartID)
+
+        /// The source scope names nothing.
+        case sourceIsEmpty
+
+        /// The source scope reaches into more than one part.
+        case sourceSpansParts
+
+        /// A strand that the source scope names isn’t in the work.
+        case strandNotFound(StrandID)
 
         /// The template is locked, so it cannot be modified.
         case templateIsLocked
@@ -108,8 +120,20 @@ extension Template.Error: EnhancedError {
         case .invalidVariants:
             "Variants must have rational, positive time factors other than 1, transpositions other than a unison, and no duplicates"
 
-        case let .partNotFound(index):
-            "Ivor part not found at index \(index)"
+        case let .noteNotFound(noteID):
+            "No note in the work has ID \(noteID.stringValue)"
+
+        case let .partNotFound(partID):
+            "No part in the work has ID \(partID.stringValue)"
+
+        case .sourceIsEmpty:
+            "A template source must name a part, strands or notes"
+
+        case .sourceSpansParts:
+            "A template source must lie within one part"
+
+        case let .strandNotFound(strandID):
+            "No strand in the work has ID \(strandID.stringValue)"
 
         case .templateIsLocked:
             "The template is locked and cannot be modified."

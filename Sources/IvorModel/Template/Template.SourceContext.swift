@@ -7,14 +7,17 @@ extension Template {
 
     // MARK: Public Nested Types
 
-    /// The setting a template’s first source part started in: its dynamic level, instrument and
+    /// The setting a template’s first source started in: its dynamic level, instrument and
     /// pan position, and — in beat time — its work’s tempo, meter and key, and where in
     /// the bar it started.
     ///
     /// Analysis learns only pitches and durations; the source context carries the rest of the
     /// source’s starting setting over, so that a generated work starts out sounding like its
-    /// source. Each value is the one in effect at the part’s first attack, or at time zero if the
-    /// part has no notes.
+    /// source. Each value is the one in effect at the source’s first attack (the first of the
+    /// notes it chose, from any of its strands), or at time zero if it has no notes. The dynamic
+    /// and instrument are read through the strand that attack belongs to — its own dynamic map
+    /// and instrument table if it has them, the part’s otherwise — or, where several strands
+    /// attack first together, through the first of them in score order.
     public struct SourceContext {
 
         // MARK: Public Initializers
@@ -87,51 +90,51 @@ extension Template.SourceContext {
     // MARK: Internal Initializers
 
     //
-    // The setting of the part at `index` of `content` at its first attack — or the defaults, if
-    // there's no such part. The key is left out unless `keepsKey` is set.
+    // The setting of `source` in `content` at its first attack — or the defaults, if its part
+    // isn't there. The key is left out unless `keepsKey` is set.
     //
     internal init(content: Work.Content,
-                  index: Int,
+                  source: Template.SourceScope,
                   keepsKey: Bool = true) {
         switch content.cases {
         case let .absoluteBeat(parts, tempoMap, meterTable, keyTable):
             self.init(parts: parts,
-                      index: index,
+                      source: source,
                       tempo: { tempoMap[$0] },
                       barOffset: { meterTable.barOffset(at: $0) },
                       key: { keepsKey ? keyTable.key(at: $0) : nil })
 
         case let .absoluteWall(parts):
             self.init(parts: parts,
-                      index: index,
+                      source: source,
                       tempo: { _ in nil },
                       barOffset: { _ in nil },
                       key: { _ in nil })
 
         case let .keyboardBeat(parts, tempoMap, meterTable, keyTable):
             self.init(parts: parts,
-                      index: index,
+                      source: source,
                       tempo: { tempoMap[$0] },
                       barOffset: { meterTable.barOffset(at: $0) },
                       key: { keepsKey ? keyTable.key(at: $0) : nil })
 
         case let .keyboardWall(parts):
             self.init(parts: parts,
-                      index: index,
+                      source: source,
                       tempo: { _ in nil },
                       barOffset: { _ in nil },
                       key: { _ in nil })
 
         case let .standardBeat(parts, tempoMap, meterTable, keyTable):
             self.init(parts: parts,
-                      index: index,
+                      source: source,
                       tempo: { tempoMap[$0] },
                       barOffset: { meterTable.barOffset(at: $0) },
                       key: { keepsKey ? keyTable.key(at: $0) : nil })
 
         case let .standardWall(parts):
             self.init(parts: parts,
-                      index: index,
+                      source: source,
                       tempo: { _ in nil },
                       barOffset: { _ in nil },
                       key: { _ in nil })
@@ -235,15 +238,15 @@ extension Template.SourceContext {
     // the start of its bar, and `key` the key; each gives `nil` in wall time.
     //
     private init<T>(parts: [Part<T, some Any>],
-                    index: Int,
+                    source: Template.SourceScope,
                     tempo: (T) -> Tempo?,
                     barOffset: (T) -> (meter: Meter, offset: BeatDuration)?,
                     key: (T) -> Key?) {
-        let part = parts.indices.contains(index) ? parts[index] : nil
-        let time = part?.timeRange?.lowerBound ?? .zero
+        let notes = source.notes(in: parts)
+        let time = notes?.noteTable.timeRange?.lowerBound ?? .zero
         let meterContext = barOffset(time)
 
-        guard let part
+        guard let notes
         else {
             self.init(tempo: tempo(time),
                       meter: meterContext?.meter,
@@ -252,9 +255,11 @@ extension Template.SourceContext {
             return
         }
 
-        self.init(dynamic: part.dynamicMap[time],
-                  instrument: part.instrumentTable[time],
-                  pan: part.panMap[time],
+        let leadingStrand = notes.leadingStrand
+
+        self.init(dynamic: notes.part.dynamicMap(for: leadingStrand)[time],
+                  instrument: notes.part.instrumentTable(for: leadingStrand)[time],
+                  pan: notes.part.panMap[time],
                   tempo: tempo(time),
                   meter: meterContext?.meter,
                   key: key(time),

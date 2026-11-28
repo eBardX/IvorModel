@@ -170,7 +170,7 @@ extension TemplateGenerationOptionsPhraseTests {
         }
 
         let template = try Template.analyzeNoteEvents(in: Work(content: .standardWall([Part(name: "Flute", noteTable: noteTable)])),
-                                                      at: 0,
+                                                      scope: .all,
                                                       options: .init(maximumOrder: 1,
                                                                      durations: .proportional(0.05)),
                                                       name: "Test")

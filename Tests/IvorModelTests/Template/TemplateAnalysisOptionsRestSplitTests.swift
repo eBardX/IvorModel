@@ -142,10 +142,10 @@ extension TemplateAnalysisOptionsRestSplitTests {
     func sequenceCount_countsEachVariantsSplits() throws {
         let split = Template.AnalysisOptions.RestSplit.beat(beats(2))
 
-        #expect(try Template.sequenceCount(in: makeRestSplitTune(), at: 0, options: .init(maximumOrder: 1)) == 1)
-        #expect(try Template.sequenceCount(in: makeRestSplitTune(), at: 0, options: .init(maximumOrder: 1, restSplit: split)) == 2)
+        #expect(try Template.sequenceCount(in: makeRestSplitTune(), scope: .all, options: .init(maximumOrder: 1)) == 1)
+        #expect(try Template.sequenceCount(in: makeRestSplitTune(), scope: .all, options: .init(maximumOrder: 1, restSplit: split)) == 2)
         #expect(try Template.sequenceCount(in: makeRestSplitTune(),
-                                           at: 0,
+                                           scope: .all,
                                            options: .init(maximumOrder: 1,
                                                           variants: .init(retrogrades: true),
                                                           restSplit: split)) == 4)
@@ -154,11 +154,13 @@ extension TemplateAnalysisOptionsRestSplitTests {
     @Test
     func sequenceCount_invalidOptions_throw() {
         #expect(throws: Template.Error.invalidTolerance) {
-            try Template.sequenceCount(in: makeRestSplitTune(), at: 0, options: .init(maximumOrder: 1, restSplit: .beat(.zero)))
+            try Template.sequenceCount(in: makeRestSplitTune(), scope: .all, options: .init(maximumOrder: 1, restSplit: .beat(.zero)))
         }
 
-        #expect(throws: Template.Error.partNotFound(4)) {
-            try Template.sequenceCount(in: makeRestSplitTune(), at: 4, options: .init(maximumOrder: 1))
+        let partID = PartID()
+
+        #expect(throws: Template.Error.partNotFound(partID)) {
+            try Template.sequenceCount(in: makeRestSplitTune(), scope: Work.Scope(parts: [partID]), options: .init(maximumOrder: 1))
         }
     }
 
@@ -167,10 +169,10 @@ extension TemplateAnalysisOptionsRestSplitTests {
         let options = Template.AnalysisOptions(maximumOrder: 2,
                                                variants: .init(retrogrades: true),
                                                restSplit: .beat(beats(2)))
-        let summary = try Template.analyzeNoteEvents(in: makeRestSplitTune(), at: 0, options: options, name: "Test").analysisSummary
+        let summary = try Template.analyzeNoteEvents(in: makeRestSplitTune(), scope: .all, options: options, name: "Test").analysisSummary
 
         #expect(summary.mergedCount == 0)
-        #expect(try Template.sequenceCount(in: makeRestSplitTune(), at: 0, options: options) == summary.sequenceCount)
+        #expect(try Template.sequenceCount(in: makeRestSplitTune(), scope: .all, options: options) == summary.sequenceCount)
     }
 
     @Test
@@ -181,12 +183,12 @@ extension TemplateAnalysisOptionsRestSplitTests {
         let variants = Template.AnalysisOptions.Variants(timeFactors: [Number(numerator: 1, denominator: 2)])
 
         #expect(try Template.sequenceCount(in: makeRestSplitTune(),
-                                           at: 0,
+                                           scope: .all,
                                            options: .init(maximumOrder: 1,
                                                           variants: variants,
                                                           restSplit: .beat(beats(2)))) == 4)
         #expect(try Template.sequenceCount(in: makeRestSplitTune(),
-                                           at: 0,
+                                           scope: .all,
                                            options: .init(maximumOrder: 1,
                                                           variants: variants,
                                                           restSplit: .beat(beats(3)))) == 3)

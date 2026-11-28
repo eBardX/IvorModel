@@ -65,7 +65,7 @@ extension TemplateAnalysisOptionsStateRecipeTests {
     func invalidStateRecipe_throws() {
         #expect(throws: Template.Error.invalidStateRecipe) {
             try Template.analyzeNoteEvents(in: makeStandardBeatWork([(0, 1, .c4)]),
-                                           at: 0,
+                                           scope: .all,
                                            options: .init(maximumOrder: 1,
                                                           states: .init(pitch: .omitted,
                                                                         duration: .omitted)),
@@ -178,7 +178,7 @@ extension TemplateAnalysisOptionsStateRecipeTests {
         }
 
         let template = try Template.analyzeNoteEvents(in: Work(content: .standardWall([Part(name: "Flute", noteTable: noteTable)])),
-                                                      at: 0,
+                                                      scope: .all,
                                                       options: .init(maximumOrder: 1,
                                                                      durations: .proportional(0.05)),
                                                       name: "Test")

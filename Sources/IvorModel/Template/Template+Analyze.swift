@@ -10,57 +10,71 @@ extension Template {
 
     // MARK: Public Type Methods
 
-    /// Creates a template by analyzing the note events of a specific part in a work, exactly.
+    /// Creates a template by analyzing the note events of some or all of a part of a work,
+    /// exactly.
     ///
-    /// The same as ``analyzeNoteEvents(in:at:options:name:)`` with
+    /// The same as ``analyzeNoteEvents(in:scope:options:name:)`` with
     /// `AnalysisOptions(maximumOrder: maximumOrder)`.
     ///
-    /// - Parameter work:           The ``Work`` containing the part to analyze.
-    /// - Parameter index:          The zero-based index of the part to analyze.
+    /// - Parameter work:           The ``Work`` containing the notes to analyze.
+    /// - Parameter scope:          The notes to analyze, which must lie within one part.
     /// - Parameter maximumOrder:   The maximum pattern depth for the analysis.
     /// - Parameter name:           The display name of the new template. Its whitespace is
     ///                             normalized to a single line.
     ///
-    /// - Returns:  A new ``Template`` capturing the musical character of the specified part.
+    /// - Returns:  A new ``Template`` capturing the musical character of the chosen notes.
     ///
     /// - Throws:   ``Template/Error/invalidMaximumOrder`` if `maximumOrder` is not positive;
-    ///             otherwise, ``Template/Error/partNotFound(_:)`` if no part exists at `index`.
+    ///             otherwise, the errors ``analyzeNoteEvents(in:scope:options:name:)`` throws
+    ///             for `scope`.
     public static func analyzeNoteEvents(in work: Work,
-                                         at index: Int,
+                                         scope: Work.Scope,
                                          maximumOrder: Int,
                                          name: String) throws(Error) -> Self {
         try analyzeNoteEvents(in: work,
-                              at: index,
+                              scope: scope,
                               options: AnalysisOptions(maximumOrder: maximumOrder),
                               name: name)
     }
 
-    /// Creates a template by analyzing the note events of a specific part in a work, with the
-    /// given tolerances.
+    /// Creates a template by analyzing the note events of some or all of a part of a work, with
+    /// the given tolerances.
     ///
-    /// The work is not changed. The template records `options`.
+    /// `scope` names the part, the strands of it, or the notes of them to learn from — all of
+    /// the part’s strands, for a scope naming the part. Every note it chooses, from every strand,
+    /// is merged into one note sequence before it’s sliced into note events, so a rest is
+    /// wherever none of the chosen strands sounds. ``Work/Scope/all`` names the whole of a
+    /// one-part work.
     ///
-    /// - Parameter work:       The ``Work`` containing the part to analyze.
-    /// - Parameter index:      The zero-based index of the part to analyze.
+    /// The work is not changed. The template records `options`, and the source (see
+    /// ``Template/Source``).
+    ///
+    /// - Parameter work:       The ``Work`` containing the notes to analyze.
+    /// - Parameter scope:      The notes to analyze, which must lie within one part.
     /// - Parameter options:    The analysis recipe.
     /// - Parameter name:       The display name of the new template. Its whitespace is
     ///                         normalized to a single line.
     ///
-    /// - Returns:  A new ``Template`` capturing the musical character of the specified part.
+    /// - Returns:  A new ``Template`` capturing the musical character of the chosen notes.
     ///
     /// - Throws:   ``Template/Error/invalidMaximumOrder`` if the maximum order is not positive;
     ///             ``Template/Error/invalidTolerance`` if a tolerance’s value or the rest split’s
-    ///             is invalid; ``Template/Error/incompatibleOptions`` if a tolerance or the rest
-    ///             split doesn’t suit the work’s time basis or pitch notation; otherwise,
-    ///             ``Template/Error/partNotFound(_:)`` if no part exists at `index`.
+    ///             is invalid; ``Template/Error/partNotFound(_:)``,
+    ///             ``Template/Error/strandNotFound(_:)`` or ``Template/Error/noteNotFound(_:)``
+    ///             if `scope` names something that isn’t in `work`;
+    ///             ``Template/Error/sourceIsEmpty`` if it names nothing;
+    ///             ``Template/Error/sourceSpansParts`` if it reaches into more than one part;
+    ///             otherwise, ``Template/Error/incompatibleOptions`` if a tolerance or the rest
+    ///             split doesn’t suit the work’s time basis or pitch notation.
     public static func analyzeNoteEvents(in work: Work,
-                                         at index: Int,
+                                         scope: Work.Scope,
                                          options: AnalysisOptions,
                                          name: String) throws(Error) -> Self {
         try options.validate()
 
+        let source = try SourceScope(scope, in: work)
         let (content, summary) = try _analyzeNoteEvents(in: work.content,
-                                                        at: index,
+                                                        source: source,
                                                         options: options)
 
         return Self(name: name,
@@ -68,36 +82,38 @@ extension Template {
                     analysisOptions: options,
                     analysisSummary: summary,
                     sources: Source(work: work,
-                                    index: index).map { [$0] } ?? [],
+                                    source: source).map { [$0] } ?? [],
                     sourceContext: SourceContext(content: work.content,
-                                                 index: index,
+                                                 source: source,
                                                  keepsKey: options.variants.keepsKeys))
     }
 
-    /// Returns how many sequences analyzing a specific part of a work with the given recipe would
-    /// learn from, without analyzing it.
+    /// Returns how many sequences analyzing some or all of a part of a work with the given
+    /// recipe would learn from, without analyzing it.
     ///
     /// The count is of every variant that can be made, each split at its long rests (see
     /// ``AnalysisOptions/restSplit``), before any variant is merged because its states repeat an
     /// earlier one’s — so it is at least the ``AnalysisSummary/sequenceCount`` an analysis gives.
     /// Nothing is trained, so it is much cheaper than analyzing.
     ///
-    /// - Parameter work:       The ``Work`` containing the part.
-    /// - Parameter index:      The zero-based index of the part.
+    /// - Parameter work:       The ``Work`` containing the notes.
+    /// - Parameter scope:      The notes, which must lie within one part.
     /// - Parameter options:    The analysis recipe.
     ///
     /// - Returns:  The number of sequences.
     ///
-    /// - Throws:   The same errors as ``analyzeNoteEvents(in:at:options:name:)``.
+    /// - Throws:   The same errors as ``analyzeNoteEvents(in:scope:options:name:)``.
     public static func sequenceCount(in work: Work,
-                                     at index: Int,
+                                     scope: Work.Scope,
                                      options: AnalysisOptions) throws(Error) -> Int {
         try options.validate()
+
+        let source = try SourceScope(scope, in: work)
 
         switch work.content.cases {
         case let .absoluteBeat(parts, _, _, _):
             return try _splitForms(of: parts,
-                                   at: index,
+                                   source: source,
                                    options: options,
                                    aligning: _beatAligning(options.timing),
                                    splitting: _beatSplitting(options.restSplit),
@@ -105,7 +121,7 @@ extension Template {
 
         case let .absoluteWall(parts):
             return try _splitForms(of: parts,
-                                   at: index,
+                                   source: source,
                                    options: options,
                                    aligning: _wallAligning(options.timing),
                                    splitting: _wallSplitting(options.restSplit),
@@ -113,7 +129,7 @@ extension Template {
 
         case let .keyboardBeat(parts, _, _, _):
             return try _splitForms(of: parts,
-                                   at: index,
+                                   source: source,
                                    options: options,
                                    aligning: _beatAligning(options.timing),
                                    splitting: _beatSplitting(options.restSplit),
@@ -121,7 +137,7 @@ extension Template {
 
         case let .keyboardWall(parts):
             return try _splitForms(of: parts,
-                                   at: index,
+                                   source: source,
                                    options: options,
                                    aligning: _wallAligning(options.timing),
                                    splitting: _wallSplitting(options.restSplit),
@@ -129,7 +145,7 @@ extension Template {
 
         case let .standardBeat(parts, _, _, _):
             return try _splitForms(of: parts,
-                                   at: index,
+                                   source: source,
                                    options: options,
                                    aligning: _beatAligning(options.timing),
                                    splitting: _beatSplitting(options.restSplit),
@@ -137,7 +153,7 @@ extension Template {
 
         case let .standardWall(parts):
             return try _splitForms(of: parts,
-                                   at: index,
+                                   source: source,
                                    options: options,
                                    aligning: _wallAligning(options.timing),
                                    splitting: _wallSplitting(options.restSplit),
@@ -147,40 +163,42 @@ extension Template {
 
     // MARK: Public Instance Methods
 
-    /// Returns a new template that has learned a part of a work as well as everything this
-    /// template has.
+    /// Returns a new template that has learned some or all of a part of a work as well as
+    /// everything this template has.
     ///
-    /// The part is analyzed with this template’s own ``analysisOptions``, unchanged, and its
-    /// chains are merged with this template’s. Each part keeps its own start and end: merging
+    /// `scope` is read as ``analyzeNoteEvents(in:scope:options:name:)`` reads it, and the notes
+    /// it chooses are analyzed with this template’s own ``analysisOptions``, unchanged; their
+    /// chains are merged with this template’s. Each source keeps its own start and end: merging
     /// adds sequences, and never joins them. This template is unchanged, and may be locked.
     ///
     /// The new template’s vocabulary and ``analysisSummary`` add the two together, and its
-    /// ``sources`` are this template’s with the part appended. Its vocabulary’s first event and its
-    /// ``sourceContext`` are this template’s, so generation still starts where, and as, this
-    /// template’s source did.
+    /// ``sources`` are this template’s with the new source appended. Its vocabulary’s first
+    /// event and its ``sourceContext`` are this template’s, so generation still starts where,
+    /// and as, this template’s first source did.
     ///
     /// A proportional duration tolerance groups each analysis’s durations on their own, so the
     /// same duration can be grouped differently in each.
     ///
-    /// - Parameter index:  The zero-based index of the part to add.
-    /// - Parameter work:   The ``Work`` containing the part.
+    /// - Parameter scope:  The notes to add, which must lie within one part.
+    /// - Parameter work:   The ``Work`` containing the notes.
     /// - Parameter name:   The display name of the new template. Its whitespace is normalized to
     ///                     a single line.
     ///
     /// - Returns:  A new ``Template``, with a new ID.
     ///
     /// - Throws:   ``Template/Error/incompatibleOptions`` if `work`’s pitch notation or time
-    ///             basis isn’t this template’s; otherwise, ``Template/Error/partNotFound(_:)``
-    ///             if no part exists at `index`.
-    public func adding(partAt index: Int,
+    ///             basis isn’t this template’s; otherwise, the errors
+    ///             ``analyzeNoteEvents(in:scope:options:name:)`` throws for `scope`.
+    public func adding(_ scope: Work.Scope,
                        of work: Work,
                        name: String) throws(Error) -> Self {
         guard work.pitchNotation == pitchNotation,
               work.timeBasis == timeBasis
         else { throw Error.incompatibleOptions }
 
+        let source = try SourceScope(scope, in: work)
         let (added, summary) = try Self._analyzeNoteEvents(in: work.content,
-                                                           at: index,
+                                                           source: source,
                                                            options: analysisOptions)
 
         return try Self(name: name,
@@ -189,7 +207,7 @@ extension Template {
                         analysisOptions: analysisOptions,
                         analysisSummary: analysisSummary.adding(summary),
                         sources: sources + (Source(work: work,
-                                                   index: index).map { [$0] } ?? []),
+                                                   source: source).map { [$0] } ?? []),
                         sourceContext: sourceContext)
     }
 
@@ -202,12 +220,12 @@ extension Template {
     // MARK: Private Type Methods
 
     private static func _analyzeNoteEvents(in content: Work.Content,
-                                           at index: Int,
+                                           source: SourceScope,
                                            options: AnalysisOptions) throws(Error) -> (Self.Content, AnalysisSummary) {
         switch content.cases {
         case let .absoluteBeat(parts, _, _, _):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
-                                                          at: index,
+                                                          source: source,
                                                           options: options,
                                                           aligning: _beatAligning(options.timing),
                                                           splitting: _beatSplitting(options.restSplit),
@@ -219,7 +237,7 @@ extension Template {
 
         case let .absoluteWall(parts):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
-                                                          at: index,
+                                                          source: source,
                                                           options: options,
                                                           aligning: _wallAligning(options.timing),
                                                           splitting: _wallSplitting(options.restSplit),
@@ -231,7 +249,7 @@ extension Template {
 
         case let .keyboardBeat(parts, _, _, _):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
-                                                          at: index,
+                                                          source: source,
                                                           options: options,
                                                           aligning: _beatAligning(options.timing),
                                                           splitting: _beatSplitting(options.restSplit),
@@ -243,7 +261,7 @@ extension Template {
 
         case let .keyboardWall(parts):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
-                                                          at: index,
+                                                          source: source,
                                                           options: options,
                                                           aligning: _wallAligning(options.timing),
                                                           splitting: _wallSplitting(options.restSplit),
@@ -255,7 +273,7 @@ extension Template {
 
         case let .standardBeat(parts, _, _, _):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
-                                                          at: index,
+                                                          source: source,
                                                           options: options,
                                                           aligning: _beatAligning(options.timing),
                                                           splitting: _beatSplitting(options.restSplit),
@@ -267,7 +285,7 @@ extension Template {
 
         case let .standardWall(parts):
             let (model, summary) = try _analyzeNoteEvents(in: parts,
-                                                          at: index,
+                                                          source: source,
                                                           options: options,
                                                           aligning: _wallAligning(options.timing),
                                                           splitting: _wallSplitting(options.restSplit),
@@ -280,7 +298,7 @@ extension Template {
     }
 
     //
-    // `aligning` adjusts the part's times before it's sliced; `grouping` maps each duration to its
+    // `aligning` adjusts the source's times before it's sliced; `grouping` maps each duration to its
     // representative (a duration it leaves out stays as it is); `rounding` maps each pitch to its
     // representative; and `transposing` gives a transposition's interval, or `nil` if it doesn't
     // suit the pitch notation.  The vocabulary records the representatives, and — where a
@@ -295,7 +313,7 @@ extension Template {
     // always first, so the vocabulary's first event is the original's.
     //
     private static func _analyzeNoteEvents<T, P>(in parts: [Part<T, P>],
-                                                 at index: Int,
+                                                 source: SourceScope,
                                                  options: AnalysisOptions,
                                                  aligning: (NoteTable<T, P>) -> NoteTable<T, P>,
                                                  splitting: (T.DurationType) -> Bool,
@@ -304,7 +322,7 @@ extension Template {
                                                  transposing: Transposing<P.IntervalType>) throws(Error) -> (Model<T, P>, AnalysisSummary)
         where T.DurationType: TemplateDuration {
         let (splitForms, skippedVariants) = try _splitForms(of: parts,
-                                                            at: index,
+                                                            source: source,
                                                             options: options,
                                                             aligning: aligning,
                                                             splitting: splitting,
@@ -584,12 +602,15 @@ extension Template {
         return noteTable.extractNoteEvents()
     }
 
+    //
+    // The notes `source` chooses, from every strand it takes, merged into one note table.
+    //
     private static func _noteTable<T, P>(in parts: [Part<T, P>],
-                                         at index: Int) throws(Error) -> NoteTable<T, P> {
-        guard parts.indices.contains(index)
-        else { throw Error.partNotFound(index) }
+                                         source: SourceScope) throws(Error) -> NoteTable<T, P> {
+        guard let notes = source.notes(in: parts)
+        else { throw Error.partNotFound(source.partID) }
 
-        return parts[index].mergedNoteTable
+        return notes.noteTable
     }
 
     private static func _ratioTransposing(_ transposition: AnalysisOptions.Transposition) -> DirectedInterval<Ratio>? {
@@ -616,13 +637,13 @@ extension Template {
     // dropped — and the variants that can't.
     //
     private static func _splitForms<T, P>(of parts: [Part<T, P>],
-                                          at index: Int,
+                                          source: SourceScope,
                                           options: AnalysisOptions,
                                           aligning: (NoteTable<T, P>) -> NoteTable<T, P>,
                                           splitting: (T.DurationType) -> Bool,
                                           transposing: Transposing<P.IntervalType>) throws(Error) -> SplitForms<T, P> {
         let (forms, skippedVariants) = try _forms(of: aligning(_noteTable(in: parts,
-                                                                          at: index)),
+                                                                          source: source)),
                                                   variants: options.variants,
                                                   transposing: transposing)
 

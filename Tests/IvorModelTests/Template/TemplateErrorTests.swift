@@ -41,10 +41,20 @@ extension TemplateErrorTests {
     }
 
     @Test
-    func message_partNotFound() {
-        let msg = Template.Error.partNotFound(3).message
+    func message_notFound() {
+        let noteID = NoteID()
+        let partID = PartID()
+        let strandID = StrandID()
 
-        #expect(msg.contains("3"))
+        #expect(Template.Error.noteNotFound(noteID).message.contains(noteID.stringValue))
+        #expect(Template.Error.partNotFound(partID).message.contains(partID.stringValue))
+        #expect(Template.Error.strandNotFound(strandID).message.contains(strandID.stringValue))
+    }
+
+    @Test
+    func message_source() {
+        #expect(!Template.Error.sourceIsEmpty.message.isEmpty)
+        #expect(!Template.Error.sourceSpansParts.message.isEmpty)
     }
 
     @Test

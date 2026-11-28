@@ -46,9 +46,9 @@ try work.modifyPart(melody, as: Part<BeatTime, Pitch>.self) { part in
     var attack = BeatTime.zero
 
     for name in pitches {
-        part.noteTable.insert(attack: attack,
-                              duration: .quarter,
-                              pitch: Pitch(plain: name)!)
+        part.strands[0].noteTable.insert(attack: attack,
+                                         duration: .quarter,
+                                         pitch: Pitch(plain: name)!)
         attack += .quarter
     }
 }
@@ -68,7 +68,7 @@ let midi = try work.convert(timeBasis: .wall,
 
 // Learn the melody, and generate a 12-note variation of it.
 let template = try Template.analyzeNoteEvents(in: work,
-                                              at: 0,
+                                              scope: Work.Scope(parts: [melody]),
                                               maximumOrder: 2,
                                               name: "Melody")
 let options  = Template.GenerationOptions<BeatTime, Pitch>(order: 1,

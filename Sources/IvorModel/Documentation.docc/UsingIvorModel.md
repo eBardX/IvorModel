@@ -457,13 +457,22 @@ part.
 
 ## Templates
 
-A ``Template`` is an analysis of a part as Markov chains of note events, from
-which new, derived works can be generated.
+A ``Template`` is an analysis of a part, or some of it, as Markov chains of note
+events, from which new, derived works can be generated.
 
 ### Analyzing
 
-``Template/analyzeNoteEvents(in:at:options:name:)`` analyzes one part of a work with
-a ``Template/AnalysisOptions`` recipe. The recipe sets the maximum order — the
+``Template/analyzeNoteEvents(in:scope:options:name:)`` analyzes the notes a
+``Work/Scope`` chooses within one part of a work: the whole part, some of its
+strands, or some of their notes (bars 5–12 of the right hand, say, found with
+``Work/scope(matching:within:)``). The chosen notes are merged, from every strand,
+into one sequence before analysis, so a chordal texture is learned as
+sonorities, and a rest is wherever none of the chosen strands sounds. A scope
+that reaches into more than one part is an error. The template’s
+``Template/sources`` record each part it learned from, with the strands and
+whether it learned from a selection of notes (``Template/Source``).
+
+The analysis takes a ``Template/AnalysisOptions`` recipe. The recipe sets the maximum order — the
 longest pattern the template remembers — and can also:
 
 - align near-simultaneous attacks and releases
@@ -479,9 +488,9 @@ longest pattern the template remembers — and can also:
 - split the part into separate sequences at long rests
   (``Template/AnalysisOptions/RestSplit``).
 
-``Template/analyzeNoteEvents(in:at:maximumOrder:name:)`` is the exact analysis,
-with no tolerances. ``Template/adding(partAt:of:name:)`` returns a template that
-has learned another part as well. Each takes the new template’s name from the
+``Template/analyzeNoteEvents(in:scope:maximumOrder:name:)`` is the exact analysis,
+with no tolerances. ``Template/adding(_:of:name:)`` returns a template that has
+learned another source as well. Each takes the new template’s name from the
 caller; IvorModel never makes up names.
 
 ### Generating
@@ -493,11 +502,13 @@ seed always give the same notes, and the new work records the recipe and seed
 in its ``Work/generation``, so it can be generated again or varied. A beat-time
 work starts out in its source’s tempo and meter (``Template/SourceContext``),
 with a pickup that puts the first note as far into its bar as the source’s
-was.
+was, and its one part — with one unnamed strand — starts in the source’s
+dynamic, instrument and pan. These are read at the source’s first attack,
+through the strand that attack belongs to.
 
 ```swift
 let template = try Template.analyzeNoteEvents(in: work,
-                                              at: 0,
+                                              scope: Work.Scope(parts: [melodyID]),
                                               maximumOrder: 2,
                                               name: "Melody")
 let options  = Template.GenerationOptions<BeatTime, Pitch>(order: 1,

@@ -26,7 +26,7 @@ extension TemplateAnalyzeTests {
         let keyboard = Work(content: .keyboardBeat([Part(name: "Piano", noteTable: noteTable)], TempoMap(), MeterTable(), KeyTable()))
 
         #expect(throws: Template.Error.incompatibleOptions) {
-            try template.adding(partAt: 0, of: keyboard, name: "Mixed")
+            try template.adding(.all, of: keyboard, name: "Mixed")
         }
     }
 
@@ -34,7 +34,7 @@ extension TemplateAnalyzeTests {
     func adding_itself_doublesEveryTransition() throws {
         let work = makeNamedStandardBeatWork("Tune", Fixtures.threeNoteMelody)
         let template = try analyzeAddingTemplate(work)
-        let added = try template.adding(partAt: 0, of: work, name: "Twice")
+        let added = try template.adding(.all, of: work, name: "Twice")
 
         #expect(try standardBeatTransitions(of: added, .joint) == standardBeatTransitions(of: template, .joint).mapValues { $0 * 2 })
         #expect(try beginCount(of: added, .joint) == 2)
@@ -45,7 +45,7 @@ extension TemplateAnalyzeTests {
         let tune = makeNamedStandardBeatWork("Tune", Fixtures.threeNoteMelody)
         let other = makeNamedStandardBeatWork("Other", [(0, 2, .a4), (2, 1, .b4)])
         let template = try analyzeAddingTemplate(tune)
-        let added = try template.adding(partAt: 0, of: other, name: " Both\n Tunes ")
+        let added = try template.adding(.all, of: other, name: " Both\n Tunes ")
 
         #expect(added.templateID != template.templateID)
         #expect(added.name == "Both Tunes")
@@ -64,16 +64,17 @@ extension TemplateAnalyzeTests {
 
         template.isLocked = true
 
-        #expect(try template.adding(partAt: 0, of: work, name: "Twice").isLocked == false)
+        #expect(try template.adding(.all, of: work, name: "Twice").isLocked == false)
     }
 
     @Test
     func adding_missingPart_throws() throws {
         let work = makeNamedStandardBeatWork("Tune", Fixtures.threeNoteMelody)
         let template = try analyzeAddingTemplate(work)
+        let partID = PartID()
 
-        #expect(throws: Template.Error.partNotFound(5)) {
-            try template.adding(partAt: 5, of: work, name: "Missing")
+        #expect(throws: Template.Error.partNotFound(partID)) {
+            try template.adding(Work.Scope(parts: [partID]), of: work, name: "Missing")
         }
     }
 
@@ -82,7 +83,7 @@ extension TemplateAnalyzeTests {
         let work = makeNamedStandardBeatWork("Tune", Fixtures.threeNoteMelody)
         let template = try analyzeAddingTemplate(work,
                                                  states: .init(separatesPitchAndDuration: true))
-        let added = try template.adding(partAt: 0, of: work, name: "Twice")
+        let added = try template.adding(.all, of: work, name: "Twice")
 
         #expect(added.chainRoles == [.duration, .pitch])
         #expect(try beginCount(of: added, .duration) == 2)
@@ -93,7 +94,7 @@ extension TemplateAnalyzeTests {
     func adding_vocabulary_isSummedAndStartsFromOriginal() throws {
         let tune = makeNamedStandardBeatWork("Tune", Fixtures.threeNoteMelody)
         let other = makeNamedStandardBeatWork("Other", [(0, 2, .a4), (2, 1, .c4)])
-        let added = try analyzeAddingTemplate(tune).adding(partAt: 0, of: other, name: "Both")
+        let added = try analyzeAddingTemplate(tune).adding(.all, of: other, name: "Both")
         let vocabulary = try standardBeatVocabulary(of: added)
 
         #expect(vocabulary.pitches[.c4] == 2)
@@ -107,7 +108,7 @@ extension TemplateAnalyzeTests {
         let work = makeNamedStandardBeatWork("Tune", Fixtures.threeNoteMelody)
         let template = try analyzeAddingTemplate(work,
                                                  variants: .init(retrogrades: true))
-        let added = try template.adding(partAt: 0, of: work, name: "Twice")
+        let added = try template.adding(.all, of: work, name: "Twice")
 
         #expect(template.analysisSummary.sequenceCount == 2)
         #expect(added.analysisSummary.sequenceCount == 4)
@@ -150,7 +151,7 @@ extension TemplateAnalyzeTests {
 
         #expect(throws: Template.Error.self) {
             try Template.analyzeNoteEvents(in: work,
-                                           at: 0,
+                                           scope: .all,
                                            maximumOrder: 0,
                                            name: "Test")
         }
@@ -161,9 +162,11 @@ extension TemplateAnalyzeTests {
         let part = Part<BeatTime, Pitch>(name: "Piano")
         let work = Work(content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
-        #expect(throws: Template.Error.self) {
+        let partID = PartID()
+
+        #expect(throws: Template.Error.partNotFound(partID)) {
             try Template.analyzeNoteEvents(in: work,
-                                           at: 1,
+                                           scope: Work.Scope(parts: [partID]),
                                            maximumOrder: 1,
                                            name: "Test")
         }
@@ -180,7 +183,7 @@ extension TemplateAnalyzeTests {
         let work = Work(name: "My Work", content: .standardBeat([part], TempoMap(), MeterTable(), KeyTable()))
 
         let tmpl = try Template.analyzeNoteEvents(in: work,
-                                                  at: 0,
+                                                  scope: .all,
                                                   maximumOrder: 1,
                                                   name: "  Left\n Hand ")
 
@@ -193,7 +196,7 @@ extension TemplateAnalyzeTests {
     @Test
     func sources_roundTripThroughProject() throws {
         let tune = makeNamedStandardBeatWork("Tune", Fixtures.threeNoteMelody)
-        let template = try analyzeAddingTemplate(tune).adding(partAt: 0, of: tune, name: "Twice")
+        let template = try analyzeAddingTemplate(tune).adding(.all, of: tune, name: "Twice")
         var project = Project()
 
         project.updateTemplate(template)
